@@ -1,5 +1,11 @@
 # findadoc-server
 
+## Prerequisites
+
+- Node 
+  - We recommend using [nvm](https://github.com/nvm-sh/nvm) and running `nvm use` in this directory to sync with the project's Node version. However, if you wish to install Node your own way and ensure a consistent version with `.nvmrc`, that's fine too
+
+
 ## How to Test
 1. Run `npm run dev`
 2. Open your browser to http://localhost:3000/
