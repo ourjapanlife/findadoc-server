@@ -1,7 +1,7 @@
 {
   "name": "findadoc-server",
   "version": "1.0.0",
-  "description": "Backend for Find a Doc",
+  "description": "Backend for Find a Doc, Japan",
   "main": "index.js",
   "scripts": {
     "prepare": "husky install",
