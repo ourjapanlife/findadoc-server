@@ -9,7 +9,6 @@ type Contact {
   mapsLink: String
 }
 
-
 type Employee {
   id: ID!
   name: Name!
