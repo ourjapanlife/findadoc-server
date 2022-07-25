@@ -1,5 +1,16 @@
 # findadoc-server
 
+## Setup
+
+1. Install dependencies
+```sh
+npm install
+```
+2. Set up Husky Hooks 🐕️
+```sh
+npm run prepare
+```
+
 ## How to Test
 1. Run `npm run dev`
 2. Open your browser to http://localhost:3000/
