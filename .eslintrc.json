@@ -1,0 +1,17 @@
+{
+  "root": true,
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier" // put me last!
+  ],
+  "env": {},
+  "globals": {},
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "extraFileExtensions": [".ts,.json"]
+  },
+  "plugins": ["@typescript-eslint", "eslint-plugin-json"],
+  "rules": {},
+  "ignorePatterns": ["nexus-typegen.ts"]
+}
