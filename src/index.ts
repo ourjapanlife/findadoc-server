@@ -1,6 +1,5 @@
-import { ApolloServer, gql } from "apollo-server";
-import fs from "fs";
-import path from "path";
+import { ApolloServer } from "apollo-server";
+import { loadSchema } from "./schema";
 
 const names = [
   {
@@ -19,22 +18,12 @@ const names = [
 
 const resolvers = {
   Query: {
-    name: () => names,
+    names: () => names,
   },
 };
 
-// todo add error handling
-// and find a less hacky way of doing this
-const typeString = fs.readFileSync(
-  path.join(__dirname, "./typeDefs/schema.graphql"),
-  "utf-8"
-);
-const typeDefs = gql`
-  ${typeString}
-`;
-
 const server = new ApolloServer({
-  typeDefs,
+  typeDefs: loadSchema(),
   resolvers,
   csrfPrevention: true,
 });
