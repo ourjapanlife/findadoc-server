@@ -3,27 +3,6 @@ type Name {
   ja: String!
 }
 
-type Contact {
-  email: String
-  phone: String
-  mapsLink: String
-}
-
-type Employee {
-  id: ID!
-  name: Name!
-  degree: String # Degree, e.g. M.D., D.O., Ph.D., R.N., etc.
-  workplace: Facility
-}
-
-type Facility {
-  id: ID!
-  name: Name!
-  contact: Contact!
-  staff: [Employee]
-}
-
-
 # The "Query" type is special: it lists all of the available queries that
 # clients can execute, along with the return type for each. In this
 # case, the "books" query returns an array of zero or more Books (defined above).

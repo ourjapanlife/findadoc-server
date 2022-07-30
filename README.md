@@ -22,7 +22,10 @@ yarn prepare
 3. Navigate to the Explorer section from the menu in the left pane.
 4. Run the following query and confirm that you get a response with status code 200:
 ```
-query Query {
-  ok
+query ExampleQuery {
+  names {
+    ja,
+    en
+  }
 }
 ```
