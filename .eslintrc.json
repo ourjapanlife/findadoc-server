@@ -13,5 +13,5 @@
   },
   "plugins": ["@typescript-eslint", "eslint-plugin-json"],
   "rules": {},
-  "ignorePatterns": ["nexus-typegen.ts"]
+  "ignorePatterns": []
 }

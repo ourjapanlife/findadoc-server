@@ -1,10 +1,20 @@
-import { makeSchema } from "nexus";
-import { join } from "path";
+import { gql } from "apollo-server";
 
-export const schema = makeSchema({
-  types: [],
-  outputs: {
-    schema: join(process.cwd(), "schema.graphql"),
-    typegen: join(process.cwd(), "nexus-typegen.ts"),
-  },
-});
+import fs from "fs";
+import { DocumentNode } from "graphql";
+import path from "path";
+
+export function loadSchema(): DocumentNode {
+  try {
+    const typeString = fs.readFileSync(
+      path.join(__dirname, "./typeDefs/schema.graphql"),
+      "utf-8"
+    );
+    return gql`
+      ${typeString}
+    `;
+  } catch (e) {
+    console.log(e);
+  }
+  return gql``;
+}

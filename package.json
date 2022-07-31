@@ -24,6 +24,7 @@
   "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.30.7",
+    "@typescript-eslint/parser": "^5.31.0",
     "eslint": "^8.20.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-json": "^3.1.0",
@@ -35,6 +36,6 @@
   "dependencies": {
     "apollo-server": "^3.8.2",
     "graphql": "^16.5.0",
-    "nexus": "^1.3.0"
+    "graphql-import-node": "^0.0.5"
   }
 }
