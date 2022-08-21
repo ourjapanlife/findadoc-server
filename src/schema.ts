@@ -4,7 +4,7 @@ import fs from "fs";
 import { DocumentNode } from "graphql";
 import path from "path";
 
-export function loadSchema(): DocumentNode {
+export default function loadSchema(): DocumentNode {
   try {
     const typeString = fs.readFileSync(
       path.join(__dirname, "./typeDefs/schema.graphql"),
