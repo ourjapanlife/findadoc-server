@@ -1,5 +1,5 @@
 import { ApolloServer } from "apollo-server";
-import { loadSchema } from "./schema";
+import loadSchema from "./schema";
 
 const names = [
   {
