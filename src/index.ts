@@ -3,16 +3,28 @@ import loadSchema from "./schema";
 
 const names = [
   {
-    en: "Ann",
-    ja: "杏",
+    LastEn: "Kilzer",
+    FirstEn: "Ann",
+    MiddleEn: "",
+    LastJa: "キルザー",
+    FirstJa: "杏",
+    MiddleJa: "",
   },
   {
-    en: "LaShawn",
-    ja: "ラシャーン",
+    LastEn: "Toyoda",
+    FirstEn: "LaShawn",
+    MiddleEn: "T",
+    LastJa: "豊田",
+    FirstJa: "ラシァン",
+    MiddleJa: "ティ",
   },
   {
-    en: "Philip",
-    ja: "フィリップ",
+    LastEn: "Ermish",
+    FirstEn: "Philip",
+    MiddleEn: "Michael",
+    LastJa: "アーミッシュ",
+    FirstJa: "フィリップ",
+    MiddleJa: "マイケル",
   },
 ];
 

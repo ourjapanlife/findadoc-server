@@ -1,6 +1,10 @@
 type Name {
-  en: String!
-  ja: String!
+  LastEn: String!
+  FirstEn: String!
+  MiddleEn: String!
+  LastJa: String!
+  FirstJa: String!
+  MiddleJa: String!
 }
 
 # The "Query" type is special: it lists all of the available queries that
