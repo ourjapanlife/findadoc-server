@@ -1,5 +1,5 @@
-type PersonName {
-  nameId: ID!
+type Name {
+  nameId: ID
   lastName: String!
   firstName: String!
   middleName: String!
@@ -7,14 +7,14 @@ type PersonName {
 }
 
 type Specialty {
-  specialtyId: ID!
+  specialtyId: ID
   speciality: String!
   language: LanguageEnum
 }
 
 type HealthcareProfessional {
-  healthcareProfessionalId: ID!
-  names: [PersonName]
+  healthcareProfessionalId: ID
+  names: [Name]
   languages: [LanguageEnum]
   degrees: [Degree]
   facilities: [Facility]
@@ -23,7 +23,7 @@ type HealthcareProfessional {
 }
 
 type Contact {
-  contactId: ID!
+  contactId: ID
   email: String!
   phone: String!
   website: String!
@@ -31,13 +31,13 @@ type Contact {
 }
 
 type FacilityName {
-  facilityNameId: ID!
+  facilityNameId: ID
   name: String!
   language: LanguageEnum
 }
 
 type Facility {
-  facilityId: ID!
+  facilityId: ID
   name: FacilityName
   contact: Contact
   healthcareProfessionalStaff: [HealthcareProfessional]
@@ -56,18 +56,14 @@ enum InsuranceEnum {
   unknown
 }
 
-# List all queries here
+# The "Query" type is special: it lists all of the available queries that
+# clients can execute, along with the return type for each. In this
+# case, the "books" query returns an array of zero or more Books (defined above).
 type Query {
-  getHealthCareProfessionaById($id) : HealthCareProfessional
-  getHealthCareProfessional($searchTerm: String!, $language: LanguageEnum): [HealthCareProfessional]
+  names: [Name]
+  languages: [SpokenLanguage]
+  specialities: [Specialty]
 }
-
-# List all post/puts here
-type Mutation {
-  createHealthCareProfessional($healthCareProfessional: HealthCareProfessional!)
-  creategetHealthCareProfessionals($healthCareProfessionals: [HealthCareProfessional]!)
-}
-
 
 # {
 #   "data": {

@@ -1,37 +1,18 @@
 import { ApolloServer } from "apollo-server";
 import loadSchema from "./schema";
-
-const names = [
-  {
-    LastEn: "Kilzer",
-    FirstEn: "Ann",
-    MiddleEn: "",
-    LastJa: "キルザー",
-    FirstJa: "杏",
-    MiddleJa: "",
-  },
-  {
-    LastEn: "Toyoda",
-    FirstEn: "LaShawn",
-    MiddleEn: "T",
-    LastJa: "豊田",
-    FirstJa: "ラシァン",
-    MiddleJa: "ティ",
-  },
-  {
-    LastEn: "Ermish",
-    FirstEn: "Philip",
-    MiddleEn: "Michael",
-    LastJa: "アーミッシュ",
-    FirstJa: "フィリップ",
-    MiddleJa: "マイケル",
-  },
-];
+import { names } from "./fakeData";
+import {getHealthCareProfessionaById, getHealthCareProfessional} from "./services/searchService"
+import { createHealthCareProfessional } from "./services/healthCareProfessionalService"
 
 const resolvers = {
   Query: {
-    names: () => names,
+    getHealthCareProfessionaById: getHealthCareProfessionaById,
+    getHealthCareProfessional: getHealthCareProfessional
   },
+  Mutation: {
+    createHealthCareProfessional: createHealthCareProfessional
+    creategetHealthCareProfessionals(healthCareProfessionals: [HealthCareProfessional]) => {}
+  }
 };
 
 const server = new ApolloServer({
