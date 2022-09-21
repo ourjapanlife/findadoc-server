@@ -14,7 +14,7 @@ export default function loadSchema(): DocumentNode {
       ${typeString}
     `;
   } catch (e) {
-    console.log(e);
+    // console.log(e);
   }
   return gql``;
 }

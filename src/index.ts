@@ -1,20 +1,24 @@
 import { ApolloServer } from "apollo-server";
 import loadSchema from "./schema";
-import { names } from "./fakeData";
-import {getHealthcareProfessionaById, getHealthcareProfessional} from "./services/searchService"
-import { createHealthcareProfessional } from "./services/healthCareProfessionalService"
+// import { names } from "./typeDefs/fakeData";
+import {
+  getHealthcareProfessionaById,
+  getHealthcareProfessional,
+} from "./services/searchService";
+import {
+  createHealthcareProfessional,
+  createHealthcareProfessionals,
+} from "./services/healthCareProfessionalService";
 
 const resolvers = {
   Query: {
-    getHealthcareProfessionaById: getHealthcareProfessionaById,
-    getHealthcareProfessional: getHealthcareProfessional
+    getHealthcareProfessionaById,
+    getHealthcareProfessional,
   },
   Mutation: {
-    createHealthcareProfessional: createHealthcareProfessional
-    creategetHealthcareProfessionals(healthCareProfessionals: [HealthcareProfessional]) => {
-      
-    }
-  }
+    createHealthcareProfessional,
+    creategetHealthcareProfessionals: createHealthcareProfessionals,
+  },
 };
 
 const server = new ApolloServer({
@@ -25,6 +29,4 @@ const server = new ApolloServer({
 
 const port = 3000;
 
-server.listen({ port }).then(({ url }) => {
-  console.log(`🚀  Server ready at ${url}`);
-});
+server.listen({ port });

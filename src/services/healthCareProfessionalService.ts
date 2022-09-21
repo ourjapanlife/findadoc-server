@@ -1,8 +1,17 @@
+type HealthcareProfessional = {
+  temptypeuntilwegetthegraphqlone: boolean;
+};
 
-
-export function createHealthcareProfessional(healthCareProfessional: HealthcareProfessional) => {
-    return creategetHealthcareProfessionals([healhCareProfesssional])
+export function createHealthcareProfessionals(
+  healthcareProfessionals: [HealthcareProfessional]
+): any {
+  return {
+    healthcareProfessionals,
+  };
 }
 
-export function creategetHealthcareProfessionals(healthCareProfessionals: [HealthcareProfessional]) => {
+export function createHealthcareProfessional(
+  healthcareProfessional: HealthcareProfessional
+): any {
+  return createHealthcareProfessionals([healthcareProfessional]);
 }

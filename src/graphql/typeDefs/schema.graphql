@@ -1,5 +1,5 @@
-type Name {
-  nameId: ID
+type PersonName {
+  nameId: ID!
   lastName: String!
   firstName: String!
   middleName: String!
@@ -7,14 +7,14 @@ type Name {
 }
 
 type Specialty {
-  specialtyId: ID
+  specialtyId: ID!
   speciality: String!
   language: LanguageEnum
 }
 
 type HealthcareProfessional {
-  healthcareProfessionalId: ID
-  names: [Name]
+  healthcareProfessionalId: ID!
+  names: [PersonName]
   languages: [LanguageEnum]
   degrees: [Degree]
   facilities: [Facility]
@@ -23,7 +23,7 @@ type HealthcareProfessional {
 }
 
 type Contact {
-  contactId: ID
+  contactId: ID!
   email: String!
   phone: String!
   website: String!
@@ -31,13 +31,13 @@ type Contact {
 }
 
 type FacilityName {
-  facilityNameId: ID
+  facilityNameId: ID!
   name: String!
   language: LanguageEnum
 }
 
 type Facility {
-  facilityId: ID
+  facilityId: ID!
   name: FacilityName
   contact: Contact
   healthcareProfessionalStaff: [HealthcareProfessional]
@@ -56,41 +56,14 @@ enum InsuranceEnum {
   unknown
 }
 
-# The "Query" type is special: it lists all of the available queries that
-# clients can execute, along with the return type for each. In this
-# case, the "books" query returns an array of zero or more Books (defined above).
+# List all queries here
 type Query {
-  names: [Name]
-  languages: [SpokenLanguage]
-  specialities: [Specialty]
+  getHealthcareProfessionaById($id) : HealthcareProfessional
+  getHealthcareProfessional($searchTerm: String!, $language: LanguageEnum): [HealthcareProfessional]
 }
 
-# {
-#   "data": {
-#     "name": {
-#       "LastEn": "Toyoda"
-#     },
-#     "spokenLanguage": {
-
-#     }
-#   }
-# }
-
-
-
-{
-  "person": {
-    "names": [{
-      "lastName": "Toyoda",
-      "firstName": "LaShawn",
-      "language": "English"
-    }, {
-      "lastName": "T",
-      "firstName": "L",
-      "language": "Japanese"
-    }],
-    "spokenLanguage": {
-
-    }
-  }
+# List all post/puts here
+type Mutation {
+  createHealthcareProfessional($healthCareProfessional: HealthcareProfessional!)
+  creategetHealthcareProfessionals($healthCareProfessionals: [HealthcareProfessional]!)
 }

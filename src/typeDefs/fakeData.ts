@@ -1,4 +1,4 @@
-export const names = [
+const names = [
   {
     LastEn: "Kilzer",
     FirstEn: "Ann",
@@ -24,3 +24,5 @@ export const names = [
     MiddleJa: "マイケル",
   },
 ];
+
+export default names;

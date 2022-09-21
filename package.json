@@ -9,7 +9,9 @@
     "dev": "ts-node-dev --transpile-only --no-notify --exit-child src/index.ts",
     "generate": "ts-node --transpile-only src/schema.ts",
     "lint": "eslint . --ext .js,.ts,.json && prettier --write **/*.{js,ts,json}",
-    "lint:check": "eslint . --ext .js,.ts,.json && prettier --check **/*.{js,ts,json}"
+    "lint:check": "eslint . --ext .js,.ts,.json && prettier --check **/*.{js,ts,json}",
+    "generate-ts-types": "graphql-codegen",
+    "predev": "yarn generate-ts-types"
   },
   "repository": {
     "type": "git",
@@ -24,14 +26,18 @@
   },
   "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
   "devDependencies": {
+    "@types/graphql": "^14.5.0",
+    "@types/node": "^18.7.18",
     "@typescript-eslint/eslint-plugin": "^5.30.7",
     "@typescript-eslint/parser": "^5.31.0",
+    "apollo-server": "^3.8.2",
     "eslint": "^8.20.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.0.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-json": "^3.1.0",
+    "graphql-codegen": "^0.4.0",
     "husky": "^8.0.1",
     "prettier": "2.7.1",
     "ts-node-dev": "^2.0.0",
@@ -40,7 +46,6 @@
   "dependencies": {
     "apollo-server": "^3.8.2",
     "graphql": "^16.5.0",
-    "graphql-codegen": "^0.4.0",
     "graphql-import-node": "^0.0.5"
   }
 }
