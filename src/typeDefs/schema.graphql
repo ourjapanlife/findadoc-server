@@ -58,14 +58,14 @@ enum InsuranceEnum {
 
 # List all queries here
 type Query {
-  getHealthCareProfessionaById($id) : HealthCareProfessional
-  getHealthCareProfessional($searchTerm: String!, $language: LanguageEnum): [HealthCareProfessional]
+  getHealthcareProfessionaById($id) : HealthcareProfessional
+  getHealthcareProfessional($searchTerm: String!, $language: LanguageEnum): [HealthcareProfessional]
 }
 
 # List all post/puts here
 type Mutation {
-  createHealthCareProfessional($healthCareProfessional: HealthCareProfessional!)
-  creategetHealthCareProfessionals($healthCareProfessionals: [HealthCareProfessional]!)
+  createHealthcareProfessional($healthCareProfessional: HealthcareProfessional!)
+  creategetHealthcareProfessionals($healthCareProfessionals: [HealthcareProfessional]!)
 }
 
 

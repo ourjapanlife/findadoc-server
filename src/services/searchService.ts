@@ -1,8 +1,8 @@
-export function getHealthCareProfessionaById(id) => {
+export function getHealthcareProfessionaById(id) => {
 // query db by the id. easy.
 }
 
-export function getHealthCareProfessional(searchTerm: String , language: LanguageEnum) => {
+export function getHealthcareProfessional(searchTerm: String , language: LanguageEnum) => {
 // query db. for postgres might recommend a composite key for the main search fields,
 // otherwise you can just query each of the fields with the term. It will
 // probably be really slow without a composite key eventually, but for MVP it's ok. 

@@ -1,17 +1,19 @@
 import { ApolloServer } from "apollo-server";
 import loadSchema from "./schema";
 import { names } from "./fakeData";
-import {getHealthCareProfessionaById, getHealthCareProfessional} from "./services/searchService"
-import { createHealthCareProfessional } from "./services/healthCareProfessionalService"
+import {getHealthcareProfessionaById, getHealthcareProfessional} from "./services/searchService"
+import { createHealthcareProfessional } from "./services/healthCareProfessionalService"
 
 const resolvers = {
   Query: {
-    getHealthCareProfessionaById: getHealthCareProfessionaById,
-    getHealthCareProfessional: getHealthCareProfessional
+    getHealthcareProfessionaById: getHealthcareProfessionaById,
+    getHealthcareProfessional: getHealthcareProfessional
   },
   Mutation: {
-    createHealthCareProfessional: createHealthCareProfessional
-    creategetHealthCareProfessionals(healthCareProfessionals: [HealthCareProfessional]) => {}
+    createHealthcareProfessional: createHealthcareProfessional
+    creategetHealthcareProfessionals(healthCareProfessionals: [HealthcareProfessional]) => {
+      
+    }
   }
 };
 
