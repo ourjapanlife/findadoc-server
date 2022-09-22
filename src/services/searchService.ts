@@ -2,7 +2,7 @@ type LanguageEnum = {
   temptypeuntilwegetthegraphqlone: boolean;
 };
 
-export function getHealthcareProfessionaById(id): any {
+export function getHealthcareProfessionaById(id: string): any {
   return { tempfield: id };
   // query db by the id. easy.
 }
