@@ -1,20 +1,6 @@
 import { ApolloServer } from "apollo-server";
 import loadSchema from "./schema";
-
-const names = [
-  {
-    en: "Ann",
-    ja: "杏",
-  },
-  {
-    en: "LaShawn",
-    ja: "ラシャーン",
-  },
-  {
-    en: "Philip",
-    ja: "フィリップ",
-  },
-];
+import names from "./mockData/mockData";
 
 const resolvers = {
   Query: {
