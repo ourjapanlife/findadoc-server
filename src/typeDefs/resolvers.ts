@@ -1,4 +1,6 @@
-import names from "../mockData/mockData";
+import { names, healthcareProfessionals } from "../mockData/mockData";
+
+// need to set the proper types for the params
 
 const resolvers = {
   Query: {
@@ -10,6 +12,13 @@ const resolvers = {
         );
       }
       return names.filter((person) => person.id === args.id);
+    },
+    healthcareProfessionals: () => healthcareProfessionals,
+    healthcareProfessional: (_parent: any, args: any) => {
+      const doctor = healthcareProfessionals.filter(
+        (person) => person.id === args.id
+      );
+      return doctor[0];
     },
   },
 };

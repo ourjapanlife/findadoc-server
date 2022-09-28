@@ -1,4 +1,4 @@
-const names = [
+export const names = [
   {
     id: "1",
     lastName: "Kilzer",
@@ -43,4 +43,45 @@ const names = [
   },
 ];
 
-export default names;
+export const healthcareProfessionals = [
+  {
+    id: "1",
+    names: [
+      {
+        id: "3",
+        lastName: "Ermish",
+        firstName: "Philip",
+        middleName: "Michael",
+        language: "ENGLISH",
+      },
+      {
+        id: "3",
+        lastName: "アーミッシュ",
+        firstName: "フィリップ",
+        middleName: "マイケル",
+        language: "JAPANESE",
+      },
+    ],
+    spokenLanguages: ["JAPANESE", "ENGLISH"],
+  },
+  {
+    id: "2",
+    names: [
+      {
+        id: "1",
+        lastName: "Kilzer",
+        firstName: "Ann",
+        middleName: "",
+        language: "ENGLISH",
+      },
+      {
+        id: "1",
+        lastName: "キルザー",
+        firstName: "杏",
+        middleName: "",
+        language: "JAPANESE",
+      },
+    ],
+    spokenLanguages: ["JAPANESE"],
+  },
+];
