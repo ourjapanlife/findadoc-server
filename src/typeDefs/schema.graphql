@@ -1,9 +1,9 @@
 type PersonName {
-  nameId: ID!
+  id: ID!
   lastName: String!
   firstName: String!
   middleName: String!
-  language: LanguageEnum
+  language: LanguageEnum!
 }
 
 type HealthcareProfessional {
@@ -12,10 +12,12 @@ type HealthcareProfessional {
   languages: [LanguageEnum]
 }
 
+# enum values are all caps by convention
+# https://www.apollographql.com/docs/apollo-server/schema/schema/#enum-types
+
 enum LanguageEnum {
-  English
-  Japanese
-  Russian
+  ENGLISH
+  JAPANESE
 }
 
 # The "Query" type is special: it lists all of the available queries that
@@ -23,5 +25,6 @@ enum LanguageEnum {
 # case, the "books" query returns an array of zero or more Books (defined above).
 type Query {
   names: [PersonName]
+  name(id: ID!, language: LanguageEnum): [PersonName]
   healthcareProfessional: [HealthcareProfessional]
 }

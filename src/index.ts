@@ -1,12 +1,6 @@
 import { ApolloServer } from "apollo-server";
 import loadSchema from "./schema";
-import names from "./mockData/mockData";
-
-const resolvers = {
-  Query: {
-    names: () => names,
-  },
-};
+import resolvers from "./typeDefs/resolvers";
 
 const server = new ApolloServer({
   typeDefs: loadSchema(),
