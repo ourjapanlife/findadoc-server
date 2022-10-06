@@ -1,4 +1,4 @@
-import healthcareProfessionals from "../mockData/mockData";
+import healthcareProfessionals from "./mockData/mockData";
 
 const resolvers = {
   Query: {
