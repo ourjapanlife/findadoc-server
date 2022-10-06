@@ -1,9 +1,8 @@
 type PersonName {
-  id: ID!
   lastName: String!
   firstName: String!
   middleName: String!
-  language: Language!
+  locale: String!
 }
 
 type HealthcareProfessional {
@@ -17,12 +16,7 @@ enum Language {
   JAPANESE
 }
 
-# The "Query" type is special: it lists all of the available queries that
-# clients can execute, along with the return type for each. In this
-# case, the "books" query returns an array of zero or more Books (defined above).
 type Query {
-  names: [PersonName]
-  name(id: ID!, language: Language): [PersonName]
   healthcareProfessionals: [HealthcareProfessional]
-  healthcareProfessional(id: ID!, language: Language): HealthcareProfessional
+  healthcareProfessional(id: ID!): HealthcareProfessional
 }
