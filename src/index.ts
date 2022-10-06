@@ -1,26 +1,6 @@
 import { ApolloServer } from "apollo-server";
 import loadSchema from "./schema";
-
-const names = [
-  {
-    en: "Ann",
-    ja: "杏",
-  },
-  {
-    en: "LaShawn",
-    ja: "ラシャーン",
-  },
-  {
-    en: "Philip",
-    ja: "フィリップ",
-  },
-];
-
-const resolvers = {
-  Query: {
-    names: () => names,
-  },
-};
+import resolvers from "./resolvers";
 
 const server = new ApolloServer({
   typeDefs: loadSchema(),
