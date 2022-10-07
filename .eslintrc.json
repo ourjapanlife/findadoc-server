@@ -25,6 +25,8 @@
     }
   ],
   "plugins": ["@typescript-eslint", "eslint-plugin-json"],
-  "rules": {},
+  "rules": {
+    "import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
+  },
   "ignorePatterns": []
 }
