@@ -28,6 +28,7 @@
   "devDependencies": {
     "@graphql-codegen/cli": "^2.13.5",
     "@graphql-codegen/typescript": "^2.7.3",
+    "@graphql-codegen/typescript-resolvers": "^2.7.3",
     "@typescript-eslint/eslint-plugin": "^5.30.7",
     "@typescript-eslint/parser": "^5.31.0",
     "eslint": "^8.20.0",
