@@ -5,16 +5,24 @@ type PersonName {
   locale: String!
 }
 
+type Specialty {
+  id: ID!
+  name: String!
+  locale: String!
+}
+
 type HealthcareProfessional {
   id: ID!
   names: [PersonName]!
   spokenLanguages: [Language]!
+  specialty: [Specialty]!
 }
 
 enum Language {
   ENGLISH
   JAPANESE
 }
+
 
 type Query {
   healthcareProfessionals: [HealthcareProfessional]
