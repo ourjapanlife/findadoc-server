@@ -23,7 +23,6 @@ enum Language {
   JAPANESE
 }
 
-
 type Query {
   healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional
