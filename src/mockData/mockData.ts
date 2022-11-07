@@ -50,7 +50,7 @@ const healthcareProfessionals = [
       },
     ],
     spokenLanguages: ["JAPANESE"],
-    specialty: [
+    specialties: [
       {
         id: "2",
         name: "Internal Medicine",
