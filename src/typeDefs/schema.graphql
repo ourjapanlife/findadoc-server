@@ -15,7 +15,7 @@ type HealthcareProfessional {
   id: ID!
   names: [PersonName]!
   spokenLanguages: [Language]!
-  specialty: [Specialty]!
+  specialties: [Specialty]!
 }
 
 enum Language {
