@@ -20,7 +20,7 @@ const healthcareProfessionals = [
       },
     ],
     spokenLanguages: ["JAPANESE", "ENGLISH"],
-    specialty: [
+    specialties: [
       {
         id: "1",
         name: "General Practice",
