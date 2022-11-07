@@ -80,7 +80,7 @@ const healthcareProfessionals = [
       },
     ],
     spokenLanguages: ["ENGLISH"],
-    specialty: [
+    specialties: [
       {
         id: "3",
         name: "Pediatrics",
