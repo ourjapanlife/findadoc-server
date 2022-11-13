@@ -20,6 +20,18 @@ const healthcareProfessionals = [
       },
     ],
     spokenLanguages: ["JAPANESE", "ENGLISH"],
+    specialties: [
+      {
+        id: "1",
+        name: "General Practice",
+        locale: "en"
+      },
+      {
+        id: "1",
+        name: "一般診療",
+        locale: "ja"
+      }
+    ]
   },
   {
     id: "2",
@@ -38,6 +50,18 @@ const healthcareProfessionals = [
       },
     ],
     spokenLanguages: ["JAPANESE"],
+    specialties: [
+      {
+        id: "2",
+        name: "Internal Medicine",
+        locale: "en"
+      },
+      {
+        id: "2",
+        name: "内科",
+        locale: "ja"
+      }
+    ]
   },
   {
     id: "3",
@@ -55,6 +79,19 @@ const healthcareProfessionals = [
         locale: "ja",
       },
     ],
+    spokenLanguages: ["ENGLISH"],
+    specialties: [
+      {
+        id: "3",
+        name: "Pediatrics",
+        locale: "en"
+      },
+      {
+        id: "3",
+        name: "小児科",
+        locale: "ja"
+      }
+    ]
   },
 ];
 

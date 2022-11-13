@@ -5,10 +5,17 @@ type PersonName {
   locale: String!
 }
 
+type Specialty {
+  id: ID!
+  name: String!
+  locale: String!
+}
+
 type HealthcareProfessional {
   id: ID!
   names: [PersonName]!
   spokenLanguages: [Language]!
+  specialties: [Specialty]!
 }
 
 enum Language {
