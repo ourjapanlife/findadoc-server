@@ -54,5 +54,6 @@
     "graphql": "^16.5.0",
     "graphql-import-node": "^0.0.5",
     "supertest": "^6.3.0"
-  }
+  },
+  "packageManager": "yarn@3.2.4"
 }
