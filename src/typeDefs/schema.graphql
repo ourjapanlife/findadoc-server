@@ -1,3 +1,32 @@
+type Contact {
+  email: String!
+  phone: String!
+  website: String!
+  mapsLink: String!
+}
+
+type Facility {
+  id: ID!
+  name: [FacilityName]!
+  contact: [Contact]!
+  healthcareProfessionals: [HealthcareProfessional]!
+}
+
+type FacilityName {
+  id: ID!
+  name: String!
+  locale: String!
+}
+
+type HealthcareProfessional {
+  id: ID!
+  names: [PersonName]!
+  degrees: [Degree]!
+  spokenLanguages: [Language]!
+  specialties: [Specialty]!
+  insurance: [Insurance]!
+}
+
 type PersonName {
   lastName: String!
   firstName: String!
@@ -11,11 +40,19 @@ type Specialty {
   locale: String!
 }
 
-type HealthcareProfessional {
-  id: ID!
-  names: [PersonName]!
-  spokenLanguages: [Language]!
-  specialties: [Specialty]!
+enum Degree {
+  M.D.
+  PH.D
+  D.D.S
+  D.O
+}
+
+enum Insurance {
+  EMPLOYER HEALTH INSURANCE
+  NATIONAL HEALTH INSURANCE
+  INTERNATIONAL HEALTH INSURANCE
+  NO INSURANCE
+  UNKNOWN
 }
 
 enum Language {
