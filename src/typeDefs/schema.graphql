@@ -7,13 +7,12 @@ type Contact {
 
 type Facility {
   id: ID!
-  name: [FacilityName]!
-  contact: [Contact]!
+  names: [FacilityName]!
+  contact: Contact!
   healthcareProfessionals: [HealthcareProfessional]!
 }
 
 type FacilityName {
-  id: ID!
   name: String!
   locale: String!
 }
@@ -61,6 +60,8 @@ enum Language {
 }
 
 type Query {
+  facilities: [Facility]
+  facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional
 }

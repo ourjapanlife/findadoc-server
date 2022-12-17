@@ -2,6 +2,60 @@
 
 // language is the spoken language
 
+const facilities = [
+  {
+    id: "1", 
+    names: [
+      {
+        name: "Amazing Clinic",
+        locale: "en"
+      },
+      {
+        name: "アメージングクリニック",
+        locale: "ja"
+      }
+    ],
+    contact: {
+      email: "some_email@some_email.jp",
+      phone: "040-000-0000",
+      website: "amazingclinicurl.jp",
+      mapsLink: "https://some_googlemaps_link.com"
+    },
+    healthcareProfessionals: [
+      {
+        id: "1",
+        names: [
+          {
+            lastName: "Ermish",
+            firstName: "Philip",
+            middleName: "Michael",
+            locale: "en",
+          },
+          {
+            lastName: "アーミッシュ",
+            firstName: "フィリップ",
+            middleName: "マイケル",
+            locale: "ja",
+          },
+        ],
+        spokenLanguages: ["JAPANESE", "ENGLISH"],
+        specialties: [
+          {
+            id: "1",
+            name: "General Practice",
+            locale: "en"
+          },
+          {
+            id: "1",
+            name: "一般診療",
+            locale: "ja"
+          }
+        ]
+      }
+    ]
+  }
+]
+
 const healthcareProfessionals = [
   {
     id: "1",
@@ -95,4 +149,4 @@ const healthcareProfessionals = [
   },
 ];
 
-export default healthcareProfessionals;
+export { facilities, healthcareProfessionals };
