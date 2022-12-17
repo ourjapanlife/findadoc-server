@@ -23,7 +23,7 @@ type HealthcareProfessional {
   degrees: [Degree]!
   spokenLanguages: [Language]!
   specialties: [Specialty]!
-  insurance: [Insurance]!
+  acceptedInsuranceOptions: [Insurance]!
 }
 
 type PersonName {

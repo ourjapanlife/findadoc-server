@@ -4,24 +4,24 @@ const resolvers = {
   Query: {
     facilities: () => facilities,
     facility: (_parent: any, args: any) => {
-      const matchingResults = facilities.find(
+      const matchingFacility = facilities.find(
         (location) => location.id === args.id
       );
-      return matchingResults;
+      return matchingFacility;
     },
     healthcareProfessionals: () => healthcareProfessionals,
     healthcareProfessional: (_parent: any, args: any) => {
-      const matchingResults = healthcareProfessionals.find(
+      const matchingHealthcareProfessional = healthcareProfessionals.find(
         (person) => person.id === args.id
       );
-      return matchingResults;
+      return matchingHealthcareProfessional;
     },
     specialties: () => specialties,
     specialty: (_parent: any, args: any) => {
-      const matchingResults = specialties.find(
+      const matchingSpecialty = specialties.find(
         (field) => field.id === args.id
       );
-      return matchingResults;
+      return matchingSpecialty;
     },
   },
 };
