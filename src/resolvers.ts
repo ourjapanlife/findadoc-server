@@ -4,27 +4,24 @@ const resolvers = {
   Query: {
     facilities: () => facilities,
     facility: (_parent: any, args: any) => {
-      const matchingResults = facilities.filter(
+      const matchingResults = facilities.find(
         (location) => location.id === args.id
       );
-      const firstResult = matchingResults.length ? matchingResults[0] : null;
-      return firstResult;
+      return matchingResults;
     },
     healthcareProfessionals: () => healthcareProfessionals,
     healthcareProfessional: (_parent: any, args: any) => {
-      const matchingResults = healthcareProfessionals.filter(
+      const matchingResults = healthcareProfessionals.find(
         (person) => person.id === args.id
       );
-      const firstResult = matchingResults.length ? matchingResults[0] : null;
-      return firstResult;
+      return matchingResults;
     },
     specialties: () => specialties,
     specialty: (_parent: any, args: any) => {
-      const matchingResults = specialties.filter(
+      const matchingResults = specialties.find(
         (field) => field.id === args.id
       );
-      const firstResult = matchingResults.length ? matchingResults[0] : null;
-      return firstResult;
+      return matchingResults;
     },
   },
 };
