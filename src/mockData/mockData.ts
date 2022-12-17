@@ -18,7 +18,7 @@ const facilities = [
     contact: {
       email: "some_email@some_email.jp",
       phone: "040-000-0000",
-      website: "amazingclinicurl.jp",
+      website: "amazing-clinic-url.jp",
       mapsLink: "https://some_googlemaps_link.com"
     },
     healthcareProfessionals: [
