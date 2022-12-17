@@ -1,4 +1,4 @@
-import { facilities, healthcareProfessionals } from "./mockData/mockData";
+import { facilities, healthcareProfessionals, specialties } from "./mockData/mockData";
 
 const resolvers = {
   Query: {
@@ -14,6 +14,14 @@ const resolvers = {
     healthcareProfessional: (_parent: any, args: any) => {
       const matchingResults = healthcareProfessionals.filter(
         (person) => person.id === args.id
+      );
+      const firstResult = matchingResults.length ? matchingResults[0] : null;
+      return firstResult;
+    },
+    specialties: () => specialties,
+    specialty: (_parent: any, args: any) => {
+      const matchingResults = specialties.filter(
+        (field) => field.id === args.id
       );
       const firstResult = matchingResults.length ? matchingResults[0] : null;
       return firstResult;

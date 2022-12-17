@@ -149,4 +149,46 @@ const healthcareProfessionals = [
   },
 ];
 
-export { facilities, healthcareProfessionals };
+const specialties = [
+  {
+    id: "1", 
+    names: [
+      {
+        name: "General Practice",
+        locale: "en"
+      },
+      {
+        name: "一般診療",
+        locale: "ja"
+      }
+    ]
+  },
+  {
+    id: "2", 
+    names: [
+      {
+        name: "Orthopedics",
+        locale: "en"
+      },
+      {
+        name: "整形外科",
+        locale: "ja"
+      }
+    ]
+  },
+  {
+    id: "3", 
+    names: [
+      {
+        name: "Dentistry",
+        locale: "en"
+      },
+      {
+        name: "歯科",
+        locale: "ja"
+      }
+    ]
+  }
+]
+
+export { facilities, healthcareProfessionals, specialties };

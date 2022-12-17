@@ -35,6 +35,10 @@ type PersonName {
 
 type Specialty {
   id: ID!
+  names: [SpecialtyName]
+}
+
+type SpecialtyName {
   name: String!
   locale: String!
 }
@@ -64,6 +68,8 @@ type Query {
   facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional
+  specialties: [Specialty]
+  specialty(id: ID!): Specialty
 }
 
 type Mutations {
