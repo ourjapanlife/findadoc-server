@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PersonName {
+  id                     Int                      @id @default(autoincrement())
+  firstEn                String
+  middleEn               String
+  lastEn                 String
+  firstJa                String
+  middleJa               String
+  lastJa                 String
+  HealthcareProfessional HealthcareProfessional[]
+}
+
+model SpokenLanguage {
+  isoCode                  String                  @id
+  nameJa                   String
+  nameEn                   String
+  HealthcareProfessional   HealthcareProfessional? @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int?
+}
+
+model Specialty {
+  id                       Int                     @id @default(autoincrement())
+  nameJa                   String
+  nameEn                   String
+  HealthcareProfessional   HealthcareProfessional? @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int?
+}
+
+model Degree {
+  id                       Int                     @id @default(autoincrement())
+  nameJa                   String
+  nameEn                   String
+  abbreviation             String
+  HealthcareProfessional   HealthcareProfessional? @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int?
+}
+
+model HealthcareProfessional {
+  id              Int              @id @default(autoincrement())
+  name            PersonName       @relation(fields: [personNameId], references: [id])
+  degree          Degree[]
+  specialties     Specialty[]
+  spokenLanguages SpokenLanguage[]
+
+  contact      Contact @relation(fields: [contactId], references: [id])
+  personNameId Int
+  contactId    Int
+}
+
+model Contact {
+  id                     Int                      @id @default(autoincrement())
+  email                  String
+  phone                  String
+  website                String
+  mapsLink               String
+  Facility               Facility[]
+  HealthcareProfessional HealthcareProfessional[]
+}
+
+model Facility {
+  id        Int     @id @default(autoincrement())
+  nameEn    String
+  nameJa    String
+  contact   Contact @relation(fields: [contactId], references: [id])
+  contactId Int
+}

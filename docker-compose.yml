@@ -1,18 +1,18 @@
 version: "3.8"
 services:
   db:
-    image: postgres
+    image: postgres:14-alpine
     networks:
       new:
         aliases:
           - database
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_DB: ${POSTGRES_DB}
-      #POSTGRES_HOST_AUTH_METHOD: trust
+    env_file:
+      - .env
     ports:
       - 5432:5432
+
+    build:
+      dockerfile: docker/DockerfileDB
     healthcheck:
       test: pg_isready -U ${POSTGRES_USER} -d findadoc
       interval: 10s
@@ -20,8 +20,7 @@ services:
       retries: 5
 
     volumes:
-      - pgdata:/var/lib/postgresql/data # persist data even if container shuts down
-
+      - pgdata:/var/lib/postgresql/findadoc-data # persist data even if container shuts down
 
 volumes:
   pgdata:
