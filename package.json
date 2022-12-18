@@ -57,6 +57,7 @@
     "graphql-import-node": "^0.0.5",
     "knex": "^2.3.0",
     "objection": "^3.0.1",
+    "pg": "^8.8.0",
     "supertest": "^6.3.0"
   },
   "packageManager": "yarn@3.2.4"
