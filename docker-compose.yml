@@ -21,38 +21,10 @@ services:
 
     volumes:
       - pgdata:/var/lib/postgresql/data # persist data even if container shuts down
-  migrate:
-    image: migrate/migrate
-    networks:
-      - new
-    volumes:
-      - ./db/migrations:/migrations
-    command: ["-path", "/migrations", "-database", "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@findadoc:5432/${POSTGRES_DB}?sslmode=disable", "up"]
-    links:
-      - db
-    depends_on:
-      db:
-        condition: service_healthy
-  api:
-    build: 
-      dockerfile: Dockerfile
-      context: .
-    networks:
-      - new
-    ports: 
-      - 8080:8080
-    volumes:
-      - files:/files # persist data even if container shuts down
-    links:
-      - db
-    depends_on:
-      - migrate
-      - db
+
 
 volumes:
   pgdata:
-  files:
-  migrations:
   
 networks:
       new:
