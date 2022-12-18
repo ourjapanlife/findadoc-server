@@ -11,7 +11,7 @@
     "build": "echo 'TODO'",
     "lint": "eslint . --ext .js,.ts,.json && prettier --write **/*.{js,ts,json}",
     "lint:check": "eslint . --ext .js,.ts,.json && prettier --check **/*.{js,ts,json}",
-    "migrate": "knew migrate:latest",
+    "migrate": "prisma migrate dev",
     "prestart": "yarn generate",
     "predev": "yarn generate",
     "prebuild": "yarn generate"
@@ -57,9 +57,6 @@
     "apollo-server": "^3.8.2",
     "graphql": "^16.5.0",
     "graphql-import-node": "^0.0.5",
-    "knex": "^2.3.0",
-    "objection": "^3.0.1",
-    "pg": "^8.8.0",
     "supertest": "^6.3.0"
   },
   "packageManager": "yarn@3.2.4"
