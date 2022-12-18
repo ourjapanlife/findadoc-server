@@ -47,7 +47,6 @@
     "husky": "^8.0.1",
     "mocha": "^10.0.0",
     "prettier": "2.7.1",
-    "sequelize-cli": "^6.5.2",
     "ts-mocha": "^10.0.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^4.7.3"
@@ -56,9 +55,8 @@
     "apollo-server": "^3.8.2",
     "graphql": "^16.5.0",
     "graphql-import-node": "^0.0.5",
-    "pg": "^8.8.0",
-    "pg-hstore": "^2.3.4",
-    "sequelize": "^6.27.0",
+    "knex": "^2.3.0",
+    "objection": "^3.0.1",
     "supertest": "^6.3.0"
   },
   "packageManager": "yarn@3.2.4"
