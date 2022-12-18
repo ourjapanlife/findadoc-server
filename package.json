@@ -8,10 +8,12 @@
     "test": "ts-mocha src/tests/**.ts",
     "dev": "yarn && ts-node-dev --transpile-only --no-notify --exit-child src/index.ts",
     "generate": "yarn && graphql-codegen --config ./typesgeneratorconfig.ts",
+    "build": "echo 'TODO'",
     "lint": "eslint . --ext .js,.ts,.json && prettier --write **/*.{js,ts,json}",
     "lint:check": "eslint . --ext .js,.ts,.json && prettier --check **/*.{js,ts,json}",
     "prestart": "yarn generate",
-    "predev": "yarn generate"
+    "predev": "yarn generate",
+    "prebuild": "yarn generate"
   },
   "repository": {
     "type": "git",
