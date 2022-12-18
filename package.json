@@ -11,6 +11,7 @@
     "build": "echo 'TODO'",
     "lint": "eslint . --ext .js,.ts,.json && prettier --write **/*.{js,ts,json}",
     "lint:check": "eslint . --ext .js,.ts,.json && prettier --check **/*.{js,ts,json}",
+    "migrate": "knew migrate:latest",
     "prestart": "yarn generate",
     "predev": "yarn generate",
     "prebuild": "yarn generate"

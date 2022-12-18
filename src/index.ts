@@ -1,21 +1,17 @@
 import { ApolloServer } from "apollo-server";
-import knex from "knex";
+import { Knex } from "knex";
+import { Model } from "objection";
+import knexConfig from "./database/knexfile";
 import loadSchema from "./schema";
 import resolvers from "./resolvers";
 
-// Set up Database
-const pg = knex({
-  client: "pg",
-  connection: {
-    host: process.env.POSTGRES_HOST,
-    port: 5432,
-    user: process.env.POSTGRES_USER,
-    password: process.env.POSTGRES_PASSWORD,
-    database: process.env.POSTGRES_DB,
-  },
-  searchPath: ["knex", "public"],
-  debug: process.env.NODE_ENV === "development", // debug logging for dev only
-});
+// Initialize knex.
+const knex = Knex(knexConfig.development);
+
+// Bind all Models to a knex instance. If you only have one database in
+// your server this is all you have to do. For multi database systems, see
+// the Model.bindKnex() method.
+Model.knex(knex);
 
 const server = new ApolloServer({
   typeDefs: loadSchema(),
