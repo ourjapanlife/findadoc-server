@@ -35,4 +35,6 @@ yarn prepare
 
 ![image](./assets/query-by-id.png)
 
+9. If you'd like to share the query you built, such as demonstrating how you tested your code, check out [Apollo Explorer's sharing features](https://www.apollographql.com/blog/announcement/platform/save-and-share-your-graphql-operations-in-apollo-explorer/#sharing-a-collection).
+
 </details>
