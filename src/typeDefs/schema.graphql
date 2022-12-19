@@ -1,3 +1,31 @@
+type Contact {
+  email: String!
+  phone: String!
+  website: String!
+  mapsLink: String!
+}
+
+type Facility {
+  id: ID!
+  names: [FacilityName]!
+  contact: Contact!
+  healthcareProfessionals: [HealthcareProfessional]!
+}
+
+type FacilityName {
+  name: String!
+  locale: String!
+}
+
+type HealthcareProfessional {
+  id: ID!
+  names: [PersonName]!
+  degrees: [Degree]!
+  spokenLanguages: [Language]!
+  specialties: [Specialty]!
+  acceptedInsuranceOptions: [Insurance]!
+}
+
 type PersonName {
   lastName: String!
   firstName: String!
@@ -7,15 +35,28 @@ type PersonName {
 
 type Specialty {
   id: ID!
+  names: [SpecialtyName]
+}
+
+type SpecialtyName {
   name: String!
   locale: String!
 }
 
-type HealthcareProfessional {
-  id: ID!
-  names: [PersonName]!
-  spokenLanguages: [Language]!
-  specialties: [Specialty]!
+enum Degree {
+  DOCTOR_OF_MEDICINE
+  DOCTOR_OF_PHILOSOPHY
+  DOCTOR_OF_DENTAL_SURGERY
+  DOCTOR_OF_OSTEOPATHIC_MEDICINE
+  OTHER
+}
+
+enum Insurance {
+  EMPLOYER_HEALTH_INSURANCE
+  NATIONAL_HEALTH_INSURANCE
+  INTERNATIONAL_HEALTH_INSURANCE
+  NO_INSURANCE
+  UNKNOWN
 }
 
 enum Language {
@@ -24,8 +65,12 @@ enum Language {
 }
 
 type Query {
+  facilities: [Facility]
+  facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional
+  specialties: [Specialty]
+  specialty(id: ID!): Specialty
 }
 
 type Mutations {
