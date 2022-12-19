@@ -5,7 +5,7 @@ import supertest from "supertest";
 describe("GraphQL", () => {
   let request: any;
   beforeEach(() => {
-    const url = `http://localhost:3000`;
+    const url = `http://localhost:3001`;
     request = supertest(url);
   });
 
