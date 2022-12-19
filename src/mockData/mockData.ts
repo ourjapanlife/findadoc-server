@@ -24,14 +24,14 @@ const healthcareProfessionals = [
       {
         id: "1",
         name: "General Practice",
-        locale: "en"
+        locale: "en",
       },
       {
         id: "1",
         name: "一般診療",
-        locale: "ja"
-      }
-    ]
+        locale: "ja",
+      },
+    ],
   },
   {
     id: "2",
@@ -54,14 +54,14 @@ const healthcareProfessionals = [
       {
         id: "2",
         name: "Internal Medicine",
-        locale: "en"
+        locale: "en",
       },
       {
         id: "2",
         name: "内科",
-        locale: "ja"
-      }
-    ]
+        locale: "ja",
+      },
+    ],
   },
   {
     id: "3",
@@ -84,14 +84,14 @@ const healthcareProfessionals = [
       {
         id: "3",
         name: "Pediatrics",
-        locale: "en"
+        locale: "en",
       },
       {
         id: "3",
         name: "小児科",
-        locale: "ja"
-      }
-    ]
+        locale: "ja",
+      },
+    ],
   },
 ];
 
