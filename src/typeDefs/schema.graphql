@@ -18,10 +18,10 @@ type FacilityName {
 }
 
 input HealthcareProfessionalInput {
-  names: [PersonName]!
+  names: [PersonNameInput]!
   degrees: [Degree]!
   spokenLanguages: [Language]!
-  specialties: [Specialty]!
+  specialties: [SpecialtyInput]!
   acceptedInsuranceOptions: [Insurance]!
 }
 
@@ -34,6 +34,13 @@ type HealthcareProfessional {
   acceptedInsuranceOptions: [Insurance]!
 }
 
+input PersonNameInput {
+  lastName: String!
+  firstName: String!
+  middleName: String!
+  locale: String!
+}
+
 type PersonName {
   lastName: String!
   firstName: String!
@@ -41,9 +48,18 @@ type PersonName {
   locale: String!
 }
 
+input SpecialtyInput {
+  names: [SpecialtyNameInput]
+}
+
 type Specialty {
   id: ID!
   names: [SpecialtyName]
+}
+
+input SpecialtyNameInput {
+  name: String!
+  locale: String!
 }
 
 type SpecialtyName {
@@ -82,6 +98,6 @@ type Query {
 }
 
 type Mutations {
-  createHealthcareProfessional(input: HealthcareProfessionalInput): HealthcareProfessional
+  createHealthcareProfessional(input: HealthcareProfessionalInput, data: [PersonNameInput!]!): HealthcareProfessional
   updateHealthcareProfessional(id: ID!, input: HealthcareProfessionalInput): HealthcareProfessional
 }
