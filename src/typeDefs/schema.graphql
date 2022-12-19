@@ -37,14 +37,14 @@ type HealthcareProfessional {
 input PersonNameInput {
   lastName: String!
   firstName: String!
-  middleName: String!
+  middleName: String
   locale: String!
 }
 
 type PersonName {
   lastName: String!
   firstName: String!
-  middleName: String!
+  middleName: String
   locale: String!
 }
 
@@ -97,7 +97,7 @@ type Query {
   specialty(id: ID!): Specialty
 }
 
-type Mutations {
-  createHealthcareProfessional(input: HealthcareProfessionalInput, data: [PersonNameInput!]!): HealthcareProfessional
+type Mutation {
+  createHealthcareProfessional(input: HealthcareProfessionalInput): HealthcareProfessional
   updateHealthcareProfessional(id: ID!, input: HealthcareProfessionalInput): HealthcareProfessional
 }
