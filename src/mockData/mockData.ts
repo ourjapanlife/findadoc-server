@@ -2,6 +2,60 @@
 
 // language is the spoken language
 
+const facilities = [
+  {
+    id: "1", 
+    names: [
+      {
+        name: "Amazing Clinic",
+        locale: "en"
+      },
+      {
+        name: "アメージングクリニック",
+        locale: "ja"
+      }
+    ],
+    contact: {
+      email: "some_email@some_email.jp",
+      phone: "040-000-0000",
+      website: "amazing-clinic-url.jp",
+      mapsLink: "https://some_googlemaps_link.com"
+    },
+    healthcareProfessionals: [
+      {
+        id: "1",
+        names: [
+          {
+            lastName: "Ermish",
+            firstName: "Philip",
+            middleName: "Michael",
+            locale: "en",
+          },
+          {
+            lastName: "アーミッシュ",
+            firstName: "フィリップ",
+            middleName: "マイケル",
+            locale: "ja",
+          },
+        ],
+        spokenLanguages: ["JAPANESE", "ENGLISH"],
+        specialties: [
+          {
+            id: "1",
+            name: "General Practice",
+            locale: "en"
+          },
+          {
+            id: "1",
+            name: "一般診療",
+            locale: "ja"
+          }
+        ]
+      }
+    ]
+  }
+]
+
 const healthcareProfessionals = [
   {
     id: "1",
@@ -95,4 +149,46 @@ const healthcareProfessionals = [
   },
 ];
 
-export default healthcareProfessionals;
+const specialties = [
+  {
+    id: "1", 
+    names: [
+      {
+        name: "General Practice",
+        locale: "en"
+      },
+      {
+        name: "一般診療",
+        locale: "ja"
+      }
+    ]
+  },
+  {
+    id: "2", 
+    names: [
+      {
+        name: "Orthopedics",
+        locale: "en"
+      },
+      {
+        name: "整形外科",
+        locale: "ja"
+      }
+    ]
+  },
+  {
+    id: "3", 
+    names: [
+      {
+        name: "Dentistry",
+        locale: "en"
+      },
+      {
+        name: "歯科",
+        locale: "ja"
+      }
+    ]
+  }
+]
+
+export { facilities, healthcareProfessionals, specialties };
