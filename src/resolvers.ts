@@ -1,4 +1,8 @@
-import { facilities, healthcareProfessionals, specialties } from "./mockData/mockData";
+import {
+  facilities,
+  healthcareProfessionals,
+  specialties,
+} from "./mockData/mockData";
 
 const resolvers = {
   Query: {

@@ -4,22 +4,22 @@
 
 const facilities = [
   {
-    id: "1", 
+    id: "1",
     names: [
       {
         name: "Amazing Clinic",
-        locale: "en"
+        locale: "en",
       },
       {
         name: "アメージングクリニック",
-        locale: "ja"
-      }
+        locale: "ja",
+      },
     ],
     contact: {
       email: "some_email@some_email.jp",
       phone: "040-000-0000",
       website: "amazing-clinic-url.jp",
-      mapsLink: "https://some_googlemaps_link.com"
+      mapsLink: "https://some_googlemaps_link.com",
     },
     healthcareProfessionals: [
       {
@@ -43,18 +43,18 @@ const facilities = [
           {
             id: "1",
             name: "General Practice",
-            locale: "en"
+            locale: "en",
           },
           {
             id: "1",
             name: "一般診療",
-            locale: "ja"
-          }
-        ]
-      }
-    ]
-  }
-]
+            locale: "ja",
+          },
+        ],
+      },
+    ],
+  },
+];
 
 const healthcareProfessionals = [
   {
@@ -78,14 +78,14 @@ const healthcareProfessionals = [
       {
         id: "1",
         name: "General Practice",
-        locale: "en"
+        locale: "en",
       },
       {
         id: "1",
         name: "一般診療",
-        locale: "ja"
-      }
-    ]
+        locale: "ja",
+      },
+    ],
   },
   {
     id: "2",
@@ -108,14 +108,14 @@ const healthcareProfessionals = [
       {
         id: "2",
         name: "Internal Medicine",
-        locale: "en"
+        locale: "en",
       },
       {
         id: "2",
         name: "内科",
-        locale: "ja"
-      }
-    ]
+        locale: "ja",
+      },
+    ],
   },
   {
     id: "3",
@@ -138,57 +138,57 @@ const healthcareProfessionals = [
       {
         id: "3",
         name: "Pediatrics",
-        locale: "en"
+        locale: "en",
       },
       {
         id: "3",
         name: "小児科",
-        locale: "ja"
-      }
-    ]
+        locale: "ja",
+      },
+    ],
   },
 ];
 
 const specialties = [
   {
-    id: "1", 
+    id: "1",
     names: [
       {
         name: "General Practice",
-        locale: "en"
+        locale: "en",
       },
       {
         name: "一般診療",
-        locale: "ja"
-      }
-    ]
+        locale: "ja",
+      },
+    ],
   },
   {
-    id: "2", 
+    id: "2",
     names: [
       {
         name: "Orthopedics",
-        locale: "en"
+        locale: "en",
       },
       {
         name: "整形外科",
-        locale: "ja"
-      }
-    ]
+        locale: "ja",
+      },
+    ],
   },
   {
-    id: "3", 
+    id: "3",
     names: [
       {
         name: "Dentistry",
-        locale: "en"
+        locale: "en",
       },
       {
         name: "歯科",
-        locale: "ja"
-      }
-    ]
-  }
-]
+        locale: "ja",
+      },
+    ],
+  },
+];
 
 export { facilities, healthcareProfessionals, specialties };
