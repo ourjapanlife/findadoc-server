@@ -28,5 +28,7 @@
   "rules": {
     "import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
   },
-  "ignorePatterns": ["src/typeDefs/gqlTypes.ts"]
+  "ignorePatterns": [
+    "src/typeDefs/gqlTypes.ts"
+  ]
 }

@@ -1,4 +1,4 @@
-import expect from "chai";
+import { expect } from "chai";
 import {} from "mocha";
 import supertest from "supertest";
 
