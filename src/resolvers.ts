@@ -31,7 +31,7 @@ const resolvers = {
   },
   Mutation: {
     createHealthcareProfessional: (_parent: any, args: any) => {
-      const id = crypto.randomBytes(10).toString("hex");
+      const id = crypto.randomUUID();
 
       const {
         names,
@@ -45,7 +45,7 @@ const resolvers = {
       specialties.map((specialty: { id: string }) => {
         if (!specialty.id) {
           // eslint-disable-next-line no-param-reassign
-          specialty.id = crypto.randomBytes(10).toString("hex");
+          specialty.id = crypto.randomUUID();
         }
         return specialty.id;
       });
