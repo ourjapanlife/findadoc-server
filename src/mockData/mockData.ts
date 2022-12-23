@@ -77,13 +77,11 @@ const healthcareProfessionals = [
     specialties: [
       {
         id: "1",
-        name: "General Practice",
-        locale: "en",
+        names: [{ name: "General Practice", locale: "en" }],
       },
       {
         id: "1",
-        name: "一般診療",
-        locale: "ja",
+        names: [{ name: "一般診療", locale: "ja" }],
       },
     ],
   },
@@ -107,13 +105,11 @@ const healthcareProfessionals = [
     specialties: [
       {
         id: "2",
-        name: "Internal Medicine",
-        locale: "en",
+        names: [{ name: "Internal Medicine", locale: "en" }],
       },
       {
         id: "2",
-        name: "内科",
-        locale: "ja",
+        names: [{ name: "内科", locale: "ja" }],
       },
     ],
   },
@@ -137,13 +133,11 @@ const healthcareProfessionals = [
     specialties: [
       {
         id: "3",
-        name: "Pediatrics",
-        locale: "en",
+        names: [{ name: "Pediatrics", locale: "en" }],
       },
       {
         id: "3",
-        name: "小児科",
-        locale: "ja",
+        names: [{ name: "小児科", locale: "ja" }],
       },
     ],
   },
