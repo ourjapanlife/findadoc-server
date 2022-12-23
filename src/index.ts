@@ -1,6 +1,6 @@
-import { ApolloServer } from "apollo-server";
-import loadSchema from "./schema";
-import resolvers from "./resolvers";
+import { ApolloServer } from 'apollo-server';
+import loadSchema from './schema';
+import resolvers from './resolvers';
 
 const server = new ApolloServer({
   typeDefs: loadSchema(),
@@ -14,6 +14,4 @@ server.listen({ port }).then(({ url }) => {
   console.log(`🚀  Server ready at ${url}`);
 });
 
-
-
-          // add some lint
+// add some lint

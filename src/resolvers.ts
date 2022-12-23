@@ -1,30 +1,30 @@
-import crypto from "crypto";
+import crypto from 'crypto';
 import {
   facilities,
   healthcareProfessionals,
   specialties as medicalField,
-} from "./mockData/mockData";
+} from './mockData/mockData';
 
 const resolvers = {
   Query: {
     facilities: () => facilities,
     facility: (_parent: any, args: any) => {
       const matchingFacility = facilities.find(
-        (location) => location.id === args.id
+        (location) => location.id === args.id,
       );
       return matchingFacility;
     },
     healthcareProfessionals: () => healthcareProfessionals,
     healthcareProfessional: (_parent: any, args: any) => {
       const matchingHealthcareProfessional = healthcareProfessionals.find(
-        (person) => person.id === args.id
+        (person) => person.id === args.id,
       );
       return matchingHealthcareProfessional;
     },
     specialties: () => medicalField,
     specialty: (_parent: any, args: any) => {
       const matchingSpecialty = medicalField.find(
-        (field) => field.id === args.id
+        (field) => field.id === args.id,
       );
       return matchingSpecialty;
     },
@@ -41,7 +41,8 @@ const resolvers = {
         acceptedInsuranceOptions,
       } = args.input;
 
-      // TODO: Eventually this should check if a specialty already exists in the DB and match it to that if it does.
+      // TODO: Eventually this should check if a specialty already exists in the DB
+      // and match it to that if it does.
       specialties.map((specialty: { id: string }) => {
         if (!specialty.id) {
           // eslint-disable-next-line no-param-reassign
