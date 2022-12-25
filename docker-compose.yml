@@ -10,7 +10,6 @@ services:
       - .env
     ports:
       - 5432:5432
-
     build:
       dockerfile: docker/DockerfileDB
     healthcheck:
@@ -21,9 +20,20 @@ services:
 
     volumes:
       - pgdata:/var/lib/postgresql/findadoc-data # persist data even if container shuts down
+  migrate:
+    image: alpine
+    depends_on:
+      - db
+    env_file:
+      - .env
+    networks:
+      - new
+    volumes:
+      - ./prisma:/prisma
 
 volumes:
   pgdata:
-  
+
+
 networks:
-      new:
+  new:
