@@ -2,8 +2,7 @@
   "root": true,
   "extends": [
     "eslint:recommended",
-    "airbnb-base",
-    "prettier" // put me last!
+    "airbnb-base"
   ],
   "env": {},
   "globals": {},
@@ -16,8 +15,7 @@
       "files": ["*.ts"],
       "extends": [
         "plugin:@typescript-eslint/recommended",
-        "airbnb-typescript/base",
-        "prettier" // put me last!
+        "airbnb-typescript/base"
       ],
       "parserOptions": {
         "project": ["./tsconfig.json"]
@@ -28,5 +26,7 @@
   "rules": {
     "import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
   },
-  "ignorePatterns": []
+  "ignorePatterns": [
+    "src/typeDefs/gqlTypes.ts"
+  ]
 }

@@ -9,12 +9,9 @@
     "dev": "yarn && ts-node-dev --transpile-only --no-notify --exit-child src/index.ts",
     "build": "echo 'TODO'",
     "generate": "yarn && graphql-codegen --config ./src/typesgeneratorconfig.ts",
-    "lint": "eslint . --ext .js,.ts,.json && prettier --write **/*.{js,ts,json}",
-    "lint:check": "eslint . --ext .js,.ts,.json && prettier --check **/*.{js,ts,json}",
-    "migrate": "prisma migrate dev",
-    "prestart": "yarn generate",
-    "predev": "yarn generate",
-    "prebuild": "yarn generate"
+    "lint": "eslint . --ext .js,.ts,.json",
+    "lint:check": "eslint . --ext .js,.ts,.json",
+    "migrate": "prisma migrate dev"
   },
   "repository": {
     "type": "git",
@@ -38,16 +35,13 @@
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^5.30.7",
     "@typescript-eslint/parser": "^5.31.0",
-    "chai": "^4.3.6",
     "eslint": "^8.20.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.0.0",
-    "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-json": "^3.1.0",
     "husky": "^8.0.1",
     "mocha": "^10.0.0",
-    "prettier": "2.7.1",
     "prisma": "^4.7.1",
     "ts-mocha": "^10.0.0",
     "ts-node-dev": "^2.0.0",
@@ -55,8 +49,10 @@
   },
   "dependencies": {
     "apollo-server": "^3.8.2",
+    "chai": "^4.3.6",
     "graphql": "^16.5.0",
     "graphql-import-node": "^0.0.5",
+    "mocha": "^10.0.0",
     "supertest": "^6.3.0"
   },
   "packageManager": "yarn@3.2.4"

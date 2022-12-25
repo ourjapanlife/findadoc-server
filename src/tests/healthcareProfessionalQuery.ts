@@ -1,19 +1,19 @@
-import { expect, should } from "chai";
-import {} from "mocha";
-import supertest from "supertest";
+import { expect } from 'chai';
+import {} from 'mocha';
+import supertest from 'supertest';
 
-describe("GraphQL", () => {
+describe('GraphQL', () => {
   let request: any;
   beforeEach(() => {
-    const url = `http://localhost:3000`;
+    const url = 'http://localhost:3001';
     request = supertest(url);
   });
 
-  it("Returns healthcareProfessional with id = 1", (done) => {
+  it('Returns healthcareProfessional with id = 1', (done) => {
     request
-      .post("/graphql")
+      .post('/graphql')
       .send({
-        query: "{ healthcareProfessional(id: 1) { names { firstName } id }}",
+        query: '{ healthcareProfessional(id: 1) { names { firstName } id }}',
       })
       .expect(200)
       .end((err: any, res: any) => {
@@ -21,12 +21,12 @@ describe("GraphQL", () => {
         if (err) return done(err);
 
         console.log(res.body);
-        expect(res.body.data.healthcareProfessional).to.have.property("id");
-        expect(res.body.data.healthcareProfessional).to.have.property("names");
+        expect(res.body.data.healthcareProfessional).to.have.property('id');
+        expect(res.body.data.healthcareProfessional).to.have.property('names');
 
         const { names } = res.body.data.healthcareProfessional;
 
-        expect(names[0]).to.have.property("firstName");
+        expect(names[0]).to.have.property('firstName');
         done();
 
         return true;
