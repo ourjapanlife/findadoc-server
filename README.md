@@ -20,8 +20,20 @@ yarn prepare
 ```
 
 ### Database Setup 🐘
+0. Install Postgres (v14.5)
+- on OS X
+```sh
+brew install postgresql
+createuser -s postgres
+brew services restart postgresql
+```
 
-1. Set up `env` variables
+1. Init the database
+```sh
+./init-db.sh
+```
+
+2. Set up `env` variables
 
 ```sh
 cp .env.sample .env
