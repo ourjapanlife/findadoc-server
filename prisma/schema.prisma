@@ -29,11 +29,11 @@ model LocaleName {
 }
 
 model SpokenLanguage {
-  isoCode                  String                  @id
-  nameJa                   String
-  nameEn                   String
-  HealthcareProfessional   HealthcareProfessional? @relation(fields: [healthcareProfessionalId], references: [id])
-  healthcareProfessionalId Int?
+  isoCode String @id // POSSIBLE TO USE VARCHAR?
+  nameJa  String
+  nameEn  String
+
+  healthcareProfessionals HealthcareProfessionalSpokenLanguage[]
 }
 
 model Specialty {
@@ -54,14 +54,28 @@ model Degree {
 }
 
 model HealthcareProfessional {
-  id              Int              @id @default(autoincrement())
-  name            PersonName       @relation(fields: [personNameId], references: [id])
+  id              Int                                    @id @default(autoincrement())
+  name            PersonName                             @relation(fields: [personNameId], references: [id])
   degree          Degree[]
   specialties     Specialty[]
-  spokenLanguages SpokenLanguage[]
-  contact         Contact          @relation(fields: [contactId], references: [id])
-  personNameId    Int              @unique
-  contactId       Int
+  spokenLanguages HealthcareProfessionalSpokenLanguage[]
+  contact         Contact                                @relation(fields: [contactId], references: [id])
+  createdAt       DateTime                               @default(now())
+  updatedAt       DateTime
+  published       Boolean                                @default(false)
+
+  personNameId Int @unique
+  contactId    Int
+}
+
+model HealthcareProfessionalSpokenLanguage {
+  HealthcareProfessional   HealthcareProfessional @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int
+
+  SpokenLanguage        SpokenLanguage @relation(fields: [spokenLanguageIsoCode], references: [isoCode])
+  spokenLanguageIsoCode String
+
+  @@id([healthcareProfessionalId, spokenLanguageIsoCode])
 }
 
 model Contact {
@@ -75,9 +89,14 @@ model Contact {
 }
 
 model Facility {
-  id        Int     @id @default(autoincrement())
-  nameEn    String
-  nameJa    String
+  id     Int    @id @default(autoincrement())
+  nameEn String
+  nameJa String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  published Boolean  @default(false)
+
   contact   Contact @relation(fields: [contactId], references: [id])
   contactId Int
 }
