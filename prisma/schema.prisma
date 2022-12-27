@@ -12,14 +12,20 @@ datasource db {
 }
 
 model PersonName {
-  id                     Int                      @id @default(autoincrement())
-  firstEn                String
-  middleEn               String
-  lastEn                 String
-  firstJa                String
-  middleJa               String
-  lastJa                 String
-  HealthcareProfessional HealthcareProfessional[]
+  id                     Int                     @id @default(autoincrement())
+  names                  LocaleName[]
+  HealthcareProfessional HealthcareProfessional?
+}
+
+model LocaleName {
+  id         Int    @id @default(autoincrement())
+  locale     String
+  firstName  String
+  middleName String
+  lastName   String
+
+  PersonName   PersonName? @relation(fields: [personNameId], references: [id])
+  personNameId Int?
 }
 
 model SpokenLanguage {
@@ -54,7 +60,7 @@ model HealthcareProfessional {
   specialties     Specialty[]
   spokenLanguages SpokenLanguage[]
   contact         Contact          @relation(fields: [contactId], references: [id])
-  personNameId    Int
+  personNameId    Int              @unique
   contactId       Int
 }
 
