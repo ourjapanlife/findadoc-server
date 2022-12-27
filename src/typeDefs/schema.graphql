@@ -5,18 +5,6 @@ type Contact {
   mapsLink: String!
 }
 
-type Facility {
-  id: ID!
-  names: [FacilityName]!
-  contact: Contact!
-  healthcareProfessionals: [HealthcareProfessional]!
-}
-
-type FacilityName {
-  name: String!
-  locale: String!
-}
-
 input HealthcareProfessionalInput {
   names: [PersonNameInput]!
   degrees: [Degree]!

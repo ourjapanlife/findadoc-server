@@ -1,17 +1,18 @@
 import { gql } from 'apollo-server';
-
-import fs from 'fs';
+import { loadSchemaSync } from '@graphql-tools/load';
+import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
 import { DocumentNode } from 'graphql';
-import path from 'path';
+import { join } from 'path';
 
 export default function loadSchema(): DocumentNode {
   try {
-    const typeString = fs.readFileSync(
-      path.join(__dirname, './typeDefs/schema.graphql'),
-      'utf-8',
-    );
+    // console.log('STARTING!!');
+    // const typeString = join(__dirname, './typeDefs/schema.graphql');
+    // console.log('TYPESTRING FINISHED');
+    // const facility = join(__dirname, './typeDefs/facility.graphql');
+    const schema = loadSchemaSync(join(__dirname, 'typeDefs/*.graphql'), { loaders: [new GraphQLFileLoader()] });
     return gql`
-      ${typeString}
+      ${schema}
     `;
   } catch (e) {
     console.log(e);
