@@ -19,6 +19,19 @@ yarn install
 yarn prepare
 ```
 
+### Database Setup 🐘
+
+1. Set up `env` variables
+
+```sh
+cp .env.sample .env
+```
+
+Edit the .env file and set the database password
+
+⚠️ DO NOT CHECK IN PASSWORDS OR ENV FILES INTO GITHUB. ALL SECRETS SHOULD BE MANAGED VIA GITHUB SECRETS
+
+
 ## How to Test
 
 <details>
