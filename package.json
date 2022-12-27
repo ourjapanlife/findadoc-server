@@ -53,5 +53,8 @@
     "mocha": "^10.0.0",
     "supertest": "^6.3.0"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "packageManager": "yarn@3.2.4"
 }
