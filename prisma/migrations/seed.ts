@@ -3,7 +3,11 @@
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+
+// TODO: read from CSV file and insert the values
+
 async function main() {
+  console.log('hello');
   const japanese = await prisma.spokenLanguage.upsert({
     where: { isoCode: 'ja' },
     update: {},
@@ -13,8 +17,17 @@ async function main() {
       nameJa: '日本語',
     },
   });
+  const english = await prisma.spokenLanguage.upsert({
+    where: { isoCode: 'en' },
+    update: {},
+    create: {
+      isoCode: 'en',
+      nameEn: 'English',
+      nameJa: '英語',
+    },
+  });
 
-  console.log(japanese);
+  console.log(japanese, english);
 }
 
 main()
