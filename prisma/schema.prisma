@@ -17,7 +17,7 @@ model PersonName {
   HealthcareProfessional HealthcareProfessional?
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
@@ -32,7 +32,7 @@ model LocaleName {
   personNameId Int?
 
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   // no soft deletes due to unique constraint
 
   // only allow one localeName per PersonName
@@ -74,10 +74,10 @@ model HealthcareProfessional {
   spokenLanguages HealthcareProfessionalSpokenLanguage[]
   contact         Contact                                @relation(fields: [contactId], references: [id])
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime
-  deletedAt DateTime?
-  published Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isPublished Boolean   @default(false)
 
   personNameId                    Int                               @unique
   contactId                       Int
@@ -126,7 +126,7 @@ model Contact {
   mapsLink String
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   Facility               Facility[]
@@ -138,10 +138,10 @@ model Facility {
   nameEn String
   nameJa String
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime
-  deletedAt DateTime?
-  published Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isPublished Boolean   @default(false)
 
   contact   Contact @relation(fields: [contactId], references: [id])
   contactId Int
