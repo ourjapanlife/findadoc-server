@@ -1,4 +1,5 @@
 /* eslint-disable no-plusplus */
+/* eslint-disable no-console */
 // Seed data for the database
 // https://www.prisma.io/docs/guides/database/seed-database
 import { PrismaClient } from '@prisma/client';
@@ -68,7 +69,6 @@ async function seedSpecialties(verbose = false) {
     count++;
 
     if (verbose) {
-      // eslint-disable-next-line no-console
       console.log(`Inserting ${upserted.nameEn} into Specialties`);
     }
   });
