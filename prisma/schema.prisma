@@ -11,6 +11,7 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DB_URL")
 }
 
+// Represents the name of a human individual in both Japanese and Romanji characters.
 model PersonName {
   id                     Int                     @id @default(autoincrement())
   names                  LocaleName[]
@@ -21,6 +22,12 @@ model PersonName {
   deletedAt DateTime?
 }
 
+// Represents a variant of a Person's name in a specific Locale
+// Locale is represented as two character ISO-639-1 code
+// E.g. 
+// en: Jane Smith
+// ja: ジェーン・スミス
+// A person may only have one LocaleName per locale
 model LocaleName {
   id         Int     @id @default(autoincrement())
   locale     String // ISO-639-1
@@ -39,6 +46,7 @@ model LocaleName {
   @@unique([locale, personNameId])
 }
 
+// Represents a language spoken by a healthcare provider
 model SpokenLanguage {
   iso639_3 String @id
   nameJa   String
@@ -47,6 +55,7 @@ model SpokenLanguage {
   healthcareProfessionals HealthcareProfessionalSpokenLanguage[]
 }
 
+// Represents the area a professional works in, such as Gynecology, gastroenterology, oncology, physical therapy, etc.
 model Specialty {
   id                              Int                               @id @default(autoincrement())
   nameJa                          String
@@ -56,6 +65,7 @@ model Specialty {
   HealthcareProfessionalSpecialty HealthcareProfessionalSpecialty[]
 }
 
+// Denotes health-related degrees, such as M.D., Ph.D, D.D.S., D.O, etc.
 model Degree {
   id                           Int                            @id @default(autoincrement())
   nameJa                       String
@@ -66,6 +76,7 @@ model Degree {
   HealthcareProfessionalDegree HealthcareProfessionalDegree[]
 }
 
+// Reperesents a healthcare professional such as a doctor, nurse, therapist, etc.
 model HealthcareProfessional {
   id              Int                                    @id @default(autoincrement())
   name            PersonName                             @relation(fields: [personNameId], references: [id])
@@ -118,6 +129,7 @@ model HealthcareProfessionalSpokenLanguage {
   @@id([healthcareProfessionalId, spokenLanguageIso639_3])
 }
 
+// Represents how to contact an Healthcare Professional or a Facility
 model Contact {
   id       Int    @id @default(autoincrement())
   email    String
