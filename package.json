@@ -48,6 +48,7 @@
     "@prisma/client": "4.8.0",
     "apollo-server": "^3.8.2",
     "chai": "^4.3.6",
+    "csv-parse": "^5.3.3",
     "graphql": "^16.5.0",
     "graphql-import-node": "^0.0.5",
     "mocha": "^10.0.0",

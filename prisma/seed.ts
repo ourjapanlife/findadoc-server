@@ -1,13 +1,27 @@
 // Seed data for the database
 // https://www.prisma.io/docs/guides/database/seed-database
 import { PrismaClient } from '@prisma/client';
+import { parse } from 'csv-parse/sync';
+import * as fs from 'fs';
 
 const prisma = new PrismaClient();
 
+// loads a CSV file from the filesystem, ready for parsing
+function loadCSVFromFile(filename: string) {
+  const input = fs.readFileSync(filename);
+
+  // Initialize the parser
+  const records = parse(input, {
+    delimiter: ',',
+  });
+  return records;
+}
+
 // TODO: read from CSV file and insert the values
+const spokenLanguages = loadCSVFromFile('seedData/spoken-languages.csv');
+console.log(spokenLanguages);
 
 async function main() {
-  console.log('hello');
   const japanese = await prisma.spokenLanguage.upsert({
     where: { isoCode: 'ja' },
     update: {},
