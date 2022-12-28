@@ -1,12 +1,22 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
+    "target": "ES2022",
     "module": "commonjs",
-    "lib": ["esnext"],
+    "moduleResolution": "node",
+    "lib": [
+      "esnext"
+    ],
     "strict": true,
-    "rootDir": "src",
+    "rootDirs": [
+      "src",
+      "prisma"
+    ],
     "outDir": "dist",
     "sourceMap": true,
     "esModuleInterop": true
-  }
+  },
+  "include": [
+    "./src",
+    "./prisma"
+  ]
 }
