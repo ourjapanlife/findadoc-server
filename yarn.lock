@@ -3393,36 +3393,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"csv-generate@npm:^4.2.1":
-  version: 4.2.1
-  resolution: "csv-generate@npm:4.2.1"
-  checksum: 896a25c7cb181b0cd50aa1b97bf42b8a00f97892227fd21a0fce619fba5b38f6ce3bcd09e271659faad6cad43c9b210dcfb64cafad4369e10da8235a95335362
-  languageName: node
-  linkType: hard
-
 "csv-parse@npm:^5.3.3":
   version: 5.3.3
   resolution: "csv-parse@npm:5.3.3"
   checksum: 9f16e2003ef47c901aab31d202e1c9edb70c00faa7777e17a50087314c9da6561233bc60542c15d71f7973c7a0e947c35515ea2689929881c9430a8af374089e
-  languageName: node
-  linkType: hard
-
-"csv-stringify@npm:^6.2.3":
-  version: 6.2.3
-  resolution: "csv-stringify@npm:6.2.3"
-  checksum: 448521731117fdf9703d2e16f10ee12ad3dcb096d3d6b8373a7535171af18c304ca6b835a4c0fe7f8fcbfef870e8f049553cd437c8177712294154b29e89d9f1
-  languageName: node
-  linkType: hard
-
-"csv@npm:^6.2.5":
-  version: 6.2.5
-  resolution: "csv@npm:6.2.5"
-  dependencies:
-    csv-generate: ^4.2.1
-    csv-parse: ^5.3.3
-    csv-stringify: ^6.2.3
-    stream-transform: ^3.2.1
-  checksum: cc93984e3cfc6d2e309c8fec5230b5a3db687a38bdcc18a0efa583f2f9a8a8321b456a0ce8052112d7976274b3a45d6dfe798cae7198bf8d8fa851ffd55021c4
   languageName: node
   linkType: hard
 
@@ -4307,7 +4281,6 @@ __metadata:
     "@typescript-eslint/parser": ^5.31.0
     apollo-server: ^3.8.2
     chai: ^4.3.6
-    csv: ^6.2.5
     csv-parse: ^5.3.3
     eslint: ^8.20.0
     eslint-config-airbnb-base: ^15.0.0
@@ -7164,13 +7137,6 @@ __metadata:
   version: 2.0.1
   resolution: "statuses@npm:2.0.1"
   checksum: 18c7623fdb8f646fb213ca4051be4df7efb3484d4ab662937ca6fbef7ced9b9e12842709872eb3020cc3504b93bde88935c9f6417489627a7786f24f8031cbcb
-  languageName: node
-  linkType: hard
-
-"stream-transform@npm:^3.2.1":
-  version: 3.2.1
-  resolution: "stream-transform@npm:3.2.1"
-  checksum: 97e46cb469654dbd6e737ce325d3284d9e9aab73e77b570dc1334da5da9272ecf39a1cddc5d9da7c0710f85a049979686ea9d0b49b6cc75cf11822630f13d132
   languageName: node
   linkType: hard
 
