@@ -1,12 +1,11 @@
 #!/bin/sh
 
-dbuser="postgres"
-dbname="findadoc"
-shadow="shadow"
+# load env variables
+source ./.env
 
-psql $dbuser << EOF
-CREATE DATABASE $dbname;
-CREATE DATABASE $shadow;
-GRANT ALL PRIVILEGES ON DATABASE $dbname TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE $shadow TO postgres;
+psql $POSTGRES_USER << EOF
+CREATE DATABASE $POSTGRES_DB;
+CREATE DATABASE $SHADOW_DB;
+GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE $SHADOW_DB TO postgres;
 EOF
