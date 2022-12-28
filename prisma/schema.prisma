@@ -18,20 +18,23 @@ model PersonName {
 }
 
 model LocaleName {
-  id         Int    @id @default(autoincrement())
-  locale     String
+  id         Int     @id @default(autoincrement())
+  locale     String // ISO-639-1
   firstName  String
-  middleName String
+  middleName String?
   lastName   String
 
   PersonName   PersonName? @relation(fields: [personNameId], references: [id])
   personNameId Int?
+
+  // only allow one localeName per PersonName
+  @@unique([locale, personNameId])
 }
 
 model SpokenLanguage {
-  isoCode String @id // POSSIBLE TO USE VARCHAR?
-  nameJa  String
-  nameEn  String
+  iso639_3 String @id
+  nameJa   String
+  nameEn   String
 
   healthcareProfessionals HealthcareProfessionalSpokenLanguage[]
 }
@@ -99,10 +102,10 @@ model HealthcareProfessionalSpokenLanguage {
   HealthcareProfessional   HealthcareProfessional @relation(fields: [healthcareProfessionalId], references: [id])
   healthcareProfessionalId Int
 
-  SpokenLanguage        SpokenLanguage @relation(fields: [spokenLanguageIsoCode], references: [isoCode])
-  spokenLanguageIsoCode String
+  SpokenLanguage         SpokenLanguage @relation(fields: [spokenLanguageIso639_3], references: [iso639_3])
+  spokenLanguageIso639_3 String
 
-  @@id([healthcareProfessionalId, spokenLanguageIsoCode])
+  @@id([healthcareProfessionalId, spokenLanguageIso639_3])
 }
 
 model Contact {
