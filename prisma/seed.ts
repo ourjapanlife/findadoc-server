@@ -7,41 +7,38 @@ import * as fs from 'fs';
 const prisma = new PrismaClient();
 
 // loads a CSV file from the filesystem, ready for parsing
-function loadCSVFromFile(filename: string) {
+function loadCSVFromFile(filename: string, discardHeader = true) {
   const input = fs.readFileSync(filename);
 
   // Initialize the parser
-  const records = parse(input, {
+  const records: string[][] = parse(input, {
     delimiter: ',',
   });
+
+  if (discardHeader) {
+    return records.slice(1);
+  }
+
   return records;
 }
 
-// TODO: read from CSV file and insert the values
-const spokenLanguages = loadCSVFromFile('./prisma/seedData/spokenLanguages.csv');
-console.log(spokenLanguages);
-
 async function main() {
-  const japanese = await prisma.spokenLanguage.upsert({
-    where: { iso639_3: 'ja' },
-    update: {},
-    create: {
-      iso639_3: 'ja',
-      nameEn: 'Japanese',
-      nameJa: '日本語',
-    },
-  });
-  const english = await prisma.spokenLanguage.upsert({
-    where: { iso639_3: 'en' },
-    update: {},
-    create: {
-      iso639_3: 'en',
-      nameEn: 'English',
-      nameJa: '英語',
-    },
-  });
+  const spokenLanguages:string[][] = loadCSVFromFile('./prisma/seedData/spokenLanguages.csv');
 
-  console.log(japanese, english);
+  // TODO: this depends on "magic values" -- refactor later to use headers to build objects
+  spokenLanguages.forEach(async (language: string[]) => {
+    const upserted = await prisma.spokenLanguage.upsert({
+      where: { iso639_3: language[0] },
+      update: {},
+      create: {
+        iso639_3: language[0],
+        nameEn: language[1],
+        nameJa: language[3],
+      },
+    });
+
+    console.log(`Inserting ${upserted.nameEn}`);
+  });
 }
 
 main()
