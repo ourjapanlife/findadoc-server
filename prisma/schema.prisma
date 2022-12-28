@@ -15,6 +15,10 @@ model PersonName {
   id                     Int                     @id @default(autoincrement())
   names                  LocaleName[]
   HealthcareProfessional HealthcareProfessional?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
 }
 
 model LocaleName {
@@ -26,6 +30,10 @@ model LocaleName {
 
   PersonName   PersonName? @relation(fields: [personNameId], references: [id])
   personNameId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  // no soft deletes due to unique constraint
 
   // only allow one localeName per PersonName
   @@unique([locale, personNameId])
@@ -65,9 +73,11 @@ model HealthcareProfessional {
   specialties     Specialty[]
   spokenLanguages HealthcareProfessionalSpokenLanguage[]
   contact         Contact                                @relation(fields: [contactId], references: [id])
-  createdAt       DateTime                               @default(now())
-  updatedAt       DateTime
-  published       Boolean                                @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
+  published Boolean   @default(false)
 
   personNameId                    Int                               @unique
   contactId                       Int
@@ -109,11 +119,16 @@ model HealthcareProfessionalSpokenLanguage {
 }
 
 model Contact {
-  id                     Int                      @id @default(autoincrement())
-  email                  String
-  phone                  String
-  website                String
-  mapsLink               String
+  id       Int    @id @default(autoincrement())
+  email    String
+  phone    String
+  website  String
+  mapsLink String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
+
   Facility               Facility[]
   HealthcareProfessional HealthcareProfessional[]
 }
@@ -123,9 +138,10 @@ model Facility {
   nameEn String
   nameJa String
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime
-  published Boolean  @default(false)
+  deletedAt DateTime?
+  published Boolean   @default(false)
 
   contact   Contact @relation(fields: [contactId], references: [id])
   contactId Int
