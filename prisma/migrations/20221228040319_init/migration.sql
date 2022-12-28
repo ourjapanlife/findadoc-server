@@ -60,6 +60,22 @@ CREATE TABLE "HealthcareProfessional" (
 );
 
 -- CreateTable
+CREATE TABLE "HealthcareProfessionalSpecialty" (
+    "healthcareProfessionalId" INTEGER NOT NULL,
+    "specialtyId" INTEGER NOT NULL,
+
+    CONSTRAINT "HealthcareProfessionalSpecialty_pkey" PRIMARY KEY ("healthcareProfessionalId","specialtyId")
+);
+
+-- CreateTable
+CREATE TABLE "HealthcareProfessionalDegree" (
+    "healthcareProfessionalId" INTEGER NOT NULL,
+    "degreeId" INTEGER NOT NULL,
+
+    CONSTRAINT "HealthcareProfessionalDegree_pkey" PRIMARY KEY ("healthcareProfessionalId","degreeId")
+);
+
+-- CreateTable
 CREATE TABLE "HealthcareProfessionalSpokenLanguage" (
     "healthcareProfessionalId" INTEGER NOT NULL,
     "spokenLanguageIsoCode" TEXT NOT NULL,
@@ -108,6 +124,18 @@ ALTER TABLE "HealthcareProfessional" ADD CONSTRAINT "HealthcareProfessional_pers
 
 -- AddForeignKey
 ALTER TABLE "HealthcareProfessional" ADD CONSTRAINT "HealthcareProfessional_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES "Contact"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HealthcareProfessionalSpecialty" ADD CONSTRAINT "HealthcareProfessionalSpecialty_healthcareProfessionalId_fkey" FOREIGN KEY ("healthcareProfessionalId") REFERENCES "HealthcareProfessional"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HealthcareProfessionalSpecialty" ADD CONSTRAINT "HealthcareProfessionalSpecialty_specialtyId_fkey" FOREIGN KEY ("specialtyId") REFERENCES "Specialty"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HealthcareProfessionalDegree" ADD CONSTRAINT "HealthcareProfessionalDegree_healthcareProfessionalId_fkey" FOREIGN KEY ("healthcareProfessionalId") REFERENCES "HealthcareProfessional"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HealthcareProfessionalDegree" ADD CONSTRAINT "HealthcareProfessionalDegree_degreeId_fkey" FOREIGN KEY ("degreeId") REFERENCES "Degree"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "HealthcareProfessionalSpokenLanguage" ADD CONSTRAINT "HealthcareProfessionalSpokenLanguage_healthcareProfessiona_fkey" FOREIGN KEY ("healthcareProfessionalId") REFERENCES "HealthcareProfessional"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

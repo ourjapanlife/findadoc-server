@@ -37,20 +37,22 @@ model SpokenLanguage {
 }
 
 model Specialty {
-  id                       Int                     @id @default(autoincrement())
-  nameJa                   String
-  nameEn                   String
-  HealthcareProfessional   HealthcareProfessional? @relation(fields: [healthcareProfessionalId], references: [id])
-  healthcareProfessionalId Int?
+  id                              Int                               @id @default(autoincrement())
+  nameJa                          String
+  nameEn                          String
+  HealthcareProfessional          HealthcareProfessional?           @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId        Int?
+  HealthcareProfessionalSpecialty HealthcareProfessionalSpecialty[]
 }
 
 model Degree {
-  id                       Int                     @id @default(autoincrement())
-  nameJa                   String
-  nameEn                   String
-  abbreviation             String
-  HealthcareProfessional   HealthcareProfessional? @relation(fields: [healthcareProfessionalId], references: [id])
-  healthcareProfessionalId Int?
+  id                           Int                            @id @default(autoincrement())
+  nameJa                       String
+  nameEn                       String
+  abbreviation                 String
+  HealthcareProfessional       HealthcareProfessional?        @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId     Int?
+  HealthcareProfessionalDegree HealthcareProfessionalDegree[]
 }
 
 model HealthcareProfessional {
@@ -64,10 +66,35 @@ model HealthcareProfessional {
   updatedAt       DateTime
   published       Boolean                                @default(false)
 
-  personNameId Int @unique
-  contactId    Int
+  personNameId                    Int                               @unique
+  contactId                       Int
+  HealthcareProfessionalSpecialty HealthcareProfessionalSpecialty[]
+  HealthcareProfessionalDegree    HealthcareProfessionalDegree[]
 }
 
+// Many to Many relation between HealthcareProfessional and Specialty
+model HealthcareProfessionalSpecialty {
+  HealthcareProfessional   HealthcareProfessional @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int
+
+  Specialty   Specialty @relation(fields: [specialtyId], references: [id])
+  specialtyId Int
+
+  @@id([healthcareProfessionalId, specialtyId])
+}
+
+// Many to Many relation between HealthcareProfessional and Degree
+model HealthcareProfessionalDegree {
+  HealthcareProfessional   HealthcareProfessional @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int
+
+  Degree   Degree @relation(fields: [degreeId], references: [id])
+  degreeId Int
+
+  @@id([healthcareProfessionalId, degreeId])
+}
+
+// Many to Many relation between HealthcareProfessional and SpokenLanguage
 model HealthcareProfessionalSpokenLanguage {
   HealthcareProfessional   HealthcareProfessional @relation(fields: [healthcareProfessionalId], references: [id])
   healthcareProfessionalId Int
