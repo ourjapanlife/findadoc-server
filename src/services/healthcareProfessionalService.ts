@@ -13,16 +13,14 @@ export const getHealthcareProfessionalById = (id: string) => {
   return matchingProfessional;
 };
 
-export const gethealthcareProfessionals = (
+export const getHealthcareProfessionals = (
   specialty: string,
-  location: string,
   spokenLanguage: SpokenLanguage,
 ) => {
   // TODO: add a validation step for incoming parameters
   const matchingProfessionals = healthcareProfessionals.reduce(
     // TODO: add conditions for if they're null
     (professional: any) => professional.specialty === specialty
-      && professional.location === location
       && professional.spokenLanguage === spokenLanguage,
   );
   return matchingProfessionals;

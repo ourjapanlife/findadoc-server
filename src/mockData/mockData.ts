@@ -56,7 +56,7 @@ const facilities: any = [
   },
 ];
 
-const healthcareProfessionals = [
+const healthcareProfessionals: any = [
   {
     id: '1',
     names: [
@@ -143,7 +143,7 @@ const healthcareProfessionals = [
   },
 ];
 
-const specialties = [
+const specialties: any = [
   {
     id: '1',
     names: [

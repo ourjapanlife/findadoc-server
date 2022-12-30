@@ -1,9 +1,7 @@
 import crypto from 'crypto';
-import {
-  healthcareProfessionals,
-  specialties as medicalField,
-} from './mockData/mockData';
 import { getFacilityById, getFacilities } from './services/facilityService';
+import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService';
+import { getSpecialtyById, getSpecialties } from './services/specialtyService';
 
 const resolvers = {
   Query: {
@@ -18,18 +16,28 @@ const resolvers = {
       const matchingFacility = getFacilityById(args.id);
       return matchingFacility;
     },
-    healthcareProfessionals: () => healthcareProfessionals,
+    healthcareProfessionals: (_parent: any, args: any) => {
+      // TODO: add a validation step for incoming parameters
+      const matchingProfessionals = getHealthcareProfessionals(args.specialty, args.spokenLanguage);
+
+      return matchingProfessionals;
+    },
     healthcareProfessional: (_parent: any, args: any) => {
-      const matchingHealthcareProfessional = healthcareProfessionals.find(
-        (person) => person.id === args.id,
-      );
+      // TODO: add a validation step for incoming parameters
+      const matchingHealthcareProfessional = getHealthcareProfessionalById(args.id);
+
       return matchingHealthcareProfessional;
     },
-    specialties: () => medicalField,
+    specialties: (_parent: any, args: any) => {
+      // TODO: add a validation step for incoming parameters
+      const matchingSpecialties = getSpecialties(args.specialty, args.spokenLanguage);
+
+      return matchingSpecialties;
+    },
     specialty: (_parent: any, args: any) => {
-      const matchingSpecialty = medicalField.find(
-        (field) => field.id === args.id,
-      );
+      // TODO: add a validation step for incoming parameters
+      const matchingSpecialty = getSpecialtyById(args.id);
+
       return matchingSpecialty;
     },
   },
