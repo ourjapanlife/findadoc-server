@@ -19,6 +19,46 @@ yarn install
 yarn prepare
 ```
 
+### Database Setup 🐘
+0. Install Postgres (v14.5)
+- on OS X
+```sh
+brew install postgresql
+createuser -s postgres
+brew services restart postgresql
+```
+
+1. Init the database
+```sh
+./init-db.sh
+```
+
+2. Set up `env` variables
+
+```sh
+cp .env.sample .env
+```
+
+Edit the .env file and set the database password
+
+⚠️ DO NOT CHECK IN PASSWORDS OR ENV FILES INTO GITHUB. ALL SECRETS SHOULD BE MANAGED VIA GITHUB SECRETS
+
+3. Apply migrations to dev:
+```sh
+yarn prisma migrate dev
+```
+
+### Note about migration files
+
+Migration files should never edited after merging to `main` in order to keep an accurate database history. If you want
+to make a change to the database schema, make a new migration:
+
+1. Edit `prisma/prisma.schema`
+2. Run `yarn prisma migrate dev --name [description_of_changes]`
+3. Check in the prisma changes as well as the new migration file
+
+Read more about migrations here: https://www.prisma.io/docs/concepts/components/prisma-migrate
+
 ## How to Test
 
 <details>

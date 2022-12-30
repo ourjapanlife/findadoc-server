@@ -7,3 +7,4 @@ node_modules
 !.yarn/versions
 yarn-error.log
 src/typeDefs/gqlTypes.ts
+.env

@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DB_URL")
+}
+
+// Represents the name of a human individual in both Japanese and Romanji characters.
+model PersonName {
+  id                     Int                     @id @default(autoincrement())
+  names                  LocaleName[]
+  HealthcareProfessional HealthcareProfessional?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// Represents a variant of a Person's name in a specific Locale
+// Locale is represented as two character ISO-639-1 code
+// E.g. 
+// en: Jane Smith
+// ja: ジェーン・スミス
+// A person may only have one LocaleName per locale
+model LocaleName {
+  id         Int     @id @default(autoincrement())
+  locale     String // ISO-639-1
+  firstName  String
+  middleName String?
+  lastName   String
+
+  PersonName   PersonName? @relation(fields: [personNameId], references: [id])
+  personNameId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // no soft deletes due to unique constraint
+
+  // only allow one localeName per PersonName
+  @@unique([locale, personNameId])
+}
+
+// Represents a language spoken by a healthcare provider
+model SpokenLanguage {
+  iso639_3 String @id
+  nameJa   String
+  nameEn   String
+
+  healthcareProfessionals HealthcareProfessionalSpokenLanguage[]
+}
+
+// Represents the area a professional works in, such as Gynecology, gastroenterology, oncology, physical therapy, etc.
+model Specialty {
+  id     Int    @id @default(autoincrement())
+  nameJa String
+  nameEn String
+
+  HealthcareProfessionalSpecialty HealthcareProfessionalSpecialty[]
+}
+
+// Denotes health-related degrees, such as M.D., Ph.D, D.D.S., D.O, etc.
+model Degree {
+  id           Int    @id @default(autoincrement())
+  nameJa       String
+  nameEn       String
+  abbreviation String
+
+  HealthcareProfessionalDegree HealthcareProfessionalDegree[]
+}
+
+// Reperesents a healthcare professional such as a doctor, nurse, therapist, etc.
+model HealthcareProfessional {
+  id           Int        @id @default(autoincrement())
+  name         PersonName @relation(fields: [personNameId], references: [id])
+  personNameId Int        @unique
+
+  // many to many relations
+  HealthcareProfessionalSpecialty HealthcareProfessionalSpecialty[]
+  HealthcareProfessionalDegree    HealthcareProfessionalDegree[]
+  spokenLanguages                 HealthcareProfessionalSpokenLanguage[]
+
+  contact Contact @relation(fields: [contactId], references: [id])
+
+  contactId Int
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isPublished Boolean   @default(false)
+}
+
+// Many to Many relation between HealthcareProfessional and Specialty
+model HealthcareProfessionalSpecialty {
+  HealthcareProfessional   HealthcareProfessional @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int
+
+  Specialty   Specialty @relation(fields: [specialtyId], references: [id])
+  specialtyId Int
+
+  @@id([healthcareProfessionalId, specialtyId])
+}
+
+// Many to Many relation between HealthcareProfessional and Degree
+model HealthcareProfessionalDegree {
+  HealthcareProfessional   HealthcareProfessional @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int
+
+  Degree   Degree @relation(fields: [degreeId], references: [id])
+  degreeId Int
+
+  @@id([healthcareProfessionalId, degreeId])
+}
+
+// Many to Many relation between HealthcareProfessional and SpokenLanguage
+model HealthcareProfessionalSpokenLanguage {
+  HealthcareProfessional   HealthcareProfessional @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int
+
+  SpokenLanguage         SpokenLanguage @relation(fields: [spokenLanguageIso639_3], references: [iso639_3])
+  spokenLanguageIso639_3 String
+
+  @@id([healthcareProfessionalId, spokenLanguageIso639_3])
+}
+
+// Represents how to contact an Healthcare Professional or a Facility
+model Contact {
+  id       Int    @id @default(autoincrement())
+  email    String
+  phone    String
+  website  String
+  mapsLink String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  Facility               Facility[]
+  HealthcareProfessional HealthcareProfessional[]
+}
+
+model Facility {
+  id     Int    @id @default(autoincrement())
+  nameEn String
+  nameJa String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isPublished Boolean   @default(false)
+
+  contact   Contact @relation(fields: [contactId], references: [id])
+  contactId Int
+}
