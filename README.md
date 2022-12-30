@@ -1,5 +1,7 @@
 # findadoc-server
 
+Welcome to the back-end repository for Find a Doc. We're not currently looking for contributors, but you're free to have a look around. If you want to provide any suggestions or feedback, come have a chat with us in the [#backend-team channel on Slack](https://join.slack.com/t/find-a-doc/shared_invite/zt-s4744a6o-MGaGHzLN5wB9aXeha3vdsQ)!
+
 ## Prerequisites
 
 - Node
