@@ -4,14 +4,19 @@ import {
   healthcareProfessionals,
   specialties as medicalField,
 } from './mockData/mockData';
+import { getFacilityById, getFacilities } from './services/facilityService';
 
 const resolvers = {
   Query: {
-    facilities: () => facilities,
+    facilities: (_parent: any, args: any) => {
+      // TODO: add a validation step for incoming parameters
+      const matchingFacilities = getFacilities(args.specialty, args.location, args.spokenLanguage);
+
+      return matchingFacilities;
+    },
     facility: (_parent: any, args: any) => {
-      const matchingFacility = facilities.find(
-        (location) => location.id === args.id,
-      );
+      // TODO: add a validation step for incoming parameters
+      const matchingFacility = getFacilityById(args.id);
       return matchingFacility;
     },
     healthcareProfessionals: () => healthcareProfessionals,

@@ -2,7 +2,7 @@
 
 // language is the spoken language
 
-const facilities = [
+const facilities: any = [
   {
     id: '1',
     names: [
