@@ -15,11 +15,9 @@ import {
 
 const resolvers = {
   Query: {
-    facilities: (_parent: Array<Facility>, args: {
-      specialty: string, location: string, spokenLanguage: string;
-    }) => {
+    facilities: () => {
       // TODO: add a validation step for incoming parameters
-      const matchingFacilities = getFacilities(args.specialty, args.location, args.spokenLanguage);
+      const matchingFacilities = getFacilities();
 
       return matchingFacilities;
     },
@@ -28,12 +26,9 @@ const resolvers = {
       const matchingFacility = getFacilityById(args.id);
       return matchingFacility;
     },
-    healthcareProfessionals: (_parent: Array<HealthcareProfessional>, args: {
-      specialty: string,
-      spokenLanguage: Language
-    }) => {
+    healthcareProfessionals: () => {
       // TODO: add a validation step for incoming parameters
-      const matchingProfessionals = getHealthcareProfessionals(args.specialty, args.spokenLanguage);
+      const matchingProfessionals = getHealthcareProfessionals();
 
       return matchingProfessionals;
     },
@@ -43,12 +38,9 @@ const resolvers = {
 
       return matchingHealthcareProfessional;
     },
-    specialties: (_parent: Array<Specialty>, args: {
-      specialty: string,
-      spokenLanguage: Language,
-    }) => {
+    specialties: () => {
       // TODO: add a validation step for incoming parameters
-      const matchingSpecialties = getSpecialties(args.specialty, args.spokenLanguage);
+      const matchingSpecialties = getSpecialties();
 
       return matchingSpecialties;
     },
@@ -103,23 +95,3 @@ const resolvers = {
 };
 
 export default resolvers;
-
-// from Philip -
-// create similar methods for mutations in the services.
-//    Make sure they are abstracted from knowing anything about the API/gql.
-// validate our inputs. (make sure they're not empty if required,
-//     valid types such as number vs string, etc.)
-//     make sure types in our enums are only allowed like "english" in languages
-// When we can call the db, make sure the service calls are async.
-// wrap the service call in a try catch.
-// Implement failure state for api calls. Invalid input, server error, etc.
-//        We probably need error code so client knows how to handle it.
-// next step
-// create an auth service that can authenticate and authorize a user.
-// Set up our api queries and mutations to always check auth first.
-// Bonus credit
-// create a searchService that gets both facilities and professionals
-//       and has some mixture of results of the two.
-// create a new query for more generalized search that isn't specific to facility/professional
-// next step
-// admin dashboard methods.
