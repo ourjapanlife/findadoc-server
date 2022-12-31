@@ -1,27 +1,23 @@
 import { specialties } from '../mockData/mockData';
-
-enum SpokenLanguage {
-  ENGLISH,
-  JAPANESE,
-}
+import { Specialty, Language } from '../typeDefs/gqlTypes';
 
 export const getSpecialtyById = (id: string) => {
   // TODO: add a validation step for incoming parameter
   const matchingSpecialty = specialties.find(
-    (medicalField: any) => medicalField.id === id,
+    (medicalField: Specialty) => medicalField.id === id,
   );
   return matchingSpecialty;
 };
 
 export const getSpecialties = (
   specialty: string,
-  spokenLanguage: SpokenLanguage,
+  spokenLanguage: Language,
 ) => {
   // TODO: add a validation step for incoming parameters
   const matchingSpecialties = specialties.reduce(
     // TODO: add conditions for if they're null
-    (medicalField: any) => medicalField.specialty === specialty
-            && medicalField.spokenLanguage === spokenLanguage,
+    (medicalField: Specialty) => medicalField.specialty === specialty
+      && medicalField.spokenLanguage === spokenLanguage,
   );
   return matchingSpecialties;
 };

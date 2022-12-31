@@ -1,14 +1,9 @@
 import { facilities } from '../mockData/mockData';
-
-enum SpokenLanguage {
-  ENGLISH,
-  JAPANESE,
-}
+import { Facility, Language } from '../typeDefs/gqlTypes';
 
 export const getFacilityById = (id: string) => {
   const matchingFacility = facilities.find(
-    // TODO: Fix types
-    (location: any) => location.id === id,
+    (location: Facility) => location.id === id,
   );
   return matchingFacility;
 };
@@ -16,14 +11,12 @@ export const getFacilityById = (id: string) => {
 export const getFacilities = (
   specialty: string,
   location: string,
-  spokenLanguage: SpokenLanguage,
+  spokenLanguage: Language,
 ) => {
   // TODO: Fix types
   const matchingFacilities = facilities.reduce(
-    // add conditions for if they're null
-    (facility: any) => facility.specialty === specialty
-            && facility.location === location
-            && facility.spokenLanguage === spokenLanguage,
+    // add conditions for if they're null and searching through healthcare profs at a facility∂
+    (facility: Facility) => facility,
   );
   return matchingFacilities;
 };
