@@ -89,7 +89,7 @@ enum Language {
 }
 
 type Query {
-  facilities(specialty: String): [Facility]
+  facilities: [Facility]
   facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional
