@@ -1,0 +1,18 @@
+#!/bin/sh
+
+echo "😃😃😃😃😃😃DB SETUP TIME😃😃😃😃😃"
+
+echo $POSTGRES_DB
+
+psql -U $POSTGRES_USER -p $POSTGRES_PORT -W $POSTGRES_PASSWORD << EOF
+CREATE DATABASE IF NOT EXISTS $POSTGRES_DB;
+CREATE DATABASE IF NOT EXISTS $SHADOW_DB;
+GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE $SHADOW_DB TO postgres;
+EOF
+
+echo "do the migration"
+
+#npm install --global yarn
+
+yarn migrate

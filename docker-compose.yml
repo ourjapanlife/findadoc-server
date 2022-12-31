@@ -10,26 +10,27 @@ services:
       - .env
     ports:
       - ${POSTGRES_PORT}:5432
-    build:
-      dockerfile: docker/DockerfileDB
     healthcheck:
-      test: pg_isready -U ${POSTGRES_USER} -d findadoc
+      test:
+        - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       interval: 10s
       timeout: 3s
       retries: 5
 
     volumes:
       - pgdata:/var/lib/postgresql/findadoc-data # persist data even if container shuts down
-#migrate:
-#   image: alpine
-#   depends_on:
-#     - db
-#   env_file:
-#     - .env
-#   networks:
-#     - new
-#   volumes:
-#     - ./prisma:/prisma
+  migrate:
+    image: node:18.12.1-alpine
+    depends_on:
+      - db
+    env_file:
+      - .env
+    entrypoint: /docker/init-and-migrate.sh
+    networks:
+      - new
+    volumes:
+      - ./prisma:/prisma
+      - ./docker:/docker
 
 volumes:
   pgdata:

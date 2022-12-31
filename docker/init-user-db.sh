@@ -1,9 +1,9 @@
 #!/bin/sh
 
+echo "😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃"
+
 # load env variables
 source ./.env
-
-echo "😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃"
 
 psql $POSTGRES_USER << EOF
 CREATE DATABASE IF NOT EXISTS $POSTGRES_DB;
