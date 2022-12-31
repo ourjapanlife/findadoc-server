@@ -11,14 +11,13 @@ services:
     ports:
       - ${POSTGRES_PORT}:5432
     healthcheck:
-      test:
-        - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+      test: ["CMD", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 3s
       retries: 5
     volumes:
       - pgdata:/var/lib/postgresql/findadoc-data # persist data even if container shuts down
-  db-cofigure:
+  db-configure:
     image: postgres:14-alpine
     depends_on:
       - db
@@ -29,29 +28,41 @@ services:
     env_file:
       - .env
     entrypoint: /docker/db-init.sh
-    healthcheck:
-      test:
-        - postgres psql -c "SELECT datname FROM pg_catalog.pg_database WHERE datname='${SHADOW_DB}'"
-      interval: 10s
-      timeout: 3s
-      retries: 5
     volumes:
       - ./docker:/docker
-  migrate:
-    image: node:18.12.1-alpine
+      - status:/out
+  install-deps:
     depends_on:
       - db-configure
     env_file:
       - .env
-    build:
-      dockerfile: dockerfile/DockerfileMigrate
+    image: node:18.12.1-alpine
     networks:
       - new
+    working_dir: /target
     volumes:
-      - ./prisma:/prisma
+      - .:/target
+    command: "yarn install"
+  migrate:
+    depends_on:
+      - db-configure
+      - install-deps
+    env_file:
+      - .env
+    links:
+      - db
+    networks:
+      - new
+    image: node:18.12.1-alpine
+    working_dir: /target
+    volumes:
+      - .:/target
+      - status:/in
+    command: "sh -c 'until [[ -f /in/db-init-done && -d /target/node_modules ]]; do sleep 1; done; yarn migrate'" 
 
 volumes:
   pgdata:
+  status:
 
 
 networks:
