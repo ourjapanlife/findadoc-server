@@ -10,9 +10,3 @@ CREATE DATABASE IF NOT EXISTS $SHADOW_DB;
 GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO postgres;
 GRANT ALL PRIVILEGES ON DATABASE $SHADOW_DB TO postgres;
 EOF
-
-echo "do the migration"
-
-#npm install --global yarn
-
-yarn migrate

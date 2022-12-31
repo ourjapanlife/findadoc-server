@@ -16,21 +16,39 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-
     volumes:
       - pgdata:/var/lib/postgresql/findadoc-data # persist data even if container shuts down
+  db-cofigure:
+    image: postgres:14-alpine
+    depends_on:
+      - db
+    networks:
+      new:
+        aliases:
+          - database
+    env_file:
+      - .env
+    entrypoint: /docker/db-init.sh
+    healthcheck:
+      test:
+        - postgres psql -c "SELECT datname FROM pg_catalog.pg_database WHERE datname='${SHADOW_DB}'"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - ./docker:/docker
   migrate:
     image: node:18.12.1-alpine
     depends_on:
-      - db
+      - db-configure
     env_file:
       - .env
-    entrypoint: /docker/init-and-migrate.sh
+    build:
+      dockerfile: dockerfile/DockerfileMigrate
     networks:
       - new
     volumes:
       - ./prisma:/prisma
-      - ./docker:/docker
 
 volumes:
   pgdata:
