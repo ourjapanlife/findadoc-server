@@ -2,10 +2,11 @@
 import { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
-  schema: 'http://localhost:3001/graphql',
+  overwrite: true,
+  schema: 'http://localhost:3001',
   generates: {
     'src/typeDefs/gqlTypes.ts': {
-      plugins: ['typescript-resolvers'],
+      plugins: ['typescript', 'typescript-resolvers'],
     },
   },
   debug: true,
