@@ -1,6 +1,7 @@
 name: reviewdog
 on: 
-  [pull_request]
+  pull_request:
+      types: [review_requested, ready_for_review]
   
 jobs:
   eslint:
