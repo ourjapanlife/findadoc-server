@@ -7,8 +7,7 @@ generator client {
 
 datasource db {
   provider          = "postgresql"
-  // TODO: select which urls based on local or docker
-  url               = env("LOCAL_DATABASE_URL")
+  url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DB_URL")
 }
 
