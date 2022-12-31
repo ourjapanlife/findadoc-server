@@ -2,10 +2,19 @@ import crypto from 'crypto';
 import { getFacilityById, getFacilities } from './services/facilityService';
 import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService';
 import { getSpecialtyById, getSpecialties } from './services/specialtyService';
+import {
+  Degree,
+  Facility,
+  Insurance,
+  Language,
+  HealthcareProfessional,
+  Specialty,
+} from './typeDefs/gqlTypes';
 
 const resolvers = {
   Query: {
-    facilities: (_parent: any, args: any) => {
+    facilities: (_parent: Array<Facility>, args: any) => {
+      console.log(args);
       // TODO: add a validation step for incoming parameters
       const matchingFacilities = getFacilities(args.specialty, args.location, args.spokenLanguage);
 
