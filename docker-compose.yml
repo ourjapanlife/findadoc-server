@@ -9,9 +9,13 @@ services:
     env_file:
       - .env
     ports:
-      - ${POSTGRES_PORT}:5432
+      - ${POSTGRES_EXTERNAL_PORT}:5432
     healthcheck:
-      test: ["CMD", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test:
+        [
+          "CMD",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+        ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -58,7 +62,7 @@ services:
     volumes:
       - .:/target
       - status:/in
-    command: "sh -c 'until [[ -f /in/db-init-done && -d /target/node_modules ]]; do sleep 1; done; yarn migrate'" 
+    command: "sh -c 'until [[ -f /in/db-init-done && -d /target/node_modules ]]; do sleep 1; done; yarn migrate'"
 
 volumes:
   pgdata:

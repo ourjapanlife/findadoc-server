@@ -5,7 +5,7 @@ echo "😃😃😃😃😃😃DB SETUP TIME😃😃😃😃😃"
 echo $POSTGRES_DB
 
 
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h database -U $POSTGRES_USER -p $POSTGRES_PORT -c '\q'; do
+until PGPASSWORD=$POSTGRES_PASSWORD psql -h database -U $POSTGRES_USER -c '\q'; do
   >&2 echo "Postgres is unavailable - sleeping"
   sleep 1
 done
@@ -14,8 +14,8 @@ done
 
 function create_database_if_not_exists() {
     local db="$1"
-    PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -p $POSTGRES_PORT -h database -tc "SELECT 1 FROM pg_database WHERE datname = '$db'" | grep -q 1 || \
-    PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -p $POSTGRES_PORT -h database << EOF
+    PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -h database -tc "SELECT 1 FROM pg_database WHERE datname = '$db'" | grep -q 1 || \
+    PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -h database << EOF
        CREATE DATABASE $db;
        GRANT ALL PRIVILEGES ON DATABASE $db TO $POSTGRES_USER;
 EOF
