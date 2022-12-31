@@ -28,20 +28,12 @@ yarn prepare
 ```
 
 ### Database Setup 🐘
-0. Install Postgres (v14.5)
-- on OS X
-```sh
-brew install postgresql
-createuser -s postgres
-brew services restart postgresql
-```
 
-1. Init the database
-```sh
-./init-db.sh
-```
+For simplicity we provide a dockerized postgres. As a prerequisite, you will need to install 
+[Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
-2. Set up `env` variables
+
+1. Set up `env` variables
 
 ```sh
 cp .env.sample .env
@@ -49,11 +41,11 @@ cp .env.sample .env
 
 Edit the .env file and set the database password
 
-⚠️ DO NOT CHECK IN PASSWORDS OR ENV FILES INTO GITHUB. ALL SECRETS SHOULD BE MANAGED VIA GITHUB SECRETS
+⚠️ DO NOT CHECK IN PASSWORDS OR ENV FILES INTO GITHUB. ALL SECRETS SHOULD BE MANAGED VIA GITHUB SECRETS OR SECURE VAULTS
 
-3. Apply migrations to dev:
+2. Run docker compose
 ```sh
-yarn prisma migrate dev
+docker compose up
 ```
 
 ### Note about migration files
