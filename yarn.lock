@@ -3596,6 +3596,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"csv-parse@npm:^5.3.3":
+  version: 5.3.3
+  resolution: "csv-parse@npm:5.3.3"
+  checksum: 9f16e2003ef47c901aab31d202e1c9edb70c00faa7777e17a50087314c9da6561233bc60542c15d71f7973c7a0e947c35515ea2689929881c9430a8af374089e
+  languageName: node
+  linkType: hard
+
 "dataloader@npm:2.1.0":
   version: 2.1.0
   resolution: "dataloader@npm:2.1.0"
@@ -4470,6 +4477,7 @@ __metadata:
     "@typescript-eslint/parser": ^5.31.0
     apollo-server: ^3.8.2
     chai: ^4.3.6
+    csv-parse: ^5.3.3
     eslint: ^8.20.0
     eslint-config-airbnb-base: ^15.0.0
     eslint-config-airbnb-typescript: ^17.0.0
@@ -4482,6 +4490,7 @@ __metadata:
     prisma: ^4.8.0
     supertest: ^6.3.0
     ts-mocha: ^10.0.0
+    ts-node: ^10.9.1
     ts-node-dev: ^2.0.0
     typescript: ^4.7.3
   languageName: unknown
@@ -7575,7 +7584,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-node@npm:^10.4.0, ts-node@npm:^10.8.1":
+"ts-node@npm:^10.4.0, ts-node@npm:^10.8.1, ts-node@npm:^10.9.1":
   version: 10.9.1
   resolution: "ts-node@npm:10.9.1"
   dependencies:
