@@ -5,7 +5,7 @@ echo "😃😃😃😃😃😃DB SETUP TIME😃😃😃😃😃"
 echo $POSTGRES_DB
 
 
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h database -U $POSTGRES_USER -c '\q'; do
+until PGPASSWORD=$POSTGRES_PASSWORD psql -h ${DOCKER_POSTGRES_HOST} -U $POSTGRES_USER -c '\q'; do
   >&2 echo "Postgres is unavailable - sleeping"
   sleep 1
 done
