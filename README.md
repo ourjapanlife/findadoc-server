@@ -38,7 +38,7 @@ brew services restart postgresql
 
 1. Init the database
 ```sh
-./init-db.sh
+./docker/init-user-db.sh
 ```
 
 2. Set up `env` variables

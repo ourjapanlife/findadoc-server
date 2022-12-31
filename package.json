@@ -9,7 +9,8 @@
     "dev": "yarn && ts-node-dev --transpile-only --no-notify --exit-child src/index.ts",
     "generate": "yarn && graphql-codegen --config ./src/typesgeneratorconfig.ts",
     "lint": "eslint . --ext .js,.ts,.json",
-    "lint:check": "eslint . --ext .js,.ts,.json"
+    "lint:check": "eslint . --ext .js,.ts,.json",
+    "migrate": "prisma migrate dev"
   },
   "repository": {
     "type": "git",
