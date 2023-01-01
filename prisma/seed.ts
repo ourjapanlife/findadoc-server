@@ -4,6 +4,7 @@
 // https://www.prisma.io/docs/guides/database/seed-database
 import { PrismaClient } from '@prisma/client';
 import loadCSVFromFile from './loadCSV';
+import devSetup from './devSetup';
 
 const prisma = new PrismaClient();
 
@@ -85,194 +86,6 @@ async function seedDegrees(verbose = false) {
   });
 }
 
-async function seedDevHealthcareProfessionals(verbose = false) {
-  const firstEn = 0;
-  const middleEn = 1;
-  const lastEn = 2;
-  const firstJa = 3;
-  const middleJa = 4;
-  const lastJa = 5;
-  const degreeCol = 6;
-  const specialtyCol = 7;
-  const spokenLangCol = 8;
-
-  const devData:string[][] = loadCSVFromFile('./prisma/seedData/devHealthcareProfessionals.csv');
-
-  devData.forEach(async (row: string[], index: number) => {
-    // generate some unique ids using even/odd strategy
-    const enID = 2 * index;
-    const jaID = 2 * index + 1;
-
-    // Make a nested write
-    const newPersonName = await prisma.personName.upsert({
-      where: { id: index },
-      update: {},
-      create: {
-        id: index,
-        names: {
-          create: [
-            {
-              id: enID,
-              locale: 'en',
-              firstName: row[firstEn],
-              middleName: row[middleEn],
-              lastName: row[lastEn],
-            },
-            {
-              id: jaID,
-              locale: 'ja',
-              firstName: row[firstJa],
-              middleName: row[middleJa],
-              lastName: row[lastJa],
-            },
-          ],
-
-        },
-      },
-    });
-
-    if (verbose) {
-      console.log(`Inserted ${newPersonName.id} into PersonName`);
-    }
-
-    // create a healthcare professional
-    const newHealthPro = await prisma.healthcareProfessional.upsert({
-      where: { id: index },
-      update: {},
-      create: {
-        id: index,
-        personNameId: newPersonName.id,
-        isPublished: true,
-      },
-    });
-
-    // Link spoken languages
-    const spokenLangList = row[spokenLangCol].split(',');
-    spokenLangList.forEach(async (lang) => {
-      const dbSpokenLang = await prisma.spokenLanguage.findFirst(
-        {
-          where: {
-            iso639_3: lang,
-          },
-        },
-      );
-      if (dbSpokenLang) {
-        // TODO change to upsert
-        await prisma.healthcareProfessionalSpokenLanguage.create(
-          {
-            data: {
-              spokenLanguageIso639_3: dbSpokenLang.iso639_3,
-              healthcareProfessionalId: newHealthPro.id,
-            },
-          },
-        );
-      }
-    });
-
-    // Link Degrees
-    const degreeList = row[degreeCol].split(',');
-    degreeList.forEach(async (degree) => {
-      const dbDegree = await prisma.degree.findFirst(
-        {
-          where: {
-            abbreviation: degree,
-          },
-        },
-      );
-      if (dbDegree) {
-        // TODO change to upsert
-        await prisma.healthcareProfessionalDegree.create(
-          {
-            data: {
-              degreeId: dbDegree.id,
-              healthcareProfessionalId: newHealthPro.id,
-            },
-          },
-        );
-        console.log(dbDegree);
-      }
-    });
-
-    // Link Specialties
-    const specialtyList = row[specialtyCol].split(',');
-    specialtyList.forEach(async (specialty) => {
-      // TODO change to upsert
-      const dbSpecialty = await prisma.specialty.findFirst({
-        where: {
-          nameEn: specialty,
-        },
-      });
-      if (dbSpecialty) {
-        await prisma.healthcareProfessionalSpecialty.create(
-          {
-            data: {
-              specialtyId: dbSpecialty.id,
-              healthcareProfessionalId: newHealthPro.id,
-            },
-          },
-        );
-      }
-    });
-
-    if (verbose) {
-      console.log(`Inserted ${newHealthPro.id} into HealthcareProfessional`);
-    }
-  });
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function seedDevFacilities(verbose = false) {
-  const emailCol = 0;
-  const phoneCol = 1;
-  const websiteCol = 2;
-  const postalCol = 3;
-  const prefectureCol = 4;
-  const cityCol = 5;
-  const addrLine1Col = 6;
-  const addrLine2Col = 7;
-  const mapLinkCol = 8;
-
-  const devData:string[][] = loadCSVFromFile('./prisma/seedData/devFacilities.csv');
-
-  devData.forEach(async (row: string[], index: number) => {
-    console.log(row);
-
-    const newAddress = await prisma.physicalAddress.upsert({
-      where: { id: index },
-      update: {},
-      create: {
-        id: index,
-        postalCode: row[postalCol],
-        prefectureEn: row[prefectureCol],
-        cityEn: row[cityCol],
-        addressLine1En: row[addrLine1Col],
-        addressLine2En: row[addrLine2Col],
-      },
-    });
-
-    if (verbose) {
-      console.log(`Inserted ${newAddress.addressLine1En} into Addresses`);
-    }
-
-    const newContact = await prisma.contact.upsert({
-      where: { id: index },
-      update: {},
-      create: {
-        id: index,
-        email: row[emailCol],
-        phone: row[phoneCol],
-        website: row[websiteCol],
-        mapsLink: row[mapLinkCol],
-        physicalAddressId: newAddress.id,
-      },
-    });
-
-    if (verbose) {
-      console.log(`Inserted ${newContact.website} into Contacts`);
-    }
-  });
-}
-
 async function main() {
   const verbose = true;
   await seedSpokenLanguages();
@@ -280,8 +93,8 @@ async function main() {
   await seedDegrees();
 
   if (process.env.NODE_ENV === 'development') {
-    await seedDevHealthcareProfessionals(verbose);
-    // await seedDevFacilities(verbose);
+    await devSetup.seedHealthcareProfessionals(prisma, verbose);
+    await devSetup.seedFacilities(prisma, verbose);
   }
 }
 
