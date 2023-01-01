@@ -1,6 +1,9 @@
 -- CreateTable
 CREATE TABLE "PersonName" (
     "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "PersonName_pkey" PRIMARY KEY ("id")
 );
@@ -10,20 +13,22 @@ CREATE TABLE "LocaleName" (
     "id" SERIAL NOT NULL,
     "locale" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
-    "middleName" TEXT NOT NULL,
+    "middleName" TEXT,
     "lastName" TEXT NOT NULL,
     "personNameId" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "LocaleName_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "SpokenLanguage" (
-    "isoCode" TEXT NOT NULL,
+    "iso639_3" TEXT NOT NULL,
     "nameJa" TEXT NOT NULL,
     "nameEn" TEXT NOT NULL,
 
-    CONSTRAINT "SpokenLanguage_pkey" PRIMARY KEY ("isoCode")
+    CONSTRAINT "SpokenLanguage_pkey" PRIMARY KEY ("iso639_3")
 );
 
 -- CreateTable
@@ -31,7 +36,6 @@ CREATE TABLE "Specialty" (
     "id" SERIAL NOT NULL,
     "nameJa" TEXT NOT NULL,
     "nameEn" TEXT NOT NULL,
-    "healthcareProfessionalId" INTEGER,
 
     CONSTRAINT "Specialty_pkey" PRIMARY KEY ("id")
 );
@@ -42,7 +46,6 @@ CREATE TABLE "Degree" (
     "nameJa" TEXT NOT NULL,
     "nameEn" TEXT NOT NULL,
     "abbreviation" TEXT NOT NULL,
-    "healthcareProfessionalId" INTEGER,
 
     CONSTRAINT "Degree_pkey" PRIMARY KEY ("id")
 );
@@ -50,11 +53,12 @@ CREATE TABLE "Degree" (
 -- CreateTable
 CREATE TABLE "HealthcareProfessional" (
     "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "published" BOOLEAN NOT NULL DEFAULT false,
     "personNameId" INTEGER NOT NULL,
     "contactId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "isPublished" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "HealthcareProfessional_pkey" PRIMARY KEY ("id")
 );
@@ -78,9 +82,9 @@ CREATE TABLE "HealthcareProfessionalDegree" (
 -- CreateTable
 CREATE TABLE "HealthcareProfessionalSpokenLanguage" (
     "healthcareProfessionalId" INTEGER NOT NULL,
-    "spokenLanguageIsoCode" TEXT NOT NULL,
+    "spokenLanguageIso639_3" TEXT NOT NULL,
 
-    CONSTRAINT "HealthcareProfessionalSpokenLanguage_pkey" PRIMARY KEY ("healthcareProfessionalId","spokenLanguageIsoCode")
+    CONSTRAINT "HealthcareProfessionalSpokenLanguage_pkey" PRIMARY KEY ("healthcareProfessionalId","spokenLanguageIso639_3")
 );
 
 -- CreateTable
@@ -90,6 +94,9 @@ CREATE TABLE "Contact" (
     "phone" TEXT NOT NULL,
     "website" TEXT NOT NULL,
     "mapsLink" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "Contact_pkey" PRIMARY KEY ("id")
 );
@@ -101,23 +108,21 @@ CREATE TABLE "Facility" (
     "nameJa" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "published" BOOLEAN NOT NULL DEFAULT false,
+    "deletedAt" TIMESTAMP(3),
+    "isPublished" BOOLEAN NOT NULL DEFAULT false,
     "contactId" INTEGER NOT NULL,
 
     CONSTRAINT "Facility_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "LocaleName_locale_personNameId_key" ON "LocaleName"("locale", "personNameId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "HealthcareProfessional_personNameId_key" ON "HealthcareProfessional"("personNameId");
 
 -- AddForeignKey
 ALTER TABLE "LocaleName" ADD CONSTRAINT "LocaleName_personNameId_fkey" FOREIGN KEY ("personNameId") REFERENCES "PersonName"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Specialty" ADD CONSTRAINT "Specialty_healthcareProfessionalId_fkey" FOREIGN KEY ("healthcareProfessionalId") REFERENCES "HealthcareProfessional"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Degree" ADD CONSTRAINT "Degree_healthcareProfessionalId_fkey" FOREIGN KEY ("healthcareProfessionalId") REFERENCES "HealthcareProfessional"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "HealthcareProfessional" ADD CONSTRAINT "HealthcareProfessional_personNameId_fkey" FOREIGN KEY ("personNameId") REFERENCES "PersonName"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -141,7 +146,7 @@ ALTER TABLE "HealthcareProfessionalDegree" ADD CONSTRAINT "HealthcareProfessiona
 ALTER TABLE "HealthcareProfessionalSpokenLanguage" ADD CONSTRAINT "HealthcareProfessionalSpokenLanguage_healthcareProfessiona_fkey" FOREIGN KEY ("healthcareProfessionalId") REFERENCES "HealthcareProfessional"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "HealthcareProfessionalSpokenLanguage" ADD CONSTRAINT "HealthcareProfessionalSpokenLanguage_spokenLanguageIsoCode_fkey" FOREIGN KEY ("spokenLanguageIsoCode") REFERENCES "SpokenLanguage"("isoCode") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "HealthcareProfessionalSpokenLanguage" ADD CONSTRAINT "HealthcareProfessionalSpokenLanguage_spokenLanguageIso639__fkey" FOREIGN KEY ("spokenLanguageIso639_3") REFERENCES "SpokenLanguage"("iso639_3") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Facility" ADD CONSTRAINT "Facility_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES "Contact"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
