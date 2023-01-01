@@ -12,6 +12,9 @@
     "lint:check": "eslint . --ext .js,.ts,.json",
     "migrate": "prisma migrate dev"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ourjapanlife/findadoc-server.git"
@@ -25,7 +28,7 @@
   },
   "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
   "devDependencies": {
-    "@graphql-codegen/cli": "^2.13.5",
+    "@graphql-codegen/cli": "^2.16.2",
     "@graphql-codegen/typescript": "^2.7.3",
     "@graphql-codegen/typescript-resolvers": "^2.7.3",
     "@types/chai": "^4.3.3",
@@ -49,10 +52,12 @@
     "@prisma/client": "4.8.0",
     "apollo-server": "^3.8.2",
     "chai": "^4.3.6",
+    "csv-parse": "^5.3.3",
     "graphql": "^16.5.0",
     "graphql-import-node": "^0.0.5",
     "mocha": "^10.0.0",
-    "supertest": "^6.3.0"
+    "supertest": "^6.3.0",
+    "ts-node": "^10.9.1"
   },
   "packageManager": "yarn@3.2.4"
 }
