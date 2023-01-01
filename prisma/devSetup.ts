@@ -139,15 +139,17 @@ const seedHealthcareProfessionals = async function (prisma: PrismaClient, verbos
 };
 
 const seedFacilities = async function (prisma: PrismaClient, verbose = false) {
-  const emailCol = 0;
-  const phoneCol = 1;
-  const websiteCol = 2;
-  const postalCol = 3;
-  const prefectureCol = 4;
-  const cityCol = 5;
-  const addrLine1Col = 6;
-  const addrLine2Col = 7;
-  const mapLinkCol = 8;
+  const nameEnCol = 0;
+  const nameJaCol = 1;
+  const emailCol = 2;
+  const phoneCol = 3;
+  const websiteCol = 4;
+  const postalCol = 5;
+  const prefectureCol = 6;
+  const cityCol = 7;
+  const addrLine1Col = 8;
+  const addrLine2Col = 9;
+  const mapLinkCol = 10;
 
   const devData:string[][] = loadCSVFromFile('./prisma/seedData/devFacilities.csv');
 
@@ -180,12 +182,28 @@ const seedFacilities = async function (prisma: PrismaClient, verbose = false) {
         phone: row[phoneCol],
         website: row[websiteCol],
         mapsLink: row[mapLinkCol],
-        physicalAddressId: newAddress.id,
+        addressId: newAddress.id,
       },
     });
 
     if (verbose) {
       console.log(`Inserted ${newContact.website} into Contacts`);
+    }
+
+    const newFacility = await prisma.facility.upsert({
+      where: { id: index },
+      update: {},
+      create: {
+        id: index,
+        nameEn: row[nameEnCol],
+        nameJa: row[nameJaCol],
+        contactId: newContact.id,
+        isPublished: true,
+      },
+    });
+
+    if (verbose) {
+      console.log(`Inserted ${newFacility.nameEn} into Facilities`);
     }
   });
 };
