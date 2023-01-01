@@ -102,11 +102,69 @@ async function seedDegrees(verbose = false) {
   });
 }
 
+async function seedContacts(verbose = false) {
+  const emailCol = 0;
+  const phoneCol = 1;
+  const websiteCol = 2;
+  const postalCol = 3;
+  const prefectureCol = 4;
+  const cityCol = 5;
+  const addrLine1Col = 6;
+  const addrLine2Col = 7;
+  const mapLinkCol = 8;
+
+  const contacts:string[][] = loadCSVFromFile('./prisma/seedData/devContacts.csv');
+
+  let count = 0;
+  contacts.forEach(async (contact: string[]) => {
+    const newAddress = await prisma.physicalAddress.upsert({
+      where: { id: count },
+      update: {},
+      create: {
+        id: count,
+        postalCode: contact[postalCol],
+        prefectureEn: contact[prefectureCol],
+        cityEn: contact[cityCol],
+        addressLine1En: contact[addrLine1Col],
+        addressLine2En: contact[addrLine2Col],
+      },
+    });
+
+    if (verbose) {
+      console.log(`Inserting ${newAddress.addressLine1En} into Addresses`);
+    }
+
+    const newContact = await prisma.contact.upsert({
+      where: { id: count },
+      update: {},
+      create: {
+        id: count,
+        email: contact[emailCol],
+        phone: contact[phoneCol],
+        website: contact[websiteCol],
+        mapsLink: contact[mapLinkCol],
+        physicalAddressId: newAddress.id,
+      },
+    });
+
+    console.log('incrementing count 🌟');
+    count++;
+
+    if (verbose) {
+      console.log(`Inserting ${newContact.website} into Contacts`);
+    }
+  });
+}
+
 async function main() {
   const verbose = true;
   await seedSpokenLanguages(verbose);
   await seedSpecialties(verbose);
   await seedDegrees(verbose);
+
+  if (process.env.NODE_ENV === 'development') {
+    await seedContacts(verbose);
+  }
 }
 
 main()

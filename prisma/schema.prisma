@@ -140,8 +140,26 @@ model Contact {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  address                PhysicalAddress?         @relation(fields: [physicalAddressId], references: [id])
   Facility               Facility[]
   HealthcareProfessional HealthcareProfessional[]
+  physicalAddressId      Int
+}
+
+// A physical address represents a location on a map
+model PhysicalAddress {
+  id             Int     @id @default(autoincrement())
+  postalCode     String
+  prefectureEn   String
+  cityEn         String
+  addressLine1En String
+  addressLine2En String?
+
+  prefectureJa   String?
+  cityJa         String?
+  addressLine1Ja String?
+  addressLine2Ja String?
+  Contact        Contact[]
 }
 
 model Facility {
