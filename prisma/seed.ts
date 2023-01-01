@@ -3,26 +3,9 @@
 // Seed data for the database
 // https://www.prisma.io/docs/guides/database/seed-database
 import { PrismaClient } from '@prisma/client';
-import { parse } from 'csv-parse/sync';
-import * as fs from 'fs';
+import loadCSVFromFile from './loadCSV';
 
 const prisma = new PrismaClient();
-
-// loads a CSV file from the filesystem, ready for parsing
-function loadCSVFromFile(filename: string, discardHeader = true) {
-  const input = fs.readFileSync(filename);
-
-  // Initialize the parser
-  const records: string[][] = parse(input, {
-    delimiter: ',',
-  });
-
-  if (discardHeader) {
-    return records.slice(1);
-  }
-
-  return records;
-}
 
 async function seedSpokenLanguages(verbose = false) {
   const iso639Col = 0;
@@ -102,7 +85,56 @@ async function seedDegrees(verbose = false) {
   });
 }
 
-async function seedContacts(verbose = false) {
+async function seedDevHealthcareProfessionals(verbose = false) {
+  const firstEn = 0;
+  const middleEn = 1;
+  const lastEn = 2;
+  const firstJa = 3;
+  const middleJa = 4;
+  const lastJa = 5;
+
+  const devData:string[][] = loadCSVFromFile('./prisma/seedData/devHealthcareProfessionals.csv');
+
+  devData.forEach(async (row: string[], index: number) => {
+    const enID = 2 * index;
+    const jaID = 2 * index + 1;
+    // Make a name for en and ja locales
+    const newLocaleNameEn = await prisma.localeName.upsert({
+      where: { id: enID },
+      update: {},
+      create: {
+        id: enID,
+        locale: 'en',
+        firstName: row[firstEn],
+        middleName: row[middleEn],
+        lastName: row[lastEn],
+      },
+    });
+
+    const newLocaleNameJa = await prisma.localeName.upsert({
+      where: { id: jaID },
+      update: {},
+      create: {
+        id: jaID,
+        locale: 'ja',
+        firstName: row[firstJa],
+        middleName: row[middleJa],
+        lastName: row[lastJa],
+      },
+    });
+
+    if (verbose) {
+      console.log(`Inserted ${newLocaleNameEn.lastName}, ${newLocaleNameJa.lastName} into LocaleName`);
+    }
+
+    // link them to a name
+
+    // create a healthcare professional
+  });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function seedDevFacilities(verbose = false) {
   const emailCol = 0;
   const phoneCol = 1;
   const websiteCol = 2;
@@ -113,17 +145,16 @@ async function seedContacts(verbose = false) {
   const addrLine2Col = 7;
   const mapLinkCol = 8;
 
-  const devData:string[][] = loadCSVFromFile('./prisma/seedData/devData.csv');
+  const devData:string[][] = loadCSVFromFile('./prisma/seedData/devFacilities.csv');
 
-  let count = 0;
-  devData.forEach(async (row: string[]) => {
+  devData.forEach(async (row: string[], index: number) => {
     console.log(row);
 
     const newAddress = await prisma.physicalAddress.upsert({
-      where: { id: count },
+      where: { id: index },
       update: {},
       create: {
-        id: count,
+        id: index,
         postalCode: row[postalCol],
         prefectureEn: row[prefectureCol],
         cityEn: row[cityCol],
@@ -136,13 +167,11 @@ async function seedContacts(verbose = false) {
       console.log(`Inserted ${newAddress.addressLine1En} into Addresses`);
     }
 
-    count++;
-
     const newContact = await prisma.contact.upsert({
-      where: { id: count },
+      where: { id: index },
       update: {},
       create: {
-        id: count,
+        id: index,
         email: row[emailCol],
         phone: row[phoneCol],
         website: row[websiteCol],
@@ -150,8 +179,6 @@ async function seedContacts(verbose = false) {
         physicalAddressId: newAddress.id,
       },
     });
-
-    count++;
 
     if (verbose) {
       console.log(`Inserted ${newContact.website} into Contacts`);
@@ -161,12 +188,13 @@ async function seedContacts(verbose = false) {
 
 async function main() {
   const verbose = true;
-  await seedSpokenLanguages(verbose);
-  await seedSpecialties(verbose);
-  await seedDegrees(verbose);
+  await seedSpokenLanguages();
+  await seedSpecialties();
+  await seedDegrees();
 
   if (process.env.NODE_ENV === 'development') {
-    await seedContacts(verbose);
+    await seedDevHealthcareProfessionals(verbose);
+    // await seedDevFacilities(verbose);
   }
 }
 
