@@ -85,9 +85,9 @@ model HealthcareProfessional {
   HealthcareProfessionalDegree    HealthcareProfessionalDegree[]
   spokenLanguages                 HealthcareProfessionalSpokenLanguage[]
 
-  contact Contact @relation(fields: [contactId], references: [id])
+  contact Contact? @relation(fields: [contactId], references: [id])
 
-  contactId Int
+  contactId Int?
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

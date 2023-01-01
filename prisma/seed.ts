@@ -92,44 +92,131 @@ async function seedDevHealthcareProfessionals(verbose = false) {
   const firstJa = 3;
   const middleJa = 4;
   const lastJa = 5;
+  const degreeCol = 6;
+  const specialtyCol = 7;
+  const spokenLangCol = 8;
 
   const devData:string[][] = loadCSVFromFile('./prisma/seedData/devHealthcareProfessionals.csv');
 
   devData.forEach(async (row: string[], index: number) => {
+    // generate some unique ids using even/odd strategy
     const enID = 2 * index;
     const jaID = 2 * index + 1;
-    // Make a name for en and ja locales
-    const newLocaleNameEn = await prisma.localeName.upsert({
-      where: { id: enID },
-      update: {},
-      create: {
-        id: enID,
-        locale: 'en',
-        firstName: row[firstEn],
-        middleName: row[middleEn],
-        lastName: row[lastEn],
-      },
-    });
 
-    const newLocaleNameJa = await prisma.localeName.upsert({
-      where: { id: jaID },
+    // Make a nested write
+    const newPersonName = await prisma.personName.upsert({
+      where: { id: index },
       update: {},
       create: {
-        id: jaID,
-        locale: 'ja',
-        firstName: row[firstJa],
-        middleName: row[middleJa],
-        lastName: row[lastJa],
+        id: index,
+        names: {
+          create: [
+            {
+              id: enID,
+              locale: 'en',
+              firstName: row[firstEn],
+              middleName: row[middleEn],
+              lastName: row[lastEn],
+            },
+            {
+              id: jaID,
+              locale: 'ja',
+              firstName: row[firstJa],
+              middleName: row[middleJa],
+              lastName: row[lastJa],
+            },
+          ],
+
+        },
       },
     });
 
     if (verbose) {
-      console.log(`Inserted ${newLocaleNameEn.lastName}, ${newLocaleNameJa.lastName} into LocaleName`);
+      console.log(`Inserted ${newPersonName.id} into PersonName`);
     }
 
-    // link them to a name
-
     // create a healthcare professional
+    const newHealthPro = await prisma.healthcareProfessional.upsert({
+      where: { id: index },
+      update: {},
+      create: {
+        id: index,
+        personNameId: newPersonName.id,
+        isPublished: true,
+      },
+    });
+
+    // Link spoken languages
+    const spokenLangList = row[spokenLangCol].split(',');
+    spokenLangList.forEach(async (lang) => {
+      const dbSpokenLang = await prisma.spokenLanguage.findFirst(
+        {
+          where: {
+            iso639_3: lang,
+          },
+        },
+      );
+      if (dbSpokenLang) {
+        // TODO change to upsert
+        await prisma.healthcareProfessionalSpokenLanguage.create(
+          {
+            data: {
+              spokenLanguageIso639_3: dbSpokenLang.iso639_3,
+              healthcareProfessionalId: newHealthPro.id,
+            },
+          },
+        );
+      }
+    });
+
+    // Link Degrees
+    const degreeList = row[degreeCol].split(',');
+    degreeList.forEach(async (degree) => {
+      const dbDegree = await prisma.degree.findFirst(
+        {
+          where: {
+            abbreviation: degree,
+          },
+        },
+      );
+      if (dbDegree) {
+        // TODO change to upsert
+        await prisma.healthcareProfessionalDegree.create(
+          {
+            data: {
+              degreeId: dbDegree.id,
+              healthcareProfessionalId: newHealthPro.id,
+            },
+          },
+        );
+        console.log(dbDegree);
+      }
+    });
+
+    // Link Specialties
+    const specialtyList = row[specialtyCol].split(',');
+    specialtyList.forEach(async (specialty) => {
+      // TODO change to upsert
+      const dbSpecialty = await prisma.specialty.findFirst({
+        where: {
+          nameEn: specialty,
+        },
+      });
+      if (dbSpecialty) {
+        await prisma.healthcareProfessionalSpecialty.create(
+          {
+            data: {
+              specialtyId: dbSpecialty.id,
+              healthcareProfessionalId: newHealthPro.id,
+            },
+          },
+        );
+      }
+    });
+
+    if (verbose) {
+      console.log(`Inserted ${newHealthPro.id} into HealthcareProfessional`);
+    }
   });
 }
 
