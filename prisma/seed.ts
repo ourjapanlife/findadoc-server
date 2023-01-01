@@ -44,7 +44,7 @@ async function seedSpokenLanguages(verbose = false) {
 
     if (verbose) {
       // eslint-disable-next-line no-console
-      console.log(`Inserting ${upserted.nameEn} into SpokenLanguages`);
+      console.log(`Inserted ${upserted.nameEn} into SpokenLanguages`);
     }
   });
 }
@@ -69,7 +69,7 @@ async function seedSpecialties(verbose = false) {
     count++;
 
     if (verbose) {
-      console.log(`Inserting ${upserted.nameEn} into Specialties`);
+      console.log(`Inserted ${upserted.nameEn} into Specialties`);
     }
   });
 }
@@ -97,7 +97,7 @@ async function seedDegrees(verbose = false) {
 
     if (verbose) {
       // eslint-disable-next-line no-console
-      console.log(`Inserting ${upserted.nameEn} into Degrees`);
+      console.log(`Inserted ${upserted.nameEn} into Degrees`);
     }
   });
 }
@@ -113,45 +113,48 @@ async function seedContacts(verbose = false) {
   const addrLine2Col = 7;
   const mapLinkCol = 8;
 
-  const contacts:string[][] = loadCSVFromFile('./prisma/seedData/devContacts.csv');
+  const devData:string[][] = loadCSVFromFile('./prisma/seedData/devData.csv');
 
   let count = 0;
-  contacts.forEach(async (contact: string[]) => {
+  devData.forEach(async (row: string[]) => {
+    console.log(row);
+
     const newAddress = await prisma.physicalAddress.upsert({
       where: { id: count },
       update: {},
       create: {
         id: count,
-        postalCode: contact[postalCol],
-        prefectureEn: contact[prefectureCol],
-        cityEn: contact[cityCol],
-        addressLine1En: contact[addrLine1Col],
-        addressLine2En: contact[addrLine2Col],
+        postalCode: row[postalCol],
+        prefectureEn: row[prefectureCol],
+        cityEn: row[cityCol],
+        addressLine1En: row[addrLine1Col],
+        addressLine2En: row[addrLine2Col],
       },
     });
 
     if (verbose) {
-      console.log(`Inserting ${newAddress.addressLine1En} into Addresses`);
+      console.log(`Inserted ${newAddress.addressLine1En} into Addresses`);
     }
+
+    count++;
 
     const newContact = await prisma.contact.upsert({
       where: { id: count },
       update: {},
       create: {
         id: count,
-        email: contact[emailCol],
-        phone: contact[phoneCol],
-        website: contact[websiteCol],
-        mapsLink: contact[mapLinkCol],
+        email: row[emailCol],
+        phone: row[phoneCol],
+        website: row[websiteCol],
+        mapsLink: row[mapLinkCol],
         physicalAddressId: newAddress.id,
       },
     });
 
-    console.log('incrementing count 🌟');
     count++;
 
     if (verbose) {
-      console.log(`Inserting ${newContact.website} into Contacts`);
+      console.log(`Inserted ${newContact.website} into Contacts`);
     }
   });
 }

@@ -19,6 +19,9 @@ CREATE TABLE "PhysicalAddress" (
     "cityJa" TEXT,
     "addressLine1Ja" TEXT,
     "addressLine2Ja" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "PhysicalAddress_pkey" PRIMARY KEY ("id")
 );

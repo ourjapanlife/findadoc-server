@@ -159,7 +159,12 @@ model PhysicalAddress {
   cityJa         String?
   addressLine1Ja String?
   addressLine2Ja String?
-  Contact        Contact[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  Contact Contact[]
 }
 
 model Facility {
