@@ -68,7 +68,7 @@ services:
     volumes:
       - .:/target
       - status:/in
-    command: "sh -c 'until [[ -f /in/db-init-done && -d /target/node_modules ]]; do sleep 1; done; yarn migrate'"
+    command: "sh -c 'until [[ -f /in/db-init-done && -d /target/node_modules ]]; do sleep 1; done; yarn migrate; yarn prisma db seed'"
 
 volumes:
   pgdata:

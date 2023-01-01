@@ -103,7 +103,7 @@ async function seedDegrees(verbose = false) {
 }
 
 async function main() {
-  const verbose = true;
+  const verbose = false;
   await seedSpokenLanguages(verbose);
   await seedSpecialties(verbose);
   await seedDegrees(verbose);
