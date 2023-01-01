@@ -62,7 +62,7 @@ Read more about migrations here: https://www.prisma.io/docs/concepts/components/
 ## How to Test
 
 <details>
-  <summary>Click to expand</summary>
+  <summary>Testing GraphQL</summary>
 
 1. Run `yarn dev` to start the local server
 2. Run `yarn generate` to generate the types locally
@@ -80,5 +80,20 @@ Read more about migrations here: https://www.prisma.io/docs/concepts/components/
 ![image](./assets/query-by-id.png)
 
 9. If you'd like to share the query you built, such as demonstrating how you tested your code, check out [Apollo Explorer's sharing features](https://www.apollographql.com/blog/announcement/platform/save-and-share-your-graphql-operations-in-apollo-explorer/#sharing-a-collection).
+
+</details>
+
+<details>
+  <summary>Testing Prisma and Postgres</summary>
+
+0. Make sure you have your database set up and the migrations run (See Database Setup above)
+
+1. Run Prisma Studio with `yarn prisma studio`
+2. Go to http://localhost:5555
+3. Click on the table you'd like to inspect. You should be able to view and even modify the database through this interface, kind 
+of like in a spreadsheet. You can open many tabs for various tables and preview your changes before saving them
+
+
+For more details on how to use this tool, check out: https://www.prisma.io/docs/concepts/components/prisma-studio
 
 </details>
