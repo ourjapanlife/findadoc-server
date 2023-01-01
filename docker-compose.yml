@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     ports:
-      - 5432:5432
+      - ${POSTGRES_PORT}:${DOCKER_INTERNAL_PORT}
     healthcheck:
       test:
         [
@@ -31,6 +31,9 @@ services:
           - database
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DOCKER_POSTGRES_HOST}:${DOCKER_INTERNAL_PORT}/${POSTGRES_DB}?schema=public
+      - SHADOW_DB_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DOCKER_POSTGRES_HOST}:${DOCKER_INTERNAL_PORT}/${SHADOW_DB}?schema=public
     entrypoint: /docker/db-init.sh
     volumes:
       - ./docker:/docker
@@ -54,8 +57,8 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DOCKER_POSTGRES_HOST}:5432/${POSTGRES_DB}?schema=public
-      - SHADOW_DB_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DOCKER_POSTGRES_HOST}:5432/${SHADOW_DB}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DOCKER_POSTGRES_HOST}:${DOCKER_INTERNAL_PORT}/${POSTGRES_DB}?schema=public
+      - SHADOW_DB_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DOCKER_POSTGRES_HOST}:${DOCKER_INTERNAL_PORT}/${SHADOW_DB}?schema=public
     links:
       - db
     networks:

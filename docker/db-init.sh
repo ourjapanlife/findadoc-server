@@ -1,16 +1,16 @@
 #!/bin/sh
 set -euo pipefail
-echo "😃😃😃😃😃😃DB SETUP TIME😃😃😃😃😃"
+echo "😃😃😃😃😃😃 DB SETUP TIME 😃😃😃😃😃"
 
 echo $POSTGRES_DB
 
 
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h ${DOCKER_POSTGRES_HOST} -U $POSTGRES_USER -c '\q'; do
-  >&2 echo "Postgres is unavailable - sleeping"
+until PGPASSWORD=$POSTGRES_PASSWORD psql -h ${DOCKER_POSTGRES_HOST} -U $POSTGRES_USER -p $DOCKER_INTERNAL_PORT -c '\q'; do
+  >&2 echo "Postgres is unavailable - sleeping 😴"
   sleep 1
 done
   
->&2 echo "Postgres is up - executing command"
+>&2 echo "Postgres is up 🙌 - executing command"
 
 function create_database_if_not_exists() {
     local db="$1"
