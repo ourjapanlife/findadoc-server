@@ -54,7 +54,7 @@ CREATE TABLE "Degree" (
 CREATE TABLE "HealthcareProfessional" (
     "id" SERIAL NOT NULL,
     "personNameId" INTEGER NOT NULL,
-    "contactId" INTEGER NOT NULL,
+    "contactId" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
@@ -97,8 +97,28 @@ CREATE TABLE "Contact" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
+    "addressId" INTEGER NOT NULL,
 
     CONSTRAINT "Contact_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PhysicalAddress" (
+    "id" SERIAL NOT NULL,
+    "postalCode" TEXT NOT NULL,
+    "prefectureEn" TEXT NOT NULL,
+    "cityEn" TEXT NOT NULL,
+    "addressLine1En" TEXT NOT NULL,
+    "addressLine2En" TEXT,
+    "prefectureJa" TEXT,
+    "cityJa" TEXT,
+    "addressLine1Ja" TEXT,
+    "addressLine2Ja" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+
+    CONSTRAINT "PhysicalAddress_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -128,7 +148,7 @@ ALTER TABLE "LocaleName" ADD CONSTRAINT "LocaleName_personNameId_fkey" FOREIGN K
 ALTER TABLE "HealthcareProfessional" ADD CONSTRAINT "HealthcareProfessional_personNameId_fkey" FOREIGN KEY ("personNameId") REFERENCES "PersonName"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "HealthcareProfessional" ADD CONSTRAINT "HealthcareProfessional_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES "Contact"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "HealthcareProfessional" ADD CONSTRAINT "HealthcareProfessional_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES "Contact"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "HealthcareProfessionalSpecialty" ADD CONSTRAINT "HealthcareProfessionalSpecialty_healthcareProfessionalId_fkey" FOREIGN KEY ("healthcareProfessionalId") REFERENCES "HealthcareProfessional"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -147,6 +167,9 @@ ALTER TABLE "HealthcareProfessionalSpokenLanguage" ADD CONSTRAINT "HealthcarePro
 
 -- AddForeignKey
 ALTER TABLE "HealthcareProfessionalSpokenLanguage" ADD CONSTRAINT "HealthcareProfessionalSpokenLanguage_spokenLanguageIso639__fkey" FOREIGN KEY ("spokenLanguageIso639_3") REFERENCES "SpokenLanguage"("iso639_3") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Contact" ADD CONSTRAINT "Contact_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "PhysicalAddress"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Facility" ADD CONSTRAINT "Facility_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES "Contact"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
