@@ -39,18 +39,15 @@ async function seedSpecialties(verbose = false) {
 
   const specialties:string[][] = loadCSVFromFile('./prisma/seedData/specialties.csv');
 
-  let count = 0;
-  specialties.forEach(async (specialty: string[]) => {
+  specialties.forEach(async (specialty: string[], index) => {
     const upserted = await prisma.specialty.upsert({
-      where: { id: count },
+      where: { id: index },
       update: {},
       create: {
         nameEn: specialty[enCol],
         nameJa: specialty[jaCol],
       },
     });
-
-    count++;
 
     if (verbose) {
       console.log(`Inserted ${upserted.nameEn} into Specialties`);
@@ -65,10 +62,9 @@ async function seedDegrees(verbose = false) {
 
   const degrees:string[][] = loadCSVFromFile('./prisma/seedData/degrees.csv');
 
-  let count = 0;
-  degrees.forEach(async (degree: string[]) => {
+  degrees.forEach(async (degree: string[], index) => {
     const upserted = await prisma.degree.upsert({
-      where: { id: count },
+      where: { id: index },
       update: {},
       create: {
         nameEn: degree[enCol],
@@ -76,8 +72,6 @@ async function seedDegrees(verbose = false) {
         abbreviation: degree[abbrCol],
       },
     });
-
-    count++;
 
     if (verbose) {
       // eslint-disable-next-line no-console
