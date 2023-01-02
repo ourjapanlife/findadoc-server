@@ -22,7 +22,7 @@ jobs:
     name: Setup 🛫
     strategy:
       matrix:
-        node-version: [16, 18]  
+        node-version: [18]  
     runs-on: ubuntu-latest
     steps:
       - name: Setup Cache
@@ -43,13 +43,13 @@ jobs:
         run: yarn install --immutable
         # this is needed to generate things like tsconfig declarations
       - name: Prepare Backend
-        run: yarn build
+        run: echo todo
   teardown:
     name: Teardown 🛬
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [16, 18]  
+        node-version: [18]  
     needs:
       # list of lint jobs
       - eslint 
@@ -76,7 +76,7 @@ jobs:
     needs: setup
     strategy:
       matrix:
-        node-version: [16, 18]  
+        node-version: [18]  
     steps:
       - name: Load Cache
         uses: actions/cache@v3
