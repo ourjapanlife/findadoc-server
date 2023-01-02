@@ -10,7 +10,7 @@
     "generate": "yarn && graphql-codegen --config ./src/typesgeneratorconfig.ts",
     "lint": "eslint . --ext .js,.ts,.json",
     "lint:check": "eslint . --ext .js,.ts,.json",
-    "lint:ci": "eslint . --ext .js,.ts,.json --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif --ignore-path .gitignore",
+    "lint:ci": "eslint . --ext .js,.ts,.json",
     "migrate": "prisma migrate dev"
   },
   "prisma": {
@@ -32,7 +32,6 @@
     "@graphql-codegen/cli": "^2.16.2",
     "@graphql-codegen/typescript": "^2.7.3",
     "@graphql-codegen/typescript-resolvers": "^2.7.3",
-    "@microsoft/eslint-formatter-sarif": "^3.0.0",
     "@types/chai": "^4.3.3",
     "@types/expect": "^24.3.0",
     "@types/mocha": "^10.0.0",
