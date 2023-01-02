@@ -85,9 +85,9 @@ model HealthcareProfessional {
   HealthcareProfessionalDegree    HealthcareProfessionalDegree[]
   spokenLanguages                 HealthcareProfessionalSpokenLanguage[]
 
-  contact Contact @relation(fields: [contactId], references: [id])
+  contact Contact? @relation(fields: [contactId], references: [id])
 
-  contactId Int
+  contactId Int?
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -140,8 +140,31 @@ model Contact {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  address                PhysicalAddress?         @relation(fields: [addressId], references: [id])
+  addressId              Int
   Facility               Facility[]
   HealthcareProfessional HealthcareProfessional[]
+}
+
+// A physical address represents a location on a map
+model PhysicalAddress {
+  id             Int     @id @default(autoincrement())
+  postalCode     String
+  prefectureEn   String
+  cityEn         String
+  addressLine1En String
+  addressLine2En String?
+
+  prefectureJa   String?
+  cityJa         String?
+  addressLine1Ja String?
+  addressLine2Ja String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  Contact Contact[]
 }
 
 model Facility {
