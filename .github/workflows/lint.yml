@@ -84,11 +84,4 @@ jobs:
           path: ${{ env.CACHE_PATH }}
           key: ${{ env.CACHE_KEY }}-${{ matrix.node-version }}
       - name: Run ESLint
-        run: yarn lint:check
-
-      - name: Upload Results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always() # upload even if the lint fails
-        with:
-          sarif_file: eslint-results.sarif
-          wait-for-processing: true
+        run: yarn lint:ci

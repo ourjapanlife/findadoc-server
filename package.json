@@ -10,6 +10,7 @@
     "generate": "yarn && graphql-codegen --config ./src/typesgeneratorconfig.ts",
     "lint": "eslint . --ext .js,.ts,.json",
     "lint:check": "eslint . --ext .js,.ts,.json",
+    "lint:ci": "eslint . --ext .js,.ts,.json",
     "migrate": "prisma migrate dev"
   },
   "prisma": {
