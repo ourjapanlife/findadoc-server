@@ -88,9 +88,9 @@ async function seedDegrees(verbose = false) {
 
 async function main() {
   const verbose = true;
-  await seedSpokenLanguages();
-  await seedSpecialties();
-  await seedDegrees();
+  await seedSpokenLanguages(verbose);
+  await seedSpecialties(verbose);
+  await seedDegrees(verbose);
 
   if (process.env.NODE_ENV === 'development') {
     await devSetup.seedHealthcareProfessionals(prisma, verbose);
