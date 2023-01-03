@@ -1,36 +1,65 @@
 import crypto from 'crypto';
+import { getFacilityById, getFacilities } from './services/facilityService';
+import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService';
+import { getSpecialtyById, getSpecialties } from './services/specialtyService';
 import {
-  facilities,
-  healthcareProfessionals,
-  specialties as medicalField,
-} from './mockData/mockData';
+  Degree,
+  Facility,
+  Insurance,
+  Language,
+  HealthcareProfessional,
+  Specialty,
+  PersonNameInput,
+  HealthcareProfessionalInput,
+} from './typeDefs/gqlTypes';
 
 const resolvers = {
   Query: {
-    facilities: () => facilities,
-    facility: (_parent: any, args: any) => {
-      const matchingFacility = facilities.find(
-        (location) => location.id === args.id,
-      );
+    facilities: () => {
+      // TODO: add a validation step for incoming parameters
+      const matchingFacilities = getFacilities();
+
+      return matchingFacilities;
+    },
+    facility: (_parent: Facility, args: { id: string; }) => {
+      // TODO: add a validation step for incoming parameters
+      const matchingFacility = getFacilityById(args.id);
       return matchingFacility;
     },
-    healthcareProfessionals: () => healthcareProfessionals,
-    healthcareProfessional: (_parent: any, args: any) => {
-      const matchingHealthcareProfessional = healthcareProfessionals.find(
-        (person) => person.id === args.id,
-      );
+    healthcareProfessionals: () => {
+      // TODO: add a validation step for incoming parameters
+      const matchingProfessionals = getHealthcareProfessionals();
+
+      return matchingProfessionals;
+    },
+    healthcareProfessional: (_parent: HealthcareProfessional, args: { id: string; }) => {
+      // TODO: add a validation step for incoming parameters
+      const matchingHealthcareProfessional = getHealthcareProfessionalById(args.id);
+
       return matchingHealthcareProfessional;
     },
-    specialties: () => medicalField,
-    specialty: (_parent: any, args: any) => {
-      const matchingSpecialty = medicalField.find(
-        (field) => field.id === args.id,
-      );
+    specialties: () => {
+      // TODO: add a validation step for incoming parameters
+      const matchingSpecialties = getSpecialties();
+
+      return matchingSpecialties;
+    },
+    specialty: (_parent: Specialty, args: { id: string; }) => {
+      // TODO: add a validation step for incoming parameters
+      const matchingSpecialty = getSpecialtyById(args.id);
+
       return matchingSpecialty;
     },
   },
   Mutation: {
-    createHealthcareProfessional: (_parent: any, args: any) => {
+    createHealthcareProfessional: (_parent: HealthcareProfessionalInput, args: {
+      id: string,
+      names: Array<PersonNameInput>,
+      degrees: Array<Degree>,
+      spokenLanguages: Array<Language>,
+      specialties: Array<Specialty>,
+      acceptedInsuranceOptions: Array<Insurance>
+    }) => {
       const id = crypto.randomUUID();
 
       const {
@@ -39,7 +68,7 @@ const resolvers = {
         spokenLanguages,
         specialties,
         acceptedInsuranceOptions,
-      } = args.input;
+      } = args;
 
       // TODO: Eventually this should check if a specialty already exists in the DB
       // and match it to that if it does.

@@ -1,8 +1,17 @@
 // locale will be used for the site's language settings
 
+import {
+  Degree,
+  Facility,
+  Insurance,
+  Language,
+  HealthcareProfessional,
+  Specialty,
+} from '../typeDefs/gqlTypes';
+
 // language is the spoken language
 
-const facilities = [
+const facilities: Array<Facility> = [
   {
     id: '1',
     names: [
@@ -38,25 +47,28 @@ const facilities = [
             locale: 'ja',
           },
         ],
-        spokenLanguages: ['JAPANESE', 'ENGLISH'],
-        specialties: [
-          {
-            id: '1',
-            name: 'General Practice',
-            locale: 'en',
-          },
-          {
-            id: '1',
-            name: '一般診療',
-            locale: 'ja',
-          },
+        degrees: [<Degree>'DOCTOR_OF_MEDICINE'],
+        spokenLanguages: [<Language>'JAPANESE', <Language>'ENGLISH'],
+        specialties:
+          [
+            {
+              id: '1',
+              names:
+                [
+                  { name: 'General Practice', locale: 'en' },
+                  { name: '一般診療', locale: 'ja' },
+                ],
+            },
+          ],
+        acceptedInsuranceOptions: [
+          <Insurance>'EMPLOYER_HEALTH_INSURANCE',
         ],
       },
     ],
   },
 ];
 
-const healthcareProfessionals = [
+const healthcareProfessionals: Array<HealthcareProfessional> = [
   {
     id: '1',
     names: [
@@ -73,16 +85,16 @@ const healthcareProfessionals = [
         locale: 'ja',
       },
     ],
-    spokenLanguages: ['JAPANESE', 'ENGLISH'],
+    degrees: [<Degree>'DOCTOR_OF_PHILOSOPHY'],
+    spokenLanguages: [<Language>'JAPANESE', <Language>'ENGLISH'],
     specialties: [
       {
         id: '1',
-        names: [{ name: 'General Practice', locale: 'en' }],
+        names: [{ name: 'General Practice', locale: 'en' }, { name: '一般診療', locale: 'ja' }],
       },
-      {
-        id: '1',
-        names: [{ name: '一般診療', locale: 'ja' }],
-      },
+    ],
+    acceptedInsuranceOptions: [
+      <Insurance>'NATIONAL_HEALTH_INSURANCE',
     ],
   },
   {
@@ -101,16 +113,16 @@ const healthcareProfessionals = [
         locale: 'ja',
       },
     ],
-    spokenLanguages: ['JAPANESE'],
+    degrees: [<Degree>'DOCTOR_OF_PHILOSOPHY'],
+    spokenLanguages: [<Language>'JAPANESE'],
     specialties: [
       {
         id: '2',
-        names: [{ name: 'Internal Medicine', locale: 'en' }],
+        names: [{ name: 'Internal Medicine', locale: 'en' }, { name: '内科', locale: 'ja' }],
       },
-      {
-        id: '2',
-        names: [{ name: '内科', locale: 'ja' }],
-      },
+    ],
+    acceptedInsuranceOptions: [
+      <Insurance>'NATIONAL_HEALTH_INSURANCE',
     ],
   },
   {
@@ -129,21 +141,21 @@ const healthcareProfessionals = [
         locale: 'ja',
       },
     ],
-    spokenLanguages: ['ENGLISH'],
+    degrees: [<Degree>'DOCTOR_OF_PHILOSOPHY'],
+    spokenLanguages: [<Language>'ENGLISH'],
     specialties: [
       {
         id: '3',
-        names: [{ name: 'Pediatrics', locale: 'en' }],
+        names: [{ name: 'Pediatrics', locale: 'en' }, { name: '小児科', locale: 'ja' }],
       },
-      {
-        id: '3',
-        names: [{ name: '小児科', locale: 'ja' }],
-      },
+    ],
+    acceptedInsuranceOptions: [
+      <Insurance>'NATIONAL_HEALTH_INSURANCE',
     ],
   },
 ];
 
-const specialties = [
+const specialties: Array<Specialty> = [
   {
     id: '1',
     names: [
