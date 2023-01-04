@@ -3,9 +3,9 @@ import { parse } from 'csv-parse/sync';
 import * as fs from 'fs';
 
 // loads a CSV file from the filesystem, ready for parsing
-export default async function loadCSVFromFile(filename: string, discardHeader = true, delimiter = ',') {
+export default function loadCSVFromFile(filename: string, discardHeader = true, delimiter = ',') {
   try {
-    const input = await fs.readFileSync(filename);
+    const input = fs.readFileSync(filename);
 
     // Initialize the parser
     const records: string[][] = parse(input, {
