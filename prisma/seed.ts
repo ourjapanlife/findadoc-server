@@ -3,7 +3,7 @@
 // Seed data for the database
 // https://www.prisma.io/docs/guides/database/seed-database
 import { PrismaClient } from '@prisma/client';
-import loadCSVFromFile from './loadCsv';
+import loadCSVFromFile from './loadCsv'; // editing a file with a local import
 import devSetup from './devSetup';
 
 const prisma = new PrismaClient();
