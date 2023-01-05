@@ -1,0 +1,58 @@
+/* eslint-disable-next-line no-undef */
+module.exports = {
+  root: true,
+  extends: [
+    'eslint:recommended',
+    'airbnb-base',
+  ],
+  env: {},
+  globals: {},
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    extraFileExtensions: [
+      '.json',
+    ],
+  },
+  overrides: [
+    {
+      files: [
+        '*.ts',
+      ],
+      extends: [
+        'plugin:@typescript-eslint/recommended',
+        'airbnb-base',
+        'airbnb-typescript/base',
+      ],
+      parserOptions: {
+        project: [
+          './tsconfig.json',
+        ],
+      },
+    },
+  ],
+  plugins: [
+    '@typescript-eslint',
+    'eslint-plugin-json',
+  ],
+  rules: {
+    'import/no-extraneous-dependencies': [
+      'error',
+      {
+        devDependencies: true,
+      },
+    ],
+    'import/extensions': [
+      'error',
+      'ignorePackages',
+      {
+        js: 'never',
+        jsx: 'never',
+        ts: 'never',
+        tsx: 'never',
+      },
+    ],
+  },
+  ignorePatterns: [
+    'src/typeDefs/gqlTypes.ts',
+  ],
+};
