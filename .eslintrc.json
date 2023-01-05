@@ -8,23 +8,48 @@
   "globals": {},
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "extraFileExtensions": [".json"]
+    "extraFileExtensions": [
+      ".json"
+    ]
   },
   "overrides": [
     {
-      "files": ["*.ts"],
+      "files": [
+        "*.ts"
+      ],
       "extends": [
         "plugin:@typescript-eslint/recommended",
+        "airbnb-base",
         "airbnb-typescript/base"
       ],
       "parserOptions": {
-        "project": ["./tsconfig.json"]
+        "project": [
+          "./tsconfig.json"
+        ]
       }
     }
   ],
-  "plugins": ["@typescript-eslint", "eslint-plugin-json"],
+  "plugins": [
+    "@typescript-eslint",
+    "eslint-plugin-json"
+  ],
   "rules": {
-    "import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": true
+      }
+    ],
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+    ]
   },
   "ignorePatterns": [
     "src/typeDefs/gqlTypes.ts"
