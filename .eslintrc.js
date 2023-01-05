@@ -71,6 +71,19 @@ module.exports = {
     'comma-style': 'error',
     'computed-property-spacing': ['error', 'never'],
     'function-paren-newline': ['error', 'consistent'],
+    indent: [
+      2,
+      4,
+      {
+        MemberExpression: 1,
+        SwitchCase: 1,
+        ArrayExpression: 'first',
+        ObjectExpression: 1,
+        FunctionDeclaration: { parameters: 'off' },
+        VariableDeclarator: { var: 2, let: 2, const: 3 },
+        CallExpression: { arguments: 'first' },
+      }
+    ],
     'key-spacing': ['error', { beforeColon: false, afterColon: true }],
     'keyword-spacing': ['error', { before: true, after: true }],
     'linebreak-style': ['error', 'unix'], // no carriage returns
