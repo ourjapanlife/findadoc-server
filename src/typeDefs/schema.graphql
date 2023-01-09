@@ -68,7 +68,10 @@ type SpecialtyName {
 }
 
 input SpokenLanguageInput {
-  iso639_3: String!
+  iso639_3: String!  
+  nameJa:   String!
+  nameEn:   String!
+  nameNative: String!
 }
 
 type SpokenLanguage {
