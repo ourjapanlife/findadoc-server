@@ -1857,9 +1857,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prisma/client@npm:4.8.0":
-  version: 4.8.0
-  resolution: "@prisma/client@npm:4.8.0"
+"@prisma/client@npm:4.8.1":
+  version: 4.8.1
+  resolution: "@prisma/client@npm:4.8.1"
   dependencies:
     "@prisma/engines-version": 4.8.0-61.d6e67a83f971b175a593ccc12e15c4a757f93ffe
   peerDependencies:
@@ -1867,7 +1867,7 @@ __metadata:
   peerDependenciesMeta:
     prisma:
       optional: true
-  checksum: c0256721bd4e07fb1fdf4d0857489379769af1eaac0aec79387e32092e63e1246a95fef634f6c07bf1bdddc7c11f3e073c78e5c92b9a708f559773a3f656f94a
+  checksum: 93dc263e56f473478c8b7e051b7bad09893eac4fe0e2ba93af56e8394fb21e7e23a8fff0fde39f4aaaf85c3bfb0b51f3f50cc1cab3a585fdb94687f08e1c385a
   languageName: node
   linkType: hard
 
@@ -4468,7 +4468,7 @@ __metadata:
     "@graphql-codegen/cli": ^2.16.2
     "@graphql-codegen/typescript": ^2.7.3
     "@graphql-codegen/typescript-resolvers": ^2.7.3
-    "@prisma/client": 4.8.0
+    "@prisma/client": 4.8.1
     "@types/chai": ^4.3.3
     "@types/expect": ^24.3.0
     "@types/mocha": ^10.0.0
