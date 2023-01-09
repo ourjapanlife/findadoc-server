@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { getFacilityById, getFacilities } from './services/facilityService';
 import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService';
 import { getSpecialtyById, getSpecialties } from './services/specialtyService';
+import { getSpokenLanguages } from './services/spokenLanguageService';
 import {
     Degree,
     Facility,
@@ -50,7 +51,8 @@ const resolvers = {
             const matchingSpecialty = getSpecialtyById(args.id);
 
             return matchingSpecialty;
-        }
+        },
+        spokenLanguages: () => getSpokenLanguages()
     },
     Mutation: {
         createHealthcareProfessional: (_parent: HealthcareProfessionalInput, args: {

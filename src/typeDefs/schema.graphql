@@ -83,6 +83,12 @@ enum Insurance {
   UNKNOWN
 }
 
+type SpokenLanguage {
+  iso639_3: String!
+  nameJa:   String!
+  nameEn:   String!
+}
+
 enum Language {
   ENGLISH
   JAPANESE
@@ -95,6 +101,7 @@ type Query {
   healthcareProfessional(id: ID!): HealthcareProfessional
   specialties: [Specialty]
   specialty(id: ID!): Specialty
+  spokenLanguages: [SpokenLanguage]
 }
 
 type Mutation {
