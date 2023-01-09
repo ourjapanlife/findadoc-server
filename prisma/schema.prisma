@@ -48,9 +48,10 @@ model LocaleName {
 
 // Represents a language spoken by a healthcare provider
 model SpokenLanguage {
-  iso639_3 String @id
-  nameJa   String
-  nameEn   String
+  iso639_3   String @id
+  nameJa     String
+  nameEn     String
+  nameNative String
 
   healthcareProfessionals HealthcareProfessionalSpokenLanguage[]
 }
