@@ -65,7 +65,7 @@ module.exports = {
         'arrow-spacing': 'error',
         'block-spacing': ['error', 'always'],
         'brace-style': ['error', '1tbs', { allowSingleLine: true }],
-        camelcase: 'error',
+        camelcase: ['error', {allow: ['639_3']}],
         'comma-dangle': ['error', 'never'],
         'comma-spacing': ['error', { before: false, after: true }],
         'comma-style': 'error',

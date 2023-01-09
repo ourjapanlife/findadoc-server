@@ -102,6 +102,7 @@ type Query {
   specialties: [Specialty]
   specialty(id: ID!): Specialty
   spokenLanguages: [SpokenLanguage]
+  spokenLanguage(iso639_3: String!): SpokenLanguage
 }
 
 type Mutation {

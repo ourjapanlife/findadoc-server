@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-/* eslint-disable no-plusplus */
 /* eslint-disable no-console */
 // Seed data for the database
 // https://www.prisma.io/docs/guides/database/seed-database

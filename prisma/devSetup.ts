@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 /* eslint-disable func-names */
 /* eslint-disable no-console */
 import { PrismaClient } from '@prisma/client';

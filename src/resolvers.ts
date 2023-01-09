@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { getFacilityById, getFacilities } from './services/facilityService';
 import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService';
 import { getSpecialtyById, getSpecialties } from './services/specialtyService';
-import { getSpokenLanguages } from './services/spokenLanguageService';
+import { getSpokenLanguageByIso, getSpokenLanguages } from './services/spokenLanguageService';
 import {
     Degree,
     Facility,
@@ -52,7 +52,8 @@ const resolvers = {
 
             return matchingSpecialty;
         },
-        spokenLanguages: () => getSpokenLanguages()
+        spokenLanguages: () => getSpokenLanguages(),
+        spokenLanguage: (_parent: SpokenLanguage, args: {iso639_3: string;}) => getSpokenLanguageByIso(args.iso639_3)
     },
     Mutation: {
         createHealthcareProfessional: (_parent: HealthcareProfessionalInput, args: {
