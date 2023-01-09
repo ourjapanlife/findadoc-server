@@ -1878,10 +1878,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prisma/engines@npm:4.8.0":
-  version: 4.8.0
-  resolution: "@prisma/engines@npm:4.8.0"
-  checksum: 5c1198905d7bf850c02cd59f244055003fc2a03ce99e715a0a872f568fb024aa4b347804829c8630964ff41b64cf8fa3e08c8cd2a444ad29c215c4b1dd9701b0
+"@prisma/engines@npm:4.8.1":
+  version: 4.8.1
+  resolution: "@prisma/engines@npm:4.8.1"
+  checksum: 7ddddf5dcecbf2dd74e061fcf60c4ceef8a1c18e55aec3773ebcefb0edf0f8cf3b3e62eb7ad46fb82a85546ace5c626e1cc29b5d600ddf51989c8f07140600ca
   languageName: node
   linkType: hard
 
@@ -4487,7 +4487,7 @@ __metadata:
     graphql-import-node: ^0.0.5
     husky: ^8.0.1
     mocha: ^10.0.0
-    prisma: ^4.8.0
+    prisma: ^4.8.1
     supertest: ^6.3.0
     ts-mocha: ^10.0.0
     ts-node: ^10.9.1
@@ -6624,15 +6624,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prisma@npm:^4.8.0":
-  version: 4.8.0
-  resolution: "prisma@npm:4.8.0"
+"prisma@npm:^4.8.1":
+  version: 4.8.1
+  resolution: "prisma@npm:4.8.1"
   dependencies:
-    "@prisma/engines": 4.8.0
+    "@prisma/engines": 4.8.1
   bin:
     prisma: build/index.js
     prisma2: build/index.js
-  checksum: 22ebaa32c51fb2938626d742d9ae68be5ad49a44dad2046bfe40439a64d06e8f84d4915f66100554d7840c3c5228c6b5c4216d9f5a698d5dd11a46ab528654cf
+  checksum: 6f09e9add231c1f38cc01051037c0abb5ff4db6773d5543ce8917beee76b15351474e97b0c06eaa25267f0a65e7596a8428292317c53d1868e9aaa09cd6e0705
   languageName: node
   linkType: hard
 
