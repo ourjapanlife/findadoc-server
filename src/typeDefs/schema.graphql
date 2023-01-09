@@ -87,6 +87,7 @@ type SpokenLanguage {
   iso639_3: String!
   nameJa:   String!
   nameEn:   String!
+  nameNative: String!
 }
 
 enum Language {
