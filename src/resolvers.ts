@@ -7,11 +7,11 @@ import {
     Degree,
     Facility,
     Insurance,
-    Language,
     HealthcareProfessional,
     Specialty,
     PersonNameInput,
-    HealthcareProfessionalInput
+    HealthcareProfessionalInput,
+    SpokenLanguage
 } from './typeDefs/gqlTypes';
 
 const resolvers = {
@@ -59,7 +59,7 @@ const resolvers = {
       id: string,
       names: Array<PersonNameInput>,
       degrees: Array<Degree>,
-      spokenLanguages: Array<Language>,
+      spokenLanguages: Array<SpokenLanguage>,
       specialties: Array<Specialty>,
       acceptedInsuranceOptions: Array<Insurance>
     }) => {

@@ -4,12 +4,10 @@ import {
     Degree,
     Facility,
     Insurance,
-    Language,
+    SpokenLanguage,
     HealthcareProfessional,
     Specialty
 } from '../typeDefs/gqlTypes';
-
-// language is the spoken language
 
 const facilities: Array<Facility> = [
     {
@@ -48,7 +46,7 @@ const facilities: Array<Facility> = [
                     }
                 ],
                 degrees: [<Degree>'DOCTOR_OF_MEDICINE'],
-                spokenLanguages: [<Language>'JAPANESE', <Language>'ENGLISH'],
+                spokenLanguages: [],
                 specialties:
           [
               {
@@ -86,7 +84,7 @@ const healthcareProfessionals: Array<HealthcareProfessional> = [
             }
         ],
         degrees: [<Degree>'DOCTOR_OF_PHILOSOPHY'],
-        spokenLanguages: [<Language>'JAPANESE', <Language>'ENGLISH'],
+        spokenLanguages: [],
         specialties: [
             {
                 id: '1',
@@ -114,7 +112,7 @@ const healthcareProfessionals: Array<HealthcareProfessional> = [
             }
         ],
         degrees: [<Degree>'DOCTOR_OF_PHILOSOPHY'],
-        spokenLanguages: [<Language>'JAPANESE'],
+        spokenLanguages: [],
         specialties: [
             {
                 id: '2',
@@ -142,7 +140,7 @@ const healthcareProfessionals: Array<HealthcareProfessional> = [
             }
         ],
         degrees: [<Degree>'DOCTOR_OF_PHILOSOPHY'],
-        spokenLanguages: [<Language>'ENGLISH'],
+        spokenLanguages: [],
         specialties: [
             {
                 id: '3',
