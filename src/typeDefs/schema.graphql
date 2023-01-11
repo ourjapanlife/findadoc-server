@@ -20,7 +20,7 @@ type FacilityName {
 input HealthcareProfessionalInput {
   names: [PersonNameInput]!
   degrees: [Degree]!
-  spokenLanguages: [Language]!
+  spokenLanguages: [SpokenLanguageInput]!
   specialties: [SpecialtyInput]!
   acceptedInsuranceOptions: [Insurance]!
 }
@@ -29,7 +29,7 @@ type HealthcareProfessional {
   id: ID!
   names: [PersonName]!
   degrees: [Degree]!
-  spokenLanguages: [Language]!
+  spokenLanguages: [SpokenLanguage]!
   specialties: [Specialty]!
   acceptedInsuranceOptions: [Insurance]!
 }
@@ -67,6 +67,20 @@ type SpecialtyName {
   locale: String!
 }
 
+input SpokenLanguageInput {
+  iso639_3: String!  
+  nameJa:   String!
+  nameEn:   String!
+  nameNative: String!
+}
+
+type SpokenLanguage {
+  iso639_3: String!
+  nameJa:   String!
+  nameEn:   String!
+  nameNative: String!
+}
+
 enum Degree {
   DOCTOR_OF_MEDICINE
   DOCTOR_OF_PHILOSOPHY
@@ -83,11 +97,6 @@ enum Insurance {
   UNKNOWN
 }
 
-enum Language {
-  ENGLISH
-  JAPANESE
-}
-
 type Query {
   facilities: [Facility]
   facility(id: ID!): Facility
@@ -95,6 +104,8 @@ type Query {
   healthcareProfessional(id: ID!): HealthcareProfessional
   specialties: [Specialty]
   specialty(id: ID!): Specialty
+  spokenLanguages: [SpokenLanguage]
+  spokenLanguage(iso639_3: String!): SpokenLanguage
 }
 
 type Mutation {

@@ -27,6 +27,11 @@ yarn install
 yarn prepare
 ```
 
+3. Init Prisma 💠
+```sh
+yarn prisma generate
+```
+
 ### Database Setup 🐘
 
 For simplicity we provide a dockerized postgres. As a prerequisite, you will need to install 

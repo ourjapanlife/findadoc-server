@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-/* eslint-disable no-plusplus */
 /* eslint-disable no-console */
 // Seed data for the database
 // https://www.prisma.io/docs/guides/database/seed-database
@@ -12,6 +10,7 @@ const prisma = new PrismaClient();
 async function seedSpokenLanguages(verbose = false) {
     const iso639Col = 0;
     const enCol = 1;
+    const nativeCol = 2;
     const jaCol = 3;
 
     const spokenLanguages:string[][] = loadCSVFromFile('./prisma/seedData/spokenLanguages.csv');
@@ -23,7 +22,8 @@ async function seedSpokenLanguages(verbose = false) {
             create: {
                 iso639_3: language[iso639Col],
                 nameEn: language[enCol],
-                nameJa: language[jaCol]
+                nameJa: language[jaCol],
+                nameNative: language[nativeCol]
             }
         });
 

@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x", "linux-musl"]
 }
 
 datasource db {
@@ -48,9 +49,10 @@ model LocaleName {
 
 // Represents a language spoken by a healthcare provider
 model SpokenLanguage {
-  iso639_3 String @id
-  nameJa   String
-  nameEn   String
+  iso639_3   String @id
+  nameJa     String
+  nameEn     String
+  nameNative String
 
   healthcareProfessionals HealthcareProfessionalSpokenLanguage[]
 }

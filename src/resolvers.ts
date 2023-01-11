@@ -2,15 +2,16 @@ import crypto from 'crypto';
 import { getFacilityById, getFacilities } from './services/facilityService';
 import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService';
 import { getSpecialtyById, getSpecialties } from './services/specialtyService';
+import { getSpokenLanguageByIso, getSpokenLanguages } from './services/spokenLanguageService';
 import {
     Degree,
     Facility,
     Insurance,
-    Language,
     HealthcareProfessional,
     Specialty,
     PersonNameInput,
-    HealthcareProfessionalInput
+    HealthcareProfessionalInput,
+    SpokenLanguage
 } from './typeDefs/gqlTypes';
 
 const resolvers = {
@@ -50,14 +51,16 @@ const resolvers = {
             const matchingSpecialty = getSpecialtyById(args.id);
 
             return matchingSpecialty;
-        }
+        },
+        spokenLanguages: () => getSpokenLanguages(),
+        spokenLanguage: (_parent: SpokenLanguage, args: {iso639_3: string;}) => getSpokenLanguageByIso(args.iso639_3)
     },
     Mutation: {
         createHealthcareProfessional: (_parent: HealthcareProfessionalInput, args: {
       id: string,
       names: Array<PersonNameInput>,
       degrees: Array<Degree>,
-      spokenLanguages: Array<Language>,
+      spokenLanguages: Array<SpokenLanguage>,
       specialties: Array<Specialty>,
       acceptedInsuranceOptions: Array<Insurance>
     }) => {
