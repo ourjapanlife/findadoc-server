@@ -53,6 +53,16 @@ Edit the .env file and set the database password
 docker compose up
 ```
 
+3. Run the migrations
+```sh
+yarn prisma migrate dev
+```
+
+4. Run the seeds
+```sh
+yarn prisma db seed
+```
+
 ### Note about migration files
 
 Migration files should never edited after merging to `main` in order to keep an accurate database history. If you want
