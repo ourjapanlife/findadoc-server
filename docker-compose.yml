@@ -1,59 +1,36 @@
-version: "3.8"
+version: "3.9"
 services:
   db:
-    image: postgres:14-alpine
+    build: 
+      dockerfile: /docker/db/Dockerfile
+      context: ./
+    image: findadoc_postgres_db
     networks:
-      new:
-        aliases:
-          - database
+      - findadoc
     env_file:
       - .env
     ports:
+      - 5400
       - ${POSTGRES_PORT}:${DOCKER_INTERNAL_PORT}
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
-        ]
-      interval: 10s
-      timeout: 3s
-      retries: 5
+    # healthcheck:
+    #   test:
+    #     [
+    #       "CMD",
+    #       "return false"
+    #       # "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+    #     ]
+      # interval: 10s
+      # timeout: 3s
+      # retries: 5
     volumes:
       - pgdata:/var/lib/postgresql/findadoc-data # persist data even if container shuts down
-  db-configure:
-    image: postgres:14-alpine
-    depends_on:
-      - db
-    networks:
-      new:
-        aliases:
-          - database
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DOCKER_POSTGRES_HOST}:${DOCKER_INTERNAL_PORT}/${POSTGRES_DB}?schema=public
-      - SHADOW_DB_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DOCKER_POSTGRES_HOST}:${DOCKER_INTERNAL_PORT}/${SHADOW_DB}?schema=public
-    entrypoint: /docker/db-init.sh
-    volumes:
-      - ./docker:/docker
-      - status:/out
-  install-deps:
-    depends_on:
-      - db-configure
-    env_file:
-      - .env
-    image: node:18.12.1-alpine
-    networks:
-      - new
-    working_dir: /target
-    volumes:
-      - .:/target
-    command: "yarn install"
   migrate:
+    build: 
+      dockerfile: /docker/prisma/Dockerfile
+      context: ./
     depends_on:
-      - db-configure
-      - install-deps
+      db:
+        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -62,18 +39,10 @@ services:
     links:
       - db
     networks:
-      - new
-    image: node:18.12.1-alpine
-    working_dir: /target
-    volumes:
-      - .:/target
-      - status:/in
-    command: "sh -c 'until [[ -f /in/db-init-done && -d /target/node_modules ]]; do sleep 1; done; yarn migrate; yarn prisma db seed'"
-
+      - findadoc
 volumes:
   pgdata:
   status:
 
-
 networks:
-  new:
+  findadoc:
