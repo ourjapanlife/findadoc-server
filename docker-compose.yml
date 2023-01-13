@@ -49,7 +49,7 @@ services:
     working_dir: /target
     volumes:
       - .:/target
-    command: "yarn install"
+    command: "yarn install; yarn prisma generate"
   migrate:
     depends_on:
       - db-configure
