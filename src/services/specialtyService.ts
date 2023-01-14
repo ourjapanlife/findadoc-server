@@ -1,15 +1,24 @@
 
-import { Specialty } from '../typeDefs/gqlTypes';
-import {Specialty as PrismaSpecialty, SpecialtyName} from '@prisma/client';
+import { Specialty, SpecialtyName } from '../typeDefs/gqlTypes';
+import {Specialty as PrismaSpecialty, SpecialtyName as PrismaSpecialtyName} from '@prisma/client';
 import prisma from '../db/client';
 
-type SpecialtyAndNames = (PrismaSpecialty & { names: SpecialtyName[]})
+type SpecialtyAndNames = (PrismaSpecialty & { names: PrismaSpecialtyName[]})
 
 function convertPrismaToGraphQLSpecialty(input: SpecialtyAndNames) {
-    return {
+    const ret = {
         id: String(input.id),
-        name: input.names
+        names: Array<SpecialtyName>()
     } as Specialty;
+
+    for (let i = 0; i < input.names.length; i++) {
+        ret.names?.push({
+            name: input.names[i].name,
+            locale: input.names[i].locale
+        });
+    }
+
+    return ret;
 }
 
 // TODO: add a validation step for incoming parameters

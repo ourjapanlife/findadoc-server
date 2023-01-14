@@ -127,10 +127,6 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                 }
             });
 
-            if (verbose) {
-                console.log(`Found ${dbSpecialtyName?.name} ???`);
-            }
-
             if (dbSpecialtyName && dbSpecialtyName.specialtyId) {
                 await prisma.healthcareProfessionalSpecialty.create(
                     {
