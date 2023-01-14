@@ -43,7 +43,7 @@ model LocaleName {
   updatedAt DateTime @updatedAt
   // no soft deletes due to unique constraint
 
-  // only allow one localeName per PersonName
+  // only allow one localeName per PersonName and locale
   @@unique([locale, personNameId])
 }
 
@@ -59,11 +59,21 @@ model SpokenLanguage {
 
 // Represents the area a professional works in, such as Gynecology, gastroenterology, oncology, physical therapy, etc.
 model Specialty {
-  id     Int    @id @default(autoincrement())
-  nameJa String
-  nameEn String
+  id    Int             @id @default(autoincrement())
+  names SpecialtyName[]
 
   HealthcareProfessionalSpecialty HealthcareProfessionalSpecialty[]
+}
+
+model SpecialtyName {
+  id     Int    @id @default(autoincrement())
+  locale String // ISO-639-1
+  name   String
+
+  Specialty   Specialty? @relation(fields: [specialtyId], references: [id])
+  specialtyId Int?
+
+  @@unique([locale, specialtyId])
 }
 
 // Denotes health-related degrees, such as M.D., Ph.D, D.D.S., D.O, etc.

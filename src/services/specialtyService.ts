@@ -1,13 +1,14 @@
 
 import { Specialty } from '../typeDefs/gqlTypes';
-import {Specialty as PrismaSpecialty } from '@prisma/client';
+import {Specialty as PrismaSpecialty, SpecialtyName} from '@prisma/client';
 import prisma from '../db/client';
 
-function convertPrismaToGraphQLSpecialty(input: PrismaSpecialty) {
+type SpecialtyAndNames = (PrismaSpecialty & { names: SpecialtyName[]})
+
+function convertPrismaToGraphQLSpecialty(input: SpecialtyAndNames) {
     return {
         id: String(input.id),
-        nameEn: input.nameEn,
-        nameJa: input.nameJa
+        name: input.names
     } as Specialty;
 }
 
@@ -15,6 +16,9 @@ function convertPrismaToGraphQLSpecialty(input: PrismaSpecialty) {
 export const getSpecialtyById = async (id: string) => {
     const found = await prisma.specialty.findUnique({ where: {
         id: parseInt(id)
+    },
+    include: {
+        names: true
     }});
 
     if (found) {
@@ -24,7 +28,9 @@ export const getSpecialtyById = async (id: string) => {
 };
 
 export const getSpecialties = async () => {
-    const dbSpecialties = await prisma.specialty.findMany();
+    const dbSpecialties = await prisma.specialty.findMany({ include: {
+        names: true
+    }});
 
     const ret = Array<Specialty>();
 

@@ -120,17 +120,22 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
 
         specialtyList.forEach(async specialty => {
             // TODO change to upsert
-            const dbSpecialty = await prisma.specialty.findFirst({
+            const dbSpecialtyName = await prisma.specialtyName.findFirst({
                 where: {
-                    nameEn: specialty
+                    locale: 'en',
+                    name: specialty
                 }
             });
 
-            if (dbSpecialty) {
+            if (verbose) {
+                console.log(`Found ${dbSpecialtyName?.name} ???`);
+            }
+
+            if (dbSpecialtyName && dbSpecialtyName.specialtyId) {
                 await prisma.healthcareProfessionalSpecialty.create(
                     {
                         data: {
-                            specialtyId: dbSpecialty.id,
+                            specialtyId: dbSpecialtyName.specialtyId,
                             healthcareProfessionalId: newHealthPro.id
                         }
                     }
