@@ -14,7 +14,7 @@ type Facility {
 }
 
 input HealthcareProfessionalInput {
-  names: [PersonNameInput]!
+  names: [LocaleNameInput]!
   degrees: [Degree]!
   spokenLanguages: [SpokenLanguageInput]!
   specialties: [SpecialtyInput]!
@@ -23,21 +23,21 @@ input HealthcareProfessionalInput {
 
 type HealthcareProfessional {
   id: ID!
-  names: [PersonName]!
+  names: [LocaleName]!
   degrees: [Degree]!
   spokenLanguages: [SpokenLanguage]!
   specialties: [Specialty]!
   acceptedInsuranceOptions: [Insurance]!
 }
 
-input PersonNameInput {
+input LocaleNameInput {
   lastName: String!
   firstName: String!
   middleName: String
   locale: String!
 }
 
-type PersonName {
+type LocaleName {
   lastName: String!
   firstName: String!
   middleName: String

@@ -12,18 +12,7 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DB_URL")
 }
 
-// Represents the name of a human individual in both Japanese and Romanji characters.
-model PersonName {
-  id                     Int                     @id @default(autoincrement())
-  names                  LocaleName[]
-  HealthcareProfessional HealthcareProfessional?
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-}
-
-// Represents a variant of a Person's name in a specific Locale
+// Represents a variant of a HealthcareProfessional's name in a specific Locale
 // Locale is represented as two character ISO-639-1 code
 // E.g. 
 // en: Jane Smith
@@ -36,15 +25,14 @@ model LocaleName {
   middleName String?
   lastName   String
 
-  PersonName   PersonName? @relation(fields: [personNameId], references: [id])
-  personNameId Int?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
   // no soft deletes due to unique constraint
+  HealthcareProfessional   HealthcareProfessional? @relation(fields: [healthcareProfessionalId], references: [id])
+  healthcareProfessionalId Int?
 
-  // only allow one localeName per PersonName and locale
-  @@unique([locale, personNameId])
+  // only allow one localeName per healthcareProfessional and locale
+  @@unique([locale, healthcareProfessionalId])
 }
 
 // Represents a language spoken by a healthcare provider
@@ -88,9 +76,8 @@ model Degree {
 
 // Reperesents a healthcare professional such as a doctor, nurse, therapist, etc.
 model HealthcareProfessional {
-  id           Int        @id @default(autoincrement())
-  name         PersonName @relation(fields: [personNameId], references: [id])
-  personNameId Int        @unique
+  id    Int          @id @default(autoincrement())
+  names LocaleName[]
 
   // many to many relations
   HealthcareProfessionalSpecialty HealthcareProfessionalSpecialty[]
