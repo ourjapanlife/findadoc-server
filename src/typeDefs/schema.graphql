@@ -7,14 +7,10 @@ type Contact {
 
 type Facility {
   id: ID!
-  names: [FacilityName]!
+  nameEn: String!
+  nameJa: String!
   contact: Contact!
   healthcareProfessionals: [HealthcareProfessional]!
-}
-
-type FacilityName {
-  name: String!
-  locale: String!
 }
 
 input HealthcareProfessionalInput {

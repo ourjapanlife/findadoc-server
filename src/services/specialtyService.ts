@@ -3,7 +3,7 @@ import { Specialty } from '../typeDefs/gqlTypes';
 import {Specialty as PrismaSpecialty } from '@prisma/client';
 import prisma from '../db/client';
 
-function convertPrismaSpecialtyToGraphQL(input: PrismaSpecialty) {
+function convertPrismaToGraphQLSpecialty(input: PrismaSpecialty) {
     return {
         id: String(input.id),
         nameEn: input.nameEn,
@@ -18,7 +18,7 @@ export const getSpecialtyById = async (id: string) => {
     }});
 
     if (found) {
-        return convertPrismaSpecialtyToGraphQL(found);
+        return convertPrismaToGraphQLSpecialty(found);
     }
     return null;
 };
@@ -29,7 +29,7 @@ export const getSpecialties = async () => {
     const ret = Array<Specialty>();
 
     for (let i = 0; i < dbSpecialties.length; i++) {
-        ret.push(convertPrismaSpecialtyToGraphQL(dbSpecialties[i]));
+        ret.push(convertPrismaToGraphQLSpecialty(dbSpecialties[i]));
     }
     return ret;
 };
