@@ -49,22 +49,14 @@ type PersonName {
 }
 
 input SpecialtyInput {
-  names: [SpecialtyNameInput]
+  nameEn: String
+  nameJa: String
 }
 
 type Specialty {
   id: ID!
-  names: [SpecialtyName]
-}
-
-input SpecialtyNameInput {
-  name: String!
-  locale: String!
-}
-
-type SpecialtyName {
-  name: String!
-  locale: String!
+  nameEn: String
+  nameJa: String
 }
 
 input SpokenLanguageInput {

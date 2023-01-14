@@ -1,13 +1,35 @@
-import { specialties } from '../mockData/mockData';
+
 import { Specialty } from '../typeDefs/gqlTypes';
+import {Specialty as PrismaSpecialty } from '@prisma/client';
+import prisma from '../db/client';
+
+function convertPrismaSpecialtyToGraphQL(input: PrismaSpecialty) {
+    return {
+        id: String(input.id),
+        nameEn: input.nameEn,
+        nameJa: input.nameJa
+    } as Specialty;
+}
 
 // TODO: add a validation step for incoming parameters
-export const getSpecialtyById = (id: string) => {
-    const matchingSpecialty = specialties.find(
-        (medicalField: Specialty) => medicalField.id === id
-    );
+export const getSpecialtyById = async (id: string) => {
+    const found = await prisma.specialty.findUnique({ where: {
+        id: parseInt(id)
+    }});
 
-    return matchingSpecialty;
+    if (found) {
+        return convertPrismaSpecialtyToGraphQL(found);
+    }
+    return null;
 };
 
-export const getSpecialties = () => specialties;
+export const getSpecialties = async () => {
+    const dbSpecialties = await prisma.specialty.findMany();
+
+    const ret = Array<Specialty>();
+
+    for (let i = 0; i < dbSpecialties.length; i++) {
+        ret.push(convertPrismaSpecialtyToGraphQL(dbSpecialties[i]));
+    }
+    return ret;
+};
