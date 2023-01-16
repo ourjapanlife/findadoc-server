@@ -53,15 +53,14 @@ Edit the .env file and set the database password
 docker compose up
 ```
 
-3. Run the migrations
-```sh
-yarn prisma migrate dev
-```
+### Database and ORM commands
 
-4. Run the seeds
-```sh
-yarn prisma db seed
-```
+Re-run migrations with `yarn prisma migrate dev`
+
+Create a new migration by:
+1. Editing schema.prisma and save
+2. Run `yarn prisma migrate  dev --name snake_case_title`
+3. Before running the backend, regenerate the Prisma Client with `yarn prisma generate`
 
 ### Note about migration files
 
