@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 services:
   db:
     image: postgres:14-alpine
@@ -11,11 +11,7 @@ services:
     ports:
       - ${POSTGRES_PORT}:${DOCKER_INTERNAL_PORT}
     healthcheck:
-      test:
-        [
-          "CMD",
-          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
-        ]
+      test: ['CMD', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 10s
       timeout: 3s
       retries: 5
@@ -43,13 +39,13 @@ services:
       - db-configure
     env_file:
       - .env
-    image: node:18.12.1-alpine
+    image: node:18.12.1
     networks:
       - new
     working_dir: /target
     volumes:
       - .:/target
-    command: "yarn install; yarn prisma generate"
+    command: 'yarn install; yarn prisma generate'
   migrate:
     depends_on:
       - db-configure
@@ -63,7 +59,7 @@ services:
       - db
     networks:
       - new
-    image: node:18.12.1-alpine
+    image: node:18.12.1
     working_dir: /target
     volumes:
       - .:/target
@@ -73,7 +69,6 @@ services:
 volumes:
   pgdata:
   status:
-
 
 networks:
   new:
