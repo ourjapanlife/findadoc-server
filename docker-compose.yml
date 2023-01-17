@@ -39,7 +39,8 @@ services:
       - db-configure
     env_file:
       - .env
-    image: node:18.12.1
+    platform: linux/amd64
+    image: node:18.12.1-alpine
     networks:
       - new
     working_dir: /target
@@ -59,7 +60,8 @@ services:
       - db
     networks:
       - new
-    image: node:18.12.1
+    image: node:18.12.1-alpine
+    platform: linux/amd64
     working_dir: /target
     volumes:
       - .:/target
