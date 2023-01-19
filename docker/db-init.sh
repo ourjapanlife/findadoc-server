@@ -3,7 +3,6 @@ set -euo pipefail
 echo "😃😃😃😃😃😃 DB SETUP TIME 😃😃😃😃😃"
 
 echo $POSTGRES_DB
-uname -a
 
 
 until PGPASSWORD=$POSTGRES_PASSWORD psql -h ${DOCKER_POSTGRES_HOST} -U $POSTGRES_USER -p $DOCKER_INTERNAL_PORT -c '\q'; do
