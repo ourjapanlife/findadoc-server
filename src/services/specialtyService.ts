@@ -5,7 +5,8 @@ import prisma from '../db/client';
 
 type SpecialtyAndNames = (PrismaSpecialty & { names: PrismaSpecialtyName[]})
 
-function convertPrismaToGraphQLSpecialty(input: SpecialtyAndNames) {
+function convertPrismaToGraphQLSpecialty(input: SpecialtyAndNames | null) {
+    if (!input) { return null; }
     const ret = {
         id: String(input.id),
         names: Array<SpecialtyName>()
@@ -30,10 +31,7 @@ export const getSpecialtyById = async (id: string) => {
         names: true
     }});
 
-    if (found) {
-        return convertPrismaToGraphQLSpecialty(found);
-    }
-    return null;
+    return convertPrismaToGraphQLSpecialty(found);
 };
 
 export const getSpecialties = async () => {
@@ -41,10 +39,12 @@ export const getSpecialties = async () => {
         names: true
     }});
 
-    const ret = Array<Specialty>();
+    const gqlSpecialties = Array<Specialty>();
 
-    for (let i = 0; i < dbSpecialties.length; i++) {
-        ret.push(convertPrismaToGraphQLSpecialty(dbSpecialties[i]));
-    }
-    return ret;
+    dbSpecialties.forEach(specialty => {
+        const gqlSpecialty = convertPrismaToGraphQLSpecialty(specialty);
+
+        if (gqlSpecialty) { gqlSpecialties.push(gqlSpecialty); }
+    });
+    return gqlSpecialties;
 };

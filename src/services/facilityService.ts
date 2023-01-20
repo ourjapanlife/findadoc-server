@@ -7,7 +7,8 @@ type FacilityAndRelations = (PrismaFacility & {
     contact: PrismaContact;
 })
 
-function convertPrismaToGraphQLFacility(input: FacilityAndRelations) {
+function convertPrismaToGraphQLFacility(input: FacilityAndRelations | null) {
+    if (!input) { return null; }
     return {
         id: String(input.id),
         nameJa: input.nameJa,
@@ -19,7 +20,7 @@ function convertPrismaToGraphQLFacility(input: FacilityAndRelations) {
 
 // TODO: add a validation step for incoming parameters
 export const getFacilityById = async (id: string) => {
-    const found = await prisma.facility.findUnique(
+    const facility = await prisma.facility.findUnique(
         {where: {
             id: parseInt(id)
         },
@@ -28,7 +29,7 @@ export const getFacilityById = async (id: string) => {
         }}
     );
 
-    return found ? convertPrismaToGraphQLFacility(found) : null;
+    return convertPrismaToGraphQLFacility(facility);
 };
 
 export const getFacilities = async () => {
@@ -38,11 +39,13 @@ export const getFacilities = async () => {
         }}
     );
 
-    const ret = Array<Facility>();
+    const gqlFacilities = Array<Facility>();
 
-    for (let i = 0; i < facilities.length; i++) {
-        ret.push(convertPrismaToGraphQLFacility(facilities[i]));
-    }
+    facilities.forEach(facility => {
+        const gqlFacility = convertPrismaToGraphQLFacility(facility);
 
-    return ret;
+        if (gqlFacility) { gqlFacilities.push(gqlFacility); }
+    });
+
+    return gqlFacilities;
 };

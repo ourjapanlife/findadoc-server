@@ -7,9 +7,10 @@ import prisma from '../db/client';
 type HealthcareProfessionalAndRelations = (PrismaHealthcareProfessional & 
     { names: PrismaLocaleName[]})
 
-function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalAndRelations) {
+function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalAndRelations | null) {
     // TODO: populate the rest of the fields in a later PR
-    const ret = {
+    if (!input) { return null; }
+    const healthPro = {
         id: String(input.id),
         names: Array<LocaleName>(),
         specialties: [],
@@ -19,22 +20,22 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
     } as HealthcareProfessional;
 
     for (let i = 0; i < input.names.length; i++) {
-        ret.names?.push(input.names[i] as LocaleName);
+        healthPro.names?.push(input.names[i] as LocaleName);
     }
 
-    return ret;
+    return healthPro;
 }
 
 // TODO: add a validation step for incoming parameters
 export const getHealthcareProfessionalById = async (id: string) => {
-    const found = await prisma.healthcareProfessional.findUnique({ where: {
+    const healthPro = await prisma.healthcareProfessional.findUnique({ where: {
         id: parseInt(id)
     }, 
     include: {
         names: true  
     }});
 
-    return found ? convertPrismaToGqlHealthcareProfessional(found) : null;
+    return convertPrismaToGqlHealthcareProfessional(healthPro);
 };
 
 export const getHealthcareProfessionals = async () => {
@@ -44,10 +45,13 @@ export const getHealthcareProfessionals = async () => {
         }
     });
 
-    const ret = Array<HealthcareProfessional>();
+    const gqlHealthPros = Array<HealthcareProfessional>();
 
-    for (let i = 0; i < healthPros.length; i++) {
-        ret.push(convertPrismaToGqlHealthcareProfessional(healthPros[i]));
-    }
-    return ret;
+    healthPros.forEach(healthPro => {
+        const gqlHealthPro = convertPrismaToGqlHealthcareProfessional(healthPro);
+
+        if (gqlHealthPro) { gqlHealthPros.push(); }
+    });
+    
+    return gqlHealthPros;
 };
