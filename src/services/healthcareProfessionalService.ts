@@ -19,7 +19,7 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
     } as HealthcareProfessional;
 
     for (let i = 0; i < input.names.length; i++) {
-        ret.names.push(input.names[i] as LocaleName);
+        ret.names?.push(input.names[i] as LocaleName);
     }
 
     return ret;
