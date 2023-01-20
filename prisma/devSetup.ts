@@ -51,6 +51,8 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
         });
 
         // Link spoken languages
+        // Note: I didn't bother to unlink languages in this setup. 
+        // If making major changes to the seed data, better to drop and recreate the database
         const spokenLangList = row[spokenLangCol].split(',');
 
         spokenLangList.forEach(async lang => {
@@ -63,19 +65,28 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
             );
 
             if (dbSpokenLang) {
-                // TODO change to upsert
-                await prisma.healthcareProfessionalSpokenLanguage.create(
+                // Check if it's already linked to the provider
+                const found = await prisma.healthcareProfessionalSpokenLanguage.findFirst(
                     {
-                        data: {
-                            spokenLanguageIso639_3: dbSpokenLang.iso639_3,
-                            healthcareProfessionalId: newHealthPro.id
-                        }
+                        where: {healthcareProfessionalId: newHealthPro.id, 
+                            spokenLanguageIso639_3: dbSpokenLang.iso639_3}
                     }
                 );
+
+                if (!found) {
+                    await prisma.healthcareProfessionalSpokenLanguage.create(
+                        {
+                            data: {spokenLanguageIso639_3: dbSpokenLang.iso639_3,
+                                healthcareProfessionalId: newHealthPro.id}
+                        }
+                    );
+                }
             }
         });
 
         // Link Degrees
+        // Note: I didn't bother to unlink degrees in this setup. 
+        // If making major changes to the seed data, better to drop and recreate the database
         const degreeList = row[degreeCol].split(',');
 
         degreeList.forEach(async degree => {
@@ -88,20 +99,31 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
             );
 
             if (dbDegree) {
-                // TODO change to upsert
-                await prisma.healthcareProfessionalDegree.create(
+                // Check if it's already linked to the provider
+                const found = await prisma.healthcareProfessionalDegree.findFirst(
                     {
-                        data: {
-                            degreeId: dbDegree.id,
-                            healthcareProfessionalId: newHealthPro.id
-                        }
+                        where: {healthcareProfessionalId: newHealthPro.id, 
+                            degreeId: dbDegree.id}
                     }
                 );
+
+                if (!found) {
+                    await prisma.healthcareProfessionalDegree.create(
+                        {
+                            data: {
+                                degreeId: dbDegree.id,
+                                healthcareProfessionalId: newHealthPro.id
+                            }
+                        }
+                    );
+                }
                 console.log(dbDegree);
             }
         });
 
         // Link Specialties
+        // Note: I didn't bother to unlink specialties in this setup. 
+        // If making major changes to the seed data, better to drop and recreate the database
         const specialtyList = row[specialtyCol].split(',');
 
         specialtyList.forEach(async specialty => {
@@ -113,15 +135,25 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                 }
             });
 
-            if (dbSpecialtyName && dbSpecialtyName.specialtyId) {
-                await prisma.healthcareProfessionalSpecialty.create(
+            if (dbSpecialtyName) {
+                // Check if it's already linked to the provider
+                const found = await prisma.healthcareProfessionalSpecialty.findFirst(
                     {
-                        data: {
-                            specialtyId: dbSpecialtyName.specialtyId,
-                            healthcareProfessionalId: newHealthPro.id
-                        }
+                        where: {healthcareProfessionalId: newHealthPro.id, 
+                            specialtyId: dbSpecialtyName.id}
                     }
                 );
+                
+                if (!found) {
+                    await prisma.healthcareProfessionalSpecialty.create(
+                        {
+                            data: {
+                                specialtyId: dbSpecialtyName.id,
+                                healthcareProfessionalId: newHealthPro.id
+                            }
+                        }
+                    );
+                }
             }
         });
 
