@@ -1,20 +1,20 @@
 {
-  "compilerOptions": {
-    "target": "ES2018",
-    "module": "commonjs",
-    "lib": [
-      "esnext"
+    "compilerOptions": {
+        "target": "ES2018",
+        "module": "commonjs",
+        "lib": [
+            "esnext"
+        ],
+        "strict": true,
+        "outDir": "dist",
+        "sourceMap": true,
+        "esModuleInterop": true
+    },
+    "include": [
+        "src",
+        "prisma"
     ],
-    "strict": true,
-    "outDir": "dist",
-    "sourceMap": true,
-    "esModuleInterop": true
-  },
-  "include": [
-    "src",
-    "prisma"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+    "exclude": [
+        "node_modules"
+    ]
 }
