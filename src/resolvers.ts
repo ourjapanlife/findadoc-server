@@ -9,7 +9,7 @@ import {
     Insurance,
     HealthcareProfessional,
     Specialty,
-    PersonNameInput,
+    LocaleNameInput,
     HealthcareProfessionalInput,
     SpokenLanguage
 } from './typeDefs/gqlTypes';
@@ -58,7 +58,7 @@ const resolvers = {
     Mutation: {
         createHealthcareProfessional: (_parent: HealthcareProfessionalInput, args: {
       id: string,
-      names: Array<PersonNameInput>,
+      names: Array<LocaleNameInput>,
       degrees: Array<Degree>,
       spokenLanguages: Array<SpokenLanguage>,
       specialties: Array<Specialty>,
