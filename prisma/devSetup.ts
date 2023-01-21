@@ -21,8 +21,8 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
         const enID = 2 * index;
         const jaID = 2 * index + 1;
 
-        // Make a nested write
-        const newPersonName = await prisma.personName.upsert({
+        // create a healthcare professional with a nested write
+        const newHealthPro = await prisma.healthcareProfessional.upsert({
             where: { id: index },
             update: {},
             create: {
@@ -44,22 +44,8 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                             lastName: row[lastJa]
                         }
                     ]
-
-                }
-            }
-        });
-
-        if (verbose) {
-            console.log(`Inserted ${newPersonName.id} into PersonName`);
-        }
-
-        // create a healthcare professional
-        const newHealthPro = await prisma.healthcareProfessional.upsert({
-            where: { id: index },
-            update: {},
-            create: {
-                id: index,
-                personNameId: newPersonName.id,
+                    
+                },
                 isPublished: true
             }
         });
@@ -142,18 +128,19 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
 
         specialtyList.forEach(async specialty => {
             // TODO change to upsert
-            const dbSpecialty = await prisma.specialty.findFirst({
+            const dbSpecialtyName = await prisma.specialtyName.findFirst({
                 where: {
-                    nameEn: specialty
+                    locale: 'en',
+                    name: specialty
                 }
             });
 
-            if (dbSpecialty) {
+            if (dbSpecialtyName) {
                 // Check if it's already linked to the provider
                 const found = await prisma.healthcareProfessionalSpecialty.findFirst(
                     {
                         where: {healthcareProfessionalId: newHealthPro.id, 
-                            specialtyId: dbSpecialty.id}
+                            specialtyId: dbSpecialtyName.id}
                     }
                 );
                 
@@ -161,7 +148,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                     await prisma.healthcareProfessionalSpecialty.create(
                         {
                             data: {
-                                specialtyId: dbSpecialty.id,
+                                specialtyId: dbSpecialtyName.id,
                                 healthcareProfessionalId: newHealthPro.id
                             }
                         }

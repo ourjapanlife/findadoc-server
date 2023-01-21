@@ -45,13 +45,17 @@ async function seedSpecialties(verbose = false) {
             where: { id: index },
             update: {},
             create: {
-                nameEn: specialty[enCol],
-                nameJa: specialty[jaCol]
+                names: {
+                    create: [
+                        {locale: 'eng', name: specialty[enCol]},
+                        {locale: 'jpn', name: specialty[jaCol]}
+                    ]
+                }
             }
         });
 
         if (verbose) {
-            console.log(`Inserted ${upserted.nameEn} into Specialties`);
+            console.log(`Inserted ${upserted.id} into Specialties`);
         }
     });
 }
