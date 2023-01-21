@@ -1,0 +1,32 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+
+# Matches multiple files with brace expansion notation
+[*.{js,ts,json}]
+charset = utf-8
+
+[*.graphql]
+charset = utf-8
+indent_size = 2
+
+[*.yml]
+charset = utf-8
+indent_size = 2
+
+[*.prisma]
+charset = utf-8
+
+[*.sh]
+charset = utf-8
+
+[*.csv]
+charset = utf-8
+insert_final_newline = false
