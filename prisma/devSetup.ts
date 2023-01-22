@@ -1,6 +1,6 @@
 /* eslint-disable func-names */
 /* eslint-disable no-console */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Insurance } from '@prisma/client';
 import loadCSVFromFile from './loadCsv';
 
 const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose = false) {
@@ -13,6 +13,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
     const degreeCol = 6;
     const specialtyCol = 7;
     const spokenLangCol = 8;
+    const insuranceCol = 9;
 
     const devData:string[][] = loadCSVFromFile('./prisma/seedData/devHealthcareProfessionals.csv');
 
@@ -46,6 +47,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                     ]
                     
                 },
+                acceptedInsurance: [Insurance.JAPANESE_HEALTH_INSURANCE],
                 isPublished: true
             }
         });

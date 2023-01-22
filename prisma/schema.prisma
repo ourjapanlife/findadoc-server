@@ -83,6 +83,7 @@ model HealthcareProfessional {
     HealthcareProfessionalSpecialty HealthcareProfessionalSpecialty[]
     HealthcareProfessionalDegree    HealthcareProfessionalDegree[]
     spokenLanguages                 HealthcareProfessionalSpokenLanguage[]
+    acceptedInsurance               Insurance[]
 
     contact Contact? @relation(fields: [contactId], references: [id])
 
@@ -178,4 +179,11 @@ model Facility {
 
     contact   Contact @relation(fields: [contactId], references: [id])
     contactId Int
+}
+
+enum Insurance {
+  JAPANESE_HEALTH_INSURANCE
+  INTERNATIONAL_HEALTH_INSURANCE
+  INSURANCE_NOT_ACCEPTED
+  UNKNOWN
 }

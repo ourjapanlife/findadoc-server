@@ -18,7 +18,7 @@ input HealthcareProfessionalInput {
   degrees: [Degree]!
   spokenLanguages: [SpokenLanguageInput]!
   specialties: [SpecialtyInput]!
-  acceptedInsuranceOptions: [Insurance]!
+  acceptedInsurance: [Insurance]!
 }
 
 type HealthcareProfessional {
@@ -27,7 +27,7 @@ type HealthcareProfessional {
   degrees: [Degree]!
   spokenLanguages: [SpokenLanguage]!
   specialties: [Specialty]!
-  acceptedInsuranceOptions: [Insurance]!
+  acceptedInsurance: [Insurance]!
 }
 
 input LocaleNameInput {
@@ -64,16 +64,16 @@ type SpecialtyName {
 }
 
 input SpokenLanguageInput {
-  iso639_3: String!  
-  nameJa:   String!
-  nameEn:   String!
+  iso639_3: String!
+  nameJa: String!
+  nameEn: String!
   nameNative: String!
 }
 
 type SpokenLanguage {
   iso639_3: String!
-  nameJa:   String!
-  nameEn:   String!
+  nameJa: String!
+  nameEn: String!
   nameNative: String!
 }
 
@@ -89,7 +89,6 @@ enum Insurance {
   JAPANESE_HEALTH_INSURANCE
   INTERNATIONAL_HEALTH_INSURANCE
   INSURANCE_NOT_ACCEPTED
-  UNKNOWN
 }
 
 type Query {
@@ -104,6 +103,11 @@ type Query {
 }
 
 type Mutation {
-  createHealthcareProfessional(input: HealthcareProfessionalInput): HealthcareProfessional
-  updateHealthcareProfessional(id: ID!, input: HealthcareProfessionalInput): HealthcareProfessional
+  createHealthcareProfessional(
+    input: HealthcareProfessionalInput
+  ): HealthcareProfessional
+  updateHealthcareProfessional(
+    id: ID!
+    input: HealthcareProfessionalInput
+  ): HealthcareProfessional
 }
