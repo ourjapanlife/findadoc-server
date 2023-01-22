@@ -1,3 +1,5 @@
+[![All Contributors](https://img.shields.io/github/all-contributors/ourjapanlife/findadoc-server?color=ee8449&style=for-the-badge)](#contributors)
+
 # Find a Doc, Japan - Server
 
 ## Back-end Repository
@@ -7,6 +9,17 @@ Welcome to the back-end repository for Find a Doc, Japan! We're not currently lo
 ### How to contribute 
 
 We love and welcome contributions to our front-end repository which can be found [here](https://github.com/ourjapanlife/findadoc-web)!
+
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ## Prerequisites
 
