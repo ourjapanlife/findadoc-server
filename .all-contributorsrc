@@ -1,0 +1,52 @@
+{
+  "projectName": "findadoc-server",
+  "projectOwner": "ourjapanlife",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "gitmoji",
+  "contributors": [
+    {
+      "login": "ann-kilzer",
+      "name": "Ann Kilzer キルザー杏",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4602369?v=4",
+      "profile": "http://www.annkilzer.net/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "theyokohamalife",
+      "name": "LaShawn Toyoda",
+      "avatar_url": "https://avatars.githubusercontent.com/u/31802656?v=4",
+      "profile": "https://github.com/theyokohamalife",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ermish",
+      "name": "Philip Ermish",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4411499?v=4",
+      "profile": "https://github.com/ermish",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "RageZBla",
+      "name": "Olivier Lechevalier",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1196871?v=4",
+      "profile": "https://github.com/RageZBla",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "linkToUsage": false
+}
