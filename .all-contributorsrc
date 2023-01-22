@@ -9,7 +9,17 @@
   "imageSize": 100,
   "commit": true,
   "commitConvention": "gitmoji",
-  "contributors": [],
+  "contributors": [
+    {
+      "login": "ann-kilzer",
+      "name": "Ann Kilzer キルザー杏",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4602369?v=4",
+      "profile": "http://www.annkilzer.net/",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
   "contributorsPerLine": 7,
   "linkToUsage": false
 }
