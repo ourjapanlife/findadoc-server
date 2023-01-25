@@ -3,21 +3,20 @@ FROM node:18.12.1
 # Create app directore
 WORKDIR /usr/src/app
 
-# test
-RUN pwd
-
 # Install app dependencies
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
 # where available (npm@5+)
 COPY package*.json ./
 
-RUN yarn install
+# install ts-node
+RUN npm install -g ts-node
+
 # TODO flags for production build
+RUN yarn install
 
 # Bundle app source
 COPY . .
 
-EXPOSE 8080
+EXPOSE 3001
 
-
-CMD [ "node", "src/index.ts" ]
+CMD [ "ts-node", "src/index.ts" ]
