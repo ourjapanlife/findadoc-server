@@ -15,7 +15,7 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
         names: Array<LocaleName>(),
         specialties: [],
         spokenLanguages: [],
-        acceptedInsuranceOptions: [],
+        acceptedInsurance: [],
         degrees: []
     } as HealthcareProfessional;
 
