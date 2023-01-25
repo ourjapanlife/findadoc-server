@@ -6,7 +6,6 @@ node_modules
 !.yarn/sdks
 !.yarn/versions
 yarn-error.log
-src/typeDefs/gqlTypes.ts
 .env*
 !.env.sample
 

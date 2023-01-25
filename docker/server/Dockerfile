@@ -14,6 +14,13 @@ RUN npm install -g ts-node
 # TODO flags for production build
 RUN yarn install
 
+# Prisma
+RUN yarn prisma generate
+
+# GraphQL
+## How to we reliably generate the GraphQL models?
+## For now we are checking in gqlTypes.ts
+
 # Bundle app source
 COPY . .
 
