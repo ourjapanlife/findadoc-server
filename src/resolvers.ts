@@ -62,7 +62,7 @@ const resolvers = {
       degrees: Array<Degree>,
       spokenLanguages: Array<SpokenLanguage>,
       specialties: Array<Specialty>,
-      acceptedInsuranceOptions: Array<Insurance>
+      acceptedInsurance: Array<Insurance>
     }) => {
             const id = crypto.randomUUID();
 
@@ -71,7 +71,7 @@ const resolvers = {
                 degrees,
                 spokenLanguages,
                 specialties,
-                acceptedInsuranceOptions
+                acceptedInsurance
             } = args;
 
             // TODO: Eventually this should check if a specialty already exists in the DB
@@ -90,7 +90,7 @@ const resolvers = {
                 degrees,
                 spokenLanguages,
                 specialties,
-                acceptedInsuranceOptions
+                acceptedInsurance
             };
 
             return healthcareProfessional;
