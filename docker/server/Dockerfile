@@ -18,8 +18,7 @@ RUN yarn install
 RUN yarn prisma generate
 
 # GraphQL
-## How to we reliably generate the GraphQL models?
-## For now we are checking in gqlTypes.ts
+RUN yarn generate
 
 # Bundle app source
 COPY . .

@@ -101,8 +101,8 @@ Read more about migrations here: https://www.prisma.io/docs/concepts/components/
 <details>
   <summary>Testing GraphQL</summary>
 
-1. Run `yarn dev` to start the local server
-2. Run `yarn generate` to generate the types locally
+1. Run `yarn generate` to generate the types locally
+2. Run `yarn dev` to start the local server
 3. Open your browser to http://localhost:3001/
 4. Navigate to the Explorer section from the menu in the left pane.
 5. Click `query: Query` under "Root Types
