@@ -17,11 +17,11 @@ RUN yarn install
 # Prisma
 RUN yarn prisma generate
 
-# GraphQL
-RUN yarn generate
-
 # Bundle app source
 COPY . .
+
+# GraphQL
+RUN yarn generate
 
 EXPOSE 3001
 
