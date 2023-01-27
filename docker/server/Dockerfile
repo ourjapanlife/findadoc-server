@@ -7,12 +7,13 @@ WORKDIR /usr/src/app
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
 # where available (npm@5+)
 COPY package*.json ./
+COPY yarn.lock ./
 
 # install ts-node
 RUN npm install -g ts-node
 
-# TODO flags for production build
-RUN yarn install
+# Follow the lockfile, error on cache modify, ensure checksums match
+RUN yarn install --immutable --immutable-cache --check-cache
 
 # Prisma
 RUN yarn prisma generate
@@ -20,7 +21,7 @@ RUN yarn prisma generate
 # Bundle app source
 COPY . .
 
-# GraphQL
+# GraphQL types
 RUN yarn generate
 
 EXPOSE 3001
