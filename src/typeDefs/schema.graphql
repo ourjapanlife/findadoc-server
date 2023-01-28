@@ -15,7 +15,7 @@ type Facility {
 
 input HealthcareProfessionalInput {
   names: [LocaleNameInput]!
-  degrees: [Degree]!
+  degrees: [DegreeInput]!
   spokenLanguages: [SpokenLanguageInput]!
   specialties: [SpecialtyInput]!
   acceptedInsurance: [Insurance]!
@@ -77,12 +77,18 @@ type SpokenLanguage {
   nameNative: String!
 }
 
-enum Degree {
-  DOCTOR_OF_MEDICINE
-  DOCTOR_OF_PHILOSOPHY
-  DOCTOR_OF_DENTAL_SURGERY
-  DOCTOR_OF_OSTEOPATHIC_MEDICINE
-  OTHER
+input DegreeInput {
+  id: ID!
+  nameJa: String!
+  nameEn: String!
+  abbreviation: String!
+}
+
+type Degree {
+  id: ID!
+  nameJa: String!
+  nameEn: String!
+  abbreviation: String!
 }
 
 enum Insurance {
@@ -92,6 +98,8 @@ enum Insurance {
 }
 
 type Query {
+  degrees: [Degree]
+  degree(id: ID!): Degree
   facilities: [Facility]
   facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
