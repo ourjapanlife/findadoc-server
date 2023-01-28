@@ -106,6 +106,7 @@ Read more about migrations here: https://www.prisma.io/docs/concepts/components/
 3. Open your browser to http://localhost:3001/
 4. Navigate to the Explorer section from the menu in the left pane.
 5. Click `query: Query` under "Root Types
+   ![image](./docs/root-types.png)
 6. Click the `+` button to see the fields a **type** has that can be added to the query
    ![image](./docs/add-to-query.png)
 
