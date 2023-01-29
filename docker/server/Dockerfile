@@ -12,10 +12,9 @@ COPY .yarnrc.yml ./
 RUN mkdir -p ./.yarn/releases
 COPY .yarn/releases/yarn-*.cjs .yarn/releases/.
 RUN corepack enable
-RUN yarn set version stable
 
 # Follow the lockfile
-RUN yarn install --immutable 
+RUN yarn install --immutable
 
 # Prisma
 RUN yarn prisma generate
