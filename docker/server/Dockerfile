@@ -27,4 +27,4 @@ RUN yarn generate
 
 EXPOSE 3001
 
-CMD [ "yarn ts-node", "src/index.ts" ]
+CMD [ "yarn", "docker:run" ]
