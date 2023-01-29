@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
 import { expect } from 'chai';
 import {} from 'mocha';
 import supertest from 'supertest';
+import { HealthcareProfessional } from '../typeDefs/gqlTypes';
+import responseType from './responseTypes/responseTypes';
 
 describe('GraphQL', () => {
     let request: any;
@@ -20,7 +21,7 @@ describe('GraphQL', () => {
                 query: '{ healthcareProfessional(id: 1) { names { firstName } id }}'
             })
             .expect(200)
-            .end((err: any, res: any) => {
+            .end((err: any, res: responseType<HealthcareProfessional>) => {
                 // res will contain array with one user
                 if (err) { return done(err); }
 
@@ -42,7 +43,7 @@ describe('GraphQL', () => {
             .post('/graphql')
             .send({ query: '{ healthcareProfessionals { id } }' })
             .expect(200)
-            .end((err:any, res: any) => {
+            .end((err: any, res: responseType<HealthcareProfessional[]>) => {
                 console.log(res.body);
                 // res will contain array of all users
                 if (err) { return done(err); }
