@@ -3,6 +3,31 @@
 import { PrismaClient, Insurance } from '@prisma/client';
 import loadCSVFromFile from './loadCsv';
 
+function parseAcceptedInsurance(input: string) {
+    const splitInput = input.split(',');
+
+    const insurances = Array<Insurance>();
+
+    splitInput.forEach(acceptedInsurance => {
+        switch (acceptedInsurance) {
+            case 'jp': {
+                insurances.push(Insurance.JAPANESE_HEALTH_INSURANCE);
+                break;
+            }
+            case 'int': {
+                insurances.push(Insurance.INTERNATIONAL_HEALTH_INSURANCE);
+                break;
+            }
+            case 'none': {
+                insurances.push(Insurance.INSURANCE_NOT_ACCEPTED);
+                break;
+            }
+        }
+    });
+
+    return insurances;
+}
+
 const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose = false) {
     const firstEn = 0;
     const middleEn = 1;
@@ -47,7 +72,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                     ]
                     
                 },
-                acceptedInsurance: [Insurance.JAPANESE_HEALTH_INSURANCE],
+                acceptedInsurance: parseAcceptedInsurance(row[insuranceCol]),
                 isPublished: true
             }
         });
