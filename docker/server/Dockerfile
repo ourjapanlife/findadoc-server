@@ -9,13 +9,13 @@ COPY yarn.lock ./
 COPY .yarnrc.yml ./
 
 # Yarn Berry
-RUN mkdir -p ./.yarn/global/cache
 RUN mkdir -p ./.yarn/releases
+COPY .yarn/releases/yarn-*.cjs .yarn/releases/.
 RUN corepack enable
 RUN yarn set version stable
 
-# Follow the lockfile, error on cache modify, ensure checksums match
-RUN yarn install --immutable --immutable-cache --check-cache
+# Follow the lockfile
+RUN yarn install --immutable 
 
 # Prisma
 RUN yarn prisma generate
