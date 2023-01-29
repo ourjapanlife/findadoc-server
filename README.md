@@ -106,15 +106,16 @@ Read more about migrations here: https://www.prisma.io/docs/concepts/components/
 3. Open your browser to http://localhost:3001/
 4. Navigate to the Explorer section from the menu in the left pane.
 5. Click `query: Query` under "Root Types
+   ![image](./docs/root-types.png)
 6. Click the `+` button to see the fields a **type** has that can be added to the query
-   ![image](./assets/add-to-query.png)
+   ![image](./docs/add-to-query.png)
 
 7. Select the desired fields and they'll automatically get added to the query builder
-   ![image](./assets/query-builder.png)
+   ![image](./docs/query-builder.png)
 
 8. If you select a type that requires an ID (such as `Facility` or `HealthcareProfessional`) then add the ID in the "Variables" window at the bottom _as a string_.
 
-![image](./assets/query-by-id.png)
+![image](./docs/query-by-id.png)
 
 9. If you'd like to share the query you built, such as demonstrating how you tested your code, check out [Apollo Explorer's sharing features](https://www.apollographql.com/blog/announcement/platform/save-and-share-your-graphql-operations-in-apollo-explorer/#sharing-a-collection).
 
