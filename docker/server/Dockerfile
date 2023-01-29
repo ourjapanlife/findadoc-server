@@ -7,8 +7,13 @@ WORKDIR /usr/src/app
 COPY package.json ./
 COPY yarn.lock ./
 
+# Yarn Berry
+RUN corepack enable
+RUN yarn set version stable
+RUN echo `yarn --version`
+
 # install ts-node
-RUN npm install -g ts-node
+RUN yarn dlx ts-node
 
 # Follow the lockfile, error on cache modify, ensure checksums match
 RUN yarn install --immutable --immutable-cache --check-cache
