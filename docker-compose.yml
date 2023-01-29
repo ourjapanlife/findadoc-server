@@ -11,7 +11,11 @@ services:
     ports:
       - ${POSTGRES_PORT}:${DOCKER_INTERNAL_PORT}
     healthcheck:
-      test: ['CMD', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test:
+        [
+          'CMD',
+          'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'
+        ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -66,11 +70,12 @@ services:
     volumes:
       - .:/target
       - status:/in
-    command: "sh -c 'until [[ -f /in/db-init-done && -d /target/node_modules ]]; do sleep 1; done; yarn migrate; yarn prisma db seed'"
+    command: "sh -c 'until [[ -f /in/db-init-done && -d /target/node_modules ]]; do sleep 1; done; yarn migrate:deploy; yarn prisma db seed'"
 
 volumes:
   pgdata:
   status:
+
 
 networks:
   new:
