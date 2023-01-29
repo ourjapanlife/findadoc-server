@@ -1,6 +1,9 @@
+/* eslint-disable no-console */
 import { expect } from 'chai';
 import {} from 'mocha';
 import supertest from 'supertest';
+import { HealthcareProfessional } from '../typeDefs/gqlTypes';
+import responseType from './responseTypes/responseTypes';
 
 describe('GraphQL', () => {
     let request: any;
@@ -18,33 +21,37 @@ describe('GraphQL', () => {
                 query: '{ healthcareProfessional(id: 1) { names { firstName } id }}'
             })
             .expect(200)
-            .end((err: any, res: any) => {
+            .end((err: any, res: responseType<HealthcareProfessional>) => {
                 // res will contain array with one user
                 if (err) { return done(err); }
 
                 console.log(res.body);
-                expect(res.body.data.healthcareProfessional).to.have.property('id');
+                expect(res.body.data.healthcareProfessional).to.have.property('id').equal('1');
                 expect(res.body.data.healthcareProfessional).to.have.property('names');
 
                 const { names } = res.body.data.healthcareProfessional;
 
-                expect(names[0]).to.have.property('firstName');
+                expect(names[0]).to.have.property('firstName').equal('Larissa');
                 done();
 
                 return true;
             });
     });
 
-    //   it("Returns all users", (done) => {
-    //     request
-    //       .post("/graphql")
-    //       .send({ query: "{ user { id name username email } }" })
-    //       .expect(200)
-    //       .end((err, res) => {
-    //         // res will contain array of all users
-    //         if (err) return done(err);
-    //         // assume there are a 100 users in the database
-    //         res.body.user.should.have.lengthOf(100);
-    //       });
-    //   });
+    it('Returns all users', done => {
+        request
+            .post('/graphql')
+            .send({ query: '{ healthcareProfessionals { id } }' })
+            .expect(200)
+            .end((err: any, res: responseType<HealthcareProfessional[]>) => {
+                console.log(res.body);
+                // res will contain array of all users
+                if (err) { return done(err); }
+                // assume there are a 100 users in the database
+                expect(res.body.data.healthcareProfessionals).to.have.lengthOf(0);
+                done();
+
+                return true;
+            });
+    });
 });
