@@ -119,7 +119,6 @@ module.exports = {
         'space-before-function-paren': ['error', { anonymous: 'never', named: 'never', asyncArrow: 'always' }],
         'space-in-parens': 'error',
         'space-infix-ops': 'error',
-        semi: ['error'], // personally i like them and it's safer, but can discuss
 
         // Variables
         'no-shadow': 'error'
