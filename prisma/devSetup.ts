@@ -1,51 +1,51 @@
 /* eslint-disable func-names */
 /* eslint-disable no-console */
-import { PrismaClient, Insurance } from '@prisma/client';
-import loadCSVFromFile from './loadCsv';
+import { PrismaClient, Insurance } from '@prisma/client'
+import loadCSVFromFile from './loadCsv'
 
 function parseAcceptedInsurance(input: string) {
-    const splitInput = input.split(',');
+    const splitInput = input.split(',')
 
-    const insurances = Array<Insurance>();
+    const insurances = Array<Insurance>()
 
     splitInput.forEach(acceptedInsurance => {
         switch (acceptedInsurance) {
             case 'jp': {
-                insurances.push(Insurance.JAPANESE_HEALTH_INSURANCE);
-                break;
+                insurances.push(Insurance.JAPANESE_HEALTH_INSURANCE)
+                break
             }
             case 'int': {
-                insurances.push(Insurance.INTERNATIONAL_HEALTH_INSURANCE);
-                break;
+                insurances.push(Insurance.INTERNATIONAL_HEALTH_INSURANCE)
+                break
             }
             case 'none': {
-                insurances.push(Insurance.INSURANCE_NOT_ACCEPTED);
-                break;
+                insurances.push(Insurance.INSURANCE_NOT_ACCEPTED)
+                break
             }
         }
-    });
+    })
 
-    return insurances;
+    return insurances
 }
 
 const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose = false) {
-    const firstEn = 0;
-    const middleEn = 1;
-    const lastEn = 2;
-    const firstJa = 3;
-    const middleJa = 4;
-    const lastJa = 5;
-    const degreeCol = 6;
-    const specialtyCol = 7;
-    const spokenLangCol = 8;
-    const insuranceCol = 9;
+    const firstEn = 0
+    const middleEn = 1
+    const lastEn = 2
+    const firstJa = 3
+    const middleJa = 4
+    const lastJa = 5
+    const degreeCol = 6
+    const specialtyCol = 7
+    const spokenLangCol = 8
+    const insuranceCol = 9
 
-    const devData:string[][] = loadCSVFromFile('./prisma/seedData/devHealthcareProfessionals.csv');
+    const devData:string[][] = loadCSVFromFile('./prisma/seedData/devHealthcareProfessionals.csv')
 
     devData.forEach(async (row: string[], index: number) => {
     // generate some unique ids using even/odd strategy
-        const enID = 2 * index;
-        const jaID = 2 * index + 1;
+        const enID = 2 * index
+        const jaID = 2 * index + 1
 
         // create a healthcare professional with a nested write
         const newHealthPro = await prisma.healthcareProfessional.upsert({
@@ -75,12 +75,12 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                 acceptedInsurance: parseAcceptedInsurance(row[insuranceCol]),
                 isPublished: true
             }
-        });
+        })
 
         // Link spoken languages
         // Note: I didn't bother to unlink languages in this setup. 
         // If making major changes to the seed data, better to drop and recreate the database
-        const spokenLangList = row[spokenLangCol].split(',');
+        const spokenLangList = row[spokenLangCol].split(',')
 
         spokenLangList.forEach(async lang => {
             const dbSpokenLang = await prisma.spokenLanguage.findFirst(
@@ -89,7 +89,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                         iso639_3: lang
                     }
                 }
-            );
+            )
 
             if (dbSpokenLang) {
                 // Check if it's already linked to the provider
@@ -98,7 +98,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                         where: {healthcareProfessionalId: newHealthPro.id, 
                             spokenLanguageIso639_3: dbSpokenLang.iso639_3}
                     }
-                );
+                )
 
                 if (!found) {
                     await prisma.healthcareProfessionalSpokenLanguage.create(
@@ -106,15 +106,15 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                             data: {spokenLanguageIso639_3: dbSpokenLang.iso639_3,
                                 healthcareProfessionalId: newHealthPro.id}
                         }
-                    );
+                    )
                 }
             }
-        });
+        })
 
         // Link Degrees
         // Note: I didn't bother to unlink degrees in this setup. 
         // If making major changes to the seed data, better to drop and recreate the database
-        const degreeList = row[degreeCol].split(',');
+        const degreeList = row[degreeCol].split(',')
 
         degreeList.forEach(async degree => {
             const dbDegree = await prisma.degree.findFirst(
@@ -123,7 +123,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                         abbreviation: degree
                     }
                 }
-            );
+            )
 
             if (dbDegree) {
                 // Check if it's already linked to the provider
@@ -132,7 +132,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                         where: {healthcareProfessionalId: newHealthPro.id, 
                             degreeId: dbDegree.id}
                     }
-                );
+                )
 
                 if (!found) {
                     await prisma.healthcareProfessionalDegree.create(
@@ -142,16 +142,16 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                                 healthcareProfessionalId: newHealthPro.id
                             }
                         }
-                    );
+                    )
                 }
-                console.log(dbDegree);
+                console.log(dbDegree)
             }
-        });
+        })
 
         // Link Specialties
         // Note: I didn't bother to unlink specialties in this setup. 
         // If making major changes to the seed data, better to drop and recreate the database
-        const specialtyList = row[specialtyCol].split(',');
+        const specialtyList = row[specialtyCol].split(',')
 
         specialtyList.forEach(async specialty => {
             // TODO change to upsert
@@ -160,7 +160,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                     locale: 'en',
                     name: specialty
                 }
-            });
+            })
 
             if (dbSpecialtyName) {
                 // Check if it's already linked to the provider
@@ -169,7 +169,7 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                         where: {healthcareProfessionalId: newHealthPro.id, 
                             specialtyId: dbSpecialtyName.id}
                     }
-                );
+                )
                 
                 if (!found) {
                     await prisma.healthcareProfessionalSpecialty.create(
@@ -179,34 +179,34 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                                 healthcareProfessionalId: newHealthPro.id
                             }
                         }
-                    );
+                    )
                 }
             }
-        });
+        })
 
         if (verbose) {
-            console.log(`Inserted ${newHealthPro.id} into HealthcareProfessional`);
+            console.log(`Inserted ${newHealthPro.id} into HealthcareProfessional`)
         }
-    });
-};
+    })
+}
 
 const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
-    const nameEnCol = 0;
-    const nameJaCol = 1;
-    const emailCol = 2;
-    const phoneCol = 3;
-    const websiteCol = 4;
-    const postalCol = 5;
-    const prefectureCol = 6;
-    const cityCol = 7;
-    const addrLine1Col = 8;
-    const addrLine2Col = 9;
-    const mapLinkCol = 10;
+    const nameEnCol = 0
+    const nameJaCol = 1
+    const emailCol = 2
+    const phoneCol = 3
+    const websiteCol = 4
+    const postalCol = 5
+    const prefectureCol = 6
+    const cityCol = 7
+    const addrLine1Col = 8
+    const addrLine2Col = 9
+    const mapLinkCol = 10
 
-    const devData:string[][] = loadCSVFromFile('./prisma/seedData/devFacilities.csv');
+    const devData:string[][] = loadCSVFromFile('./prisma/seedData/devFacilities.csv')
 
     devData.forEach(async (row: string[], index: number) => {
-        console.log(row);
+        console.log(row)
 
         const newAddress = await prisma.physicalAddress.upsert({
             where: { id: index },
@@ -219,10 +219,10 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
                 addressLine1En: row[addrLine1Col],
                 addressLine2En: row[addrLine2Col]
             }
-        });
+        })
 
         if (verbose) {
-            console.log(`Inserted ${newAddress.addressLine1En} into Addresses`);
+            console.log(`Inserted ${newAddress.addressLine1En} into Addresses`)
         }
 
         const newContact = await prisma.contact.upsert({
@@ -236,10 +236,10 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
                 mapsLink: row[mapLinkCol],
                 addressId: newAddress.id
             }
-        });
+        })
 
         if (verbose) {
-            console.log(`Inserted ${newContact.website} into Contacts`);
+            console.log(`Inserted ${newContact.website} into Contacts`)
         }
 
         const newFacility = await prisma.facility.upsert({
@@ -252,12 +252,12 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
                 contactId: newContact.id,
                 isPublished: true
             }
-        });
+        })
 
         if (verbose) {
-            console.log(`Inserted ${newFacility.nameEn} into Facilities`);
+            console.log(`Inserted ${newFacility.nameEn} into Facilities`)
         }
-    });
-};
+    })
+}
 
-export default { seedFacilities, seedHealthcareProfessionals };
+export default { seedFacilities, seedHealthcareProfessionals }
