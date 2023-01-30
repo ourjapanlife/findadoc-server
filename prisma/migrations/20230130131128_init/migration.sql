@@ -1,12 +1,5 @@
--- CreateTable
-CREATE TABLE "PersonName" (
-    "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "deletedAt" TIMESTAMP(3),
-
-    CONSTRAINT "PersonName_pkey" PRIMARY KEY ("id")
-);
+-- CreateEnum
+CREATE TYPE "Insurance" AS ENUM ('JAPANESE_HEALTH_INSURANCE', 'INTERNATIONAL_HEALTH_INSURANCE', 'INSURANCE_NOT_ACCEPTED');
 
 -- CreateTable
 CREATE TABLE "LocaleName" (
@@ -15,9 +8,9 @@ CREATE TABLE "LocaleName" (
     "firstName" TEXT NOT NULL,
     "middleName" TEXT,
     "lastName" TEXT NOT NULL,
-    "personNameId" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "healthcareProfessionalId" INTEGER,
 
     CONSTRAINT "LocaleName_pkey" PRIMARY KEY ("id")
 );
@@ -27,6 +20,7 @@ CREATE TABLE "SpokenLanguage" (
     "iso639_3" TEXT NOT NULL,
     "nameJa" TEXT NOT NULL,
     "nameEn" TEXT NOT NULL,
+    "nameNative" TEXT NOT NULL,
 
     CONSTRAINT "SpokenLanguage_pkey" PRIMARY KEY ("iso639_3")
 );
@@ -34,10 +28,18 @@ CREATE TABLE "SpokenLanguage" (
 -- CreateTable
 CREATE TABLE "Specialty" (
     "id" SERIAL NOT NULL,
-    "nameJa" TEXT NOT NULL,
-    "nameEn" TEXT NOT NULL,
 
     CONSTRAINT "Specialty_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SpecialtyName" (
+    "id" SERIAL NOT NULL,
+    "locale" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "specialtyId" INTEGER,
+
+    CONSTRAINT "SpecialtyName_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -53,7 +55,7 @@ CREATE TABLE "Degree" (
 -- CreateTable
 CREATE TABLE "HealthcareProfessional" (
     "id" SERIAL NOT NULL,
-    "personNameId" INTEGER NOT NULL,
+    "acceptedInsurance" "Insurance"[],
     "contactId" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -136,16 +138,16 @@ CREATE TABLE "Facility" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "LocaleName_locale_personNameId_key" ON "LocaleName"("locale", "personNameId");
+CREATE UNIQUE INDEX "LocaleName_locale_healthcareProfessionalId_key" ON "LocaleName"("locale", "healthcareProfessionalId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "HealthcareProfessional_personNameId_key" ON "HealthcareProfessional"("personNameId");
+CREATE UNIQUE INDEX "SpecialtyName_locale_specialtyId_key" ON "SpecialtyName"("locale", "specialtyId");
 
 -- AddForeignKey
-ALTER TABLE "LocaleName" ADD CONSTRAINT "LocaleName_personNameId_fkey" FOREIGN KEY ("personNameId") REFERENCES "PersonName"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "LocaleName" ADD CONSTRAINT "LocaleName_healthcareProfessionalId_fkey" FOREIGN KEY ("healthcareProfessionalId") REFERENCES "HealthcareProfessional"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "HealthcareProfessional" ADD CONSTRAINT "HealthcareProfessional_personNameId_fkey" FOREIGN KEY ("personNameId") REFERENCES "PersonName"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "SpecialtyName" ADD CONSTRAINT "SpecialtyName_specialtyId_fkey" FOREIGN KEY ("specialtyId") REFERENCES "Specialty"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "HealthcareProfessional" ADD CONSTRAINT "HealthcareProfessional_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES "Contact"("id") ON DELETE SET NULL ON UPDATE CASCADE;
