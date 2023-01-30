@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { getDegreeById, getDegrees } from './services/degreeService';
 import { getFacilityById, getFacilities } from './services/facilityService';
 import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService';
 import { getSpecialtyById, getSpecialties } from './services/specialtyService';
@@ -16,6 +17,16 @@ import {
 
 const resolvers = {
     Query: {
+        degrees: () => {
+            const matchingDegrees = getDegrees();
+
+            return matchingDegrees;
+        },
+        degree: (_parent: Degree, args: { id: string; }) => {
+            const matchingDegree = getDegreeById(args.id);
+
+            return matchingDegree;
+        },
         facilities: () => {
             // TODO: add a validation step for incoming parameters
             const matchingFacilities = getFacilities();
