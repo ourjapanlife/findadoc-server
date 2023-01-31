@@ -15,23 +15,24 @@ async function seedSpokenLanguages(verbose = false) {
 
     const spokenLanguages:string[][] = loadCSVFromFile('./prisma/seedData/spokenLanguages.csv')
 
-    spokenLanguages.forEach(async (language: string[]) => {
+    for (let i = 0; i < spokenLanguages.length; i++) {
+        const spokenLanguage = spokenLanguages[i]
         const upserted = await prisma.spokenLanguage.upsert({
-            where: { iso639_3: language[iso639Col] },
+            where: { iso639_3: spokenLanguage[iso639Col] },
             update: {},
             create: {
-                iso639_3: language[iso639Col],
-                nameEn: language[enCol],
-                nameJa: language[jaCol],
-                nameNative: language[nativeCol]
+                iso639_3: spokenLanguage[iso639Col],
+                nameEn: spokenLanguage[enCol],
+                nameJa: spokenLanguage[jaCol],
+                nameNative: spokenLanguage[nativeCol]
             }
         })
-
+        
         if (verbose) {
             // eslint-disable-next-line no-console
             console.log(`Inserted ${upserted.nameEn} into SpokenLanguages`)
         }
-    })
+    }
 }
 
 async function seedSpecialties(verbose = false) {
@@ -40,9 +41,11 @@ async function seedSpecialties(verbose = false) {
 
     const specialties:string[][] = loadCSVFromFile('./prisma/seedData/specialties.csv')
 
-    specialties.forEach(async (specialty: string[], index) => {
+    for (let i = 0; i < specialties.length; i++) {
+        const specialty = specialties[i]
+        const id = i + 1
         const upserted = await prisma.specialty.upsert({
-            where: { id: index },
+            where: { id: id },
             update: {},
             create: {
                 names: {
@@ -53,11 +56,11 @@ async function seedSpecialties(verbose = false) {
                 }
             }
         })
-
+        
         if (verbose) {
             console.log(`Inserted ${upserted.id} into Specialties`)
         }
-    })
+    }
 }
 
 async function seedDegrees(verbose = false) {
