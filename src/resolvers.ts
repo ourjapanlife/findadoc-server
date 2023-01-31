@@ -1,9 +1,9 @@
-import crypto from 'crypto';
-import { getDegreeById, getDegrees } from './services/degreeService';
-import { getFacilityById, getFacilities } from './services/facilityService';
-import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService';
-import { getSpecialtyById, getSpecialties } from './services/specialtyService';
-import { getSpokenLanguageByIso, getSpokenLanguages } from './services/spokenLanguageService';
+import crypto from 'crypto'
+import { getDegreeById, getDegrees } from './services/degreeService'
+import { getFacilityById, getFacilities } from './services/facilityService'
+import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService'
+import { getSpecialtyById, getSpecialties } from './services/specialtyService'
+import { getSpokenLanguageByIso, getSpokenLanguages } from './services/spokenLanguageService'
 import {
     Degree,
     Facility,
@@ -13,55 +13,55 @@ import {
     LocaleNameInput,
     HealthcareProfessionalInput,
     SpokenLanguage
-} from './typeDefs/gqlTypes';
+} from './typeDefs/gqlTypes'
 
 const resolvers = {
     Query: {
         degrees: () => {
-            const matchingDegrees = getDegrees();
+            const matchingDegrees = getDegrees()
 
-            return matchingDegrees;
+            return matchingDegrees
         },
         degree: (_parent: Degree, args: { id: string; }) => {
-            const matchingDegree = getDegreeById(args.id);
+            const matchingDegree = getDegreeById(args.id)
 
-            return matchingDegree;
+            return matchingDegree
         },
         facilities: () => {
             // TODO: add a validation step for incoming parameters
-            const matchingFacilities = getFacilities();
+            const matchingFacilities = getFacilities()
 
-            return matchingFacilities;
+            return matchingFacilities
         },
         facility: (_parent: Facility, args: { id: string; }) => {
             // TODO: add a validation step for incoming parameters
-            const matchingFacility = getFacilityById(args.id);
+            const matchingFacility = getFacilityById(args.id)
 
-            return matchingFacility;
+            return matchingFacility
         },
         healthcareProfessionals: () => {
             // TODO: add a validation step for incoming parameters
-            const matchingProfessionals = getHealthcareProfessionals();
+            const matchingProfessionals = getHealthcareProfessionals()
 
-            return matchingProfessionals;
+            return matchingProfessionals
         },
         healthcareProfessional: (_parent: HealthcareProfessional, args: { id: string; }) => {
             // TODO: add a validation step for incoming parameters
-            const matchingHealthcareProfessional = getHealthcareProfessionalById(args.id);
+            const matchingHealthcareProfessional = getHealthcareProfessionalById(args.id)
 
-            return matchingHealthcareProfessional;
+            return matchingHealthcareProfessional
         },
         specialties: () => {
             // TODO: add a validation step for incoming parameters
-            const matchingSpecialties = getSpecialties();
+            const matchingSpecialties = getSpecialties()
 
-            return matchingSpecialties;
+            return matchingSpecialties
         },
         specialty: (_parent: Specialty, args: { id: string; }) => {
             // TODO: add a validation step for incoming parameters
-            const matchingSpecialty = getSpecialtyById(args.id);
+            const matchingSpecialty = getSpecialtyById(args.id)
 
-            return matchingSpecialty;
+            return matchingSpecialty
         },
         spokenLanguages: () => getSpokenLanguages(),
         spokenLanguage: (_parent: SpokenLanguage, args: {iso639_3: string;}) => getSpokenLanguageByIso(args.iso639_3)
@@ -75,7 +75,7 @@ const resolvers = {
       specialties: Array<Specialty>,
       acceptedInsurance: Array<Insurance>
     }) => {
-            const id = crypto.randomUUID();
+            const id = crypto.randomUUID()
 
             const {
                 names,
@@ -83,17 +83,17 @@ const resolvers = {
                 spokenLanguages,
                 specialties,
                 acceptedInsurance
-            } = args;
+            } = args
 
             // TODO: Eventually this should check if a specialty already exists in the DB
             // and match it to that if it does.
             specialties.map((specialty: { id: string }) => {
                 if (!specialty.id) {
                     // eslint-disable-next-line no-param-reassign
-                    specialty.id = crypto.randomUUID();
+                    specialty.id = crypto.randomUUID()
                 }
-                return specialty.id;
-            });
+                return specialty.id
+            })
 
             const healthcareProfessional = {
                 id,
@@ -102,11 +102,11 @@ const resolvers = {
                 spokenLanguages,
                 specialties,
                 acceptedInsurance
-            };
+            }
 
-            return healthcareProfessional;
+            return healthcareProfessional
         }
     }
-};
+}
 
-export default resolvers;
+export default resolvers

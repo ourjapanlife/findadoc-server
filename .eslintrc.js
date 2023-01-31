@@ -114,6 +114,7 @@ module.exports = {
         'prefer-template': 'error',
         'quote-props': ['error', 'as-needed'],
         quotes: ['error', 'single', 'avoid-escape'],
+        semi: ['error', 'never'],
         'semi-spacing': 'error',
         'space-before-blocks': 'error',
         'space-before-function-paren': ['error', { anonymous: 'never', named: 'never', asyncArrow: 'always' }],
@@ -126,4 +127,4 @@ module.exports = {
     ignorePatterns: [
         'src/typeDefs/gqlTypes.ts'
     ]
-};
+}
