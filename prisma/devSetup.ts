@@ -8,8 +8,25 @@ function parseAcceptedInsurance(input: string) {
 
     const insurances = Array<Insurance>()
 
-    splitInput.forEach(acceptedInsurance => {
-        switch (acceptedInsurance) {
+    // splitInput.forEach(acceptedInsurance => {
+    //     switch (acceptedInsurance) {
+    //         case 'jp': {
+    //             insurances.push(Insurance.JAPANESE_HEALTH_INSURANCE)
+    //             break
+    //         }
+    //         case 'int': {
+    //             insurances.push(Insurance.INTERNATIONAL_HEALTH_INSURANCE)
+    //             break
+    //         }
+    //         case 'none': {
+    //             insurances.push(Insurance.INSURANCE_NOT_ACCEPTED)
+    //             break
+    //         }
+    //     }
+    // })
+
+    for (let i = 0; i < splitInput.length; i++) {
+        switch (splitInput[i]) {
             case 'jp': {
                 insurances.push(Insurance.JAPANESE_HEALTH_INSURANCE)
                 break
@@ -23,8 +40,7 @@ function parseAcceptedInsurance(input: string) {
                 break
             }
         }
-    })
-
+    }
     return insurances
 }
 
@@ -41,11 +57,13 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
     const insuranceCol = 9
 
     const devData:string[][] = loadCSVFromFile('./prisma/seedData/devHealthcareProfessionals.csv')
-
-    devData.forEach(async (row: string[], index: number) => {
+    
+    for (let index = 0; index < devData.length; index++) {
+    // devData.forEach(async (row: string[], index: number) => {
     // generate some unique ids using even/odd strategy
         const enID = 2 * index
         const jaID = 2 * index + 1
+        const row = devData[index]
 
         // create a healthcare professional with a nested write
         const newHealthPro = await prisma.healthcareProfessional.upsert({
@@ -82,7 +100,9 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
         // If making major changes to the seed data, better to drop and recreate the database
         const spokenLangList = row[spokenLangCol].split(',')
 
-        spokenLangList.forEach(async lang => {
+        for (let i = 0; i < spokenLangList.length; i++) {
+            const lang = spokenLangList[i]
+            // spokenLangList.forEach(async lang => {
             const dbSpokenLang = await prisma.spokenLanguage.findFirst(
                 {
                     where: {
@@ -109,14 +129,16 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                     )
                 }
             }
-        })
+        }
 
         // Link Degrees
         // Note: I didn't bother to unlink degrees in this setup. 
         // If making major changes to the seed data, better to drop and recreate the database
         const degreeList = row[degreeCol].split(',')
 
-        degreeList.forEach(async degree => {
+        for (let i = 0; i < degreeList.length; i++) {
+            const degree = degreeList[i]
+            // degreeList.forEach(async degree => {
             const dbDegree = await prisma.degree.findFirst(
                 {
                     where: {
@@ -146,14 +168,16 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                 }
                 console.log(dbDegree)
             }
-        })
+        }
 
         // Link Specialties
         // Note: I didn't bother to unlink specialties in this setup. 
         // If making major changes to the seed data, better to drop and recreate the database
         const specialtyList = row[specialtyCol].split(',')
 
-        specialtyList.forEach(async specialty => {
+        for (let i = 0; i < specialtyList.length; i++) {
+            const specialty = specialtyList[i]
+            // specialtyList.forEach(async specialty => {
             // TODO change to upsert
             const dbSpecialtyName = await prisma.specialtyName.findFirst({
                 where: {
@@ -182,12 +206,12 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                     )
                 }
             }
-        })
+        }
 
         if (verbose) {
             console.log(`Inserted ${newHealthPro.id} into HealthcareProfessional`)
         }
-    })
+    }
 }
 
 const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
@@ -205,7 +229,10 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
 
     const devData:string[][] = loadCSVFromFile('./prisma/seedData/devFacilities.csv')
 
-    devData.forEach(async (row: string[], index: number) => {
+    for (let index = 0; index < devData.length; index++) {
+        const row = devData[index]
+        // devData.forEach(async (row: string[], index: number) => {
+
         console.log(row)
 
         const newAddress = await prisma.physicalAddress.upsert({
@@ -257,7 +284,7 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
         if (verbose) {
             console.log(`Inserted ${newFacility.nameEn} into Facilities`)
         }
-    })
+    }
 }
 
 export default { seedFacilities, seedHealthcareProfessionals }
