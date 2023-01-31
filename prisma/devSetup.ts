@@ -8,23 +8,6 @@ function parseAcceptedInsurance(input: string) {
 
     const insurances = Array<Insurance>()
 
-    // splitInput.forEach(acceptedInsurance => {
-    //     switch (acceptedInsurance) {
-    //         case 'jp': {
-    //             insurances.push(Insurance.JAPANESE_HEALTH_INSURANCE)
-    //             break
-    //         }
-    //         case 'int': {
-    //             insurances.push(Insurance.INTERNATIONAL_HEALTH_INSURANCE)
-    //             break
-    //         }
-    //         case 'none': {
-    //             insurances.push(Insurance.INSURANCE_NOT_ACCEPTED)
-    //             break
-    //         }
-    //     }
-    // })
-
     for (let i = 0; i < splitInput.length; i++) {
         switch (splitInput[i]) {
             case 'jp': {
@@ -59,7 +42,6 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
     const devData:string[][] = loadCSVFromFile('./prisma/seedData/devHealthcareProfessionals.csv')
     
     for (let index = 0; index < devData.length; index++) {
-    // devData.forEach(async (row: string[], index: number) => {
     // generate some unique ids using even/odd strategy
         const enID = 2 * index
         const jaID = 2 * index + 1
@@ -102,7 +84,6 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
 
         for (let i = 0; i < spokenLangList.length; i++) {
             const lang = spokenLangList[i]
-            // spokenLangList.forEach(async lang => {
             const dbSpokenLang = await prisma.spokenLanguage.findFirst(
                 {
                     where: {
@@ -138,7 +119,6 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
 
         for (let i = 0; i < degreeList.length; i++) {
             const degree = degreeList[i]
-            // degreeList.forEach(async degree => {
             const dbDegree = await prisma.degree.findFirst(
                 {
                     where: {
@@ -177,7 +157,6 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
 
         for (let i = 0; i < specialtyList.length; i++) {
             const specialty = specialtyList[i]
-            // specialtyList.forEach(async specialty => {
             // TODO change to upsert
             const dbSpecialtyName = await prisma.specialtyName.findFirst({
                 where: {
@@ -231,7 +210,6 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
 
     for (let index = 0; index < devData.length; index++) {
         const row = devData[index]
-        // devData.forEach(async (row: string[], index: number) => {
 
         console.log(row)
 
