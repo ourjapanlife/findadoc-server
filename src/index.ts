@@ -1,4 +1,5 @@
-import { ApolloServer } from 'apollo-server'
+import { ApolloServer } from '@apollo/server'
+import { startStandaloneServer } from '@apollo/server/standalone'
 import loadSchema from './schema'
 import resolvers from './resolvers'
 
@@ -10,7 +11,14 @@ const server = new ApolloServer({
 
 const port = 3001
 
-server.listen({ port }).then(({ url }) => {
-    // eslint-disable-next-line no-console
-    console.log(`🚀  Server ready at ${url}`)
-})
+async function getUrl() {
+    const { url } = await startStandaloneServer(server, {
+        listen: { port: port }
+    })
+
+    return url
+}
+
+// eslint-disable-next-line no-console
+getUrl().then(() => console.log(`🚀  Server ready at: http://localhost:${port}`))
+
