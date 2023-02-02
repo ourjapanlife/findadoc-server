@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import loadSchema from './schema'
@@ -9,7 +10,7 @@ const server = new ApolloServer({
     csrfPrevention: true
 })
 
-const port = 3001
+const port = process.env.SERVER_PORT || 8080
 
 async function getUrl() {
     const { url } = await startStandaloneServer(server, {
@@ -22,3 +23,5 @@ async function getUrl() {
 // eslint-disable-next-line no-console
 getUrl().then(() => console.log(`🚀  Server ready at: http://localhost:${port}`))
 
+console.log(`SERVER PORT: ${process.env.SERVER_PORT}`)
+console.log(`ENV: ${process.env.ENV}`)
