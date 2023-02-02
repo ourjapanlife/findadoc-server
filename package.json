@@ -13,7 +13,8 @@
         "lint:check": "eslint . --ext .js,.ts,.json",
         "lint:ci": "eslint . --ext .js,.ts,.json",
         "migrate": "prisma migrate dev",
-        "migrate:deploy": "prisma migrate deploy"
+        "migrate:deploy": "prisma migrate deploy",
+        "start": "yarn && ts-node --transpile-only src/index.ts"
     },
     "prisma": {
         "seed": "ts-node prisma/seed.ts"

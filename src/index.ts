@@ -22,6 +22,3 @@ async function getUrl() {
 
 // eslint-disable-next-line no-console
 getUrl().then(() => console.log(`🚀  Server ready at: http://localhost:${port}`))
-
-console.log(`SERVER PORT: ${process.env.SERVER_PORT}`)
-console.log(`ENV: ${process.env.ENV}`)
