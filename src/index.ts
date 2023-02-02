@@ -11,14 +11,12 @@ const server = new ApolloServer({
 
 const port = 3001
 
-async function getUrl() {
-    const { url } = await startStandaloneServer(server, {
+function startServer() {
+    return startStandaloneServer(server, {
         listen: { port: port }
     })
-
-    return url
 }
 
 // eslint-disable-next-line no-console
-getUrl().then(() => console.log(`🚀  Server ready at: http://localhost:${port}`))
+startServer().then(() => console.log(`🚀  Server ready at: http://localhost:${port}`))
 
