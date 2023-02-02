@@ -27,4 +27,4 @@ RUN yarn generate
 
 EXPOSE 3001
 
-CMD [ "yarn", "docker:run" ]
+CMD [ "yarn", "prod" ]
