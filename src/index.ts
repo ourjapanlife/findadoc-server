@@ -9,8 +9,6 @@ const server = new ApolloServer({
     csrfPrevention: true
 })
 
-const port = 3001
-
 async function startServer(port = 3001) {
     await startStandaloneServer(server, {
         listen: { port: port }
