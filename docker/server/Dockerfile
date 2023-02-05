@@ -1,5 +1,15 @@
 FROM node:18.12.1
 
+# ARGS
+ARG pgUser=postgres
+ARG pgPassword
+ARG pgHost=database
+ARG pgPort=5432
+ARG dbName=findadoc
+
+# Env variables
+ENV DATABASE_URL="postgresql://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${dbName}?schema=public"
+
 # Create app directore
 WORKDIR /usr/src/app
 
