@@ -44,7 +44,7 @@ services:
     env_file:
       - .env
     platform: linux/amd64
-    image: node:18.14.0-alpine
+    image: node:19.6.0-alpine
     networks:
       - new
     working_dir: /target
@@ -64,7 +64,7 @@ services:
       - db
     networks:
       - new
-    image: node:18.14.0-alpine
+    image: node:19.6.0-alpine
     platform: linux/amd64
     working_dir: /target
     volumes:
