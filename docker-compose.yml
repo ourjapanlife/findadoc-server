@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   db:
-    image: postgres:14-alpine
+    image: postgres:15-alpine
     networks:
       new:
         aliases:
@@ -22,7 +22,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/findadoc-data # persist data even if container shuts down
   db-configure:
-    image: postgres:14-alpine
+    image: postgres:15-alpine
     depends_on:
       - db
     networks:
