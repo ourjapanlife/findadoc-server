@@ -35,6 +35,8 @@ We love and welcome contributions to our front-end repository which can be found
 
 - Node
   - We recommend using [nvm](https://github.com/nvm-sh/nvm) and running `nvm use` in this directory to sync with the project's Node version. However, if you wish to install Node your own way and ensure a consistent version with `.nvmrc`, that's fine too
+- [Yarn Berry](https://yarnpkg.com/getting-started/install)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ## Setup
 
