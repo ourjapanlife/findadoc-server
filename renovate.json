@@ -3,7 +3,7 @@
     "extends": [
         "config:base"
     ],
-    "labels": ["package-update"],
+    "labels": ["dependencies"],
     "schedule": ["after 10am every monday"],
     "stabilityDays": 14,
     "packageRules": [
