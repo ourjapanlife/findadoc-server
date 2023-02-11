@@ -12,6 +12,10 @@
             "groupName": "eslint packages"
         },
         {
+            "matchPackagePatterns": ["node"]
+            "allowedVersions": "/18.*/"
+        },
+        {
             "matchDatasources": ["docker"],
             "matchPackageNames": ["postgres"],
             "allowedVersions": "/*14-*/"
