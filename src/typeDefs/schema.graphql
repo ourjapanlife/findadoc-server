@@ -6,8 +6,16 @@ type Contact {
 }
 
 type PhysicalAddress {
-  addressEn: String!
-  addressJa: String!
+  id: ID!
+  postalCode: String!
+  prefectureEn: String!
+  cityEn: String
+  addressLine1En: String
+  addressLine2En: String
+  prefectureJa: String
+  cityJa: String
+  addressLine1Ja: String
+  addressLine2Ja: String
 }
 
 type Facility {
