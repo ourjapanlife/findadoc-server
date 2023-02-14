@@ -5,11 +5,17 @@ type Contact {
   mapsLink: String!
 }
 
+type PhysicalAddress {
+  addressEn: String!
+  addressJa: String!
+}
+
 type Facility {
   id: ID!
   nameEn: String!
   nameJa: String!
   contact: Contact!
+  physicalAddress: PhysicalAddress!
   healthcareProfessionals: [HealthcareProfessional]!
 }
 
