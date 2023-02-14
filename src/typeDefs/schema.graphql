@@ -5,6 +5,19 @@ type Contact {
   mapsLink: String!
 }
 
+input PhysicalAddress {
+  id: ID!
+  postalCode: String!
+  prefectureEn: String!
+  cityEn: String
+  addressLine1En: String
+  addressLine2En: String
+  prefectureJa: String
+  cityJa: String
+  addressLine1Ja: String
+  addressLine2Ja: String
+}
+
 type PhysicalAddress {
   id: ID!
   postalCode: String!
@@ -114,6 +127,8 @@ enum Insurance {
 type Query {
   degrees: [Degree]
   degree(id: ID!): Degree
+  physicalAddresses: [PhysicalAddress]
+  physicalAddress(id: ID!): PhysicalAddress
   facilities: [Facility]
   facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
