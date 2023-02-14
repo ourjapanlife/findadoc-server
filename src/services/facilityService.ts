@@ -18,7 +18,7 @@ function convertPrismaToGraphQLFacility(input: FacilityAndRelations | null) {
         contact: input.contact,
         physicalAddress: input.physicalAddress,
         healthcareProfessionals: []
-    } as Facility
+    } as unknown as Facility
 }
 
 // TODO: add a validation step for incoming parameters

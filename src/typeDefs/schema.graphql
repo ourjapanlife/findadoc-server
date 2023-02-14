@@ -6,6 +6,7 @@ type Contact {
 }
 
 type PhysicalAddress {
+  id: ID!
   postalCode: String!
   prefectureEn: String!
   cityEn: String!
