@@ -204,7 +204,11 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
     const cityCol = 7
     const addrLine1Col = 8
     const addrLine2Col = 9
-    const mapLinkCol = 10
+    const prefectureJaCol = 10
+    const cityJaCol = 11
+    const addrLine1JaCol = 12
+    const addrLine2JaCol = 13
+    const mapLinkCol = 14
 
     const devData:string[][] = loadCSVFromFile('./prisma/seedData/devFacilities.csv')
 
@@ -222,7 +226,11 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
                 prefectureEn: row[prefectureCol],
                 cityEn: row[cityCol],
                 addressLine1En: row[addrLine1Col],
-                addressLine2En: row[addrLine2Col]
+                addressLine2En: row[addrLine2Col],
+                prefectureJa: row[prefectureJaCol],
+                cityJa: row[cityJaCol],
+                addressLine1Ja: row[addrLine1JaCol],
+                addressLine2Ja: row[addrLine2JaCol]
             }
         })
 
@@ -255,6 +263,7 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
                 nameEn: row[nameEnCol],
                 nameJa: row[nameJaCol],
                 contactId: newContact.id,
+                physicalAddressId: newAddress.id,
                 isPublished: true
             }
         })

@@ -5,25 +5,11 @@ type Contact {
   mapsLink: String!
 }
 
-input PhysicalAddress {
-  id: ID!
-  postalCode: String!
-  prefectureEn: String!
-  cityEn: String
-  addressLine1En: String
-  addressLine2En: String
-  prefectureJa: String
-  cityJa: String
-  addressLine1Ja: String
-  addressLine2Ja: String
-}
-
 type PhysicalAddress {
-  id: ID!
   postalCode: String!
   prefectureEn: String!
-  cityEn: String
-  addressLine1En: String
+  cityEn: String!
+  addressLine1En: String!
   addressLine2En: String
   prefectureJa: String
   cityJa: String
