@@ -163,9 +163,7 @@ model PhysicalAddress {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
-
-  Contact  Contact[]
-  Facility Facility[]
+  Contact   Contact[]
 }
 
 model Facility {
@@ -180,9 +178,6 @@ model Facility {
 
   contact   Contact @relation(fields: [contactId], references: [id])
   contactId Int
-
-  physicalAddress   PhysicalAddress @relation(fields: [physicalAddressId], references: [id])
-  physicalAddressId Int
 }
 
 enum Insurance {
