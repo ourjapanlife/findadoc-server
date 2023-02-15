@@ -263,7 +263,6 @@ const seedFacilities = async function(prisma: PrismaClient, verbose = false) {
                 nameEn: row[nameEnCol],
                 nameJa: row[nameJaCol],
                 contactId: newContact.id,
-                physicalAddressId: newAddress.id,
                 isPublished: true
             }
         })

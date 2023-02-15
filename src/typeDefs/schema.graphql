@@ -3,6 +3,7 @@ type Contact {
   phone: String!
   website: String!
   mapsLink: String!
+  physicalAddress: PhysicalAddress!
 }
 
 type PhysicalAddress {
@@ -23,7 +24,6 @@ type Facility {
   nameEn: String!
   nameJa: String!
   contact: Contact!
-  physicalAddress: PhysicalAddress!
   healthcareProfessionals: [HealthcareProfessional]!
 }
 
