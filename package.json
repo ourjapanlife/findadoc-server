@@ -6,6 +6,8 @@
     "scripts": {
         "prepare": "husky install",
         "test": "ts-mocha src/tests/**.ts",
+        "build:digitalocean": "yarn install --production=false && yarn run build && rm -rf node_modules && yarn install --production --frozen-lockfile",
+        "build": "tsc",
         "dev": "yarn && ts-node-dev --transpile-only --no-notify --exit-child src/index.ts",
         "prod": "ts-node src/index.ts",
         "docker:build": "docker build . -f ./docker/server/Dockerfile -t findadoc/server",
