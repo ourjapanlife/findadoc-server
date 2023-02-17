@@ -18,7 +18,7 @@
         {
             "matchDatasources": ["docker"],
             "matchPackageNames": ["postgres"],
-            "allowedVersions": "/*14-*/"
+            "allowedVersions": "/14*/"
         }
     ]
 }
