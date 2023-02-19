@@ -12,13 +12,13 @@
             "groupName": "eslint packages"
         },
         {
-            "matchPackagePatterns": ["node"]
+            "matchPackagePatterns": ["node"],
             "allowedVersions": "/18.*/"
         },
         {
             "matchDatasources": ["docker"],
             "matchPackageNames": ["postgres"],
-            "allowedVersions": "/*14-*/"
+            "allowedVersions": "/14*/"
         }
     ]
 }
