@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import { getDegreeById, getDegrees } from './services/degreeService'
 import { getFacilityById, getFacilities } from './services/facilityService'
 import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService'
+import { getPhysicalAddressById, getPhysicalAddresses } from './services/physicalAddressService'
 import { getSpecialtyById, getSpecialties } from './services/specialtyService'
 import { getSpokenLanguageByIso, getSpokenLanguages } from './services/spokenLanguageService'
 import {
@@ -51,6 +52,8 @@ const resolvers = {
 
             return matchingHealthcareProfessional
         },
+        physicalAddress: (_parent: HealthcareProfessional, args: { id: string; }) => getPhysicalAddressById(args.id),
+        physicalAddresses: () => getPhysicalAddresses(),
         specialties: () => {
             // TODO: add a validation step for incoming parameters
             const matchingSpecialties = getSpecialties()
