@@ -1,6 +1,6 @@
 import { HealthcareProfessional, LocaleName } from '../typeDefs/gqlTypes'
 import { HealthcareProfessional as PrismaHealthcareProfessional,
-    LocaleName as PrismaLocaleName } from '@prisma/client'
+    LocaleName as PrismaLocaleName} from '@prisma/client'
 
 import prisma from '../db/client'
 
@@ -10,6 +10,7 @@ type HealthcareProfessionalAndRelations = (PrismaHealthcareProfessional &
 function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalAndRelations | null) {
     // TODO: populate the rest of the fields in a later PR
     if (!input) { return null }
+
     const healthPro = {
         id: String(input.id),
         names: Array<LocaleName>(),
@@ -20,7 +21,12 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
     } as HealthcareProfessional
 
     for (let i = 0; i < input.names.length; i++) {
-        healthPro.names?.push(input.names[i] as LocaleName)
+        healthPro.names?.push({
+            firstName: input.names[i].firstName,
+            middleName: input.names[i].middleName,
+            lastName: input.names[i].lastName,
+            locale: input.names[i].locale
+        })
     }
 
     return healthPro
@@ -32,7 +38,8 @@ export const getHealthcareProfessionalById = async (id: string) => {
         id: parseInt(id)
     }, 
     include: {
-        names: true  
+        names: true
+        
     }})
 
     return convertPrismaToGqlHealthcareProfessional(healthPro)
@@ -42,6 +49,7 @@ export const getHealthcareProfessionals = async () => {
     const healthPros = await prisma.healthcareProfessional.findMany({
         include: {
             names: true
+         
         }
     })
 
@@ -50,7 +58,7 @@ export const getHealthcareProfessionals = async () => {
     healthPros.forEach(healthPro => {
         const gqlHealthPro = convertPrismaToGqlHealthcareProfessional(healthPro)
 
-        if (gqlHealthPro) { gqlHealthPros.push() }
+        if (gqlHealthPro) { gqlHealthPros.push(gqlHealthPro) }
     })
     
     return gqlHealthPros
