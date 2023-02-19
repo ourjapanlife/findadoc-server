@@ -1,9 +1,10 @@
 type Contact {
+  id: ID!
   email: String!
   phone: String!
   website: String!
   mapsLink: String!
-  address: PhysicalAddress!
+  address: PhysicalAddress
 }
 
 type PhysicalAddress {

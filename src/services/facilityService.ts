@@ -1,22 +1,35 @@
-import { Facility } from '../typeDefs/gqlTypes'
+import { Facility, Contact } from '../typeDefs/gqlTypes'
 import {Facility as PrismaFacility, 
-    Contact as PrismaContact } from '@prisma/client'
+    Contact as PrismaContact, PhysicalAddress as PrismaPhysicalAddress } from '@prisma/client'
 
 import prisma from '../db/client'
 
 type FacilityAndRelations = (PrismaFacility & {
-    contact: PrismaContact
-})
+    contact: PrismaContact & {
+        address: PrismaPhysicalAddress | null;
+    }})
 
 function convertPrismaToGraphQLFacility(input: FacilityAndRelations | null) {
     if (!input) { return null }
-    return {
+
+    const contact = {
+        id: String(input.contact.id),
+        email: input.contact.email,
+        phone: input.contact.phone, 
+        website: input.contact.website,
+        mapsLink: input.contact.mapsLink, 
+        address: input.contact.address
+    } as Contact
+
+    const facility = {
         id: String(input.id),
         nameEn: input.nameEn,
         nameJa: input.nameJa,
-        contact: input.contact,
+        contact: contact,
         healthcareProfessionals: []
     } as Facility
+
+    return facility
 }
 
 // TODO: add a validation step for incoming parameters
@@ -26,7 +39,11 @@ export const getFacilityById = async (id: string) => {
             id: parseInt(id)
         },
         include: {
-            contact: true
+            contact: {
+                include: {
+                    address: true
+                }
+            }
         }}
     )
 
@@ -36,7 +53,11 @@ export const getFacilityById = async (id: string) => {
 export const getFacilities = async () => {
     const facilities = await prisma.facility.findMany(
         {include: {
-            contact: true
+            contact: {
+                include: {
+                    address: true
+                }
+            }
         }}
     )
 
