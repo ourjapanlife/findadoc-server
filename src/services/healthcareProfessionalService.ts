@@ -1,11 +1,12 @@
-import { HealthcareProfessional, LocaleName } from '../typeDefs/gqlTypes'
+import { HealthcareProfessional, LocaleName, Degree } from '../typeDefs/gqlTypes'
 import { HealthcareProfessional as PrismaHealthcareProfessional,
-    LocaleName as PrismaLocaleName} from '@prisma/client'
+    LocaleName as PrismaLocaleName,
+    Degree as PrismaDegree } from '@prisma/client'
 
 import prisma from '../db/client'
 
 type HealthcareProfessionalAndRelations = (PrismaHealthcareProfessional & 
-    { names: PrismaLocaleName[]})
+    { names: PrismaLocaleName[], degrees: PrismaDegree[] })
 
 function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalAndRelations | null) {
     // TODO: populate the rest of the fields in a later PR
@@ -17,7 +18,7 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
         specialties: [],
         spokenLanguages: [],
         acceptedInsurance: [],
-        degrees: []
+        degrees: Array<Degree>()
     } as HealthcareProfessional
 
     for (let i = 0; i < input.names.length; i++) {
@@ -26,6 +27,15 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
             middleName: input.names[i].middleName,
             lastName: input.names[i].lastName,
             locale: input.names[i].locale
+        })
+    }
+
+    for (let i = 0; i < input.degrees.length; i++) {
+        healthPro.degrees?.push({
+            id: String(input.degrees[i].id),
+            nameJa: input.degrees[i].nameJa,
+            nameEn: input.degrees[i].nameEn,
+            abbreviation: input.degrees[i].abbreviation
         })
     }
 
@@ -38,7 +48,8 @@ export const getHealthcareProfessionalById = async (id: string) => {
         id: parseInt(id)
     }, 
     include: {
-        names: true
+        names: true,
+        degrees: true
         
     }})
 
@@ -48,7 +59,8 @@ export const getHealthcareProfessionalById = async (id: string) => {
 export const getHealthcareProfessionals = async () => {
     const healthPros = await prisma.healthcareProfessional.findMany({
         include: {
-            names: true
+            names: true,
+            degrees: true
          
         }
     })
