@@ -1,4 +1,4 @@
-FROM node:18.14.1
+FROM node:18.14.2
 
 # ARGS
 ARG pgUser=postgres
