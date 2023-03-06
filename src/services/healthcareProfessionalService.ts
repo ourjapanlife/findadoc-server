@@ -33,7 +33,7 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
         names: Array<LocaleName>(),
         specialties: Array<Specialty>(),
         spokenLanguages: Array<SpokenLanguage>(),
-        acceptedInsurance: Array<Insurance>(),
+        acceptedInsurance: input.acceptedInsurance,
         degrees: Array<Degree>()
     } as HealthcareProfessional
 
@@ -70,8 +70,6 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
 
         healthPro.spokenLanguages.push(dbLanguage)
     }
-
-    // TODO accepted insurance
 
     return healthPro
 }
