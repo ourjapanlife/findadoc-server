@@ -73,10 +73,7 @@ export const getHealthcareProfessionalById = async (id: string) => {
         },
         HealthcareProfessionalSpecialty: {
             include: {
-                Specialty: {
-                    id: true,
-                    names: true
-                }
+                Specialty: true
             }
         }
     }})
