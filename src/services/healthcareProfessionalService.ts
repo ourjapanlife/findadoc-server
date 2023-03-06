@@ -1,34 +1,39 @@
-import { HealthcareProfessional, LocaleName, Degree, Specialty } from '../typeDefs/gqlTypes'
+import { HealthcareProfessional, LocaleName, Degree, Specialty, Insurance, SpokenLanguage } from '../typeDefs/gqlTypes'
 import { HealthcareProfessional as PrismaHealthcareProfessional,
     LocaleName as PrismaLocaleName,
     Degree as PrismaDegree,
     Specialty as PrismaSpecialty,
-    HealthcareProfessionalDegree as PrismaDegreeRelation,
-    HealthcareProfessionalSpecialty as PrismaSpecialtyRelation } from '@prisma/client'
+    SpokenLanguage as PrismaSpokenLanguage,
+    Insurance as PrismaInsurance,
+    HealthcareProfessionalDegree,
+    HealthcareProfessionalSpecialty,
+    HealthcareProfessionalSpokenLanguage} from '@prisma/client'
 
 import prisma from '../db/client'
 
 type HealthcareProfessionalAndRelations = (PrismaHealthcareProfessional & 
     { 
         names: PrismaLocaleName[], 
-        HealthcareProfessionalDegree: (PrismaDegreeRelation & { 
+        HealthcareProfessionalDegree: (HealthcareProfessionalDegree & { 
             Degree: PrismaDegree 
         })[],
-        HealthcareProfessionalSpecialty: (PrismaSpecialtyRelation & { 
+        HealthcareProfessionalSpecialty: (HealthcareProfessionalSpecialty & { 
             Specialty: PrismaSpecialty 
         })[] 
+        spokenLanguages: (HealthcareProfessionalSpokenLanguage & {
+            SpokenLanguage: PrismaSpokenLanguage
+        })[],
     })
 
 function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalAndRelations | null) {
-    // TODO: populate the rest of the fields in a later PR
     if (!input) { return null }
 
     const healthPro = {
         id: String(input.id),
         names: Array<LocaleName>(),
         specialties: Array<Specialty>(),
-        spokenLanguages: [],
-        acceptedInsurance: [],
+        spokenLanguages: Array<SpokenLanguage>(),
+        acceptedInsurance: Array<Insurance>(),
         degrees: Array<Degree>()
     } as HealthcareProfessional
 
@@ -42,19 +47,31 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
     }
 
     for (let i = 0; i < input.HealthcareProfessionalDegree.length; i++) {
+        const dbDegree = input.HealthcareProfessionalDegree[i].Degree
+
         healthPro.degrees?.push({
-            id: String(input.HealthcareProfessionalDegree[i].Degree.id),
-            nameJa: input.HealthcareProfessionalDegree[i].Degree.nameJa,
-            nameEn: input.HealthcareProfessionalDegree[i].Degree.nameEn,
-            abbreviation: input.HealthcareProfessionalDegree[i].Degree.abbreviation
+            id: String(dbDegree.id),
+            nameJa: dbDegree.nameJa,
+            nameEn: dbDegree.nameEn,
+            abbreviation: dbDegree.abbreviation
         })
     }
 
     for (let i = 0; i < input.HealthcareProfessionalSpecialty.length; i++) {
+        const dbSpecialty = input.HealthcareProfessionalSpecialty[i].Specialty
+
         healthPro.specialties?.push({
-            id: String(input.HealthcareProfessionalSpecialty[i].Specialty.id)
+            id: String(dbSpecialty.id)
         })
     }
+
+    for (let i = 0; i < input.spokenLanguages.length; i++) {
+        const dbLanguage = input.spokenLanguages[i].SpokenLanguage
+
+        healthPro.spokenLanguages.push(dbLanguage)
+    }
+
+    // TODO accepted insurance
 
     return healthPro
 }
@@ -66,6 +83,11 @@ export const getHealthcareProfessionalById = async (id: string) => {
     }, 
     include: {
         names: true,
+        spokenLanguages: {
+            include: {
+                SpokenLanguage: true
+            }
+        },
         HealthcareProfessionalDegree: {
             include: {
                 Degree: true
@@ -85,6 +107,11 @@ export const getHealthcareProfessionals = async () => {
     const healthPros = await prisma.healthcareProfessional.findMany({
         include: {
             names: true,
+            spokenLanguages: {
+                include: {
+                    SpokenLanguage: true
+                }
+            },
             HealthcareProfessionalDegree: {
                 include: {
                     Degree: true
