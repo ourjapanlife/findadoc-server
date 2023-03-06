@@ -1,12 +1,23 @@
-import { HealthcareProfessional, LocaleName, Degree } from '../typeDefs/gqlTypes'
+import { HealthcareProfessional, LocaleName, Degree, Specialty } from '../typeDefs/gqlTypes'
 import { HealthcareProfessional as PrismaHealthcareProfessional,
     LocaleName as PrismaLocaleName,
-    Degree as PrismaDegree } from '@prisma/client'
+    Degree as PrismaDegree,
+    Specialty as PrismaSpecialty,
+    HealthcareProfessionalDegree as PrismaDegreeRelation,
+    HealthcareProfessionalSpecialty as PrismaSpecialtyRelation } from '@prisma/client'
 
 import prisma from '../db/client'
 
 type HealthcareProfessionalAndRelations = (PrismaHealthcareProfessional & 
-    { names: PrismaLocaleName[], degrees: PrismaDegree[] })
+    { 
+        names: PrismaLocaleName[], 
+        HealthcareProfessionalDegree: (PrismaDegreeRelation & { 
+            Degree: PrismaDegree 
+        })[],
+        HealthcareProfessionalSpecialty: (PrismaSpecialtyRelation & { 
+            Specialty: PrismaSpecialty 
+        })[] 
+    })
 
 function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalAndRelations | null) {
     // TODO: populate the rest of the fields in a later PR
@@ -15,7 +26,7 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
     const healthPro = {
         id: String(input.id),
         names: Array<LocaleName>(),
-        specialties: [],
+        specialties: Array<Specialty>(),
         spokenLanguages: [],
         acceptedInsurance: [],
         degrees: Array<Degree>()
@@ -30,12 +41,18 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
         })
     }
 
-    for (let i = 0; i < input.degrees.length; i++) {
+    for (let i = 0; i < input.HealthcareProfessionalDegree.length; i++) {
         healthPro.degrees?.push({
-            id: String(input.degrees[i].id),
-            nameJa: input.degrees[i].nameJa,
-            nameEn: input.degrees[i].nameEn,
-            abbreviation: input.degrees[i].abbreviation
+            id: String(input.HealthcareProfessionalDegree[i].Degree.id),
+            nameJa: input.HealthcareProfessionalDegree[i].Degree.nameJa,
+            nameEn: input.HealthcareProfessionalDegree[i].Degree.nameEn,
+            abbreviation: input.HealthcareProfessionalDegree[i].Degree.abbreviation
+        })
+    }
+
+    for (let i = 0; i < input.HealthcareProfessionalSpecialty.length; i++) {
+        healthPro.specialties?.push({
+            id: String(input.HealthcareProfessionalSpecialty[i].Specialty.id)
         })
     }
 
@@ -49,8 +66,19 @@ export const getHealthcareProfessionalById = async (id: string) => {
     }, 
     include: {
         names: true,
-        degrees: true
-        
+        HealthcareProfessionalDegree: {
+            include: {
+                Degree: true
+            }
+        },
+        HealthcareProfessionalSpecialty: {
+            include: {
+                Specialty: {
+                    id: true,
+                    names: true
+                }
+            }
+        }
     }})
 
     return convertPrismaToGqlHealthcareProfessional(healthPro)
@@ -60,8 +88,16 @@ export const getHealthcareProfessionals = async () => {
     const healthPros = await prisma.healthcareProfessional.findMany({
         include: {
             names: true,
-            degrees: true
-         
+            HealthcareProfessionalDegree: {
+                include: {
+                    Degree: true
+                }
+            },
+            HealthcareProfessionalSpecialty: {
+                include: {
+                    Specialty: true
+                }
+            }
         }
     })
 
