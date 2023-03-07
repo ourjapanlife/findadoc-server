@@ -4,6 +4,7 @@
 import { PrismaClient } from '@prisma/client'
 import loadCSVFromFile from './loadCsv'
 import devSetup from './devSetup'
+import Locale from './Locale'
 
 const prisma = new PrismaClient()
 
@@ -50,8 +51,8 @@ async function seedSpecialties(verbose = false) {
             create: {
                 names: {
                     create: [
-                        {locale: 'eng', name: specialty[enCol]},
-                        {locale: 'jpn', name: specialty[jaCol]}
+                        {locale: Locale.ENGLISH, name: specialty[enCol]},
+                        {locale: Locale.JAPANESE, name: specialty[jaCol]}
                     ]
                 }
             }

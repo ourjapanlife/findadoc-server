@@ -2,6 +2,7 @@
 /* eslint-disable no-console */
 import { PrismaClient, Insurance } from '@prisma/client'
 import loadCSVFromFile from './loadCsv'
+import Locale from './Locale'
 
 function parseAcceptedInsurance(input: string) {
     const splitInput = input.split(',')
@@ -57,14 +58,14 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                     create: [
                         {
                             id: enID,
-                            locale: 'en',
+                            locale: Locale.ENGLISH,
                             firstName: row[firstEn],
                             middleName: row[middleEn],
                             lastName: row[lastEn]
                         },
                         {
                             id: jaID,
-                            locale: 'ja',
+                            locale: Locale.JAPANESE,
                             firstName: row[firstJa],
                             middleName: row[middleJa],
                             lastName: row[lastJa]
@@ -157,20 +158,23 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
 
         for (let i = 0; i < specialtyList.length; i++) {
             const specialty = specialtyList[i]
-            // TODO change to upsert
+
+            console.log(specialty)
             const dbSpecialtyName = await prisma.specialtyName.findFirst({
                 where: {
-                    locale: 'en',
+                    locale: Locale.ENGLISH,
                     name: specialty
                 }
             })
+
+            const specialtyId = dbSpecialtyName?.specialtyId || 0
 
             if (dbSpecialtyName) {
                 // Check if it's already linked to the provider
                 const found = await prisma.healthcareProfessionalSpecialty.findFirst(
                     {
                         where: {healthcareProfessionalId: newHealthPro.id, 
-                            specialtyId: dbSpecialtyName.id}
+                            specialtyId: specialtyId}
                     }
                 )
                 
@@ -178,14 +182,15 @@ const seedHealthcareProfessionals = async function(prisma: PrismaClient, verbose
                     await prisma.healthcareProfessionalSpecialty.create(
                         {
                             data: {
-                                specialtyId: dbSpecialtyName.id,
+                                specialtyId: specialtyId,
                                 healthcareProfessionalId: newHealthPro.id
                             }
                         }
                     )
                 }
+                console.log(specialty)
             }
-        }
+        } 
 
         if (verbose) {
             console.log(`Inserted ${newHealthPro.id} into HealthcareProfessional`)

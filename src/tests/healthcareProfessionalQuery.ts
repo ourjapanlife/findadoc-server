@@ -2,11 +2,12 @@
 import { expect } from 'chai'
 import {} from 'mocha'
 import supertest from 'supertest'
+import Locale from '../../prisma/Locale'
 import { HealthcareProfessional } from '../typeDefs/gqlTypes'
 import responseType from './responseTypes/responseTypes'
 
 describe('GraphQL', () => {
-    let request: any
+    let request: supertest.SuperTest<supertest.Test>
 
     beforeEach(() => {
         const url = 'http://localhost:3001'
@@ -58,18 +59,19 @@ describe('GraphQL', () => {
                 expect(res.body.data.healthcareProfessional).to.have.property('id').equal('1')
                 expect(res.body.data.healthcareProfessional).to.have.property('names')
 
-                const { names, acceptedInsurance, degrees, spokenLanguages } = res.body.data.healthcareProfessional
+                const { names, acceptedInsurance, degrees, spokenLanguages, 
+                    specialties } = res.body.data.healthcareProfessional
 
                 // names
                 expect(names[0]).to.have.property('firstName').equal('Larissa')
                 expect(names[0]).to.have.property('middleName').equal('')
                 expect(names[0]).to.have.property('lastName').equal('Zhang')
-                expect(names[0]).to.have.property('locale').equal('en')
+                expect(names[0]).to.have.property('locale').equal(Locale.ENGLISH)
 
                 expect(names[1]).to.have.property('firstName').equal('ラリッサ')
                 expect(names[1]).to.have.property('middleName').equal('')
                 expect(names[1]).to.have.property('lastName').equal('張')
-                expect(names[1]).to.have.property('locale').equal('ja')
+                expect(names[1]).to.have.property('locale').equal(Locale.JAPANESE)
 
                 // degrees
                 expect(degrees).to.have.length(1)
@@ -85,7 +87,10 @@ describe('GraphQL', () => {
                 expect(spokenLanguages[2]).to.have.property('iso639_3').equal('jpn')
 
                 // specialties
-                // TODO
+                expect(specialties).to.have.length(1)
+                expect(specialties[0]).to.have.property('id').equal('4')
+                expect(specialties[0]).to.have.property('names')
+                // todo check the name
 
                 // insurance
                 expect(acceptedInsurance).to.have.length(2)
