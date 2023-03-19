@@ -89,7 +89,7 @@ describe('GraphQL', () => {
                 // specialties
                 expect(specialties).to.have.length(1)
                 expect(specialties[0]).to.have.property('id').equal('4')
-                expect(specialties[0]).to.have.property('names')
+                expect(specialties[0]).to.have.property('names').not.null()
                 // todo check the name
 
                 // insurance
