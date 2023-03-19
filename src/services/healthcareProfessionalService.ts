@@ -117,7 +117,11 @@ export const getHealthcareProfessionals = async () => {
             },
             HealthcareProfessionalSpecialty: {
                 include: {
-                    Specialty: true
+                    Specialty: {
+                        include: {
+                            names: true
+                        }
+                    }
                 }
             }
         }
