@@ -89,8 +89,11 @@ describe('GraphQL', () => {
                 // specialties
                 expect(specialties).to.have.length(1)
                 expect(specialties[0]).to.have.property('id').equal('4')
-                expect(specialties[0]).to.have.property('names').length('2')
-                // todo check the name
+                expect(specialties[0]).to.have.property('names').length(2)
+                expect(specialties[0]?.names[0]).to.have.property('locale').equal('en')
+                expect(specialties[0]?.names[0]).to.have.property('name').equal('Endocrinology')
+                expect(specialties[0]?.names[1]).to.have.property('locale').equal('ja')
+                expect(specialties[0]?.names[1]).to.have.property('name').equal('内分泌科')
 
                 // insurance
                 expect(acceptedInsurance).to.have.length(2)

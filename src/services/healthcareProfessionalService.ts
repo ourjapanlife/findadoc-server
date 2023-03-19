@@ -1,13 +1,13 @@
-import { HealthcareProfessional, LocaleName, Degree, Specialty, Insurance, SpokenLanguage } from '../typeDefs/gqlTypes'
+import { HealthcareProfessional, LocaleName, Degree, Specialty, SpokenLanguage } from '../typeDefs/gqlTypes'
 import { HealthcareProfessional as PrismaHealthcareProfessional,
     LocaleName as PrismaLocaleName,
     Degree as PrismaDegree,
     Specialty as PrismaSpecialty,
     SpokenLanguage as PrismaSpokenLanguage,
-    Insurance as PrismaInsurance,
     HealthcareProfessionalDegree,
     HealthcareProfessionalSpecialty,
-    HealthcareProfessionalSpokenLanguage} from '@prisma/client'
+    HealthcareProfessionalSpokenLanguage,
+    SpecialtyName} from '@prisma/client'
 
 import prisma from '../db/client'
 
@@ -18,7 +18,7 @@ type HealthcareProfessionalAndRelations = (PrismaHealthcareProfessional &
             Degree: PrismaDegree 
         })[],
         HealthcareProfessionalSpecialty: (HealthcareProfessionalSpecialty & { 
-            Specialty: PrismaSpecialty 
+            Specialty: (PrismaSpecialty & { names: SpecialtyName[]})
         })[] 
         spokenLanguages: (HealthcareProfessionalSpokenLanguage & {
             SpokenLanguage: PrismaSpokenLanguage
@@ -60,9 +60,12 @@ function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalA
     for (let i = 0; i < input.HealthcareProfessionalSpecialty.length; i++) {
         const dbSpecialty = input.HealthcareProfessionalSpecialty[i].Specialty
 
-        healthPro.specialties?.push({
-            id: String(dbSpecialty.id)
-        })
+        const gqlSpecialty = {
+            id: String(dbSpecialty.id),
+            names: dbSpecialty.names as SpecialtyName[]
+        } as Specialty
+
+        healthPro.specialties.push(gqlSpecialty)
     }
 
     for (let i = 0; i < input.spokenLanguages.length; i++) {
@@ -93,7 +96,11 @@ export const getHealthcareProfessionalById = async (id: string) => {
         },
         HealthcareProfessionalSpecialty: {
             include: {
-                Specialty: true
+                Specialty: {
+                    include: {
+                        names: true
+                    }
+                }
             }
         }
     }})
