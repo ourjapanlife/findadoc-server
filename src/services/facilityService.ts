@@ -1,73 +1,70 @@
-import { Facility, Contact } from '../typeDefs/gqlTypes'
-import {Facility as PrismaFacility, 
-    Contact as PrismaContact, PhysicalAddress as PrismaPhysicalAddress } from '@prisma/client'
+import { HealthcareProfessional, LocaleName, Degree, 
+    Specialty, SpecialtyName, SpokenLanguage, Insurance, Facility } from '../typeDefs/dbSchema'
 
-import prisma from '../db/client'
+const tempFirebaseDbGet = () => {
+    const name : LocaleName = {
+        lastName: '',
+        firstName: '',
+        middleName: '',
+        locale: ''
+    }
+    const degree : Degree = {
+        id: '',
+        nameJa: '',
+        nameEn: '',
+        abbreviation: ''
+    }
 
-type FacilityAndRelations = (PrismaFacility & {
-    contact: PrismaContact & {
-        address: PrismaPhysicalAddress | null;
-    }})
+    const spokenLanguage : SpokenLanguage = {
+        iso639_3: '',
+        nameJa: '',
+        nameEn: '',
+        nameNative: ''
+    }
+    
+    const specialtyName : SpecialtyName = {
+        name: '',
+        locale: ''
+    }
 
-function convertPrismaToGraphQLFacility(input: FacilityAndRelations | null) {
-    if (!input) { return null }
+    const specialty : Specialty = {
+        id: '',
+        names: [specialtyName]
+    }
 
-    const contact = {
-        id: String(input.contact.id),
-        email: input.contact.email,
-        phone: input.contact.phone, 
-        website: input.contact.website,
-        mapsLink: input.contact.mapsLink, 
-        address: input.contact.address
-    } as Contact
+    const healthcareProfessional : HealthcareProfessional = {
+        id: '',
+        names: [name],
+        degrees: [degree],
+        spokenLanguages: [spokenLanguage],
+        specialties: [specialty],
+        acceptedInsurance: [Insurance.INTERNATIONAL_HEALTH_INSURANCE]
+    }
 
-    const facility = {
-        id: String(input.id),
-        nameEn: input.nameEn,
-        nameJa: input.nameJa,
-        contact: contact,
-        healthcareProfessionals: []
-    } as Facility
+    const facility : Facility = {
+        id: '',
+        nameEn: '',
+        nameJa: '',
+        contact: {
+            email: '',
+            phone: '',
+            website: '',
+            mapsLink: ''
+        },
+        healthcareProfessionals: [healthcareProfessional]
+    }
 
-    return facility
+    return [facility]
 }
 
-// TODO: add a validation step for incoming parameters
 export const getFacilityById = async (id: string) => {
-    const facility = await prisma.facility.findUnique(
-        {where: {
-            id: parseInt(id)
-        },
-        include: {
-            contact: {
-                include: {
-                    address: true
-                }
-            }
-        }}
-    )
+    const healthPro = tempFirebaseDbGet().find(entity => entity.id == id)
 
-    return convertPrismaToGraphQLFacility(facility)
+    return healthPro
 }
 
 export const getFacilities = async () => {
-    const facilities = await prisma.facility.findMany(
-        {include: {
-            contact: {
-                include: {
-                    address: true
-                }
-            }
-        }}
-    )
+    const healthPros = tempFirebaseDbGet()
 
-    const gqlFacilities = Array<Facility>()
-
-    facilities.forEach(facility => {
-        const gqlFacility = convertPrismaToGraphQLFacility(facility)
-
-        if (gqlFacility) { gqlFacilities.push(gqlFacility) }
-    })
-
-    return gqlFacilities
+    return healthPros
 }

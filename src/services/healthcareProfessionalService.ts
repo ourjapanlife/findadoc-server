@@ -1,146 +1,58 @@
-import { HealthcareProfessional, LocaleName, Degree, Specialty, SpokenLanguage } from '../typeDefs/gqlTypes'
-import { HealthcareProfessional as PrismaHealthcareProfessional,
-    LocaleName as PrismaLocaleName,
-    Degree as PrismaDegree,
-    Specialty as PrismaSpecialty,
-    SpokenLanguage as PrismaSpokenLanguage,
-    HealthcareProfessionalDegree,
-    HealthcareProfessionalSpecialty,
-    HealthcareProfessionalSpokenLanguage,
-    SpecialtyName} from '@prisma/client'
+// import { HealthcareProfessional, LocaleName, Degree, Specialty, SpokenLanguage } from '../typeDefs/gqlTypes'
+import { HealthcareProfessional, LocaleName, Degree, 
+    Specialty, SpecialtyName, SpokenLanguage, Insurance } from '../typeDefs/dbSchema'
 
-import prisma from '../db/client'
-
-type HealthcareProfessionalAndRelations = (PrismaHealthcareProfessional & 
-    { 
-        names: PrismaLocaleName[], 
-        HealthcareProfessionalDegree: (HealthcareProfessionalDegree & { 
-            Degree: PrismaDegree 
-        })[],
-        HealthcareProfessionalSpecialty: (HealthcareProfessionalSpecialty & { 
-            Specialty: (PrismaSpecialty & { names: SpecialtyName[]})
-        })[] 
-        spokenLanguages: (HealthcareProfessionalSpokenLanguage & {
-            SpokenLanguage: PrismaSpokenLanguage
-        })[],
-    })
-
-function convertPrismaToGqlHealthcareProfessional(input: HealthcareProfessionalAndRelations | null) {
-    if (!input) { return null }
-
-    const healthPro = {
-        id: String(input.id),
-        names: Array<LocaleName>(),
-        specialties: Array<Specialty>(),
-        spokenLanguages: Array<SpokenLanguage>(),
-        acceptedInsurance: input.acceptedInsurance,
-        degrees: Array<Degree>()
-    } as HealthcareProfessional
-
-    for (let i = 0; i < input.names.length; i++) {
-        healthPro.names?.push({
-            firstName: input.names[i].firstName,
-            middleName: input.names[i].middleName,
-            lastName: input.names[i].lastName,
-            locale: input.names[i].locale
-        })
+const tempFirebaseDbGet = () => {
+    const name : LocaleName = {
+        lastName: '',
+        firstName: '',
+        middleName: '',
+        locale: ''
+    }
+    const degree : Degree = {
+        id: '',
+        nameJa: '',
+        nameEn: '',
+        abbreviation: ''
     }
 
-    for (let i = 0; i < input.HealthcareProfessionalDegree.length; i++) {
-        const dbDegree = input.HealthcareProfessionalDegree[i].Degree
-
-        healthPro.degrees?.push({
-            id: String(dbDegree.id),
-            nameJa: dbDegree.nameJa,
-            nameEn: dbDegree.nameEn,
-            abbreviation: dbDegree.abbreviation
-        })
+    const spokenLanguage : SpokenLanguage = {
+        iso639_3: '',
+        nameJa: '',
+        nameEn: '',
+        nameNative: ''
+    }
+    
+    const specialtyName : SpecialtyName = {
+        name: '',
+        locale: ''
     }
 
-    for (let i = 0; i < input.HealthcareProfessionalSpecialty.length; i++) {
-        const dbSpecialty = input.HealthcareProfessionalSpecialty[i].Specialty
-
-        const gqlSpecialty = {
-            id: String(dbSpecialty.id),
-            names: dbSpecialty.names as SpecialtyName[]
-        } as Specialty
-
-        healthPro.specialties.push(gqlSpecialty)
+    const specialty : Specialty = {
+        id: '',
+        names: [specialtyName]
     }
 
-    for (let i = 0; i < input.spokenLanguages.length; i++) {
-        const dbLanguage = input.spokenLanguages[i].SpokenLanguage
-
-        healthPro.spokenLanguages.push(dbLanguage)
+    const healthcareProfessional : HealthcareProfessional = {
+        id: '',
+        names: [name],
+        degrees: [degree],
+        spokenLanguages: [spokenLanguage],
+        specialties: [specialty],
+        acceptedInsurance: [Insurance.INTERNATIONAL_HEALTH_INSURANCE]
     }
+
+    return [healthcareProfessional]
+}
+
+export const getHealthcareProfessionalById = async (id: string) => {
+    const healthPro = tempFirebaseDbGet().find(entity => entity.id == id)
 
     return healthPro
 }
 
-// TODO: add a validation step for incoming parameters
-export const getHealthcareProfessionalById = async (id: string) => {
-    const healthPro = await prisma.healthcareProfessional.findUnique({ where: {
-        id: parseInt(id)
-    }, 
-    include: {
-        names: true,
-        spokenLanguages: {
-            include: {
-                SpokenLanguage: true
-            }
-        },
-        HealthcareProfessionalDegree: {
-            include: {
-                Degree: true
-            }
-        },
-        HealthcareProfessionalSpecialty: {
-            include: {
-                Specialty: {
-                    include: {
-                        names: true
-                    }
-                }
-            }
-        }
-    }})
-
-    return convertPrismaToGqlHealthcareProfessional(healthPro)
-}
-
 export const getHealthcareProfessionals = async () => {
-    const healthPros = await prisma.healthcareProfessional.findMany({
-        include: {
-            names: true,
-            spokenLanguages: {
-                include: {
-                    SpokenLanguage: true
-                }
-            },
-            HealthcareProfessionalDegree: {
-                include: {
-                    Degree: true
-                }
-            },
-            HealthcareProfessionalSpecialty: {
-                include: {
-                    Specialty: {
-                        include: {
-                            names: true
-                        }
-                    }
-                }
-            }
-        }
-    })
+    const healthPros = tempFirebaseDbGet()
 
-    const gqlHealthPros = Array<HealthcareProfessional>()
-
-    healthPros.forEach(healthPro => {
-        const gqlHealthPro = convertPrismaToGqlHealthcareProfessional(healthPro)
-
-        if (gqlHealthPro) { gqlHealthPros.push(gqlHealthPro) }
-    })
-    
-    return gqlHealthPros
+    return healthPros
 }
