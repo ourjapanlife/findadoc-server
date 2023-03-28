@@ -21,9 +21,6 @@ indent_size = 2
 charset = utf-8
 indent_size = 2
 
-[*.prisma]
-charset = utf-8
-
 [*.sh]
 charset = utf-8
 

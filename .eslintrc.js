@@ -122,7 +122,7 @@ module.exports = {
         'space-infix-ops': 'error',
 
         // Variables
-        'no-shadow': 'error'
+        '@typescript-eslint/no-shadow': 'error'
     },
     ignorePatterns: [
         'src/typeDefs/gqlTypes.ts'
