@@ -60,12 +60,12 @@ type LocaleName {
 }
 
 input SpecialtyInput {
-  names: [SpecialtyNameInput]
+  names: [SpecialtyNameInput!]!
 }
 
 type Specialty {
   id: ID!
-  names: [SpecialtyName]
+  names: [SpecialtyName!]!
 }
 
 input SpecialtyNameInput {

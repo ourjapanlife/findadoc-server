@@ -62,12 +62,12 @@ __metadata:
   linkType: hard
 
 "@apollo/server@npm:^4.3.2":
-  version: 4.3.2
-  resolution: "@apollo/server@npm:4.3.2"
+  version: 4.5.0
+  resolution: "@apollo/server@npm:4.5.0"
   dependencies:
     "@apollo/cache-control-types": ^1.0.2
     "@apollo/server-gateway-interface": ^1.1.0
-    "@apollo/usage-reporting-protobuf": ^4.0.0
+    "@apollo/usage-reporting-protobuf": ^4.1.0
     "@apollo/utils.createhash": ^2.0.0
     "@apollo/utils.fetcher": ^2.0.0
     "@apollo/utils.isnodelike": ^2.0.0
@@ -87,13 +87,13 @@ __metadata:
     loglevel: ^1.6.8
     lru-cache: ^7.10.1
     negotiator: ^0.6.3
-    node-abort-controller: 3.0.1
+    node-abort-controller: ^3.1.1
     node-fetch: ^2.6.7
     uuid: ^9.0.0
     whatwg-mimetype: ^3.0.0
   peerDependencies:
     graphql: ^16.6.0
-  checksum: 7e1db45238348e756baf3dd0fc51df788f6024416708899112892d0349af93d9ab816fb64673ede03a0b70f24084102e7294a906b680c639a54f5decb90fd684
+  checksum: 193b5f6913c945aafb8fc6b5b75fcfff250e5b84dc2727f6a0472b304da08a6cd90a21ae45591e6408e9413e8bee323bbf4c9586b511a4f426b562da5328e4d0
   languageName: node
   linkType: hard
 
@@ -103,6 +103,15 @@ __metadata:
   dependencies:
     "@apollo/protobufjs": 1.2.7
   checksum: 1c5d6db42f05b4f9f2254eab2283287083a7d8575a7e17e291683768733e29bf4a0c2810a341aedfd639c4ae6fb23253e2a505c628c5cf4f3e12b9770263264c
+  languageName: node
+  linkType: hard
+
+"@apollo/usage-reporting-protobuf@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "@apollo/usage-reporting-protobuf@npm:4.1.0"
+  dependencies:
+    "@apollo/protobufjs": 1.2.7
+  checksum: 442532d7077a728a499de6c2c2340d106b26f14695446361f947a14d3092e4109239a86cfb99e4bb795d913523c1f61a05bb799b45fc72615560693bbd62e645
   languageName: node
   linkType: hard
 
@@ -1657,34 +1666,6 @@ __metadata:
     tslib: ^2.4.1
     webcrypto-core: ^1.7.4
   checksum: cfcd49f6bd199016de83445f1786b17c49d02aee74b400e7e03ba3bc3707457bdebd23bbaba0e2ff3becdcd769d71b79ec64ae35e0acb80b4ab3ed6326ab111c
-  languageName: node
-  linkType: hard
-
-"@prisma/client@npm:latest":
-  version: 4.9.0
-  resolution: "@prisma/client@npm:4.9.0"
-  dependencies:
-    "@prisma/engines-version": 4.9.0-42.ceb5c99003b99c9ee2c1d2e618e359c14aef2ea5
-  peerDependencies:
-    prisma: "*"
-  peerDependenciesMeta:
-    prisma:
-      optional: true
-  checksum: 54c4fc3fde67d21567ead0e22e66d3258c2045f274b465781b89e4f258f1a6431c4c83e3371e71661f2c7ccdf4cf24169002e40e378c7384f99aefe8dfb81be1
-  languageName: node
-  linkType: hard
-
-"@prisma/engines-version@npm:4.9.0-42.ceb5c99003b99c9ee2c1d2e618e359c14aef2ea5":
-  version: 4.9.0-42.ceb5c99003b99c9ee2c1d2e618e359c14aef2ea5
-  resolution: "@prisma/engines-version@npm:4.9.0-42.ceb5c99003b99c9ee2c1d2e618e359c14aef2ea5"
-  checksum: b7b1a41acd8c761ea8111e0d9562623d0735c58546594626de1bd4b35e09122f210e0c4727aa0775b53e5222d8ed1c0fa822e0a8c4ba72271e854532f52a2416
-  languageName: node
-  linkType: hard
-
-"@prisma/engines@npm:4.9.0":
-  version: 4.9.0
-  resolution: "@prisma/engines@npm:4.9.0"
-  checksum: b73306b3e34ebb544f797342cb594f4a73602c6e63961e31e9158f02afdfc209f2cc1d59ae87cbb0165b3dff58eaa145c601ac2a1cfc460e8e439cea8425a3ed
   languageName: node
   linkType: hard
 
@@ -3254,9 +3235,9 @@ __metadata:
   linkType: hard
 
 "csv-parse@npm:^5.3.3":
-  version: 5.3.4
-  resolution: "csv-parse@npm:5.3.4"
-  checksum: 853648004d74dd02b06f51e45efff0cce79a4bbbd03eb344ae0f7e91733c90938b3fab424a9275d5b4cf7845c9d55acbdee90775a92bc8476a0d1d2cd335ec4e
+  version: 5.3.6
+  resolution: "csv-parse@npm:5.3.6"
+  checksum: a6dcb61a0676121e84a29cdee4978a0516d1412fbe8895057d17e1a95a2013e6283b253135465ad562222d095988a74587d92b2fa04192bef15090acce2a0433
   languageName: node
   linkType: hard
 
@@ -4150,7 +4131,6 @@ __metadata:
     "@graphql-codegen/cli": ^2.16.2
     "@graphql-codegen/typescript": ^2.7.3
     "@graphql-codegen/typescript-resolvers": ^2.7.3
-    "@prisma/client": latest
     "@types/chai": ^4.3.3
     "@types/expect": ^24.3.0
     "@types/mocha": ^10.0.0
@@ -4170,7 +4150,6 @@ __metadata:
     graphql-tag: ^2.12.6
     husky: ^8.0.1
     mocha: ^10.0.0
-    prisma: latest
     supertest: ^6.3.0
     ts-mocha: ^10.0.0
     ts-node: ^10.9.1
@@ -5949,10 +5928,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-abort-controller@npm:3.0.1":
-  version: 3.0.1
-  resolution: "node-abort-controller@npm:3.0.1"
-  checksum: 2b3d75c65249fea99e8ba22da3a8bc553f034f44dd12f5f4b38b520f718b01c88718c978f0c24c2a460fc01de9a80b567028f547b94440cb47adeacfeb82c2ee
+"node-abort-controller@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "node-abort-controller@npm:3.1.1"
+  checksum: 2c340916af9710328b11c0828223fc65ba320e0d082214a211311bf64c2891028e42ef276b9799188c4ada9e6e1c54cf7a0b7c05dd9d59fcdc8cd633304c8047
   languageName: node
   linkType: hard
 
@@ -6415,18 +6394,6 @@ __metadata:
     ansi-styles: ^5.0.0
     react-is: ^18.0.0
   checksum: bcc8e86bcf8e7f5106c96e2ea7905912bd17ae2aac76e4e0745d2a50df4b340638ed95090ee455a1c0f78189efa05077bd655ca08bf66292e83ebd7035fc46fd
-  languageName: node
-  linkType: hard
-
-"prisma@npm:latest":
-  version: 4.9.0
-  resolution: "prisma@npm:4.9.0"
-  dependencies:
-    "@prisma/engines": 4.9.0
-  bin:
-    prisma: build/index.js
-    prisma2: build/index.js
-  checksum: 82f680008a61824a40f3daae9e0e5766f33d28c6641d04e0ee0918c2cb42110579187f3fce2d08ec8baa1124b3115229e9d83d7f64987bf46f6403f56b07e711
   languageName: node
   linkType: hard
 

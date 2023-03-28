@@ -52,51 +52,11 @@ yarn install
 yarn prepare
 ```
 
-3. Init Prisma 💠
-```sh
-yarn prisma generate
-```
+### (Optional) Setting up the Database locally 🐘
 
-### Database Setup 🐘
+For simplicity, we use firebase!
 
-For simplicity we provide a dockerized postgres. As a prerequisite, you will need to install 
-[Docker Desktop](https://www.docker.com/products/docker-desktop/).
-
-
-1. Set up `env` variables
-
-```sh
-cp .env.sample .env
-```
-
-Edit the .env file and set the database password
-
-⚠️ DO NOT CHECK IN PASSWORDS OR ENV FILES INTO GITHUB. ALL SECRETS SHOULD BE MANAGED VIA GITHUB SECRETS OR SECURE VAULTS
-
-2. Run docker compose
-```sh
-docker compose up
-```
-
-### Database and ORM commands
-
-Re-run migrations with `yarn prisma migrate dev`
-
-Create a new migration by:
-1. Editing schema.prisma and save
-2. Run `yarn prisma migrate  dev --name snake_case_title`
-3. Before running the backend, regenerate the Prisma Client with `yarn prisma generate`
-
-### Note about migration files
-
-Migration files should never edited after merging to `main` in order to keep an accurate database history. If you want
-to make a change to the database schema, make a new migration:
-
-1. Edit `prisma/prisma.schema`
-2. Run `yarn prisma migrate dev --name [description_of_changes]`
-3. Check in the prisma changes as well as the new migration file
-
-Read more about migrations here: https://www.prisma.io/docs/concepts/components/prisma-migrate
+You can point to different database environments simply by changing the env variable in the `.env` file.
 
 ## How to Test
 
@@ -120,20 +80,5 @@ Read more about migrations here: https://www.prisma.io/docs/concepts/components/
 ![image](./docs/query-by-id.png)
 
 9. If you'd like to share the query you built, such as demonstrating how you tested your code, check out [Apollo Explorer's sharing features](https://www.apollographql.com/blog/announcement/platform/save-and-share-your-graphql-operations-in-apollo-explorer/#sharing-a-collection).
-
-</details>
-
-<details>
-  <summary>Testing Prisma and Postgres</summary>
-
-0. Make sure you have your database set up and the migrations run (See Database Setup above)
-
-1. Run Prisma Studio with `yarn prisma studio`
-2. Go to http://localhost:5555
-3. Click on the table you'd like to inspect. You should be able to view and even modify the database through this interface, kind 
-of like in a spreadsheet. You can open many tabs for various tables and preview your changes before saving them
-
-
-For more details on how to use this tool, check out: https://www.prisma.io/docs/concepts/components/prisma-studio
 
 </details>
