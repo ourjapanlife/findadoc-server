@@ -58,6 +58,26 @@ For simplicity, we use firebase!
 
 You can point to different database environments simply by changing the env variable in the `.env` file.
 
+## Setup Firebase CLI
+
+1. Install the Firebase CLI if you do not have it installed on your machine: 
+
+``` 
+npm -g i firebase-tools
+```
+
+2. Log into Firebase CLI:
+
+``` 
+firebase login
+```
+
+3. Set the CLI to use the project: 
+```
+firebase use --add
+```
+
+Select "Use an existing project"
 ## How to Test
 
 <details>
