@@ -1,13 +1,15 @@
 // import { HealthcareProfessional, LocaleName, Degree, Specialty, SpokenLanguage } from '../typeDefs/gqlTypes'
 import { HealthcareProfessional, LocaleName, Degree, 
-    Specialty, SpecialtyName, SpokenLanguage, Insurance } from '../typeDefs/dbSchema'
+    Specialty, SpecialtyName, SpokenLanguage, Insurance, Locale } from '../typeDefs/dbSchema'
 
 const tempFirebaseDbGet = () => {
+    const locale : Locale = Locale.ENGLISH
+
     const name : LocaleName = {
         lastName: '',
         firstName: '',
         middleName: '',
-        locale: ''
+        locale: locale
     }
     const degree : Degree = {
         id: '',
@@ -25,7 +27,7 @@ const tempFirebaseDbGet = () => {
     
     const specialtyName : SpecialtyName = {
         name: '',
-        locale: ''
+        locale: locale
     }
 
     const specialty : Specialty = {
