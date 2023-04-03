@@ -7,6 +7,8 @@ import { getAnalytics } from 'firebase/analytics'
 import { getFirestore } from 'firebase/firestore/lite'
 import * as dotenv from 'dotenv'
 
+dotenv.config()
+
 const firebaseConfig = {
     apiKey: process.env.API_KEY,
     authDomain: process.env.AUTH_DOMAIN,
@@ -18,7 +20,6 @@ const firebaseConfig = {
     measurementId: process.env.MEASUREMENT_ID
 }
   
-dotenv.config()
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 const analytics = getAnalytics(app)
