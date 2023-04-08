@@ -1,43 +1,43 @@
-import { HealthcareProfessional, LocaleName, Degree, 
+import { HealthcareProfessional, Locale, LocaleName, Degree, 
     Specialty, SpecialtyName, SpokenLanguage, Insurance, Facility } from '../typeDefs/dbSchema'
 
 export const fakeHealthcareProfessionals = () => {
-    const name : LocaleName = {
+    const doctorDoctor : LocaleName = {
         lastName: 'Doctor',
         firstName: 'Doctor',
         middleName: 'MD',
-        locale: 'en'
+        locale: Locale.ENGLISH
     }
-    const degree : Degree = {
+    const medicalDegree : Degree = {
         id: '1',
         nameJa: 'メヂカル',
         nameEn: 'Medical',
         abbreviation: 'MD'
     }
 
-    const spokenLanguage : SpokenLanguage = {
+    const japanese : SpokenLanguage = {
         iso639_3: 'ja',
         nameJa: '日本語',
         nameEn: 'Japanese',
         nameNative: 'Japanese'
     }
-    
-    const specialtyName : SpecialtyName = {
+
+    const neurologyEn : SpecialtyName = {
         name: 'Neurology',
-        locale: 'en'
+        locale: Locale.ENGLISH
     }
 
-    const specialty : Specialty = {
+    const neurology : Specialty = {
         id: '1',
-        names: [specialtyName]
+        names: [neurologyEn]
     }
 
     const healthcareProfessionalOne : HealthcareProfessional = {
         id: '1',
-        names: [name],
-        degrees: [degree],
-        spokenLanguages: [spokenLanguage],
-        specialties: [specialty],
+        names: [doctorDoctor],
+        degrees: [medicalDegree],
+        spokenLanguages: [japanese],
+        specialties: [neurology],
         acceptedInsurance: [Insurance.INTERNATIONAL_HEALTH_INSURANCE]
     }
 
@@ -45,28 +45,28 @@ export const fakeHealthcareProfessionals = () => {
         lastName: 'チェ',
         firstName: 'ジェイコブ',
         middleName: 'ベイヤード',
-        locale: 'ja'
+        locale: Locale.JAPANESE
     }
-    const degree : Degree = {
+    const englishDegree : Degree = {
         id: '2',
         nameJa: '英語',
         nameEn: 'English',
         abbreviation: 'En'
     }
 
-    const spokenLanguage : SpokenLanguage = {
+    const english : SpokenLanguage = {
         iso639_3: 'en-US',
         nameJa: '英語',
         nameEn: 'English',
         nameNative: 'English'
     }
-    
+
     const specialtyName : SpecialtyName = {
         name: 'Pandas',
-        locale: 'パンダ'
+        locale: Locale.ENGLISH
     }
 
-    const specialty : Specialty = {
+    const pandaSpecialty : Specialty = {
         id: '2',
         names: [specialtyName]
     }
@@ -74,9 +74,9 @@ export const fakeHealthcareProfessionals = () => {
     const healthcareProfessionalTwo : HealthcareProfessional = {
         id: '2',
         names: [name],
-        degrees: [degree],
-        spokenLanguages: [spokenLanguage],
-        specialties: [specialty],
+        degrees: [englishDegree],
+        spokenLanguages: [english],
+        specialties: [pandaSpecialty],
         acceptedInsurance: [Insurance.INTERNATIONAL_HEALTH_INSURANCE]
     }
 
