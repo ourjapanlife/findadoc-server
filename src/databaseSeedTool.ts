@@ -1,4 +1,7 @@
-import { initializeDb, addHealthcareProfessional, addFacility } from './database'
+import { initializeDb } from './database'
+import { addHealthcareProfessional } from './services/healthcareProfessionalService'
+import { addFacility } from './services/facilityService'
+
 import { fakeHealthcareProfessionals } from './fakeData/healthcareProfessional'
 import { fakeFacilities } from './fakeData/facilities'
 
@@ -18,7 +21,6 @@ export const seedDatabase = () => {
 
   facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
 
-  console.log(facilities)
   async function test() {
     const hpRef = db.collection('healthcareProfessionals')
 
@@ -32,16 +34,4 @@ export const seedDatabase = () => {
       addFacility(facilitiesRef, facility)
     })
   }
-  // test()
-
-    //create new tables and submit the seed data. for now just the two tables are fine X
-
-    // healthcareProfs are stored as ids in Facilities and must be hydrated on load
-    // when saving, the field must be stripped into just the ids
-
-    // then create read / update / delete for fireStore
-
-  // TODO: how to ensure duplicated data is not created???
-
-    // look into auth
 }

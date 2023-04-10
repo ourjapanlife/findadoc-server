@@ -1,6 +1,6 @@
-// import { HealthcareProfessional, LocaleName, Degree, Specialty, SpokenLanguage } from '../typeDefs/gqlTypes'
 import { HealthcareProfessional, LocaleName, Degree, 
     Specialty, SpecialtyName, SpokenLanguage, Insurance } from '../typeDefs/dbSchema'
+import { getFirestore } from 'firebase-admin/firestore'
 
 const tempFirebaseDbGet = () => {
     const name : LocaleName = {
@@ -46,13 +46,43 @@ const tempFirebaseDbGet = () => {
 }
 
 export const getHealthcareProfessionalById = async (id: string) => {
-    const healthPro = tempFirebaseDbGet().find(entity => entity.id == id)
+    const db = getFirestore()
+    const hpRef = db.collection('healthcareProfessionals')
+    const snapshot = await hpRef.where('id', '=', id).get()
+    var healthcareProfessionals = []
+    snapshot.forEach(doc => {
+      healthcareProfessionals.push(doc.data())
+    })
 
-    return healthPro
+  return healthcareProfessionals
+}
+
+
+export const addHealthcareProfessional = async (healthcareProfessionalsRef, healthcareProfessional) => {
+  healthcareProfessionalsRef.add(healthcareProfessional)
 }
 
 export const getHealthcareProfessionals = async () => {
-    const healthPros = tempFirebaseDbGet()
+    const db = getFirestore()
+    const hpRef = db.collection('healthcareProfessionals')
 
-    return healthPros
+    const snapshot = await hpRef.get()
+    var healthcareProfessionals = []
+    snapshot.forEach(doc => {
+      healthcareProfessionals.push(doc.data())
+    })
+
+  return healthcareProfessionals
+}
+
+export const getHealthcareProfessionalsByIds = async (ids : string[]) => {
+    const db = getFirestore()
+    const hpRef = db.collection('healthcareProfessionals')
+    const snapshot = await hpRef.where('id', 'in', ids).get()
+    var healthcareProfessionals = []
+    snapshot.forEach(doc => {
+      healthcareProfessionals.push(doc.data())
+    })
+
+  return healthcareProfessionals
 }
