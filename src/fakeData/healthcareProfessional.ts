@@ -80,6 +80,5 @@ export const fakeHealthcareProfessionals = () => {
         acceptedInsurance: [Insurance.INTERNATIONAL_HEALTH_INSURANCE]
     }
 
-
     return [healthcareProfessionalOne, healthcareProfessionalTwo]
 }

@@ -10,28 +10,28 @@ import { getFirestore } from 'firebase-admin/firestore'
 export const seedDatabase = () => {
     const args = process.argv
 
-  // initializeDb()
+    // initializeDb()
 
-  const db = getFirestore()
+    const db = getFirestore()
 
-  const healthcareProfessionals = fakeHealthcareProfessionals()
-  var facilities = fakeFacilities()
+    const healthcareProfessionals = fakeHealthcareProfessionals()
+    const facilities = fakeFacilities()
 
-  const healthcareProfessionalForFacility = healthcareProfessionals[0]
+    const healthcareProfessionalForFacility = healthcareProfessionals[0]
 
-  facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
+    facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
 
-  async function test() {
-    const hpRef = db.collection('healthcareProfessionals')
+    async function test() {
+        const hpRef = db.collection('healthcareProfessionals')
 
-    await healthcareProfessionals.forEach( (hp) => {
-      addHealthcareProfessional(hpRef, hp)
-    })
+        await healthcareProfessionals.forEach(hp => {
+            addHealthcareProfessional(hpRef, hp)
+        })
 
-    const facilitiesRef = db.collection('facilities')
+        const facilitiesRef = db.collection('facilities')
 
-    await facilities.forEach( (facility) => {
-      addFacility(facilitiesRef, facility)
-    })
-  }
+        await facilities.forEach(facility => {
+            addFacility(facilitiesRef, facility)
+        })
+    }
 }
