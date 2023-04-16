@@ -12,3 +12,7 @@ src/typeDefs/gqlTypes.ts
 
 # eslint results
 eslint-results.sarif
+
+# firebase log
+firestore-debug.log
+ui-debug.log
