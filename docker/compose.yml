@@ -1,0 +1,8 @@
+services:
+  api:
+    build: 
+      context: ../
+      dockerfile: docker/api/Dockerfile
+    ports:
+      - 49120:3001
+    container_name: findadoc-api
