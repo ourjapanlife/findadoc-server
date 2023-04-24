@@ -1,3 +1,6 @@
+.DS_store
+
+# yarn
 node_modules
 .yarn/*
 !.yarn/patches
@@ -6,6 +9,11 @@ node_modules
 !.yarn/sdks
 !.yarn/versions
 yarn-error.log
+
+# eslint results
+eslint-results.sarif
+
+# App specific
 src/typeDefs/gqlTypes.ts
 .env*
 !.env.sample
@@ -13,6 +21,9 @@ src/typeDefs/gqlTypes.ts
 # eslint results
 eslint-results.sarif
 
-# firebase log
-firestore-debug.log
+# firebase
 ui-debug.log
+firestore-debug.log
+
+# build output
+dist
