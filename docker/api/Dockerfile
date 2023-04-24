@@ -13,15 +13,17 @@ RUN mkdir -p ./.yarn/releases
 COPY .yarn/releases/yarn-*.cjs .yarn/releases/.
 RUN corepack enable
 
-# Follow the lockfile
-RUN yarn install --immutable
+# Install yarn dependencies
+RUN yarn install --immutable --frozen-lockfile
 
-# Bundle app source
+# Copy app source code
 COPY . .
 
-# GraphQL types
-RUN yarn generate
+# Build
+RUN yarn prod:build
 
+
+# Run 
 EXPOSE 3001
 
 CMD [ "yarn", "prod" ]
