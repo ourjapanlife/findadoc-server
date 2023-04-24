@@ -1,60 +1,52 @@
-// import { HealthcareProfessional, LocaleName, Degree, 
-//     Specialty, SpecialtyName, SpokenLanguage, Insurance, Facility } from '../typeDefs/dbSchema'
-import { getFirestore } from 'firebase-admin/firestore'
-import { getHealthcareProfessionalsByIds } from './healthcareProfessionalService'
+import { HealthcareProfessional, LocaleName, Degree, 
+    Specialty, SpecialtyName, SpokenLanguage, Insurance, Facility } from '../typeDefs/dbSchema'
+import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
+import { searchHealthcareProfessionals } from './healthcareProfessionalService'
 
-export const getFacilityById = async (id: string) => {
+export const getFacilityById = async (id: string) : Promise<Facility | null> => {
     const db = getFirestore()
     const facilityRef = db.collection('facilities')
-    const snapshot = await facilityRef.where('id', '=', id).get()
-    const facilities = []
+    const whereCondition = '=' as WhereFilterOp
+    const snapshot = await facilityRef.where('id', whereCondition, id).get()
+
+    if (snapshot.docs.length < 1) {
+        return null
+    }
+
+    const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
+
+    return convertedEntity
+}
+
+export const addFacility = async (facility : Facility) : Promise<void> => {
+    //todo
+}
+
+export const searchFacilities = async (userSearchQuery : string[]) : Promise<Facility[]> => {
+    const db = getFirestore()
+    const hpRef = db.collection('healthcareProfessionals')
+    // make this a real query
+    const snapshot = await hpRef.where('id', 'in', userSearchQuery).get()
+
+    const facilities = [] as Facility[]
 
     snapshot.forEach(doc => {
-        facilities.push(doc.data())
-    })
+        const convertedEntity = mapDbEntityTogqlEntity(doc.data())
 
-    for await (const facility of facilities) {
-        await hydrateFacility(facility)
-    }
+        facilities.push(convertedEntity)
+    })
 
     return facilities
 }
 
-export async function addFacility(facilityRef, facility) {
-    facilityRef.add(transformFacilityForFirestore(facility))
-}
-
-function transformFacilityForFirestore(facility) {
-    const healthcareProfessionalIds = facility.healthcareProfessionals.map(hp => hp.id)
-
-    facility.healthcareProfessionals = healthcareProfessionalIds
-
-    return facility
-}
-
-export const getFacilities = async () => {
-    const db = getFirestore()
-    const facilitiesRef = db.collection('facilities')
-
-    const snapshot = await facilitiesRef.get()
-    const facilities = []
-
-    snapshot.forEach(doc => {
-        facilities.push(doc.data())
-    })
-
-    for await (const facility of facilities) {
-        await hydrateFacility(facility)
-    }
-
-    return facilities
-}
-
-async function hydrateFacility(facility) {
-    const db = getFirestore()
-    const healthcareProfessionals = await getHealthcareProfessionalsByIds(facility.healthcareProfessionals)
-
-    facility.healthcareProfessionals = healthcareProfessionals
-
-    return facility
+const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : Facility => {
+    const gqlEntity = {
+        id: dbEntity.id,
+        nameEn: dbEntity.nameEn,
+        nameJa: dbEntity.nameJa,
+        contact: dbEntity.contact,
+        healthcareProfessionals: dbEntity.healthcareProfessionals
+    } satisfies Facility
+    
+    return gqlEntity
 }
