@@ -18,6 +18,8 @@ src/typeDefs/gqlTypes.ts
 .env*
 !.env.sample
 
+# eslint results
+eslint-results.sarif
 
 # firebase
 ui-debug.log
