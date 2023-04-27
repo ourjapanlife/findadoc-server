@@ -969,7 +969,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fastify/busboy@npm:^1.1.0":
+"@fastify/busboy@npm:^1.2.1":
   version: 1.2.1
   resolution: "@fastify/busboy@npm:1.2.1"
   dependencies:
@@ -1150,7 +1150,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@firebase/database-compat@npm:0.3.4, @firebase/database-compat@npm:^0.3.0":
+"@firebase/database-compat@npm:0.3.4, @firebase/database-compat@npm:^0.3.4":
   version: 0.3.4
   resolution: "@firebase/database-compat@npm:0.3.4"
   dependencies:
@@ -1164,7 +1164,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@firebase/database-types@npm:0.10.4, @firebase/database-types@npm:^0.10.0":
+"@firebase/database-types@npm:0.10.4, @firebase/database-types@npm:^0.10.4":
   version: 0.10.4
   resolution: "@firebase/database-types@npm:0.10.4"
   dependencies:
@@ -1492,7 +1492,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@google-cloud/firestore@npm:^6.4.0":
+"@google-cloud/firestore@npm:^6.5.0":
   version: 6.5.0
   resolution: "@google-cloud/firestore@npm:6.5.0"
   dependencies:
@@ -1576,7 +1576,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@google-cloud/storage@npm:^6.5.2":
+"@google-cloud/storage@npm:^6.9.5":
   version: 6.9.5
   resolution: "@google-cloud/storage@npm:6.9.5"
   dependencies:
@@ -5906,14 +5906,14 @@ __metadata:
   linkType: soft
 
 "firebase-admin@npm:^11.5.0":
-  version: 11.5.0
-  resolution: "firebase-admin@npm:11.5.0"
+  version: 11.7.0
+  resolution: "firebase-admin@npm:11.7.0"
   dependencies:
-    "@fastify/busboy": ^1.1.0
-    "@firebase/database-compat": ^0.3.0
-    "@firebase/database-types": ^0.10.0
-    "@google-cloud/firestore": ^6.4.0
-    "@google-cloud/storage": ^6.5.2
+    "@fastify/busboy": ^1.2.1
+    "@firebase/database-compat": ^0.3.4
+    "@firebase/database-types": ^0.10.4
+    "@google-cloud/firestore": ^6.5.0
+    "@google-cloud/storage": ^6.9.5
     "@types/node": ">=12.12.47"
     jsonwebtoken: ^9.0.0
     jwks-rsa: ^3.0.1
@@ -5924,7 +5924,7 @@ __metadata:
       optional: true
     "@google-cloud/storage":
       optional: true
-  checksum: f67626c176ef99b1b41d4b34fbacaa8bae89b3ab71a1783f1a4b4fa7691686e6649c69014d999c8d5e0ed7167164aa8da65fbc82f0ae7df667b13a007d0237ca
+  checksum: 796c7f80eeeaadb6fe9e31b942de99aaab926f5dd0b5eb7ba650c24c3bc6da3ff1f031976e99ecc9ae886f619c0d317345dd20b95c9041feb85c73112636feaa
   languageName: node
   linkType: hard
 
