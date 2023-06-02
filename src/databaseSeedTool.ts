@@ -20,18 +20,18 @@ export const seedDatabase = () => {
     const healthcareProfessionalForFacility = healthcareProfessionals[0]
 
     facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
-
+    
     async function test() {
-        const hpRef = db.collection('healthcareProfessionals')
+        // const hpRef = db.collection('healthcareProfessionals')
 
         await healthcareProfessionals.forEach(hp => {
-            addHealthcareProfessional(hpRef, hp)
+            addHealthcareProfessional(hp)
         })
 
         const facilitiesRef = db.collection('facilities')
 
         await facilities.forEach(facility => {
-            addFacility(facilitiesRef, facility)
+            addFacility(facility)
         })
     }
 }

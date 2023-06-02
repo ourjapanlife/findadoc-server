@@ -1,47 +1,53 @@
-// import { HealthcareProfessional, LocaleName, Degree, 
-//     Specialty, SpecialtyName, SpokenLanguage, Insurance } from '../typeDefs/dbSchema'
-import { getFirestore } from 'firebase-admin/firestore'
+import { HealthcareProfessional, LocaleName, Degree, 
+    Specialty, SpecialtyName, SpokenLanguage, Insurance } from '../typeDefs/dbSchema'
+import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
 
-export const getHealthcareProfessionalById = async (id: string) => {
+export const getHealthcareProfessionalById = async (id: string) : Promise<HealthcareProfessional | null> => {
     const db = getFirestore()
     const hpRef = db.collection('healthcareProfessionals')
-    const snapshot = await hpRef.where('id', '=', id).get()
-    const healthcareProfessionals = []
+    const whereCondition = '=' as WhereFilterOp
+    const snapshot = await hpRef.where('id', whereCondition, id).get()
+
+    if (snapshot.docs.length < 1) {
+        return null
+    }
+
+    const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
+
+    return convertedEntity
+}
+
+export const addHealthcareProfessional = async (healthcareProfessional : HealthcareProfessional) : Promise<void> => {
+    
+    //todo
+}
+
+export const searchHealthcareProfessionals = async (userSearchQuery : string[]) 
+: Promise<HealthcareProfessional[]> => {
+    const db = getFirestore()
+    const hpRef = db.collection('healthcareProfessionals')
+    const snapshot = await hpRef.where('id', 'in', userSearchQuery).get()
+
+    const healthcareProfessionals = [] as HealthcareProfessional[]
 
     snapshot.forEach(doc => {
-        healthcareProfessionals.push(doc.data())
+        const convertedEntity = mapDbEntityTogqlEntity(doc.data())
+
+        healthcareProfessionals.push(convertedEntity)
     })
 
     return healthcareProfessionals
 }
 
-export const addHealthcareProfessional = async (healthcareProfessionalsRef, healthcareProfessional) => {
-    healthcareProfessionalsRef.add(healthcareProfessional)
-}
-
-export const getHealthcareProfessionals = async () => {
-    const db = getFirestore()
-    const hpRef = db.collection('healthcareProfessionals')
-
-    const snapshot = await hpRef.get()
-    const healthcareProfessionals = []
-
-    snapshot.forEach(doc => {
-        healthcareProfessionals.push(doc.data())
-    })
-
-    return healthcareProfessionals
-}
-
-export const getHealthcareProfessionalsByIds = async (ids : string[]) => {
-    const db = getFirestore()
-    const hpRef = db.collection('healthcareProfessionals')
-    const snapshot = await hpRef.where('id', 'in', ids).get()
-    const healthcareProfessionals = []
-
-    snapshot.forEach(doc => {
-        healthcareProfessionals.push(doc.data())
-    })
-
-    return healthcareProfessionals
+const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : HealthcareProfessional => {
+    const gqlEntity = {
+        id: dbEntity.id,
+        names: dbEntity.names,
+        degrees: dbEntity.degrees,
+        spokenLanguages: dbEntity.spokenLanguages,
+        specialties: dbEntity.specialties,
+        acceptedInsurance: dbEntity.acceptedInsurance
+    } satisfies HealthcareProfessional
+    
+    return gqlEntity
 }
