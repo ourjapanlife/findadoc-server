@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 // import { getDegreeById, getDegrees } from './services/degreeService'
-import { getFacilityById, getFacilities } from './services/facilityService'
-import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService'
+import { getFacilityById, searchFacilities } from './services/facilityService'
+import { getHealthcareProfessionalById, searchHealthcareProfessionals } from './services/healthcareProfessionalService'
 // import { getPhysicalAddressById, getPhysicalAddresses } from './services/physicalAddressService'
 // import { getSpecialtyById, getSpecialties } from './services/specialtyService'
 // import { getSpokenLanguageByIso, getSpokenLanguages } from './services/spokenLanguageService'
@@ -28,27 +28,27 @@ const resolvers = {
 
         //     return matchingDegree
         // },
-        facilities: () => {
+        facilities: async () => {
             // TODO: add a validation step for incoming parameters
-            const matchingFacilities = getFacilities()
+            const matchingFacilities = await searchFacilities(['1'])
 
             return matchingFacilities
         },
-        facility: (_parent: Facility, args: { id: string; }) => {
+        facility: async (_parent: Facility, args: { id: string; }) => {
             // TODO: add a validation step for incoming parameters
-            const matchingFacility = getFacilityById(args.id)
+            const matchingFacility = await getFacilityById(args.id)
 
             return matchingFacility
         },
-        healthcareProfessionals: () => {
+        healthcareProfessionals: async () => {
             // TODO: add a validation step for incoming parameters
-            const matchingProfessionals = getHealthcareProfessionals()
+            const matchingProfessionals = await searchHealthcareProfessionals(['1'])
 
             return matchingProfessionals
         },
-        healthcareProfessional: (_parent: HealthcareProfessional, args: { id: string; }) => {
+        healthcareProfessional: async (_parent: HealthcareProfessional, args: { id: string; }) => {
             // TODO: add a validation step for incoming parameters
-            const matchingHealthcareProfessional = getHealthcareProfessionalById(args.id)
+            const matchingHealthcareProfessional = await getHealthcareProfessionalById(args.id)
 
             return matchingHealthcareProfessional
         }

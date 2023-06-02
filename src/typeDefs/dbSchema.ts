@@ -10,16 +10,16 @@ export type Facility = {
   nameEn: string
   nameJa: string
   contact: Contact
-  healthcareProfessionals: [HealthcareProfessional]
+  healthcareProfessionals: HealthcareProfessional[]
 }
 
 export type HealthcareProfessional = {
   id: string,
-  names: [LocaleName],
-  degrees: [Degree],
-  spokenLanguages: [SpokenLanguage],
-  specialties: [Specialty],
-  acceptedInsurance: [Insurance]
+  names: LocaleName[],
+  degrees: Degree[],
+  spokenLanguages: SpokenLanguage[],
+  specialties: Specialty[],
+  acceptedInsurance: Insurance[]
 }
 
 export type LocaleName = {
@@ -36,7 +36,7 @@ export enum Locale {
 
 export type Specialty = {
   id: string
-  names: [SpecialtyName]
+  names: SpecialtyName[]
 }
 
 export type SpecialtyName = {
