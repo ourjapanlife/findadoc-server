@@ -3,8 +3,8 @@ import { startStandaloneServer } from '@apollo/server/standalone'
 import loadSchema from './schema'
 import resolvers from './resolvers'
 import { initializeDb } from './database'
-import { getFacilityById, getFacilities } from './services/facilityService'
-import { getHealthcareProfessionalById, getHealthcareProfessionals } from './services/healthcareProfessionalService'
+import { getFacilityById, searchFacilities } from './services/facilityService'
+import { getHealthcareProfessionalById, searchHealthcareProfessionals } from './services/healthcareProfessionalService'
 import {seedDatabase} from './databaseSeedTool'
 
 const server = new ApolloServer({
