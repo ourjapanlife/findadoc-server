@@ -1,4 +1,5 @@
 import { Facility } from '../typeDefs/dbSchema'
+import { fakeHealthcareProfessionals } from './healthcareProfessional'
 
 export const fakeFacilities = () => {
     const facility : Facility = {
@@ -11,7 +12,7 @@ export const fakeFacilities = () => {
             website: 'https://zoo.test.com',
             mapsLink: ''
         },
-        healthcareProfessionals: []
+        healthcareProfessionals: fakeHealthcareProfessionals()
     }
 
     return [facility]
