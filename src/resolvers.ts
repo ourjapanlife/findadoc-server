@@ -1,11 +1,12 @@
 import crypto from 'crypto'
 // import { getDegreeById, getDegrees } from './services/degreeService'
-import { getFacilityById, searchFacilities } from './services/facilityService'
+import { addFacility, getFacilityById, searchFacilities } from './services/facilityService'
 import { getHealthcareProfessionalById, searchHealthcareProfessionals } from './services/healthcareProfessionalService'
 // import { getPhysicalAddressById, getPhysicalAddresses } from './services/physicalAddressService'
 // import { getSpecialtyById, getSpecialties } from './services/specialtyService'
 // import { getSpokenLanguageByIso, getSpokenLanguages } from './services/spokenLanguageService'
 import {
+    Contact,
     Degree,
     Facility,
     Insurance,
@@ -108,6 +109,11 @@ const resolvers = {
             }
 
             return healthcareProfessional
+        },
+        createFacility: async (_parent: any, args: any) => {
+            const newFacility = await addFacility(args)
+
+            return newFacility
         }
     }
 }

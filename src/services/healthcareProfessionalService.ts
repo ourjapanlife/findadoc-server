@@ -18,8 +18,11 @@ export const getHealthcareProfessionalById = async (id: string) : Promise<Health
 }
 
 export const addHealthcareProfessional = async (healthcareProfessional : HealthcareProfessional) : Promise<void> => {
-    
-    //todo
+    // add acceptedInsurance
+    // add degrees
+    // add names
+    // add specialties
+    // add spokenLanguages
 }
 
 export const searchHealthcareProfessionals = async (userSearchQuery : string[]) 

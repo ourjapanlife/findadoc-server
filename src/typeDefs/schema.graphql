@@ -1,18 +1,38 @@
 type Contact {
-  id: ID!
-  email: String!
-  phone: String!
-  website: String!
-  mapsLink: String!
+  id: ID
+  email: String
+  phone: String
+  website: String
+  mapsLink: String
   address: PhysicalAddress
 }
 
+input ContactInput {
+  email: String
+  phone: String
+  website: String
+  mapsLink: String!
+  address: PhysicalAddressInput
+}
+
 type PhysicalAddress {
-  id: ID!
-  postalCode: String!
-  prefectureEn: String!
-  cityEn: String!
-  addressLine1En: String!
+  id: ID
+  postalCode: String
+  prefectureEn: String
+  cityEn: String
+  addressLine1En: String
+  addressLine2En: String
+  prefectureJa: String
+  cityJa: String
+  addressLine1Ja: String
+  addressLine2Ja: String
+}
+
+input PhysicalAddressInput {
+  postalCode: String
+  prefectureEn: String
+  cityEn: String
+  addressLine1En: String
   addressLine2En: String
   prefectureJa: String
   cityJa: String
@@ -21,75 +41,82 @@ type PhysicalAddress {
 }
 
 type Facility {
-  id: ID!
-  nameEn: String!
-  nameJa: String!
-  contact: Contact!
-  healthcareProfessionals: [HealthcareProfessional]!
+  id: ID
+  nameEn: String
+  nameJa: String
+  contact: Contact
+  healthcareProfessionals: [ID]
+}
+
+input FacilityInput {
+  nameEn: String
+  nameJa: String
+  contact: ContactInput
+  healthcareProfessionals: [HealthcareProfessionalInput]!
 }
 
 input HealthcareProfessionalInput {
-  names: [LocaleNameInput]!
-  degrees: [DegreeInput]!
-  spokenLanguages: [SpokenLanguageInput]!
-  specialties: [SpecialtyInput]!
-  acceptedInsurance: [Insurance]!
+  names: [LocaleNameInput]
+  degrees: [DegreeInput]
+  spokenLanguages: [SpokenLanguageInput]
+  specialties: [SpecialtyInput]
+  acceptedInsurance: [Insurance]
 }
 
 type HealthcareProfessional {
-  id: ID!
-  names: [LocaleName]!
-  degrees: [Degree]!
-  spokenLanguages: [SpokenLanguage]!
-  specialties: [Specialty]!
-  acceptedInsurance: [Insurance]!
+  id: ID
+  names: [LocaleName]
+  degrees: [Degree]
+  spokenLanguages: [SpokenLanguage]
+  specialties: [Specialty]
+  acceptedInsurance: [Insurance]
 }
 
 input LocaleNameInput {
-  lastName: String!
-  firstName: String!
+  lastName: String
+  firstName: String
   middleName: String
-  locale: String!
+  locale: String
 }
 
 type LocaleName {
-  lastName: String!
-  firstName: String!
+  lastName: String
+  firstName: String
   middleName: String
-  locale: String!
+  locale: String
 }
 
 input SpecialtyInput {
-  names: [SpecialtyNameInput!]!
+  names: [SpecialtyNameInput]
 }
 
 type Specialty {
-  id: ID!
-  names: [SpecialtyName!]!
+  id: ID
+  names: [SpecialtyName!]
 }
 
 input SpecialtyNameInput {
-  name: String!
-  locale: String!
+  name: String
+  locale: String
 }
 
 type SpecialtyName {
-  name: String!
-  locale: String!
+  name: String
+  locale: String
 }
 
 input SpokenLanguageInput {
-  iso639_3: String!
-  nameJa: String!
-  nameEn: String!
-  nameNative: String!
+  iso639_3: String
+  nameJa: String
+  nameEn: String
+  nameNative: String
 }
 
 type SpokenLanguage {
-  iso639_3: String!
-  nameJa: String!
-  nameEn: String!
-  nameNative: String!
+  iso639_3: String
+  nameJa: String
+  nameEn: String
+  nameNative: String
 }
 
 type Submission {
@@ -110,16 +137,16 @@ input SubmissionInput {
 
 input DegreeInput {
   id: ID!
-  nameJa: String!
-  nameEn: String!
-  abbreviation: String!
+  nameJa: String
+  nameEn: String
+  abbreviation: String
 }
 
 type Degree {
   id: ID!
-  nameJa: String!
-  nameEn: String!
-  abbreviation: String!
+  nameJa: String
+  nameEn: String
+  abbreviation: String
 }
 
 enum Insurance {
@@ -153,4 +180,7 @@ type Mutation {
     id: ID!
     input: HealthcareProfessionalInput
   ): HealthcareProfessional
+  createFacility(
+    input: FacilityInput
+  ): Facility
 }

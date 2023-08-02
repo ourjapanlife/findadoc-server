@@ -1,4 +1,5 @@
 .DS_store
+serviceAccount.json
 
 # yarn
 node_modules
