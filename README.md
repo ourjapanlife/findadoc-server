@@ -78,6 +78,18 @@ firebase use --add
 ```
 
 Select "Use an existing project"
+
+## Setting Up Firebase Service Account
+
+To set up the Firebase Service Account for this project, follow these steps:
+
+1. Visit [Firebase console](https://console.firebase.google.com/project/find-a-doc-japan/overview).
+2. Under "Project Overview", click on "Project Settings".
+3. Navigate to the "Service Accounts" tab.
+4. Click the "Generate new private key" button. Ensure that Node.js is selected.
+5. Download the JSON file and add it to the root directory of this project. Rename the file to `firebaseServiceAccountKey.json`.
+6. In your `.env` file, create an environment variable called `SERVICE_ACCOUNT_PATH` with the value `./firebaseServiceAccountKey.json`.
+
 ## How to Test
 
 <details>
