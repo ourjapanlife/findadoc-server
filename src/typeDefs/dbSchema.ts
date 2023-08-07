@@ -6,15 +6,13 @@ export type Contact = {
 }
 
 export type Facility = {
-  id: string
   nameEn: string
   nameJa: string
   contact: Contact
-  healthcareProfessionals: HealthcareProfessional[]
+  healthcareProfessionalIds: string[]
 }
 
 export type HealthcareProfessional = {
-  id: string,
   names: LocaleName[],
   degrees: Degree[],
   spokenLanguages: SpokenLanguage[],

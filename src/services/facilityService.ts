@@ -2,7 +2,7 @@ import { HealthcareProfessional, LocaleName, Contact, Degree,
     Specialty, SpokenLanguage, Insurance, Facility } from '../typeDefs/dbSchema'
 import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
 import { PhysicalAddress } from '../typeDefs/gqlTypes'
-import crypto from 'crypto'
+import { addHealthcareProfessional } from './healthcareProfessionalService'
 
 export const getFacilityById = async (id: string) : Promise<Facility | null> => {
     const db = getFirestore()
@@ -20,45 +20,29 @@ export const getFacilityById = async (id: string) : Promise<Facility | null> => 
 }
 
 export const addFacility = async (input: any) : Promise<Facility> => {
-    input = input.input
-
     const db = getFirestore()
    
     const facilityRef = db.collection('facilities')
 
-    // const healthcareProfessionals = validateHealthcareProfessionalsInput(input.healthcareProfessionals)
-
-    // console.log(healthcareProfessionals)
+    const healthcareProfessionalIds = await mapAndValidateHealthcareProInput(input.healthcareProfessionals)
     
-    // const healthcareProDocRefs = await saveHealthProToDb(db, healthcareProfessionals)
-
-    // console.log(healthcareProDocRefs)
-    
-    // const healthcareProIdList: any = []
-
-    // await healthcareProDocRefs.forEach((doc: any) => {
-    //     healthcareProIdList.push(doc.id)
-    // })
-
-    // console.log('id list', healthcareProIdList)
-
     const newFacility = {
-        id: crypto.randomUUID(),
         contact: validateContactInput(input.contact),
-        healthcareProfessionals: validateHealthcareProfessionalsInput(input.healthcareProfessionals),
+        healthcareProfessionalIds: healthcareProfessionalIds,
         nameEn: validateNameEnInput(input.nameEn),
         nameJa: validateNameJaInput(input.nameJa)
     } satisfies Facility
     
-    facilityRef.add(newFacility)
+    await facilityRef.add(newFacility)
 
     return newFacility as Facility
 }
 
 export const searchFacilities = async (userSearchQuery : string[]) : Promise<Facility[]> => {
     const db = getFirestore()
-    const hpRef = db.collection('healthcareProfessionals')
+    const hpRef = db.collection('facilities')
     // make this a real query
+    // this is still incomplete
     const snapshot = await hpRef.where('id', 'in', userSearchQuery).get()
 
     const facilities = [] as Facility[]
@@ -74,11 +58,10 @@ export const searchFacilities = async (userSearchQuery : string[]) : Promise<Fac
 
 const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : Facility => {
     const gqlEntity = {
-        id: dbEntity.id,
         nameEn: dbEntity.nameEn,
         nameJa: dbEntity.nameJa,
         contact: dbEntity.contact,
-        healthcareProfessionals: dbEntity.healthcareProfessionals
+        healthcareProfessionalIds: dbEntity.healthcareProfessionals
     } satisfies Facility
     
     return gqlEntity
@@ -96,24 +79,6 @@ function validateContactInput(contactInput: Record<string, any>) : Contact {
     return facilityContact
 }
 
-function validateHealthcareProfessionalsInput(healthcareProfessionalsInput: any) : HealthcareProfessional[] {
-    const healthcareProfessionals = healthcareProfessionalsInput.map((input: any) => {
-        const healthcareProfessional = 
-            {
-                id: crypto.randomUUID(),
-                names: input.names as [LocaleName],
-                degrees: input.degrees as Degree[], 
-                spokenLanguages: input.spokenLanguages as [SpokenLanguage],
-                specialties: input.specialties as [Specialty],
-                acceptedInsurance: input.acceptedInsurance as [Insurance]
-            } satisfies HealthcareProfessional
-
-        return healthcareProfessional
-    })
-        
-    return healthcareProfessionals
-}
-
 function validateNameEnInput(nameEnInput: string) : string {
     const nameEn = nameEnInput
 
@@ -126,10 +91,8 @@ function validateNameJaInput(nameJaInput: string) : string {
     return nameJa
 }
 
-async function saveHealthProToDb(db: any, healthcarePro: any) {
-    const healthProRef = db.collection('healthcareProfessionals')
-
-    return await healthcarePro.map((person: HealthcareProfessional) => {
-        healthProRef.add(person)
-    })
+function mapAndValidateHealthcareProInput(healthcareProInput: any) : Promise<[string]> {
+    return healthcareProInput.map(
+        (professional: any) => addHealthcareProfessional(professional)
+    )[0]
 }

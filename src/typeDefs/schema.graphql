@@ -11,7 +11,7 @@ input ContactInput {
   email: String
   phone: String
   website: String
-  mapsLink: String!
+  mapsLink: String
   address: PhysicalAddressInput
 }
 
@@ -45,7 +45,7 @@ type Facility {
   nameEn: String
   nameJa: String
   contact: Contact
-  healthcareProfessionals: [ID]
+  healthcareProfessionalIds: [String]
 }
 
 input FacilityInput {
@@ -136,7 +136,7 @@ input SubmissionInput {
 }
 
 input DegreeInput {
-  id: ID!
+  id: ID
   nameJa: String
   nameEn: String
   abbreviation: String
