@@ -55,7 +55,7 @@
         "chai": "^4.3.6",
         "csv-parse": "^5.3.3",
         "dotenv": "^16.3.1",
-        "firebase": "^9.18.0",
+        "firebase": "^10.0.0",
         "firebase-admin": "^11.5.0",
         "graphql": "^16.6.0",
         "graphql-import-node": "^0.0.5",
