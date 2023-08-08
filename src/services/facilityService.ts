@@ -2,7 +2,7 @@ import { HealthcareProfessional, LocaleName, Contact, Degree,
     Specialty, SpokenLanguage, Insurance, Facility } from '../typeDefs/dbSchema'
 import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
 import { FacilityInput, PhysicalAddress, ContactInput, HealthcareProfessionalInput } from '../typeDefs/gqlTypes'
-import { addHealthcareProfessional } from './healthcareProfessionalService'
+import { mapAndValidateHealthcareProInput } from './healthcareProfessionalService'
 
 export const getFacilityById = async (id: string) : Promise<Facility | null> => {
     const db = getFirestore()
@@ -24,12 +24,14 @@ export const addFacility = async (input: FacilityInput) : Promise<Facility> => {
    
     const facilityRef = db.collection('facilities')
 
-    const healthcareProfessionalIds = 
-    await mapAndValidateHealthcareProInput(input.healthcareProfessionals as HealthcareProfessionalInput[])
+    const healthcareProfessionalIds = await mapAndValidateHealthcareProInput(
+        input.healthcareProfessionals as HealthcareProfessionalInput[]
+    )
     
     const newFacility = {
         contact: validateContactInput(input.contact as Contact),
         healthcareProfessionalIds: healthcareProfessionalIds,
+        healthcareProfessionals: [],
         nameEn: validateNameEnInput(input.nameEn as string),
         nameJa: validateNameJaInput(input.nameJa as string)
     } satisfies Facility
@@ -62,7 +64,8 @@ const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : Facility => {
         nameEn: dbEntity.nameEn,
         nameJa: dbEntity.nameJa,
         contact: dbEntity.contact,
-        healthcareProfessionalIds: dbEntity.healthcareProfessionals
+        healthcareProfessionalIds: dbEntity.healthcareProfessionalIds,
+        healthcareProfessionals: dbEntity.healthcareProfessionals
     } satisfies Facility
     
     return gqlEntity
@@ -92,8 +95,3 @@ function validateNameJaInput(nameJaInput: string) : string {
     return nameJa
 }
 
-function mapAndValidateHealthcareProInput(healthcareProInput: HealthcareProfessionalInput[]) : Promise<string[]> {
-    return healthcareProInput.map(
-        (professional: HealthcareProfessionalInput) => addHealthcareProfessional(professional)
-    )[0]
-}

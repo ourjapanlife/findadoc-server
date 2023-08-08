@@ -38,7 +38,9 @@ export const addHealthcareProfessional = async (input : HealthcareProfessionalIn
 
     const idList: string[] = []
     
-    await healthcareProRef.add(newHealthcareProfessional).then((docRef: DocumentReference) => idList.push(docRef.id))
+    const docRef = await healthcareProRef.add(newHealthcareProfessional)
+    
+    idList.push(docRef.id)
     
     return idList
 }
@@ -71,6 +73,11 @@ const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : HealthcareProfessiona
     
     return gqlEntity
 }
+
+export const mapAndValidateHealthcareProInput = 
+(healthcareProInput: HealthcareProfessionalInput[]) : Promise<string[]> => healthcareProInput.map(
+    (professional: HealthcareProfessionalInput) => addHealthcareProfessional(professional)
+)[0]
 
 function mapAndValidateDegrees(degreesInput: DegreeInput[]) {
     // TODO: Write conditional to check if already exists

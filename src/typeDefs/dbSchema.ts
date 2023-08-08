@@ -13,6 +13,7 @@ export type Facility = {
   nameJa: string
   contact: Contact
   healthcareProfessionalIds: string[]
+  healthcareProfessionals: HealthcareProfessional[]
 }
 
 export type HealthcareProfessional = {
