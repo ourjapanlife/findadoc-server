@@ -131,8 +131,8 @@ type SpokenLanguage {
 
 type Submission {
   id: ID!
-  submittedLink: String!
-  healthCareProfessionalName: String!
+  googleMapsUrl: String!
+  healthcareProfessionalName: String!
   spokenLanguages: [SpokenLanguage]!
   isUnderReview: Boolean!
   isApproved: Boolean!
@@ -140,8 +140,8 @@ type Submission {
 }
 
 input SubmissionInput {
-  submittedLink: String!
-  healthCareProfessionalName: String!
+  googleMapsUrl: String!
+  healthcareProfessionalName: String!
   spokenLanguages: [SpokenLanguageInput]!
 }
 
@@ -182,5 +182,12 @@ type Mutation {
   ) : HealthcareProfessional
   createFacilityWithHealthcareProfessional(
     input: FacilityInput
-  ) : Facility
+  ): Facility
+  createSubmission(
+    input: SubmissionInput
+  ): Submission
+  updateSubmission(
+    id: ID!
+    input: SubmissionInput
+  ): Submission
 }
