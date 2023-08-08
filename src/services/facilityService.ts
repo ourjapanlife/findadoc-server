@@ -1,7 +1,7 @@
 import { HealthcareProfessional, LocaleName, Contact, Degree, 
     Specialty, SpokenLanguage, Insurance, Facility } from '../typeDefs/dbSchema'
 import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
-import { PhysicalAddress } from '../typeDefs/gqlTypes'
+import { FacilityInput, PhysicalAddress, ContactInput, HealthcareProfessionalInput } from '../typeDefs/gqlTypes'
 import { addHealthcareProfessional } from './healthcareProfessionalService'
 
 export const getFacilityById = async (id: string) : Promise<Facility | null> => {
@@ -19,18 +19,19 @@ export const getFacilityById = async (id: string) : Promise<Facility | null> => 
     return convertedEntity
 }
 
-export const addFacility = async (input: any) : Promise<Facility> => {
+export const addFacility = async (input: FacilityInput) : Promise<Facility> => {
     const db = getFirestore()
    
     const facilityRef = db.collection('facilities')
 
-    const healthcareProfessionalIds = await mapAndValidateHealthcareProInput(input.healthcareProfessionals)
+    const healthcareProfessionalIds = 
+    await mapAndValidateHealthcareProInput(input.healthcareProfessionals as HealthcareProfessionalInput[])
     
     const newFacility = {
-        contact: validateContactInput(input.contact),
+        contact: validateContactInput(input.contact as Contact),
         healthcareProfessionalIds: healthcareProfessionalIds,
-        nameEn: validateNameEnInput(input.nameEn),
-        nameJa: validateNameJaInput(input.nameJa)
+        nameEn: validateNameEnInput(input.nameEn as string),
+        nameJa: validateNameJaInput(input.nameJa as string)
     } satisfies Facility
     
     await facilityRef.add(newFacility)
@@ -67,7 +68,7 @@ const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : Facility => {
     return gqlEntity
 }
 
-function validateContactInput(contactInput: Record<string, any>) : Contact {
+function validateContactInput(contactInput: Contact) : Contact {
     const facilityContact = {
         address: contactInput.address as PhysicalAddress,
         email: contactInput.email as string,
@@ -91,8 +92,8 @@ function validateNameJaInput(nameJaInput: string) : string {
     return nameJa
 }
 
-function mapAndValidateHealthcareProInput(healthcareProInput: any) : Promise<[string]> {
+function mapAndValidateHealthcareProInput(healthcareProInput: HealthcareProfessionalInput[]) : Promise<string[]> {
     return healthcareProInput.map(
-        (professional: any) => addHealthcareProfessional(professional)
+        (professional: HealthcareProfessionalInput) => addHealthcareProfessional(professional)
     )[0]
 }

@@ -1,6 +1,12 @@
 import { HealthcareProfessional, LocaleName, Degree, 
     Specialty, SpecialtyName, SpokenLanguage, Insurance } from '../typeDefs/dbSchema'
-import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
+import { DocumentData, DocumentReference, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
+import { DegreeInput, 
+    HealthcareProfessionalInput, 
+    LocaleNameInput, 
+    SpecialtyInput, 
+    SpecialtyNameInput, 
+    SpokenLanguageInput } from '../typeDefs/gqlTypes'
 
 export const getHealthcareProfessionalById = async (id: string) : Promise<HealthcareProfessional | null> => {
     const db = getFirestore()
@@ -17,22 +23,22 @@ export const getHealthcareProfessionalById = async (id: string) : Promise<Health
     return convertedEntity
 }
 
-export const addHealthcareProfessional = async (input : any) : Promise<[string]> => {
+export const addHealthcareProfessional = async (input : HealthcareProfessionalInput) : Promise<string[]> => {
     const db = getFirestore()
    
     const healthcareProRef = db.collection('healthcareProfessionals')
 
     const newHealthcareProfessional = {
-        acceptedInsurance: mapAndValidateInsurance(input.acceptedInsurance),
-        degrees: mapAndValidateDegrees(input.degrees),
-        names: mapAndValidateNames(input.names),
-        specialties: mapAndValidateSpecialties(input.specialties),
-        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages)
+        acceptedInsurance: mapAndValidateInsurance(input.acceptedInsurance as []),
+        degrees: mapAndValidateDegrees(input.degrees as DegreeInput[]),
+        names: mapAndValidateNames(input.names as LocaleNameInput[]),
+        specialties: mapAndValidateSpecialties(input.specialties as SpecialtyInput[]),
+        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as SpokenLanguageInput[])
     }
 
-    const idList: any = []
+    const idList: string[] = []
     
-    await healthcareProRef.add(newHealthcareProfessional).then((docRef: any) => idList.push(docRef.id))
+    await healthcareProRef.add(newHealthcareProfessional).then((docRef: DocumentReference) => idList.push(docRef.id))
     
     return idList
 }
@@ -66,10 +72,10 @@ const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : HealthcareProfessiona
     return gqlEntity
 }
 
-function mapAndValidateDegrees(degreesInput: any) {
+function mapAndValidateDegrees(degreesInput: DegreeInput[]) {
     // TODO: Write conditional to check if already exists
     // TODO: This should save to the degrees collection and return an array of IDs
-    const degrees = degreesInput.map((degree: any) => {
+    const degrees = degreesInput.map((degree: DegreeInput) => {
         const newDegree = {nameJa: degree.nameJa,
             nameEn: degree.nameEn,
             abbreviation: degree.abbreviation}
@@ -80,9 +86,9 @@ function mapAndValidateDegrees(degreesInput: any) {
     return degrees
 }
 
-function mapAndValidateNames(namesInput: any) {
+function mapAndValidateNames(namesInput: LocaleNameInput[]) {
     // TODO: Write conditional to check if already exists
-    const names = namesInput.map((name: any) => {
+    const names = namesInput.map((name: LocaleNameInput) => {
         const newLocaleName = {
             lastName: name.lastName,
             firstName: name.firstName,
@@ -96,13 +102,13 @@ function mapAndValidateNames(namesInput: any) {
     return names
 }
 
-function mapAndValidateSpecialties(specialtiesInput: any) {
+function mapAndValidateSpecialties(specialtiesInput: SpecialtyInput[]) {
     // TODO: Write conditional to check if already exists
     // TODO: This should save to the specialties collection and return an array of IDs
-    const specialties = specialtiesInput.map((specialty: any) => {
+    const specialties = specialtiesInput.map((specialty: SpecialtyInput) => {
         const newSpecialty = {
             
-            names: mapAndValidateSpecialtyNames(specialty.names)
+            names: mapAndValidateSpecialtyNames(specialty.names as SpecialtyNameInput[])
         }
 
         return newSpecialty
@@ -111,9 +117,9 @@ function mapAndValidateSpecialties(specialtiesInput: any) {
     return specialties
 }
 
-function mapAndValidateSpecialtyNames(specialtyNamesInput: any) {
+function mapAndValidateSpecialtyNames(specialtyNamesInput: SpecialtyNameInput[]) {
     // TODO: Write conditional to check if already exists
-    const specialtyNames = specialtyNamesInput.map((name: any) => {
+    const specialtyNames = specialtyNamesInput.map((name: SpecialtyNameInput) => {
         const newSpecialtyName = {
             name: name.name,
             locale: name.locale
@@ -125,9 +131,9 @@ function mapAndValidateSpecialtyNames(specialtyNamesInput: any) {
     return specialtyNames
 }
 
-function mapAndValidateLanguages(languagesInput: any) {
+function mapAndValidateLanguages(languagesInput: SpokenLanguageInput[]) {
     // TODO: Write conditional to check if already exists
-    const languages = languagesInput.map((language: any) => {
+    const languages = languagesInput.map((language: SpokenLanguageInput) => {
         const newLanguage = {
             iso639_3: language.iso639_3,
             nameJa: language.nameJa,
@@ -141,7 +147,7 @@ function mapAndValidateLanguages(languagesInput: any) {
     return languages
 }
 
-function mapAndValidateInsurance(insuranceInput: any) {
+function mapAndValidateInsurance(insuranceInput: Insurance[]) {
     // TODO: Write conditional to check if already exists
 
     const insurance = insuranceInput

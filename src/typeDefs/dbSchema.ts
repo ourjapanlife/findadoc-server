@@ -1,8 +1,11 @@
+import { PhysicalAddress } from './gqlTypes'
+
 export type Contact = {
   email: string
   phone: string
   website: string
   mapsLink: string
+  address: PhysicalAddress
 }
 
 export type Facility = {

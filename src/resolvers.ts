@@ -11,7 +11,13 @@ import {
     Specialty,
     LocaleNameInput,
     HealthcareProfessionalInput,
-    SpokenLanguage
+    SpokenLanguage,
+    LocaleName,
+    DegreeInput,
+    SpecialtyInput,
+    SpokenLanguageInput,
+    FacilityInput,
+    ContactInput
 } from './typeDefs/gqlTypes'
 
 const resolvers = {
@@ -38,12 +44,28 @@ const resolvers = {
         }
     },
     Mutation: {
-        createFacility: async (_parent: any, args: any) => {
+        createFacility: async (_parent: FacilityInput, args: {
+            input: {
+                contact: ContactInput,
+                healthcareProfessionals: HealthcareProfessionalInput[],
+                nameEn: string,
+                nameJa: string,
+            }
+        }) => {
             const newFacility = await addFacility(args.input)
 
             return newFacility
         },
-        createHealthcareProfessional: async (_parent: any, args: any) => {
+        createHealthcareProfessional: async (_parent: HealthcareProfessionalInput, args: {
+            input:{
+                acceptedInsurance: Insurance[],
+                degrees: DegreeInput[],
+                names: LocaleNameInput[]
+                specialties: SpecialtyInput[]
+                spokenLanguages: SpokenLanguageInput[]
+
+            }
+        }) => {
             const newHealthcareProfessional = await addHealthcareProfessional(args.input)
 
             return newHealthcareProfessional
