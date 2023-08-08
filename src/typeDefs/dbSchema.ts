@@ -1,20 +1,22 @@
+import { PhysicalAddress } from './gqlTypes'
+
 export type Contact = {
   email: string
   phone: string
   website: string
   mapsLink: string
+  address: PhysicalAddress
 }
 
 export type Facility = {
-  id: string
   nameEn: string
   nameJa: string
   contact: Contact
+  healthcareProfessionalIds: string[]
   healthcareProfessionals: HealthcareProfessional[]
 }
 
 export type HealthcareProfessional = {
-  id: string,
   names: LocaleName[],
   degrees: Degree[],
   spokenLanguages: SpokenLanguage[],
