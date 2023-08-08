@@ -64,7 +64,10 @@ export type Submission = {
   isRejected: boolean
 }
 
-export type SubmissionFilters = {
+export type SubmissionSearchFilters = {
+  googleMapsUrl?: string,
+  healthcareProfessionalName?: string,
+  spokenLanguages?: SpokenLanguage[],
   isUnderReview?: boolean,
   isApproved?: boolean,
   isRejected?: boolean
