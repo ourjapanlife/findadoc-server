@@ -92,6 +92,22 @@ type SpokenLanguage {
   nameNative: String!
 }
 
+type Submission {
+  id: ID!
+  submittedLink: String!
+  healthCareProfessionalName: String!
+  spokenLanguages: [SpokenLanguage]!
+  isUnderReview: Boolean!
+  isApproved: Boolean!
+  isRejected: Boolean!
+}
+
+input SubmissionInput {
+  submittedLink: String!
+  healthCareProfessionalName: String!
+  spokenLanguages: [SpokenLanguageInput]!
+}
+
 input DegreeInput {
   id: ID!
   nameJa: String!
@@ -125,6 +141,8 @@ type Query {
   specialty(id: ID!): Specialty
   spokenLanguages: [SpokenLanguage]
   spokenLanguage(iso639_3: String!): SpokenLanguage
+  submissions: [Submission]
+  submission(id: ID!): Submission
 }
 
 type Mutation {
