@@ -137,6 +137,8 @@ type Submission {
   isUnderReview: Boolean!
   isApproved: Boolean!
   isRejected: Boolean!
+  createdDate: String!
+  updatedDate: String!
 }
 
 input SubmissionInput {
@@ -152,6 +154,20 @@ input SubmissionSearchFilters {
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
+  orderBy: [OrderBy]
+  limit: Int
+  createdDate: String
+  updatedDate: String
+}
+
+input OrderBy {
+  orderDirection: OrderDirection
+  fieldToOrder: String
+}
+
+enum OrderDirection {
+  asc
+  desc
 }
 
 input DegreeInput {
@@ -204,3 +220,4 @@ type Mutation {
     input: SubmissionInput
   ): Submission
 }
+

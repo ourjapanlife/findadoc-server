@@ -1,4 +1,4 @@
-import { PhysicalAddress } from './gqlTypes'
+import { PhysicalAddress, SpokenLanguageInput } from './gqlTypes'
 
 export type Contact = {
   email: string
@@ -61,7 +61,9 @@ export type Submission = {
   spokenLanguages: SpokenLanguage[],
   isUnderReview: boolean,
   isApproved: boolean,
-  isRejected: boolean
+  isRejected: boolean,
+  createdDate: string,
+  updatedDate: string
 }
 
 export type SubmissionSearchFilters = {
@@ -70,7 +72,21 @@ export type SubmissionSearchFilters = {
   spokenLanguages?: SpokenLanguage[],
   isUnderReview?: boolean,
   isApproved?: boolean,
-  isRejected?: boolean
+  isRejected?: boolean,
+  orderBy?: OrderBy[],
+  limit?: number
+  createdDate?: string,
+  updatedDate?: string
+}
+
+export type OrderBy = {
+  orderDirection: OrderDirection,
+  fieldToOrder: string
+}
+
+export enum OrderDirection {
+  Asc = 'asc',
+  Desc = 'desc'
 }
 
 export type Degree = {

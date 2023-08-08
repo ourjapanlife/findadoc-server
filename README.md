@@ -198,3 +198,26 @@ yarn test
 9. If you'd like to share the query you built, such as demonstrating how you tested your code, check out [Apollo Explorer's sharing features](https://www.apollographql.com/blog/announcement/platform/save-and-share-your-graphql-operations-in-apollo-explorer/#sharing-a-collection).
 
 </details>
+
+# Troubleshooting
+
+<details>
+  <summary>Firestore Indexing Error: "The query requires an index..."</summary>
+
+When you running query using the `getSubmissions` method that requires ordering by a specific field, if an index hasn't been created for the combination of that field and the order direction, you might receive an error response. This response will typically contain a direct link to create the required index in the **Firebase Console**. Here's how you can proceed:
+
+1. Click on the link in the `Error Response`: This link will redirect you to the Firebase Console, specifically to the Firestore section where you can create indices.
+
+![image](docs/gql-studio-error-message.png)
+
+2. In the Firebase Console, you should see a window labeled `Create or update indexes`. Click the `Save` button: This will initiate the process of creating the index. Index creation might take a few minutes.
+
+![image](docs/firebase-create-index.jpeg)
+
+3. Wait for the Index to be ready: Firestore will show the status of the index. Once it changes from `Building` to `Enabled`, you can proceed to run your GraphQL query again.
+
+![image](docs/firebase-building-index.png)
+
+4. Run Your GraphQL Query Again: With the index in place, your query should now execute without any errors related to indexing.
+
+</details>
