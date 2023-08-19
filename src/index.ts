@@ -2,31 +2,20 @@ import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import loadSchema from './schema'
 import resolvers from './resolvers'
-import { initializeDb } from './database'
-import { getFacilityById, searchFacilities } from './services/facilityService'
-import { getHealthcareProfessionalById, searchHealthcareProfessionals } from './services/healthcareProfessionalService'
-import {seedDatabase} from './databaseSeedTool'
 
-const server = new ApolloServer({
-    typeDefs: loadSchema(),
-    resolvers,
-    csrfPrevention: true
-})
-
-async function startServer(port = 3001) {
-    await initializeDb()
-
-    // console.log(await getFacilityById('1'))
-    // console.log(await getHealthcareProfessionalById('1'))
-    // console.log(await getFacilities())
-    // console.log(await getHealthcareProfessionals())
-
-    await startStandaloneServer(server, {
-        listen: { port: port }
+export const createApolloServer = async (port: number) => {
+    const server = new ApolloServer({
+        typeDefs: loadSchema(),
+        resolvers
     })
-
+  
+    const { url } = await startStandaloneServer(server, {listen: { port: port }})
+  
     // eslint-disable-next-line no-console
-    console.log(`🚀  Server ready at: http://localhost:${port}`)
+    console.log(`🚀 Query endpoint ready at ${url}`)
+
+    return { server, url }
 }
 
-startServer()
+createApolloServer(4000)
+

@@ -1,14 +1,16 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as typeDefs from '../typeDefs/gqlTypes'
+import CustomErrors from '../errors'
+import {admin} from '../../firebaseConfig'
 
 export async function getHealthcareProfessionalById(id: string) {
-    const db = firebase.getFirestore()
+    const db = admin.firestore()
     const healthcareProfessionalRef = db.collection('healthcareProfessionals')
     const whereCondition = '=' as firebase.WhereFilterOp
     const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
 
     if (snapshot.docs.length < 1) {
-        return null
+        CustomErrors.notFound('Healthcare professional not found.')
     }
 
     const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
@@ -33,11 +35,13 @@ export async function addHealthcareProfessional(
 
     await healthcareProfessionalRef.set(newHealthcareProfessional)
 
+    await healthcareProfessionalRef.set(newHealthcareProfessional)
+
     // TODO: decide if something should be returned
 }
 
 export async function addHealthcareProfessionalToFacility(input: any) {
-    const db = firebase.getFirestore()
+    const db = admin.firestore()
     const facilityRef = db.collection('facilities').doc(input.facilityId)
     const healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
 

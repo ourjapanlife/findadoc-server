@@ -125,6 +125,7 @@ module.exports = {
         '@typescript-eslint/no-shadow': 'error'
     },
     ignorePatterns: [
-        'src/typeDefs/gqlTypes.ts'
+        'src/typeDefs/gqlTypes.ts', 
+        'firebaseConfig.ts'
     ]
 }
