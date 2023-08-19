@@ -77,14 +77,19 @@ input LocaleNameInput {
   lastName: String
   firstName: String
   middleName: String
-  locale: String
+  locale: Locale
 }
 
 type LocaleName {
   lastName: String
   firstName: String
   middleName: String
-  locale: String
+  locale: Locale 
+}
+
+enum Locale {
+  ENGLISH,
+  JAPANESE
 }
 
 input SpecialtyInput {
@@ -98,12 +103,12 @@ type Specialty {
 
 input SpecialtyNameInput {
   name: String
-  locale: String
+  locale: Locale
 }
 
 type SpecialtyName {
   name: String
-  locale: String
+  locale: Locale
 }
 
 input SpokenLanguageInput {
@@ -144,7 +149,7 @@ input DegreeInput {
 }
 
 type Degree {
-  id: ID!
+  id: ID
   nameJa: String
   nameEn: String
   abbreviation: String

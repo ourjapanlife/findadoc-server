@@ -59,8 +59,8 @@ const resolvers = {
         createHealthcareProfessional: async (_parent: HealthcareProfessionalInput, args: {
             input:{
                 acceptedInsurance: Insurance[],
-                degrees: DegreeInput[],
-                names: LocaleNameInput[]
+                degrees: Degree[],
+                names: LocaleName[]
                 specialties: SpecialtyInput[]
                 spokenLanguages: SpokenLanguageInput[]
 
