@@ -57,6 +57,7 @@ input FacilityInput {
 }
 
 input HealthcareProfessionalInput {
+  facilityId: String
   names: [LocaleNameInput]
   degrees: [DegreeInput]
   spokenLanguages: [SpokenLanguageInput]
@@ -97,7 +98,6 @@ input SpecialtyInput {
 }
 
 type Specialty {
-  id: ID
   names: [SpecialtyName!]
 }
 
@@ -142,14 +142,12 @@ input SubmissionInput {
 }
 
 input DegreeInput {
-  id: ID
   nameJa: String
   nameEn: String
   abbreviation: String
 }
 
 type Degree {
-  id: ID
   nameJa: String
   nameEn: String
   abbreviation: String
@@ -162,18 +160,10 @@ enum Insurance {
 }
 
 type Query {
-  degrees: [Degree]
-  degree(id: ID!): Degree
-  physicalAddresses: [PhysicalAddress]
-  physicalAddress(id: ID!): PhysicalAddress
   facilities: [Facility]
   facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional
-  specialties: [Specialty]
-  specialty(id: ID!): Specialty
-  spokenLanguages: [SpokenLanguage]
-  spokenLanguage(iso639_3: String!): SpokenLanguage
   submissions: [Submission]
   submission(id: ID!): Submission
 }
@@ -181,12 +171,12 @@ type Query {
 type Mutation {
   createHealthcareProfessional(
     input: HealthcareProfessionalInput
-  ): HealthcareProfessional
+  ) : HealthcareProfessional
   updateHealthcareProfessional(
     id: ID!
     input: HealthcareProfessionalInput
-  ): HealthcareProfessional
-  createFacility(
+  ) : HealthcareProfessional
+  createFacilityWithHealthcareProfessional(
     input: FacilityInput
-  ): Facility
+  ) : Facility
 }

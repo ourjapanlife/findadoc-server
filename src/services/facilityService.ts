@@ -1,8 +1,6 @@
-import { HealthcareProfessional, LocaleName, Contact, Degree, 
-    Specialty, SpokenLanguage, Insurance, Facility } from '../typeDefs/dbSchema'
 import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
-import { FacilityInput, PhysicalAddress, ContactInput, HealthcareProfessionalInput } from '../typeDefs/gqlTypes'
-import { mapAndValidateHealthcareProInput } from './healthcareProfessionalService'
+import { Contact, Facility, PhysicalAddress, HealthcareProfessional } from '../typeDefs/gqlTypes'
+import { addHealthcareProfessional } from './healthcareProfessionalService'
 
 export const getFacilityById = async (id: string) : Promise<Facility | null> => {
     const db = getFirestore()
@@ -19,24 +17,27 @@ export const getFacilityById = async (id: string) : Promise<Facility | null> => 
     return convertedEntity
 }
 
-export const addFacility = async (input: FacilityInput) : Promise<Facility> => {
+export async function addFacility(input: Facility) {
     const db = getFirestore()
    
-    const facilityRef = db.collection('facilities')
+    const facilityRef = db.collection('facilities').doc()
+    const healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
 
-    const healthcareProfessionalIds = await mapAndValidateHealthcareProInput(
-        input.healthcareProfessionals as HealthcareProfessionalInput[]
-    )
+    if (input.healthcareProfessionals !== null 
+        && input.healthcareProfessionals !== undefined 
+        && input.healthcareProfessionals.length > 0) {
+        addHealthcareProfessional(healthcareProfessionalRef, input.healthcareProfessionals[0] as HealthcareProfessional)
+    }
     
     const newFacility = {
+        id: facilityRef.id,
         contact: validateContactInput(input.contact as Contact),
-        healthcareProfessionalIds: healthcareProfessionalIds,
-        healthcareProfessionals: [],
+        healthcareProfessionalIds: [healthcareProfessionalRef.id],
         nameEn: validateNameEnInput(input.nameEn as string),
         nameJa: validateNameJaInput(input.nameJa as string)
     } satisfies Facility
     
-    await facilityRef.add(newFacility)
+    await facilityRef.set(newFacility)
 
     return newFacility as Facility
 }

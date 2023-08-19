@@ -1,6 +1,7 @@
-import { HealthcareProfessional, Degree, Insurance } from '../typeDefs/dbSchema'
-import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
-import {HealthcareProfessionalInput, 
+import { DocumentData, WhereFilterOp, getFirestore, UpdateData, FieldValue } from 'firebase-admin/firestore'
+import {Degree,
+    Insurance,
+    HealthcareProfessional,
     LocaleName, 
     Locale,
     Specialty,
@@ -22,24 +23,46 @@ export const getHealthcareProfessionalById = async (id: string) : Promise<Health
     return convertedEntity
 }
 
-export async function addHealthcareProfessional(input: HealthcareProfessionalInput) {
-    const db = getFirestore()
-    const healthcareProfessionalRef = db.collection('healthcareProfessionals')
-
+export async function addHealthcareProfessional(
+    healthcareProfessionalRef: 
+    FirebaseFirestore.DocumentReference<DocumentData>, 
+    input: HealthcareProfessional
+) {
     const newHealthcareProfessional = {
+        id: healthcareProfessionalRef.id, 
         acceptedInsurance: mapAndValidateInsurance(input.acceptedInsurance as []),
         degrees: mapAndValidateDegrees(input.degrees as Degree[]),
         names: mapAndValidateNames(input.names as LocaleName[]),
         specialties: mapAndValidateSpecialties(input.specialties as Specialty[]),
         spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as SpokenLanguage[])
     }
+    
+    await healthcareProfessionalRef.set(newHealthcareProfessional)
 
-    const docRef = (await healthcareProfessionalRef.add(newHealthcareProfessional)).get()
+    // TODO: decide if something should be returned
+}
 
-    const data = (await docRef).data()
+export async function addHealthcareProfessionalToFacility(input: any) {
+    const db = getFirestore()
+    const facilityRef = db.collection('facilities').doc(input.facilityId)
+    const healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
 
-    // console.log('docRef = ', docRef.get().then(doc => doc.data()))
-    return data
+    const newHealthcareProfessional = {
+        id: healthcareProfessionalRef.id, 
+        acceptedInsurance: mapAndValidateInsurance(input.acceptedInsurance as []),
+        degrees: mapAndValidateDegrees(input.degrees as Degree[]),
+        names: mapAndValidateNames(input.names as LocaleName[]),
+        specialties: mapAndValidateSpecialties(input.specialties as Specialty[]),
+        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as SpokenLanguage[])
+    }
+    
+    await healthcareProfessionalRef.set(newHealthcareProfessional)
+
+    facilityRef.update(
+        'healthcareProfessionalIds', FieldValue.arrayUnion(healthcareProfessionalRef.id)
+    )
+
+    // TODO: decide if something should be returned
 }
 
 export const searchHealthcareProfessionals = async (userSearchQuery : string[]) 
@@ -61,6 +84,7 @@ export const searchHealthcareProfessionals = async (userSearchQuery : string[])
 
 const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : HealthcareProfessional => {
     const gqlEntity = {
+        id: dbEntity.id,
         names: dbEntity.names,
         degrees: dbEntity.degrees,
         spokenLanguages: dbEntity.spokenLanguages,
@@ -70,11 +94,6 @@ const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : HealthcareProfessiona
     
     return gqlEntity
 }
-
-// export const mapAndValidateHealthcareProInput = 
-// (healthcareProInput: HealthcareProfessionalInput[]) : Promise<string[]> => healthcareProInput.map(
-//     (professional: HealthcareProfessionalInput) => addHealthcareProfessional(professional)
-// )[0]
 
 function mapAndValidateDegrees(degreesInput: Degree[]) {
     const degrees = degreesInput.map((degree: Degree) => {
