@@ -1,11 +1,11 @@
-import { DocumentData, WhereFilterOp, getFirestore } from 'firebase-admin/firestore'
-import { Contact, Facility, PhysicalAddress, HealthcareProfessional } from '../typeDefs/gqlTypes'
+import * as firebase from 'firebase-admin/firestore'
+import * as gqlTypes from '../typeDefs/gqlTypes'
 import { addHealthcareProfessional } from './healthcareProfessionalService'
 
-export const getFacilityById = async (id: string) : Promise<Facility | null> => {
-    const db = getFirestore()
+export const getFacilityById = async (id: string) : Promise<gqlTypes.Facility | null> => {
+    const db = firebase.getFirestore()
     const facilityRef = db.collection('facilities')
-    const whereCondition = '=' as WhereFilterOp
+    const whereCondition = '=' as firebase.WhereFilterOp
     const snapshot = await facilityRef.where('id', whereCondition, id).get()
 
     if (snapshot.docs.length < 1) {
@@ -17,8 +17,8 @@ export const getFacilityById = async (id: string) : Promise<Facility | null> => 
     return convertedEntity
 }
 
-export async function addFacility(input: Facility) {
-    const db = getFirestore()
+export async function addFacility(input: gqlTypes.Facility) {
+    const db = firebase.getFirestore()
    
     const facilityRef = db.collection('facilities').doc()
     const healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
@@ -26,30 +26,32 @@ export async function addFacility(input: Facility) {
     if (input.healthcareProfessionals !== null 
         && input.healthcareProfessionals !== undefined 
         && input.healthcareProfessionals.length > 0) {
-        addHealthcareProfessional(healthcareProfessionalRef, input.healthcareProfessionals[0] as HealthcareProfessional)
+        addHealthcareProfessional(
+            healthcareProfessionalRef, input.healthcareProfessionals[0] as gqlTypes.HealthcareProfessional
+        )
     }
     
     const newFacility = {
         id: facilityRef.id,
-        contact: validateContactInput(input.contact as Contact),
+        contact: validateContactInput(input.contact as gqlTypes.Contact),
         healthcareProfessionalIds: [healthcareProfessionalRef.id],
         nameEn: validateNameEnInput(input.nameEn as string),
         nameJa: validateNameJaInput(input.nameJa as string)
-    } satisfies Facility
+    } satisfies gqlTypes.Facility
     
     await facilityRef.set(newFacility)
 
-    return newFacility as Facility
+    return newFacility as gqlTypes.Facility
 }
 
-export const searchFacilities = async (userSearchQuery : string[]) : Promise<Facility[]> => {
-    const db = getFirestore()
+export const searchFacilities = async (userSearchQuery : string[]) : Promise<gqlTypes.Facility[]> => {
+    const db = firebase.getFirestore()
     const hpRef = db.collection('facilities')
     // make this a real query
     // this is still incomplete
     const snapshot = await hpRef.where('id', 'in', userSearchQuery).get()
 
-    const facilities = [] as Facility[]
+    const facilities = [] as gqlTypes.Facility[]
 
     snapshot.forEach(doc => {
         const convertedEntity = mapDbEntityTogqlEntity(doc.data())
@@ -60,21 +62,21 @@ export const searchFacilities = async (userSearchQuery : string[]) : Promise<Fac
     return facilities
 }
 
-const mapDbEntityTogqlEntity = (dbEntity : DocumentData) : Facility => {
+const mapDbEntityTogqlEntity = (dbEntity : firebase.DocumentData) : gqlTypes.Facility => {
     const gqlEntity = {
         nameEn: dbEntity.nameEn,
         nameJa: dbEntity.nameJa,
         contact: dbEntity.contact,
         healthcareProfessionalIds: dbEntity.healthcareProfessionalIds,
         healthcareProfessionals: dbEntity.healthcareProfessionals
-    } satisfies Facility
+    } satisfies gqlTypes.Facility
     
     return gqlEntity
 }
 
-function validateContactInput(contactInput: Contact) : Contact {
+function validateContactInput(contactInput: gqlTypes.Contact) : gqlTypes.Contact {
     const facilityContact = {
-        address: contactInput.address as PhysicalAddress,
+        address: contactInput.address as gqlTypes.PhysicalAddress,
         email: contactInput.email as string,
         mapsLink: contactInput.mapsLink as string,
         phone: contactInput.phone as string,
