@@ -19,7 +19,6 @@ export const getFacilityById = async (id: string) : Promise<gqlTypes.Facility | 
 
 export async function addFacility(input: gqlTypes.Facility) {
     const db = firebase.getFirestore()
-   
     const facilityRef = db.collection('facilities').doc()
     const healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
 
@@ -36,7 +35,8 @@ export async function addFacility(input: gqlTypes.Facility) {
         contact: validateContactInput(input.contact as gqlTypes.Contact),
         healthcareProfessionalIds: [healthcareProfessionalRef.id],
         nameEn: validateNameEnInput(input.nameEn as string),
-        nameJa: validateNameJaInput(input.nameJa as string)
+        nameJa: validateNameJaInput(input.nameJa as string), 
+        isDeleted: false
     } satisfies gqlTypes.Facility
     
     await facilityRef.set(newFacility)

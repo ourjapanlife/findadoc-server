@@ -27,9 +27,10 @@ export async function addHealthcareProfessional(
         degrees: mapAndValidateDegrees(input.degrees as typeDefs.Degree[]),
         names: mapAndValidateNames(input.names as typeDefs.LocaleName[]),
         specialties: mapAndValidateSpecialties(input.specialties as typeDefs.Specialty[]),
-        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as typeDefs.SpokenLanguage[])
+        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as typeDefs.SpokenLanguage[]),
+        isDeleted: false
     }
-    
+
     await healthcareProfessionalRef.set(newHealthcareProfessional)
 
     // TODO: decide if something should be returned
@@ -46,9 +47,10 @@ export async function addHealthcareProfessionalToFacility(input: any) {
         degrees: mapAndValidateDegrees(input.degrees as typeDefs.Degree[]),
         names: mapAndValidateNames(input.names as typeDefs.LocaleName[]),
         specialties: mapAndValidateSpecialties(input.specialties as typeDefs.Specialty[]),
-        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as typeDefs.SpokenLanguage[])
+        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as typeDefs.SpokenLanguage[]),
+        isDeleted: false
     }
-    
+
     await healthcareProfessionalRef.set(newHealthcareProfessional)
 
     facilityRef.update(
@@ -58,22 +60,22 @@ export async function addHealthcareProfessionalToFacility(input: any) {
     // TODO: decide if something should be returned
 }
 
-export async function searchHealthcareProfessionals(userSearchQuery : string[]) {
-    // TODO: make it filter by params
-    // const db = getFirestore()
-    // const healthcareProfessionalRef = db.collection('healthcareProfessionals')
-    // const snapshot = await healthcareProfessionalRef.where('id', 'in', userSearchQuery).get()
+// export async function searchHealthcareProfessionals(userSearchQuery : string[]) {
+// TODO: make it filter by params
+// const db = getFirestore()
+// const healthcareProfessionalRef = db.collection('healthcareProfessionals')
+// const snapshot = await healthcareProfessionalRef.where('id', 'in', userSearchQuery).get()
 
-    // const healthcareProfessionals = [] as HealthcareProfessional[]
+// const healthcareProfessionals = [] as HealthcareProfessional[]
 
-    // snapshot.forEach(doc => {
-    //     const convertedEntity = mapDbEntityTogqlEntity(doc.data().degrees)
+// snapshot.forEach(doc => {
+//     const convertedEntity = mapDbEntityTogqlEntity(doc.data().degrees)
 
-    //     healthcareProfessionals.push(convertedEntity)
-    // })
+//     healthcareProfessionals.push(convertedEntity)
+// })
 
-    // return healthcareProfessionals
-}
+// return healthcareProfessionals
+// }
 
 function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
     const gqlEntity = {
@@ -82,7 +84,8 @@ function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
         degrees: dbEntity.degrees,
         spokenLanguages: dbEntity.spokenLanguages,
         specialties: dbEntity.specialties,
-        acceptedInsurance: dbEntity.acceptedInsurance
+        acceptedInsurance: dbEntity.acceptedInsurance,
+        isDeleted: dbEntity.isDeleted
     } satisfies typeDefs.HealthcareProfessional
     
     return gqlEntity

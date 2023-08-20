@@ -1,26 +1,27 @@
-import * as facility from './services/facilityService'
-import * as healthcareProfessional from './services/healthcareProfessionalService'
+import * as facilityService from './services/facilityService'
+import * as healthcareProfessionalService from './services/healthcareProfessionalService'
 import * as gqlType from './typeDefs/gqlTypes'
 
 const resolvers = {
     Query: {
         facilities: async () => {
-            const matchingFacilities = await facility.searchFacilities(['1'])
+            const matchingFacilities = await facilityService.searchFacilities(['1'])
 
             return matchingFacilities
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
-            const matchingFacility = await facility.getFacilityById(args.id)
+            const matchingFacility = await facilityService.getFacilityById(args.id)
 
             return matchingFacility
         },
-        healthcareProfessionals: async () => {
-            const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
+        // healthcareProfessionals: async () => {
+        //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
 
-            return matchingProfessionals
-        },
+        //     return matchingProfessionals
+        // },
         healthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: { id: string; }) => {
-            const matchingHealthcareProfessional = await healthcareProfessional.getHealthcareProfessionalById(args.id)
+            const matchingHealthcareProfessional = 
+            await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
 
             return matchingHealthcareProfessional
         }
@@ -34,7 +35,7 @@ const resolvers = {
                 nameJa: string,
             }
         }) => {
-            const newFacility = await facility.addFacility(args.input)
+            const newFacility = await facilityService.addFacility(args.input)
 
             return newFacility
         },
@@ -50,7 +51,7 @@ const resolvers = {
             }
         }) => {
             const newHealthcareProfessional = 
-            await healthcareProfessional.addHealthcareProfessionalToFacility(args.input)
+            await healthcareProfessionalService.addHealthcareProfessionalToFacility(args.input)
 
             return newHealthcareProfessional
         }

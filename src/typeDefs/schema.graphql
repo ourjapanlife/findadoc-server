@@ -46,14 +46,16 @@ type Facility {
   nameJa: String
   contact: Contact
   healthcareProfessionalIds: [String]
-  healthcareProfessionals: [HealthcareProfessional]
+  healthcareProfessionals: [HealthcareProfessional],
+  isDeleted: Boolean
 }
 
 input FacilityInput {
   nameEn: String
   nameJa: String
   contact: ContactInput
-  healthcareProfessionals: [HealthcareProfessionalInput]!
+  healthcareProfessionals: [HealthcareProfessionalInput]!,
+  isDeleted: Boolean
 }
 
 input HealthcareProfessionalInput {
@@ -62,7 +64,8 @@ input HealthcareProfessionalInput {
   degrees: [DegreeInput]
   spokenLanguages: [SpokenLanguageInput]
   specialties: [SpecialtyInput]
-  acceptedInsurance: [Insurance]
+  acceptedInsurance: [Insurance],
+  isDeleted: Boolean
 }
 
 type HealthcareProfessional {
@@ -71,7 +74,8 @@ type HealthcareProfessional {
   degrees: [Degree]
   spokenLanguages: [SpokenLanguage]
   specialties: [Specialty]
-  acceptedInsurance: [Insurance]
+  acceptedInsurance: [Insurance],
+  isDeleted: Boolean
 }
 
 input LocaleNameInput {
