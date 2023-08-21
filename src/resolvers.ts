@@ -1,72 +1,57 @@
-import { addFacility, getFacilityById, searchFacilities } from './services/facilityService'
-import { addHealthcareProfessional, 
-    getHealthcareProfessionalById,
-    searchHealthcareProfessionals } from './services/healthcareProfessionalService'
-import {
-    Contact,
-    Degree,
-    Facility,
-    Insurance,
-    HealthcareProfessional,
-    Specialty,
-    LocaleNameInput,
-    HealthcareProfessionalInput,
-    SpokenLanguage,
-    LocaleName,
-    DegreeInput,
-    SpecialtyInput,
-    SpokenLanguageInput,
-    FacilityInput,
-    ContactInput
-} from './typeDefs/gqlTypes'
+import * as facilityService from './services/facilityService'
+import * as healthcareProfessionalService from './services/healthcareProfessionalService'
+import * as gqlType from './typeDefs/gqlTypes'
 
 const resolvers = {
     Query: {
         facilities: async () => {
-            const matchingFacilities = await searchFacilities(['1'])
+            const matchingFacilities = await facilityService.searchFacilities(['1'])
 
             return matchingFacilities
         },
-        facility: async (_parent: Facility, args: { id: string; }) => {
-            const matchingFacility = await getFacilityById(args.id)
+        facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
+            const matchingFacility = await facilityService.getFacilityById(args.id)
 
             return matchingFacility
         },
-        healthcareProfessionals: async () => {
-            const matchingProfessionals = await searchHealthcareProfessionals(['1'])
+        // healthcareProfessionals: async () => {
+        //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
 
-            return matchingProfessionals
-        },
-        healthcareProfessional: async (_parent: HealthcareProfessional, args: { id: string; }) => {
-            const matchingHealthcareProfessional = await getHealthcareProfessionalById(args.id)
+        //     return matchingProfessionals
+        // },
+        healthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: { id: string; }) => {
+            const matchingHealthcareProfessional = 
+            await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
 
             return matchingHealthcareProfessional
         }
     },
     Mutation: {
-        createFacility: async (_parent: FacilityInput, args: {
+        createFacilityWithHealthcareProfessional: async (_parent: gqlType.Facility, args: {
             input: {
-                contact: ContactInput,
-                healthcareProfessionals: HealthcareProfessionalInput[],
+                contact: gqlType.Contact,
+                healthcareProfessionals: gqlType.HealthcareProfessional[],
                 nameEn: string,
                 nameJa: string,
             }
         }) => {
-            const newFacility = await addFacility(args.input)
+            const newFacility = await facilityService.addFacility(args.input)
 
             return newFacility
         },
-        createHealthcareProfessional: async (_parent: HealthcareProfessionalInput, args: {
+        createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
             input:{
-                acceptedInsurance: Insurance[],
-                degrees: DegreeInput[],
-                names: LocaleNameInput[]
-                specialties: SpecialtyInput[]
-                spokenLanguages: SpokenLanguageInput[]
+                facilityId: string,
+                acceptedInsurance: gqlType.Insurance[],
+                degrees: gqlType.Degree[],
+                names: gqlType.LocaleName[]
+                specialties: gqlType.Specialty[]
+                spokenLanguages: gqlType.SpokenLanguage[]
 
             }
         }) => {
-            const newHealthcareProfessional = await addHealthcareProfessional(args.input)
+            const newHealthcareProfessional = 
+            await healthcareProfessionalService.addHealthcareProfessionalToFacility(args.input)
 
             return newHealthcareProfessional
         }
