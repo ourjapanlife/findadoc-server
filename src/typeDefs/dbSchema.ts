@@ -21,7 +21,8 @@ export type HealthcareProfessional = {
   degrees: Degree[],
   spokenLanguages: SpokenLanguage[],
   specialties: Specialty[],
-  acceptedInsurance: Insurance[]
+  acceptedInsurance: Insurance[],
+  isDeleted: boolean
 }
 
 export type LocaleName = {
