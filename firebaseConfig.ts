@@ -1,19 +1,27 @@
 import admin  from 'firebase-admin'
-import { cert, ServiceAccount } from 'firebase-admin/app'
-import * as dotenv from 'dotenv'
-import * as fs from 'fs'
-import * as path from 'path'
+import {envDetails} from './utils/environmentDetails'
 
-dotenv.config({ path: path.resolve(__dirname, './.env') })
+if (admin.apps.length > 0) {
+    admin.app();
+}
+else if (process.env.TEST_ENABLED) {
+    admin.initializeApp({
+        projectId: process.env.FIRESTORE_PROJECT_ID,
+        databaseURL: envDetails.getDbUrl(),
+    });
+}
+else {
+    const firebaseCredentials = Object.assign(
+        { private_key: String(process.env.FIREBASE_PRIVATE_KEY).replace(/\\n/g, "\n") },
+        require("./firebaseServiceAccountKey.json"))
+    
+    envDetails.isProduction()
+    admin.initializeApp({
+        credential: admin.credential.cert(firebaseCredentials),
+        databaseURL: envDetails.getDbUrl(),
+    });
+}
 
-const serviceAccountPath = process.env.SERVICE_ACCOUNT_PATH as string
+const db = admin.firestore();
 
-const credentials = JSON.parse(fs.readFileSync(path.resolve(serviceAccountPath), 'utf8')) as ServiceAccount
-
-admin.initializeApp({
-    credential: cert(credentials)
-})
-
-// module.exports.admin = admin
-export { admin }
-
+export default db

@@ -1,10 +1,9 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as typeDefs from '../typeDefs/gqlTypes'
 import CustomErrors from '../errors'
-import {admin} from '../../firebaseConfig'
+import db from '../../firebaseConfig'
 
 export async function getHealthcareProfessionalById(id: string) {
-    const db = admin.firestore()
     const healthcareProfessionalRef = db.collection('healthcareProfessionals')
     const whereCondition = '=' as firebase.WhereFilterOp
     const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
@@ -41,7 +40,6 @@ export async function addHealthcareProfessional(
 }
 
 export async function addHealthcareProfessionalToFacility(input: any) {
-    const db = admin.firestore()
     const facilityRef = db.collection('facilities').doc(input.facilityId)
     const healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
 

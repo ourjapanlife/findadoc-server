@@ -1,6 +1,6 @@
-import { createApolloServer } from '../index'
-import request from 'supertest'
+import { createApolloServer } from '../src/index'
 import { beforeEach, afterAll, expect } from '@jest/globals'
+import request from 'supertest'
 
 const queryData = {
     query: `query Query($healthcareProfessionalId: ID!) {
@@ -14,24 +14,17 @@ const queryData = {
 }
 
 describe('query healthcareProfessionalById', () => {
-    let server: any, url: any
+    let server: { stop: () => void }, url: string
 
-    // before the tests we spin up a new Apollo Server
     beforeEach(async () => {
-        // Note we must wrap our object destructuring in parentheses because we already declared these variables
-        // We pass in the port as 0 to let the server pick its own ephemeral port for testing
         ({ server, url } = await createApolloServer(0))
     })
-  
-    // after the tests we'll stop the server
     afterAll(done => {
-        console.log('server =', server)
         server.stop()
         done()
     })
-  
+    
     it('returns an error if a healthcare professional is not found', async () => {
-        // send our request to the url of the test server
         const response = await request(url).post('/').send(queryData)
 
         expect(response.statusCode).toBe(404)

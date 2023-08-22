@@ -3,7 +3,7 @@ import { startStandaloneServer } from '@apollo/server/standalone'
 import loadSchema from './schema'
 import resolvers from './resolvers'
 
-export const createApolloServer = async (port: number) => {
+export const createApolloServer = async (port = 4000) => {
     const server = new ApolloServer({
         typeDefs: loadSchema(),
         resolvers
@@ -17,5 +17,5 @@ export const createApolloServer = async (port: number) => {
     return { server, url }
 }
 
-createApolloServer(4000)
+createApolloServer()
 
