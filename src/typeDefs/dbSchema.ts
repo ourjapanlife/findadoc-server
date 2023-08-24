@@ -54,6 +54,22 @@ export type SpokenLanguage = {
   nameNative: string
 }
 
+export type Submission = {
+  id: string,
+  googleMapsUrl: string,
+  healthcareProfessionalName: string,
+  spokenLanguages: SpokenLanguage[],
+  isUnderReview: boolean,
+  isApproved: boolean,
+  isRejected: boolean
+}
+
+export type SubmissionFilters = {
+  isUnderReview?: boolean,
+  isApproved?: boolean,
+  isRejected?: boolean
+}
+
 export type Degree = {
   id: string
   nameJa: string
