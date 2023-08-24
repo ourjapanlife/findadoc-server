@@ -1,6 +1,7 @@
 import * as facilityService from './services/facilityService'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService'
 import * as gqlType from './typeDefs/gqlTypes'
+import * as submissionService from './services/submissionService'
 
 const resolvers = {
     Query: {
@@ -24,6 +25,11 @@ const resolvers = {
             await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
 
             return matchingHealthcareProfessional
+        },
+        submission: async (_parent: gqlType.Submission, args: { id: string }) => {
+            const matchingSubmission = await submissionService.getSubmissionById(args.id)
+            
+            return matchingSubmission
         }
     },
     Mutation: {
@@ -54,8 +60,65 @@ const resolvers = {
             await healthcareProfessionalService.addHealthcareProfessionalToFacility(args.input)
 
             return newHealthcareProfessional
-        }
+        },
+        createSubmission: async (_parent: gqlType.Submission, args: {
+            input:{
+                googleMapsUrl: string,
+                healthcareProfessionalName: string,
+                spokenLanguages: gqlType.SpokenLanguage[]
+            }
+        }) => {
+            const submissionData: gqlType.Submission = {
+                id: '',
+                googleMapsUrl: args.input.googleMapsUrl,
+                healthcareProfessionalName: args.input.healthcareProfessionalName,
+                spokenLanguages: args.input.spokenLanguages
+                    .filter(lang => lang !== null)
+                    .map(lang => ({
+                        iso639_3: lang.iso639_3,
+                        nameJa: lang.nameJa,
+                        nameEn: lang.nameEn,
+                        nameNative: lang.nameNative
+                    })),
+                isUnderReview: true,
+                isApproved: false,
+                isRejected: false
+            }
 
+            const newSubmission = await submissionService.addSubmission(submissionData)
+
+            return newSubmission
+        },
+        updateSubmission: async (_parent: gqlType.Submission, args: {
+            id: string,
+            input: {
+                googleMapsUrl?: string,
+                healthcareProfessionalName?: string,
+                spokenLanguages?: gqlType.SpokenLanguage[],
+                isUnderReview?: boolean,
+                isApproved?: boolean,
+                isRejected?: boolean
+            }
+        }) => {
+            try {
+                const updatedSpokenLanguages = args.input.spokenLanguages ?
+                    submissionService.mapAndValidateSpokenLanguages(args.input.spokenLanguages)
+                    : undefined
+
+                const updatedFields: Partial<import('./typeDefs/dbSchema').Submission> = {
+                    ...args.input,
+                    spokenLanguages: updatedSpokenLanguages
+                }
+
+                await submissionService.updateSubmission(args.id, updatedFields)
+
+                const updatedSubmission = await submissionService.getSubmissionById(args.id)
+
+                return updatedSubmission
+            } catch (error) {
+                throw new Error(`Failed to update submission: ${error}`)
+            }
+        }
     }
 }
 
