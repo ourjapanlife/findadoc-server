@@ -101,7 +101,14 @@ To set up the Firebase Service Account for this project, follow these steps:
   ```
   npm install jest --global
   ```
-  2. Run a test file with `jest <file_name>`
+  2. Start the Docker container:
+  ```
+  docker-compose -f docker-compose-test.yml up -d
+  ```
+  3. Run the tests:
+  ```
+  yarn test
+  ```
 </details>
 
 <details>
