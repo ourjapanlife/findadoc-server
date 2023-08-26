@@ -94,74 +94,98 @@ function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
 }
 
 function mapAndValidateDegrees(degreesInput: typeDefs.Degree[]) {
-    const degrees = degreesInput.map((degree: typeDefs.Degree) => {
-        const newDegree = {nameJa: degree.nameJa,
-            nameEn: degree.nameEn,
-            abbreviation: degree.abbreviation}
-
-        return newDegree
-    })
-
-    return degrees
+    try {
+        const degrees = degreesInput.map((degree: typeDefs.Degree) => {
+            const newDegree = {nameJa: degree.nameJa,
+                nameEn: degree.nameEn,
+                abbreviation: degree.abbreviation}
+    
+            return newDegree
+        })
+    
+        return degrees
+    } catch (e) {
+        throw CustomErrors.missingInput('The degree cannot be empty.')
+    }
 }
 
 function mapAndValidateNames(namesInput: typeDefs.LocaleName[]) {
-    const names = namesInput.map((name: typeDefs.LocaleName) => {
-        const newLocaleName = {
-            lastName: name.lastName as string,
-            firstName: name.firstName as string,
-            middleName: name.middleName as string,
-            locale: name.locale as typeDefs.Locale
-        }
+    try {
+        const names = namesInput.map((name: typeDefs.LocaleName) => {
+            const newLocaleName = {
+                lastName: name.lastName as string,
+                firstName: name.firstName as string,
+                middleName: name.middleName as string,
+                locale: name.locale as typeDefs.Locale
+            }
 
-        return newLocaleName
-    })
+            return newLocaleName
+        })
 
-    return names
+        return names
+    } catch (e) {
+        throw CustomErrors.missingInput('The name cannot be empty.')
+    }
 }
 
 function mapAndValidateSpecialties(specialtiesInput: typeDefs.Specialty[]) {
-    const specialties = specialtiesInput.map((specialty: typeDefs.Specialty) => {
-        const newSpecialty = {
+    try {
+        const specialties = specialtiesInput.map((specialty: typeDefs.Specialty) => {
+            const newSpecialty = {
             
-            names: mapAndValidateSpecialtyNames(specialty.names as typeDefs.SpecialtyName[])
-        }
+                names: mapAndValidateSpecialtyNames(specialty.names as typeDefs.SpecialtyName[])
+            }
 
-        return newSpecialty
-    })
+            return newSpecialty
+        })
 
-    return specialties
+        return specialties
+    } catch (e) {
+        throw CustomErrors.missingInput('The specialties cannot be empty.')
+    }
 }
 
 function mapAndValidateSpecialtyNames(specialtyNamesInput: typeDefs.SpecialtyName[]) {
-    const specialtyNames = specialtyNamesInput.map((name: typeDefs.SpecialtyName) => {
-        const newSpecialtyName = {
-            name: name.name,
-            locale: name.locale
-        }
+    try {
+        const specialtyNames = specialtyNamesInput.map((name: typeDefs.SpecialtyName) => {
+            const newSpecialtyName = {
+                name: name.name,
+                locale: name.locale
+            }
 
-        return newSpecialtyName
-    })
+            return newSpecialtyName
+        })
 
-    return specialtyNames
+        return specialtyNames
+    } catch (e) {
+        throw CustomErrors.missingInput('The specialty names cannot be empty.')
+    }
 }
 
 function mapAndValidateLanguages(languagesInput: typeDefs.SpokenLanguage[]) {
     // TODO: Write conditional to check if already exists
-    const languages = languagesInput.map((language: typeDefs.SpokenLanguage) => {
-        const newLanguage = {
-            iso639_3: language.iso639_3,
-            nameJa: language.nameJa,
-            nameEn: language.nameEn,
-            nameNative: language.nameNative
-        }
+    try {
+        const languages = languagesInput.map((language: typeDefs.SpokenLanguage) => {
+            const newLanguage = {
+                iso639_3: language.iso639_3,
+                nameJa: language.nameJa,
+                nameEn: language.nameEn,
+                nameNative: language.nameNative
+            }
 
-        return newLanguage
-    })
+            return newLanguage
+        })
 
-    return languages
+        return languages
+    } catch (e) {
+        throw CustomErrors.missingInput('The languages cannot be empty.')
+    }
 }
 
 function mapAndValidateInsurance(insuranceInput: typeDefs.Insurance[]) {
-    return insuranceInput
+    if (insuranceInput == undefined || insuranceInput.length < 1) {
+        throw CustomErrors.missingInput('The insurance cannot be empty.')
+    } else {
+        return insuranceInput
+    }
 }

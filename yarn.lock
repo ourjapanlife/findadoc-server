@@ -2286,6 +2286,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@graphql-tools/mock@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "@graphql-tools/mock@npm:9.0.0"
+  dependencies:
+    "@graphql-tools/schema": ^10.0.0
+    "@graphql-tools/utils": ^10.0.0
+    fast-json-stable-stringify: ^2.1.0
+    tslib: ^2.4.0
+  peerDependencies:
+    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+  checksum: 60099d8869a56284167bd440c6b451a1fa6947ed7c63edb0e60e83112bbb6e16499fedbe679c6e9a4764268c9d60dd1485f0526d21ee9bf240e1642eebe468e0
+  languageName: node
+  linkType: hard
+
 "@graphql-tools/optimize@npm:^2.0.0":
   version: 2.0.0
   resolution: "@graphql-tools/optimize@npm:2.0.0"
@@ -6607,6 +6621,8 @@ __metadata:
     "@graphql-codegen/cli": ^5.0.0
     "@graphql-codegen/typescript": ^4.0.0
     "@graphql-codegen/typescript-resolvers": ^4.0.0
+    "@graphql-tools/mock": ^9.0.0
+    "@graphql-tools/schema": ^10.0.0
     "@jest/globals": ^29.6.2
     "@types/jest": ^29.5.3
     "@types/node": ^20.5.1
