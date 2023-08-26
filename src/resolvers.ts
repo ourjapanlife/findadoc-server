@@ -26,6 +26,13 @@ const resolvers = {
 
             return matchingHealthcareProfessional
         },
+        submissions: async (_parent: gqlType.Submission, args: { filters: gqlType.SubmissionSearchFilters }) => {
+            const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
+
+            const matchingSubmissions = await submissionService.getSubmissions(searchFilters)
+
+            return matchingSubmissions
+        },
         submission: async (_parent: gqlType.Submission, args: { id: string }) => {
             const matchingSubmission = await submissionService.getSubmissionById(args.id)
             
@@ -104,13 +111,16 @@ const resolvers = {
                 const updatedSpokenLanguages = args.input.spokenLanguages ?
                     submissionService.mapAndValidateSpokenLanguages(args.input.spokenLanguages)
                     : undefined
-
-                const updatedFields: Partial<import('./typeDefs/dbSchema').Submission> = {
+                
+                const gqlUpdatedFields: Partial<gqlType.Submission> = {
                     ...args.input,
                     spokenLanguages: updatedSpokenLanguages
                 }
 
-                await submissionService.updateSubmission(args.id, updatedFields)
+                const dbUpdatedFields = submissionService
+                    .convertGqlSubmissionUpdateToDbSubmissionUpdate(gqlUpdatedFields)
+
+                await submissionService.updateSubmission(args.id, dbUpdatedFields)
 
                 const updatedSubmission = await submissionService.getSubmissionById(args.id)
 
