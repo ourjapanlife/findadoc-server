@@ -1,8 +1,8 @@
-import { Submission } from '../typeDefs/dbSchema'
-import { DocumentData, getFirestore } from 'firebase-admin/firestore'
-import { SpokenLanguage, SpokenLanguageInput } from '../typeDefs/gqlTypes'
+import { DocumentData, getFirestore, Query } from 'firebase-admin/firestore'
+import * as gqlType from '../typeDefs/gqlTypes'
+import * as dbSchema from '../typeDefs/dbSchema'
 
-export const getSubmissionById = async (id: string) : Promise<Submission | null> => {
+export const getSubmissionById = async (id: string) : Promise<dbSchema.Submission | null> => {
     try {
         const db = getFirestore()
         const submissionRef = db.collection('submissions')
@@ -16,20 +16,66 @@ export const getSubmissionById = async (id: string) : Promise<Submission | null>
 
         return convertedEntity
     } catch (error) {
-        throw new Error(`Failed to retrieve submission: ${error}.`)
+        throw new Error(`Error retrieving submission: ${error}`)
     }
 }
 
-function convertToDbSubmission(submission: import('../typeDefs/gqlTypes').Submission): 
-    import('../typeDefs/dbSchema').Submission {
+export async function getSubmissions(filters: dbSchema.SubmissionSearchFilters = {}) {
+    try {
+        const db = getFirestore()
+        let subRef: Query<DocumentData> = db.collection('submissions')
+
+        if (filters.googleMapsUrl) {
+            subRef = subRef.where('googleMapsUrl', '==', filters.googleMapsUrl)
+        }
+
+        if (filters.healthcareProfessionalName) {
+            subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
+        }
+
+        if (typeof filters.isUnderReview !== 'undefined') {
+            subRef = subRef.where('isUnderReview', '==', filters.isUnderReview)
+        }
+
+        if (typeof filters.isApproved !== 'undefined') {
+            subRef = subRef.where('isApproved', '==', filters.isApproved)
+        }
+
+        if (typeof filters.isRejected !== 'undefined') {
+            subRef = subRef.where('isRejected', '==', filters.isRejected)
+        }
+
+        const snapshot = await subRef.get()
+
+        let submissions = snapshot.docs.map(doc => 
+            mapDbEntityTogqlEntity({ ...doc.data(), id: doc.id}))
+
+        if (filters.spokenLanguages && filters.spokenLanguages.length) {
+            const requiredLanguages = filters.spokenLanguages
+                .map((lang: { iso639_3: string }) => lang.iso639_3)
+
+            submissions = submissions.filter(sub => 
+                requiredLanguages.every((reqLang: string) => 
+                    sub.spokenLanguages.some(subLang => subLang.iso639_3 === reqLang)))
+        }
+
+        return submissions
+    } catch (error) {
+        throw new Error(`Error retrieving submissions: ${error}`)
+    }
+}
+
+function convertToDbSubmission(submission: gqlType.Submission): 
+    dbSchema.Submission {
     return {
         ...submission,
         spokenLanguages: submission.spokenLanguages
-            .filter(lang => lang !== null) as import('../typeDefs/dbSchema').SpokenLanguage[]
+            .filter(lang => lang !== null) as dbSchema.SpokenLanguage[]
     }
 }
 
-export const addSubmission = async (submission: import('../typeDefs/gqlTypes').Submission) : Promise<Submission> => {
+export const addSubmission = async (submission: gqlType.Submission): 
+    Promise<dbSchema.Submission> => {
     try {
         const dbSubmission = convertToDbSubmission(submission)
 
@@ -38,18 +84,19 @@ export const addSubmission = async (submission: import('../typeDefs/gqlTypes').S
 
         const docRef = await submissionRef.add(dbSubmission)
 
-        const newSubmission: Submission = {
+        const newSubmission: dbSchema.Submission = {
             ...dbSubmission,
             id: docRef.id
         }
 
         return newSubmission
     } catch (error) {
-        throw new Error(`Failed to add submission: ${error}.`)
+        throw new Error(`Error adding submission: ${error}`)
     }
 }
 
-export const updateSubmission = async (id: string, updatedFields: Partial<Submission>) : Promise<string> => {
+export const updateSubmission = async (id: string, updatedFields: Partial<dbSchema.Submission>): 
+    Promise<string> => {
     try {
         const db = getFirestore()
         const submissionRef = db.collection('submissions').doc(id)
@@ -58,7 +105,7 @@ export const updateSubmission = async (id: string, updatedFields: Partial<Submis
 
         const submissionToUpdate = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
 
-        const updatedSubmission: Submission = {
+        const updatedSubmission: dbSchema.Submission = {
             ...submissionToUpdate,
             ...updatedFields
         }
@@ -67,12 +114,38 @@ export const updateSubmission = async (id: string, updatedFields: Partial<Submis
 
         return 'Submission updated successfully!'
     } catch (error) {
-        throw new Error(`Failed to update submission: ${error}.`)
+        throw new Error(`Error updating submission: ${error}`)
     }
 }
 
-// There was a mismatch between the `SpokenLanguage` type in `gqlTypes` and `dbSchema`
-function gqlSpokenLanguageToDbSpokenLanguage(lang: SpokenLanguage): import('../typeDefs/dbSchema').SpokenLanguage {
+export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Partial<gqlType.Submission>):
+    Partial<dbSchema.Submission> {
+    const { spokenLanguages, ...remainingSubmissionFields } = submission
+    
+    if (!spokenLanguages) {
+        return { ...remainingSubmissionFields }
+    }
+
+    return {
+        ...remainingSubmissionFields,
+        spokenLanguages: spokenLanguages
+            .filter((lang): lang is gqlType.SpokenLanguage => 
+                lang !== null && lang !== undefined &&
+                typeof lang.iso639_3 === 'string' &&
+                typeof lang.nameJa === 'string' &&
+                typeof lang.nameEn === 'string' &&
+                typeof lang.nameNative === 'string')
+            .map((lang): dbSchema.SpokenLanguage => ({
+                iso639_3: lang.iso639_3 as string,
+                nameJa: lang.nameJa as string,
+                nameEn: lang.nameEn as string,
+                nameNative: lang.nameNative as string
+            }))
+    }
+}
+
+function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlType.SpokenLanguage): 
+    dbSchema.SpokenLanguage {
     return {
         iso639_3: lang.iso639_3 as string,
         nameJa: lang.nameJa as string,
@@ -81,8 +154,8 @@ function gqlSpokenLanguageToDbSpokenLanguage(lang: SpokenLanguage): import('../t
     }
 }
 
-export const mapAndValidateSpokenLanguages = (spokenLanguages: SpokenLanguageInput[]): 
-    import('../typeDefs/dbSchema').SpokenLanguage[] | undefined => {
+export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlType.SpokenLanguageInput[]): 
+    dbSchema.SpokenLanguage[] | undefined => {
     if (!spokenLanguages || ! spokenLanguages.length) { return undefined }
 
     const validatedLanguages = spokenLanguages
@@ -101,7 +174,33 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: SpokenLanguageInp
     return validatedLanguages.map(gqlSpokenLanguageToDbSpokenLanguage)
 }
 
-const mapDbEntityTogqlEntity = (dbEntity: DocumentData) : Submission => {
+export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlType.SubmissionSearchFilters):
+    dbSchema.SubmissionSearchFilters => {
+    const mappedLanguages = filters.spokenLanguages?.map(lang => lang ? {
+        iso639_3: lang.iso639_3 ?? '',
+        nameJa: lang.nameJa ?? '',
+        nameEn: lang.nameEn ?? '',
+        nameNative: lang.nameNative ?? ''
+    } : undefined)
+
+    const filteredLanguages = (mappedLanguages ?? [])
+        .filter(lang => lang !== undefined) as dbSchema.SpokenLanguage[]
+
+    return {
+        ...filters,
+        // fix: false might be a better default for these booleans than undefined.
+        // fix: false might be a better default for these booleans than undefined.
+        googleMapsUrl: filters.googleMapsUrl === null ? undefined : filters.googleMapsUrl,
+        healthcareProfessionalName: filters.healthcareProfessionalName == null ? undefined : 
+            filters.healthcareProfessionalName,
+        spokenLanguages: filteredLanguages,
+        isUnderReview: filters.isUnderReview === null ? undefined : filters.isUnderReview,
+        isApproved: filters.isApproved === null ? undefined : filters.isApproved,
+        isRejected: filters.isRejected === null ? undefined : filters.isRejected
+    }
+}
+
+const mapDbEntityTogqlEntity = (dbEntity: DocumentData) : dbSchema.Submission => {
     const gqlEntity = {
         id: dbEntity.id,
         googleMapsUrl: dbEntity.googleMapsUrl,

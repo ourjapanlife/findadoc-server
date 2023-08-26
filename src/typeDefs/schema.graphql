@@ -145,6 +145,15 @@ input SubmissionInput {
   spokenLanguages: [SpokenLanguageInput]!
 }
 
+input SubmissionSearchFilters {
+  googleMapsUrl: String
+  healthcareProfessionalName: String
+  spokenLanguages: [SpokenLanguageInput]
+  isUnderReview: Boolean
+  isApproved: Boolean
+  isRejected: Boolean
+}
+
 input DegreeInput {
   nameJa: String
   nameEn: String
@@ -168,7 +177,11 @@ type Query {
   facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional
-  submissions: [Submission]
+  specialties: [Specialty]
+  specialty(id: ID!): Specialty
+  spokenLanguages: [SpokenLanguage]
+  spokenLanguage(iso639_3: String!): SpokenLanguage
+  submissions(filters: SubmissionSearchFilters): [Submission]
   submission(id: ID!): Submission
 }
 
