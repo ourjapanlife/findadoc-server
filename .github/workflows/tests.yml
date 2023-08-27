@@ -1,0 +1,36 @@
+name: Test
+
+on:
+  pull_request:
+
+jobs:
+  tests:
+    name: Running Tests
+    timeout-minutes: 8
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: Yarn Install
+      run: yarn install
+
+    - name: Start containers
+      run: yarn test:dockerstart
+
+    - name: Install node
+      uses: actions/setup-node@v3
+
+    - name: Generate GQL types
+      run: yarn generate
+
+    - name: Run tests
+      run: yarn test
+
+    - name: Stop containers
+      if: always()
+      run: yarn test:dockerstop

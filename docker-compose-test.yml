@@ -1,0 +1,9 @@
+version: "3.2"
+services:
+  firestore_emulator:
+    image: mtlynch/firestore-emulator
+    environment:
+      - FIRESTORE_PROJECT_ID=find-a-doc-japan
+      - PORT=54321
+    ports:
+      - 54321:54321

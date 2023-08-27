@@ -12,7 +12,12 @@
         "esModuleInterop": true
     },
     "include": [
-        "src"
+        "src", 
+        ".env.dev",
+        ".env.prod",
+        "jest.config.js",
+        "__tests__/server.test.ts",
+        "utils/environmentVariables.ts"
     ],
     "exclude": [
         "node_modules"

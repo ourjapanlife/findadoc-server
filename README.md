@@ -94,6 +94,24 @@ To set up the Firebase Service Account for this project, follow these steps:
 ## How to Test
 
 <details>
+  <summary> Testing with Jest </summary>
+  
+  1. To run Jest directly from the CLI, install it globally with the following: 
+  
+  ```
+  npm install jest --global
+  ```
+  2. Start the Docker container:
+  ```
+  yarn test:dockerstart
+  ```
+  3. Run the tests:
+  ```
+  yarn test
+  ```
+</details>
+
+<details>
   <summary>Testing GraphQL</summary>
 
 1. Run `yarn generate` to generate the types locally

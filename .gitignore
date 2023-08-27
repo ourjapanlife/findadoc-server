@@ -17,6 +17,8 @@ eslint-results.sarif
 src/typeDefs/gqlTypes.ts
 .env*
 !.env.sample
+!.env.dev
+!.env.prod
 
 # eslint results
 eslint-results.sarif
