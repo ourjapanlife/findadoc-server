@@ -5,7 +5,9 @@
     "main": "index.js",
     "scripts": {
         "prepare": "husky install",
-        "test": "jest --runInBand --detectOpenHandles --forceExit",
+        "test": "jest --runInBand --detectOpenHandles --forceExit --setupFiles",
+        "test:dockerstart": "docker-compose -f 'docker-compose-test.yml' up -d --build",
+        "test:dockerstop": "docker-compose -f 'docker-compose-test.yml' down",
         "dev": "yarn && ts-node-dev --transpile-only --no-notify --exit-child src/index.ts",
         "dev:startlocaldb": "firebase login && firebase emulators:start --only firestore",
         "prod": "docker compose -f docker/compose.yml up -d",

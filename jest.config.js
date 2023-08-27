@@ -1,6 +1,6 @@
 module.exports = {
     preset: 'ts-jest',
-    setupFiles: ['<rootDir>/.jest/setEnvVars.ts'],
+    setupFiles: ['dotenv/config', '<rootDir>/.env.dev'],
     testEnvironment: 'node',
     testTimeout: 40000,
     transform: {

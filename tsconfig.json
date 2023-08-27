@@ -13,9 +13,11 @@
     },
     "include": [
         "src", 
+        ".env.dev",
+        ".env.prod",
         "jest.config.js",
         "__tests__/server.test.ts",
-        "utils/environmentDetails.ts"
+        "utils/environmentVariables.ts"
     ],
     "exclude": [
         "node_modules"

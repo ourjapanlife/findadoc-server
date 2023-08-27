@@ -126,6 +126,6 @@ module.exports = {
     },
     ignorePatterns: [
         'src/typeDefs/gqlTypes.ts', 
-        'firebaseConfig.ts'
+        'firebaseDb.ts'
     ]
 }
