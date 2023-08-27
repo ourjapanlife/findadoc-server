@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Yarn Install
-      uses: yarn install
+      run: yarn install
 
     - name: Start containers
       run: yarn test:dockerstart
