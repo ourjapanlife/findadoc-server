@@ -12,7 +12,7 @@ export const createApolloServer = async (port = 4000) => {
     const { url } = await startStandaloneServer(server, {listen: { port: port }})
   
     // eslint-disable-next-line no-console
-    console.log(`🚀 Query endpoint ready at ${url}`)
+    console.log(`🚀 Server ready at: ${url}`)
 
     return { server, url }
 }
