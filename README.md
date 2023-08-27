@@ -103,7 +103,7 @@ To set up the Firebase Service Account for this project, follow these steps:
   ```
   2. Start the Docker container:
   ```
-  docker-compose -f docker-compose-test.yml up -d
+  yarn test:dockerstart
   ```
   3. Run the tests:
   ```
