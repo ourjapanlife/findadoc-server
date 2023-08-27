@@ -51,7 +51,7 @@ const queryData = {
 describe('query healthcareProfessionalById', () => {
     let server: IMockServer
 
-    it('returns a success status if a healthcare professional is found', async () => {
+    it('successfully returns a healthcare professional', async () => {
         const preserveResolvers = true
         const mocks = {}
         const mySchema = addMocksToSchema({
