@@ -18,8 +18,8 @@ export async function getHealthcareProfessionalById(id: string) {
 }
 
 export async function addHealthcareProfessional( 
-    input: typeDefs.HealthcareProfessional, 
-    healthcareProfessionalRef?: FirebaseFirestore.DocumentReference<firebase.DocumentData>
+    input: typeDefs.HealthcareProfessional, healthcareProfessionalRef: 
+    FirebaseFirestore.DocumentReference<firebase.DocumentData>
 ) {
     if (!healthcareProfessionalRef) {
         healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
