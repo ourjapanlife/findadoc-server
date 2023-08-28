@@ -18,7 +18,7 @@ export async function getHealthcareProfessionalById(id: string) {
 }
 
 export async function addHealthcareProfessional( 
-    input: typeDefs.HealthcareProfessional, healthcareProfessionalRef: 
+    input: typeDefs.HealthcareProfessional, healthcareProfessionalRef?: 
     FirebaseFirestore.DocumentReference<firebase.DocumentData>
 ) {
     if (!healthcareProfessionalRef) {
