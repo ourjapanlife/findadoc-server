@@ -16,7 +16,9 @@
         "generate": "graphql-codegen --config ./src/typesgeneratorconfig.ts",
         "lint": "eslint . --ext .js,.ts,.json",
         "lint:check": "eslint . --ext .js,.ts,.json",
-        "lint:ci": "eslint . --ext .js,.ts,.json"
+        "lint:ci": "eslint . --ext .js,.ts,.json",
+        "preprod": "yarn generate",
+        "predev": "yarn generate"
     },
     "repository": {
         "type": "git",

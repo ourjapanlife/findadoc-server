@@ -25,7 +25,7 @@ export async function addFacility(input: gqlTypes.Facility) {
         && input.healthcareProfessionals !== undefined 
         && input.healthcareProfessionals.length > 0) {
         addHealthcareProfessional(
-            healthcareProfessionalRef, input.healthcareProfessionals[0] as gqlTypes.HealthcareProfessional
+            input.healthcareProfessionals[0] as gqlTypes.HealthcareProfessional, healthcareProfessionalRef
         )
     }
     

@@ -1,13 +1,12 @@
-import { initializeDb } from './database'
 import { addHealthcareProfessional } from './services/healthcareProfessionalService'
 import { addFacility } from './services/facilityService'
 
-import { fakeHealthcareProfessionals } from './fakeData/healthcareProfessional'
+import { fakeHealthcareProfessionals } from './fakeData/healthcareProfessionals'
 import { fakeFacilities } from './fakeData/facilities'
 
 import { getFirestore } from 'firebase-admin/firestore'
 
-export const seedDatabase = () => {
+export const seedDatabase = async () => {
     const args = process.argv
 
     // initializeDb()
@@ -16,22 +15,16 @@ export const seedDatabase = () => {
 
     const healthcareProfessionals = fakeHealthcareProfessionals()
     const facilities = fakeFacilities()
-
-    const healthcareProfessionalForFacility = healthcareProfessionals[0]
-
-    facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
     
-    async function test() {
-        // const hpRef = db.collection('healthcareProfessionals')
+    const healthcareProfessionalForFacility = healthcareProfessionals[0]
+    
+    facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
 
-        await healthcareProfessionals.forEach(hp => {
-            addHealthcareProfessional(hp)
-        })
+    for await (const hp of healthcareProfessionals) {
+        await addHealthcareProfessional(hp)
+    }
 
-        const facilitiesRef = db.collection('facilities')
-
-        await facilities.forEach(facility => {
-            addFacility(facility)
-        })
+    for await (const facility of facilities) {
+        await addFacility(facility)
     }
 }
