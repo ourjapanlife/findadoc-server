@@ -14,7 +14,6 @@ yarn-error.log
 eslint-results.sarif
 
 # App specific
-src/typeDefs/gqlTypes.ts
 .env*
 !.env.sample
 !.env.dev

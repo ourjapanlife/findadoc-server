@@ -17,14 +17,17 @@ export async function getHealthcareProfessionalById(id: string) {
     return convertedEntity
 }
 
-export async function addHealthcareProfessional(
-    healthcareProfessionalRef: 
-    FirebaseFirestore.DocumentReference<firebase.DocumentData>, 
-    input: typeDefs.HealthcareProfessional
+export async function addHealthcareProfessional( 
+    input: typeDefs.HealthcareProfessional, healthcareProfessionalRef?: 
+    FirebaseFirestore.DocumentReference<firebase.DocumentData>
 ) {
+    if (!healthcareProfessionalRef) {
+        healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
+    }
+
     const newHealthcareProfessional = {
         id: healthcareProfessionalRef.id, 
-        acceptedInsurance: mapAndValidateInsurance(input.acceptedInsurance as []),
+        acceptedInsurance: mapAndValidateInsurance(input.acceptedInsurance as typeDefs.Insurance[]),
         degrees: mapAndValidateDegrees(input.degrees as typeDefs.Degree[]),
         names: mapAndValidateNames(input.names as typeDefs.LocaleName[]),
         specialties: mapAndValidateSpecialties(input.specialties as typeDefs.Specialty[]),
