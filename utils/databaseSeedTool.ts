@@ -5,6 +5,7 @@ import { fakeHealthcareProfessionals } from '../src/fakeData/healthcareProfessio
 import { fakeFacilities } from '../src/fakeData/facilities'
 
 export const seedDatabase = async () => {
+    //eslint-disable-next-line @typescript-eslint/no-unused-vars
     const args = process.argv
 
     const healthcareProfessionals = fakeHealthcareProfessionals()

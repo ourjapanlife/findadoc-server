@@ -13,14 +13,17 @@ export let dbInstance: Firestore
 const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     try {
         let firebaseConnected = false
+
         setTimeout(() => {
-            if (!firebaseConnected)
+            if (!firebaseConnected) {
                 throw new Error('Firestore is not initialized ❌')
+            }
         }, 5000)
 
         const ref = newDbInstance.collection('facilities')
         //validate firestore is initialized by getting a 1 document
         const dbResult = await ref.limit(1).get()
+
         firebaseConnected = true
         console.log('Firestore is initialized 🔥')
     } catch {
@@ -28,9 +31,10 @@ const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     }
 }
 
-export const initiatilizeFirebaseInstance = async () => {    
-    if(dbInstance)
+export const initiatilizeFirebaseInstance = async () => {
+    if (dbInstance) {
         return
+    }
 
     initializeApp({
         projectId: envVariables.firebaseProjectId(),
@@ -38,19 +42,18 @@ export const initiatilizeFirebaseInstance = async () => {
         // credential: admin.credential.cert({
         //     privateKey: envVariables.firebaseKey(),
         //     projectId: envVariables.firebaseProjectId(),
-        //     clientEmail: `firebase-adminsdk-${envVariables.firebaseProjectId()}@${envVariables.firebaseProjectId()}.iam.gserviceaccount.com`,
         // }),
-        storageBucket: envVariables.firebaseStorageBucket(),
-    });
+        storageBucket: envVariables.firebaseStorageBucket()
+    })
 
-    const newDbInstance = admin.firestore();
+    const newDbInstance = admin.firestore()
+
     await testFirestoreIsInitialized(newDbInstance)
     dbInstance = newDbInstance
 
     if (isProduction) {
         console.log('Connecting to production firebase...')
-    }
-    else if (isTestingEnvironment || isLocal) {
+    } else if (isTestingEnvironment || isLocal) {
         console.log('Connecting to firebase emulator...')
 
         const ref = newDbInstance.collection('facilities')
