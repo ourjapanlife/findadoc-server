@@ -12,19 +12,19 @@ export let dbInstance: Firestore
 
 const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     try {
-        let firebaseConnected = false
+        // let firebaseConnected = false
 
-        setTimeout(() => {
-            if (!firebaseConnected) {
-                throw new Error('Firestore is not initialized ❌')
-            }
-        }, 500)
+        // setTimeout(() => {
+        //     if (!firebaseConnected) {
+        //         throw new Error('Firestore is not initialized ❌')
+        //     }
+        // }, 5000)
 
         const ref = newDbInstance.collection('facilities')
         //validate firestore is initialized by getting a 1 document
         const dbResult = await ref.limit(1).get()
 
-        firebaseConnected = true
+        // firebaseConnected = true
         console.log('Firestore is initialized 🔥')
     } catch {
         console.log('Firestore is not initialized ❌')
