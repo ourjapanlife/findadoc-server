@@ -18,7 +18,7 @@ const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
             if (!firebaseConnected) {
                 throw new Error('Firestore is not initialized ❌')
             }
-        }, 5000)
+        }, 500)
 
         const ref = newDbInstance.collection('facilities')
         //validate firestore is initialized by getting a 1 document
