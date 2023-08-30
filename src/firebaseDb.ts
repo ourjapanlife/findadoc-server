@@ -1,15 +1,16 @@
 import admin from 'firebase-admin'
 import { initializeApp } from 'firebase-admin/app'
 import { envVariables } from '../utils/environmentVariables'
-import { seedDatabase } from './databaseSeedTool'
+import { seedDatabase } from '../utils/databaseSeedTool'
 import { Firestore } from 'firebase-admin/firestore'
 
 const isTestingEnvironment = envVariables.isTestingEnvironment()
 const isProduction = envVariables.isProduction()
 const isLocal = envVariables.isLocal()
 
-const testFirestoreIsInitialized = async (db: Firestore) => {
+export let dbInstance: Firestore
 
+const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     try {
         let firebaseConnected = false
         setTimeout(() => {
@@ -17,7 +18,7 @@ const testFirestoreIsInitialized = async (db: Firestore) => {
                 throw new Error('Firestore is not initialized ❌')
         }, 5000)
 
-        const ref = db.collection('facilities')
+        const ref = newDbInstance.collection('facilities')
         //validate firestore is initialized by getting a 1 document
         const dbResult = await ref.limit(1).get()
         firebaseConnected = true
@@ -27,7 +28,10 @@ const testFirestoreIsInitialized = async (db: Firestore) => {
     }
 }
 
-const createFirebaseConnection = async () => {
+export const initiatilizeFirebaseInstance = async () => {    
+    if(dbInstance)
+        return
+
     initializeApp({
         projectId: envVariables.firebaseProjectId(),
         databaseURL: envVariables.getDbUrl(),
@@ -39,8 +43,9 @@ const createFirebaseConnection = async () => {
         storageBucket: envVariables.firebaseStorageBucket(),
     });
 
-    const dbInstance = admin.firestore();
-    await testFirestoreIsInitialized(dbInstance)
+    const newDbInstance = admin.firestore();
+    await testFirestoreIsInitialized(newDbInstance)
+    dbInstance = newDbInstance
 
     if (isProduction) {
         console.log('Connecting to production firebase...')
@@ -48,7 +53,7 @@ const createFirebaseConnection = async () => {
     else if (isTestingEnvironment || isLocal) {
         console.log('Connecting to firebase emulator...')
 
-        const ref = dbInstance.collection('facilities')
+        const ref = newDbInstance.collection('facilities')
         const firstFacility = await ref.limit(1).get()
         const hasSeedData = firstFacility.docs.length > 0
 
@@ -58,11 +63,4 @@ const createFirebaseConnection = async () => {
         }
         console.log('Connected to firebase! ✅')
     }
-
-    return dbInstance
 }
-
-
-let db = createFirebaseConnection()
-
-export default db

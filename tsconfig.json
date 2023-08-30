@@ -12,12 +12,14 @@
         "resolveJsonModule": true
     },
     "include": [
-        "src", 
+        "src",
         ".env.dev",
         ".env.prod",
         "jest.config.js",
         "__tests__/server.test.ts",
-        "utils/environmentVariables.ts"
+        "utils/environmentVariables.ts",
+        "utils/typesgeneratorconfig.ts",
+        "utils/databaseSeedTool.ts"
     ],
     "exclude": [
         "node_modules"

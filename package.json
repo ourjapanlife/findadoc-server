@@ -13,7 +13,7 @@
         "prod": "docker compose -f docker/compose.yml up -d",
         "prod:build": "tsc",
         "prod:stop": "docker compose down",
-        "generate": "graphql-codegen --config ./src/typesgeneratorconfig.ts",
+        "generate": "graphql-codegen --config ./typesgeneratorconfig.ts",
         "lint": "eslint . --ext .js,.ts,.json",
         "lint:check": "eslint . --ext .js,.ts,.json",
         "lint:ci": "eslint . --ext .js,.ts,.json"

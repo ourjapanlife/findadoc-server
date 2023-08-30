@@ -1,8 +1,8 @@
-import { addHealthcareProfessional } from './services/healthcareProfessionalService'
-import { addFacility } from './services/facilityService'
+import { addHealthcareProfessional } from '../src/services/healthcareProfessionalService'
+import { addFacility } from '../src/services/facilityService'
 
-import { fakeHealthcareProfessionals } from './fakeData/healthcareProfessionals'
-import { fakeFacilities } from './fakeData/facilities'
+import { fakeHealthcareProfessionals } from '../src/fakeData/healthcareProfessionals'
+import { fakeFacilities } from '../src/fakeData/facilities'
 
 export const seedDatabase = async () => {
     const args = process.argv
