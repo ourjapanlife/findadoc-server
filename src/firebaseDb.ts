@@ -31,10 +31,14 @@ const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     }
 }
 
+let alreadyStartedInitialization = false
+
 export const initiatilizeFirebaseInstance = async () => {
-    if (dbInstance) {
+    if (dbInstance || alreadyStartedInitialization) {
         return
     }
+
+    alreadyStartedInitialization = true
 
     initializeApp({
         projectId: envVariables.firebaseProjectId(),
