@@ -31,6 +31,8 @@ const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     }
 }
 
+// This is to prevent race conditions where parallel calls/tests/etc 
+// try to initialize the firebase instance at the same time
 let alreadyStartedInitialization = false
 
 export const initiatilizeFirebaseInstance = async () => {
