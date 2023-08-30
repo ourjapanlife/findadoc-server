@@ -1,7 +1,7 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as typeDefs from '../typeDefs/gqlTypes'
 import CustomErrors from '../errors'
-import db from '../../firebaseDb'
+import db from '../firebaseDb'
 
 export async function getHealthcareProfessionalById(id: string) {
     const healthcareProfessionalRef = db.collection('healthcareProfessionals')

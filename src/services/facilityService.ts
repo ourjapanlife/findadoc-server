@@ -1,7 +1,7 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import { addHealthcareProfessional } from './healthcareProfessionalService'
-import db from '../../firebaseDb'
+import db from '../firebaseDb'
 
 export const getFacilityById = async (id: string) : Promise<gqlTypes.Facility | null> => {
     const facilityRef = db.collection('facilities')
