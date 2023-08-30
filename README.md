@@ -34,32 +34,28 @@ We love and welcome contributions to our front-end repository which can be found
 
 ## Prerequisites
 
-- Node
+- [Node](https://nodejs.org)
   - We recommend using [nvm](https://github.com/nvm-sh/nvm) and running `nvm use` in this directory to sync with the project's Node version. However, if you wish to install Node your own way and ensure a consistent version with `.nvmrc`, that's fine too
 - [Yarn Berry](https://yarnpkg.com/getting-started/install)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-## Setup
+# Setup
 
-1. Install dependencies
-
-```sh
-yarn install
-```
-
-2. Set up Husky Hooks 🐕️
+## 1. Install dependencies
 
 ```sh
-yarn prepare
+yarn
 ```
 
-### (Optional) Setting up the Database locally 🐘
+## 2. Setting up the Database 🐘
 
 For simplicity, we use firebase!
 
-You can point to different database environments simply by changing the env variable in the `.env` file.
+For security, we run a local database so we don't break production!
 
-## Setup Firebase CLI
+(optional) You can point to different database environments simply by changing the firebase url and variables in the `.env.dev` file.
+
+### 2.a Setup Firebase CLI
 
 1. Install the Firebase CLI if you do not have it installed on your machine: 
 
@@ -80,7 +76,18 @@ firebase use --add
 
 Select "Use an existing project"
 
-## Setting Up Firebase Service Account
+### 2.b Running the database locally
+
+```
+yarn dev:startlocaldb
+```
+
+This will run until you shut down the instance hitting `ctrl^+C`
+
+
+### (Optional) Connecting to Production database
+
+#### Setting Up Firebase Service Account
 
 To set up the Firebase Service Account for this project, follow these steps:
 
@@ -91,7 +98,29 @@ To set up the Firebase Service Account for this project, follow these steps:
 5. Download the JSON file and add it to the root directory of this project. Rename the file to `firebaseServiceAccountKey.json`.
 6. In your `.env` file, create an environment variable called `SERVICE_ACCOUNT_PATH` with the value `./firebaseServiceAccountKey.json`.
 
-## How to Test
+## 3. Run the API!
+```
+yarn dev
+```
+
+That's it! 
+
+### Running in production mode
+
+In production, we use docker to run the app. You can validate your code works in production by running
+Make sure that you have docker running beforehand.
+```
+yarn prod:build
+yarn prod
+```
+
+
+# How to Debug your code
+This runs locally and can easily be debugged with vscode!
+Click on the `Run and Debug` vscode tab, and then choose `Javascript Debug Terminal`, then run `yarn dev` in there and the debugger will automatically connect. 
+Then, just add breakpoints by clicking on the line number of your code.  
+
+# How to Test your code
 
 <details>
   <summary> Testing with Jest </summary>
