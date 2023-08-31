@@ -65,19 +65,30 @@ For security, we run a local database so we don't break production!
 
 ### 3.a Setup Firebase CLI
 
-1. Install the Firebase CLI if you do not have it installed on your machine:
+#### a.1 Install the Firebase CLI if you do not have it installed on your machine:
 
 ```sh
 npm -g i firebase-tools
 ```
 
-2. Log into Firebase CLI:
+#### a.2 Install Java
+
+on a mac, we recommend using [homebrew](https://brew.sh/)
+```sh
+brew install java
+```
+on a windows pc, we recommend using [chocolatey](https://chocolatey.org/)
+```sh
+choco install java
+```
+
+#### a.3 Log into Firebase CLI:
 
 ```sh
 firebase login
 ```
 
-3. Set the CLI to use the project:
+#### a.4 Set the CLI to use the project:
 
 ```sh
 firebase use --add
