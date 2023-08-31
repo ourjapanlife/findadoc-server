@@ -7,10 +7,10 @@
     "firestore": {
         "enabled": true,
         "port": 3004
+    },
+    "ui": {
+      "enabled": true,
+      "port": 3005
     }
-  },
-  "ui": {
-    "enabled": true,
-    "port": 3005
   }
 }

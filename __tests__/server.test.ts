@@ -6,6 +6,7 @@ import resolvers from '../src/resolvers'
 import fs from 'fs'
 import path from 'path'
 import * as gqlTypes from '../src/typeDefs/gqlTypes'
+import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 
 const schema = buildSchema(fs.readFileSync(
     path.join(__dirname, '../src/typeDefs/schema.graphql'),
@@ -48,10 +49,11 @@ const queryData = {
     }
 }
 
-describe('query healthcareProfessionalById', () => {
+describe('query healthcareProfessionalById', () => {    
     let server: IMockServer
-
+    
     it('successfully returns a healthcare professional', async () => {
+        await initiatilizeFirebaseInstance()
         const preserveResolvers = true
         const mocks = {}
         const mySchema = addMocksToSchema({
@@ -94,6 +96,8 @@ describe('query healthcareProfessionalById', () => {
     })
     
     it('returns an error if a healthcare professional is not found', async () => {
+        await initiatilizeFirebaseInstance()
+
         const mySchema = addResolversToSchema({schema, resolvers})
         const preserveResolvers = true
         const mocks = {}

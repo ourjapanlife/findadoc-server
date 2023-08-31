@@ -6,7 +6,7 @@
 
 Welcome to the back-end repository for Find a Doc, Japan! We're not currently looking for contributors in this particular repo, but you're free to have a look around. If you want to provide any suggestions or feedback, come have a chat with us in the [#backend-team channel on Slack](https://join.slack.com/t/find-a-doc/shared_invite/zt-s4744a6o-MGaGHzLN5wB9aXeha3vdsQ)!
 
-### How to contribute 
+### How to contribute
 
 We love and welcome contributions to our front-end repository which can be found [here](https://github.com/ourjapanlife/findadoc-web)!
 
@@ -34,53 +34,79 @@ We love and welcome contributions to our front-end repository which can be found
 
 ## Prerequisites
 
-- Node
+- [Node](https://nodejs.org)
   - We recommend using [nvm](https://github.com/nvm-sh/nvm) and running `nvm use` in this directory to sync with the project's Node version. However, if you wish to install Node your own way and ensure a consistent version with `.nvmrc`, that's fine too
 - [Yarn Berry](https://yarnpkg.com/getting-started/install)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-## Setup
+# Setup
 
-1. Install dependencies
+## 1. Install dependencies
 
 ```sh
-yarn install
+yarn
 ```
 
-2. Set up Husky Hooks 🐕️
+## 2. Set up Husky Hooks 🐕️
+
+This will automatically run linting before commits and reduce common contributor mistakes.
 
 ```sh
 yarn prepare
 ```
 
-### (Optional) Setting up the Database locally 🐘
+## 3. Setting up the Database 🐘
 
 For simplicity, we use firebase!
 
-You can point to different database environments simply by changing the env variable in the `.env` file.
+For security, we run a local database so we don't break production!
 
-## Setup Firebase CLI
+(optional) You can point to different database environments simply by changing the firebase url and variables in the `.env.dev` file.
 
-1. Install the Firebase CLI if you do not have it installed on your machine: 
+### 3.a Setup Firebase CLI
 
-``` 
+#### a.1 Install the Firebase CLI if you do not have it installed on your machine:
+
+```sh
 npm -g i firebase-tools
 ```
 
-2. Log into Firebase CLI:
+#### a.2 Install Java
 
-``` 
+on a mac, we recommend using [homebrew](https://brew.sh/)
+```sh
+brew install java
+```
+on a windows pc, we recommend using [chocolatey](https://chocolatey.org/)
+```sh
+choco install java
+```
+
+#### a.3 Log into Firebase CLI:
+
+```sh
 firebase login
 ```
 
-3. Set the CLI to use the project: 
-```
+#### a.4 Set the CLI to use the project:
+
+```sh
 firebase use --add
 ```
 
 Select "Use an existing project"
 
-## Setting Up Firebase Service Account
+### 3.b Running the database locally
+
+```sh
+yarn dev:startlocaldb
+```
+
+This will run until you shut down the instance hitting `ctrl^+C`
+
+### (Optional) Connecting to Production database
+
+#### Setting Up Firebase Service Account
 
 To set up the Firebase Service Account for this project, follow these steps:
 
@@ -91,24 +117,53 @@ To set up the Firebase Service Account for this project, follow these steps:
 5. Download the JSON file and add it to the root directory of this project. Rename the file to `firebaseServiceAccountKey.json`.
 6. In your `.env` file, create an environment variable called `SERVICE_ACCOUNT_PATH` with the value `./firebaseServiceAccountKey.json`.
 
-## How to Test
+## 4. Run the API
+
+```sh
+yarn dev
+```
+
+That's it!
+
+### (Optional) Running in production mode
+
+In production, we use docker to run the app. You can validate your code works in production by running
+Make sure that you have docker running beforehand.
+
+```sh
+yarn prod:build
+yarn prod
+```
+
+# How to Debug your code
+
+This runs locally and can easily be debugged with vscode!
+Click on the `Run and Debug` vscode tab, and then choose `Javascript Debug Terminal`, then run `yarn dev` in there and the debugger will automatically connect.
+Then, just add breakpoints by clicking on the line number of your code.  
+
+# How to Test your code
 
 <details>
   <summary> Testing with Jest </summary>
   
-  1. To run Jest directly from the CLI, install it globally with the following: 
+  1. To run Jest directly from the CLI, install it globally with the following:
   
-  ```
+  ```sh
   npm install jest --global
   ```
+
   2. Start the Docker container:
-  ```
+
+  ```sh
   yarn test:dockerstart
   ```
+  
   3. Run the tests:
-  ```
+
+  ```sh
   yarn test
   ```
+
 </details>
 
 <details>
@@ -116,7 +171,7 @@ To set up the Firebase Service Account for this project, follow these steps:
 
 1. Run `yarn generate` to generate the types locally
 2. Run `yarn dev` to start the local server
-3. Open your browser to http://localhost:3001/
+3. Open your browser to <http://localhost:3001/>
 4. Navigate to the Explorer section from the menu in the left pane.
 5. Click `query: Query` under "Root Types
    ![image](./docs/root-types.png)

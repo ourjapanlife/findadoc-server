@@ -1,17 +1,12 @@
-import { addHealthcareProfessional } from './services/healthcareProfessionalService'
-import { addFacility } from './services/facilityService'
+import { addHealthcareProfessional } from '../src/services/healthcareProfessionalService'
+import { addFacility } from '../src/services/facilityService'
 
-import { fakeHealthcareProfessionals } from './fakeData/healthcareProfessionals'
-import { fakeFacilities } from './fakeData/facilities'
-
-import { getFirestore } from 'firebase-admin/firestore'
+import { fakeHealthcareProfessionals } from '../src/fakeData/healthcareProfessionals'
+import { fakeFacilities } from '../src/fakeData/facilities'
 
 export const seedDatabase = async () => {
+    //eslint-disable-next-line @typescript-eslint/no-unused-vars
     const args = process.argv
-
-    // initializeDb()
-
-    const db = getFirestore()
 
     const healthcareProfessionals = fakeHealthcareProfessionals()
     const facilities = fakeFacilities()

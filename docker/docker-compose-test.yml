@@ -4,6 +4,6 @@ services:
     image: mtlynch/firestore-emulator
     environment:
       - FIRESTORE_PROJECT_ID=find-a-doc-japan
-      - PORT=54321
+      - PORT=3004
     ports:
-      - 54321:54321
+      - 3004:3004

@@ -1,10 +1,10 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as typeDefs from '../typeDefs/gqlTypes'
 import CustomErrors from '../errors'
-import db from '../../firebaseDb'
+import { dbInstance } from '../firebaseDb'
 
 export async function getHealthcareProfessionalById(id: string) {
-    const healthcareProfessionalRef = db.collection('healthcareProfessionals')
+    const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals')
     const whereCondition = '=' as firebase.WhereFilterOp
     const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
 
@@ -22,7 +22,7 @@ export async function addHealthcareProfessional(
     FirebaseFirestore.DocumentReference<firebase.DocumentData>
 ) {
     if (!healthcareProfessionalRef) {
-        healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
+        healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
     }
 
     const newHealthcareProfessional = {
@@ -43,8 +43,8 @@ export async function addHealthcareProfessional(
 }
 
 export async function addHealthcareProfessionalToFacility(input: any) {
-    const facilityRef = db.collection('facilities').doc(input.facilityId)
-    const healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
+    const facilityRef = dbInstance.collection('facilities').doc(input.facilityId)
+    const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
 
     const newHealthcareProfessional = {
         id: healthcareProfessionalRef.id, 

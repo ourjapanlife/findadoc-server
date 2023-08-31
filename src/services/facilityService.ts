@@ -1,10 +1,10 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import { addHealthcareProfessional } from './healthcareProfessionalService'
-import db from '../../firebaseDb'
+import { dbInstance } from '../firebaseDb'
 
 export const getFacilityById = async (id: string) : Promise<gqlTypes.Facility | null> => {
-    const facilityRef = db.collection('facilities')
+    const facilityRef = dbInstance.collection('facilities')
     const whereCondition = '=' as firebase.WhereFilterOp
     const snapshot = await facilityRef.where('id', whereCondition, id).get()
 
@@ -18,8 +18,8 @@ export const getFacilityById = async (id: string) : Promise<gqlTypes.Facility | 
 }
 
 export async function addFacility(input: gqlTypes.Facility) {
-    const facilityRef = db.collection('facilities').doc()
-    const healthcareProfessionalRef = db.collection('healthcareProfessionals').doc()
+    const facilityRef = dbInstance.collection('facilities').doc()
+    const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
 
     if (input.healthcareProfessionals !== null 
         && input.healthcareProfessionals !== undefined 
@@ -44,7 +44,7 @@ export async function addFacility(input: gqlTypes.Facility) {
 }
 
 export const searchFacilities = async (userSearchQuery : string[]) : Promise<gqlTypes.Facility[]> => {
-    const hpRef = db.collection('facilities')
+    const hpRef = dbInstance.collection('facilities')
     // make this a real query
     // this is still incomplete
     const snapshot = await hpRef.where('id', 'in', userSearchQuery).get()
