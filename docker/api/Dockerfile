@@ -26,4 +26,4 @@ RUN yarn prod:build
 # Run 
 EXPOSE 3001
 
-CMD [ "yarn", "prod" ]
+CMD [ "yarn", "prod:startserver" ]
