@@ -22,6 +22,8 @@ const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
 
         const ref = newDbInstance.collection('facilities')
         //validate firestore is initialized by getting a 1 document
+
+        //eslint-disable-next-line @typescript-eslint/no-unused-vars
         const dbResult = await ref.limit(1).get()
 
         // firebaseConnected = true

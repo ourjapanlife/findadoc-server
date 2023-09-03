@@ -42,8 +42,8 @@ export async function addHealthcareProfessional(
     // TODO: decide if something should be returned
 }
 
-export async function addHealthcareProfessionalToFacility(input: any) {
-    const facilityRef = dbInstance.collection('facilities').doc(input.facilityId)
+export async function addHealthcareProfessionalToFacility(input: typeDefs.HealthcareProfessionalInput) {
+    const facilityRef = dbInstance.collection('facilities').doc(input.facilityId as string)
     const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
 
     const newHealthcareProfessional = {
