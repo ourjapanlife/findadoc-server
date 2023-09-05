@@ -11,7 +11,7 @@
         "test:dockerstart": "docker-compose -f 'docker/docker-compose-test.yml' up -d --build",
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
         "prod": "yarn prod:dockerstart",
-        "prod:build": "tsc",
+        "prod:build": "tsc --project tsconfig.json",
         "prod:startserver": "ts-node dist/src/index.js",
         "prod:dockerstart": "docker compose -f docker/docker-compose-api.yml up -d",
         "prod:dockerstop": "docker compose -f docker/docker-compose-api.yml down",
