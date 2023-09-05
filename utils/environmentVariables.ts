@@ -1,14 +1,14 @@
 import { config } from 'dotenv'
 
-const dotEnvFileToLoad = process.env.NODE_ENV === 'prod' ? './.env.prod' : './.env.dev'
+const dotEnvFileToLoad = process.env.NODE_ENV === 'production' ? './.env.prod' : './.env.dev'
 
 config({ path: dotEnvFileToLoad })
 
 const envVariables = {
-    isProduction: () => process.env.NODE_ENV === 'prod',
-    isLocal: () => process.env.NODE_ENV !== 'prod',
+    isProduction: () => process.env.NODE_ENV === 'production',
+    isLocal: () => !envVariables.isProduction(),
     getDbUrl: () =>
-        process.env.NODE_ENV === 'prod'
+        envVariables.isProduction()
             ? process.env.FIREBASE_DATABASE_URL
             : process.env.FIRESTORE_EMULATOR_HOST,
     isTestingEnvironment: () => process.env.TEST_ENABLED,
@@ -21,5 +21,8 @@ const envVariables = {
     firebaseAppId: () => process.env.FIREBASE_APP_ID,
     firebaseMeasurementId: () => process.env.FIREBASE_MEASUREMENT_ID
 }
+
+console.log(`Environment loaded: ${process.env.NODE_ENV}`)
+console.log(`DB URL: ${envVariables.getDbUrl()}`)
 
 export { envVariables }
