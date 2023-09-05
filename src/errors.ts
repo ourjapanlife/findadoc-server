@@ -14,7 +14,7 @@ const CustomErrors = {
     missingInput: (message: string) => {
         throw new GraphQLError(message, {
             extensions: {
-                code: 'MISSING INPUT',
+                code: 'MISSING_INPUT',
                 http: {
                     status: 400
                 }
