@@ -113,7 +113,6 @@ __metadata:
   peerDependencies:
     graphql: ^16.6.0
   checksum: 28537d7646669a5dc1302cfd75d8a9bf473459ee585c6b778d174628a2cfb3f89a5ac742eca7de2a779b6c9e3f30da509a8787a71227520d009ac190aa7a9207
-  checksum: 28537d7646669a5dc1302cfd75d8a9bf473459ee585c6b778d174628a2cfb3f89a5ac742eca7de2a779b6c9e3f30da509a8787a71227520d009ac190aa7a9207
   languageName: node
   linkType: hard
 
@@ -3248,7 +3247,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:^20.5.7":
+"@types/node@npm:*, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:^20.5.9":
   version: 20.5.9
   resolution: "@types/node@npm:20.5.9"
   checksum: 717490e94131722144878b4ca1a963ede1673bb8f2ef78c2f5b50b918df6dc9b35e7f8283e5c2a7a9f137730f7c08dc6228e53d4494a94c9ee16881e6ce6caed
@@ -6477,7 +6476,7 @@ __metadata:
     "@graphql-tools/schema": ^10.0.0
     "@jest/globals": ^29.6.2
     "@types/jest": ^29.5.4
-    "@types/node": ^20.5.7
+    "@types/node": ^20.5.9
     "@types/supertest": ^2.0.12
     "@typescript-eslint/eslint-plugin": ^6.5.0
     "@typescript-eslint/parser": ^6.5.0
@@ -6489,7 +6488,7 @@ __metadata:
     eslint-config-airbnb-typescript: ^17.1.0
     eslint-plugin-import: ^2.26.0
     eslint-plugin-json: ^3.1.0
-    firebase: ^10.3.0
+    firebase: ^10.3.1
     firebase-admin: ^11.10.1
     firebase-tools: ^12.5.2
     graphql: ^16.8.0
@@ -6598,7 +6597,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"firebase@npm:^10.3.0":
+"firebase@npm:^10.3.1":
   version: 10.3.1
   resolution: "firebase@npm:10.3.1"
   dependencies:
@@ -9398,17 +9397,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"long@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "long@npm:4.0.0"
-  checksum: 16afbe8f749c7c849db1f4de4e2e6a31ac6e617cead3bdc4f9605cb703cd20e1e9fc1a7baba674ffcca57d660a6e5b53a9e236d7b25a295d3855cca79cc06744
-  languageName: node
-  linkType: hard
-
-"long@npm:^5.0.0":
-  version: 5.2.3
-  resolution: "long@npm:5.2.3"
-  checksum: 885ede7c3de4facccbd2cacc6168bae3a02c3e836159ea4252c87b6e34d40af819824b2d4edce330bfb5c4d6e8ce3ec5864bdcf9473fa1f53a4f8225860e5897
+"long@fs-eire/long.js#fix-umd-type":
+  version: 0.0.0
+  resolution: "long@https://github.com/fs-eire/long.js.git#commit=b4e50911fd6ff1c418bece400402e4fbc36c1467"
+  checksum: 4215f9181cef99f78a4f2c7b06c7247405bd70efa639a5ff4ddcd4cc79c998418080b56fa2e0a80fd7da5101ea3cc5b518cdd578b43666a34b0b28b85d20bb93
   languageName: node
   linkType: hard
 

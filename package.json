@@ -31,13 +31,14 @@
         "url": "https://github.com/ourjapanlife/findadoc-server/issues"
     },
     "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
+    "packageManager": "yarn@3.6.3",
     "devDependencies": {
         "@graphql-codegen/cli": "^5.0.0",
         "@graphql-codegen/typescript": "^4.0.1",
         "@graphql-codegen/typescript-resolvers": "^4.0.1",
         "@jest/globals": "^29.6.2",
         "@types/jest": "^29.5.4",
-        "@types/node": "^20.5.7",
+        "@types/node": "^20.5.9",
         "@types/supertest": "^2.0.12",
         "@typescript-eslint/eslint-plugin": "^6.5.0",
         "@typescript-eslint/parser": "^6.5.0",
@@ -61,12 +62,14 @@
         "@graphql-tools/schema": "^10.0.0",
         "csv-parse": "^5.3.3",
         "dotenv": "^16.3.1",
-        "firebase": "^10.3.0",
+        "firebase": "^10.3.1",
         "firebase-admin": "^11.10.1",
         "graphql": "^16.8.0",
         "graphql-import-node": "^0.0.5",
         "graphql-tag": "^2.12.6",
         "supertest": "^6.3.3"
     },
-    "packageManager": "yarn@3.6.3"
+    "resolutions": {
+        "long": "fs-eire/long.js#fix-umd-type"
+    }
 }
