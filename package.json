@@ -11,8 +11,8 @@
         "test:dockerstart": "docker-compose -f 'docker/docker-compose-test.yml' up -d --build",
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
         "prod": "yarn prod:dockerstart",
-        "prod:build": "tsc --project ./tsconfig.json",
-        "prod:startserver": "cross-env NODE_ENV=production ts-node dist/src/index.js",
+        "prod:build": "rimraf dist/ && copyfiles 'src/typeDefs/schema.graphql' '.env.*' 'jest.config.js' 'dist' && tsc",
+        "prod:startserver": "cross-env NODE_ENV=production node dist/src/index.js",
         "prod:dockerstart": "docker compose -f docker/docker-compose-api.yml up -d",
         "prod:dockerstop": "docker compose -f docker/docker-compose-api.yml down",
         "prod:logs": "docker logs findadoc-api -f",
@@ -61,6 +61,7 @@
         "@apollo/server": "^4.9.3",
         "@graphql-tools/mock": "^9.0.0",
         "@graphql-tools/schema": "^10.0.0",
+        "copyfiles": "^2.4.1",
         "cross-env": "^7.0.3",
         "csv-parse": "^5.3.3",
         "dotenv": "^16.3.1",
@@ -69,6 +70,7 @@
         "graphql": "^16.8.0",
         "graphql-import-node": "^0.0.5",
         "graphql-tag": "^2.12.6",
+        "rimraf": "^5.0.1",
         "supertest": "^6.3.3"
     },
     "resolutions": {
