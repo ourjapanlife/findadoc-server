@@ -114,12 +114,6 @@ yarn dev
 
 This will run until you shut down the instance hitting `ctrl^+C`
 
-If the emulator is missing the seed data try to run emulator with the following added to make sure the correct project id is set:
-
-```sh
-yarn dev:startlocaldb --project="find-a-doc-japan"
-```
-
 ### (Optional) Connecting to Production database
 
 #### Setting Up Firebase Service Account

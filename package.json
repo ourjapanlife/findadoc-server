@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "yarn && yarn generate && yarn dev:startserver",
         "dev:startserver": "ts-node-dev --transpile-only --no-notify --exit-child src/index.ts",
-        "dev:startlocaldb": "firebase login && firebase emulators:start --only firestore",
+        "dev:startlocaldb": "firebase login && firebase --project=find-a-doc-japan emulators:start --only firestore",
         "test": "jest --runInBand --detectOpenHandles --forceExit --setupFiles",
         "test:dockerstart": "docker-compose -f 'docker/docker-compose-test.yml' up -d --build",
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
