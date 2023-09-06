@@ -13,18 +13,11 @@
         "esModuleInterop": true,
     },
     "include": [
-        "src",
-        ".env.dev",
-        ".env.prod",
-        "jest.config.js",
-        "__tests__/server.test.ts",
-        "src/typeDefs/schema.graphql",
-        "src/utils/environmentVariables.ts",
-        "src/utils/typesgeneratorconfig.ts",
-        "src/utils/databaseSeedTool.ts"
+        "src/**/*",
+        "utils/**/*",
+        "__tests__/server.test.ts"
     ],
     "exclude": [
-        "node_modules",
-        "src/fakeData",
-    ]
+        "node_modules"
+    ],
 }
