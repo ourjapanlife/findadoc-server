@@ -11,11 +11,12 @@ export default function loadSchema(): DocumentNode {
             'utf-8'
         )
 
-        return gql`
-      ${typeString}
-    `
+        const schema = gql`${typeString}`
+
+        console.log('📜 Loaded graphql schema.')
+        return schema
     } catch (e) {
         console.log(e)
+        throw new Error('❌ Unable to load graphql schema ❌')
     }
-    return gql``
 }

@@ -16,3 +16,5 @@
 #     - uses: actions/checkout@v3
 #     - name: Build the Docker image
 #       run: docker build . --file Dockerfile --tag find-a-doc-api:$(date +%s)
+# env:
+#   SECRET_TOKEN: ${{ secrets.FIRESTORE_SERVICE_ACCOUNT }}

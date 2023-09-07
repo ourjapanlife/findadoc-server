@@ -1,5 +1,5 @@
 import admin from 'firebase-admin'
-import { initializeApp } from 'firebase-admin/app'
+import { initializeApp, cert, applicationDefault } from 'firebase-admin/app'
 import { envVariables } from '../utils/environmentVariables'
 import { seedDatabase } from '../utils/databaseSeedTool'
 import { Firestore } from 'firebase-admin/firestore'
@@ -12,24 +12,26 @@ export let dbInstance: Firestore
 
 const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     try {
-        // let firebaseConnected = false
-
-        // setTimeout(() => {
-        //     if (!firebaseConnected) {
-        //         throw new Error('Firestore is not initialized ❌')
-        //     }
-        // }, 5000)
-
         const ref = newDbInstance.collection('facilities')
-        //validate firestore is initialized by getting a 1 document
-
         //eslint-disable-next-line @typescript-eslint/no-unused-vars
         const dbResult = await ref.limit(1).get()
 
-        // firebaseConnected = true
-        console.log('Firestore is initialized 🔥')
-    } catch {
-        console.log('Firestore is not initialized ❌')
+        console.log('🔥 Firestore connection established 🔥')
+    } catch (ex) {
+        console.log('❌ Firestore is not connecting... ❌')
+        console.log(ex)
+        throw new Error('❌ Firestore is not connecting... ❌')
+    }
+}
+
+const setupSeedData = async (newDbInstance: Firestore) => {
+    const ref = newDbInstance.collection('facilities')
+    const firstFacility = await ref.limit(1).get()
+    const hasSeedData = firstFacility.docs.length > 0
+
+    if (!hasSeedData) {
+        console.log('\n🌱 Seeding firebase emulator data... 🌱\n')
+        await seedDatabase()
     }
 }
 
@@ -46,35 +48,27 @@ export const initiatilizeFirebaseInstance = async () => {
 
     const firebaseConfig = {
         projectId: envVariables.firebaseProjectId(),
-        databaseURL: isProduction ? undefined : envVariables.getDbUrl(),
-        apiKey: envVariables.firebaseKey(),
-        authDomain: envVariables.firebaseAuthDomain(),
-        storageBucket: envVariables.firebaseStorageBucket(),
-        messagingSenderId: envVariables.firebaseMessagingSenderId(),
-        appId: envVariables.firebaseAppId(),
-        measurementId: envVariables.firebaseMeasurementId()
+        credential: isProduction ? cert(JSON.parse(envVariables.firebaseServiceAccount())) : applicationDefault(),
+        databaseURL: isProduction ? undefined : envVariables.getDbUrl()
     }
 
     initializeApp(firebaseConfig)
 
     const newDbInstance = admin.firestore()
 
-    await testFirestoreIsInitialized(newDbInstance)
     dbInstance = newDbInstance
 
     if (isProduction) {
-        console.log('Connecting to production firebase...')
+        console.log('\n🪄 Connecting to production firebase...\n')
+        await testFirestoreIsInitialized(newDbInstance)
     } else if (isTestingEnvironment || isLocal) {
-        console.log('Connecting to firebase emulator...')
+        console.log('\n🪄 Connecting to firebase emulator...')
+        console.log('TIP: if it doesn\'t connect after 10 secs,' +
+            'make sure you have the firebase emulator running using the "yarn dev" command\n')
 
-        const ref = newDbInstance.collection('facilities')
-        const firstFacility = await ref.limit(1).get()
-        const hasSeedData = firstFacility.docs.length > 0
-
-        if (!hasSeedData) {
-            console.log('Seeding firebase emulator data 🌱')
-            await seedDatabase()
-        }
-        console.log('Connected to firebase! ✅')
+        await testFirestoreIsInitialized(newDbInstance)
+        await setupSeedData(newDbInstance)
     }
+
+    console.log('✅ Firebase is initialized! ✅ \n')
 }
