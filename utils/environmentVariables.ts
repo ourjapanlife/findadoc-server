@@ -9,6 +9,7 @@ config({ path: dotEnvFileToLoad })
 const envVariables = {
     isProduction: () => process.env.NODE_ENV === 'production',
     isLocal: () => !envVariables.isProduction(),
+    serverPort: () => process.env.SERVER_PORT as string,
     getDbUrl: () =>
         envVariables.isProduction()
             ? process.env.FIREBASE_DATABASE_URL
