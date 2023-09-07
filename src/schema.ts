@@ -13,7 +13,7 @@ export default function loadSchema(): DocumentNode {
 
         const schema = gql`${typeString}`
 
-        console.log('📜 Loaded graphql schema.')
+        console.log('📜 Loaded graphql schema')
         return schema
     } catch (e) {
         console.log(e)
