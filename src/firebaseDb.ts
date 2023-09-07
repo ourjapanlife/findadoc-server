@@ -44,15 +44,18 @@ export const initiatilizeFirebaseInstance = async () => {
 
     alreadyStartedInitialization = true
 
-    initializeApp({
+    const firebaseConfig = {
         projectId: envVariables.firebaseProjectId(),
-        databaseURL: envVariables.getDbUrl(),
-        // credential: admin.credential.cert({
-        //     privateKey: envVariables.firebaseKey(),
-        //     projectId: envVariables.firebaseProjectId(),
-        // }),
-        storageBucket: envVariables.firebaseStorageBucket()
-    })
+        databaseURL: isProduction ? undefined : envVariables.getDbUrl(),
+        apiKey: envVariables.firebaseKey(),
+        authDomain: envVariables.firebaseAuthDomain(),
+        storageBucket: envVariables.firebaseStorageBucket(),
+        messagingSenderId: envVariables.firebaseMessagingSenderId(),
+        appId: envVariables.firebaseAppId(),
+        measurementId: envVariables.firebaseMeasurementId()
+    }
+
+    initializeApp(firebaseConfig)
 
     const newDbInstance = admin.firestore()
 
