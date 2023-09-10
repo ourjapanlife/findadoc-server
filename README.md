@@ -35,10 +35,10 @@ We love and welcome contributions to our front-end repository which can be found
 
 ## Prerequisites
 
-- [Node](https://nodejs.org)
-  - We recommend using [nvm](https://github.com/nvm-sh/nvm) and running `nvm use` in this directory to sync with the project's Node version. However, if you wish to install Node your own way and ensure a consistent version with `.nvmrc`, that's fine too
-- [Yarn Berry](https://yarnpkg.com/getting-started/install)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+-   [Node](https://nodejs.org)
+    -   We recommend using [nvm](https://github.com/nvm-sh/nvm) and running `nvm use` in this directory to sync with the project's Node version. However, if you wish to install Node your own way and ensure a consistent version with `.nvmrc`, that's fine too
+-   [Yarn Berry](https://yarnpkg.com/getting-started/install)
+-   [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 # Setup
 
@@ -75,10 +75,13 @@ npm -g i firebase-tools
 #### a.2 Install Java
 
 on a mac, we recommend using [homebrew](https://brew.sh/)
+
 ```sh
 brew install java
 ```
+
 on a windows pc, we recommend using [chocolatey](https://chocolatey.org/)
+
 ```sh
 choco install java
 ```
@@ -101,6 +104,12 @@ Select "Use an existing project"
 
 ```sh
 yarn dev:startlocaldb
+```
+
+### 3.c Starting the dev server and seeding the emulator
+
+```sh
+yarn dev
 ```
 
 This will run until you shut down the instance hitting `ctrl^+C`
@@ -140,7 +149,7 @@ yarn prod
 
 This runs locally and can easily be debugged with vscode!
 Click on the `Run and Debug` vscode tab, and then choose `Javascript Debug Terminal`, then run `yarn dev` in there and the debugger will automatically connect.
-Then, just add breakpoints by clicking on the line number of your code.  
+Then, just add breakpoints by clicking on the line number of your code.
 
 # How to Test your code
 
@@ -153,17 +162,17 @@ Then, just add breakpoints by clicking on the line number of your code.
   npm install jest --global
   ```
 
-  2. Start the Docker container:
+2. Start the Docker container:
 
-  ```sh
-  yarn test:dockerstart
-  ```
-  
-  3. Run the tests:
+```sh
+yarn test:dockerstart
+```
 
-  ```sh
-  yarn test
-  ```
+3. Run the tests:
+
+```sh
+yarn test
+```
 
 </details>
 
