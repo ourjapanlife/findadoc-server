@@ -149,6 +149,16 @@ export type MutationUpdateSubmissionArgs = {
   input?: InputMaybe<SubmissionInput>;
 };
 
+export type OrderBy = {
+  fieldToOrder?: InputMaybe<Scalars['String']['input']>;
+  orderDirection?: InputMaybe<OrderDirection>;
+};
+
+export enum OrderDirection {
+  Asc = 'asc',
+  Desc = 'desc'
+}
+
 export type PhysicalAddress = {
   __typename?: 'PhysicalAddress';
   addressLine1En?: Maybe<Scalars['String']['output']>;
@@ -256,6 +266,7 @@ export type SpokenLanguageInput = {
 
 export type Submission = {
   __typename?: 'Submission';
+  createdDate: Scalars['String']['output'];
   googleMapsUrl: Scalars['String']['output'];
   healthcareProfessionalName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
@@ -263,6 +274,7 @@ export type Submission = {
   isRejected: Scalars['Boolean']['output'];
   isUnderReview: Scalars['Boolean']['output'];
   spokenLanguages: Array<Maybe<SpokenLanguage>>;
+  updatedDate: Scalars['String']['output'];
 };
 
 export type SubmissionInput = {
@@ -272,12 +284,16 @@ export type SubmissionInput = {
 };
 
 export type SubmissionSearchFilters = {
+  createdDate?: InputMaybe<Scalars['String']['input']>;
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
   isApproved?: InputMaybe<Scalars['Boolean']['input']>;
   isRejected?: InputMaybe<Scalars['Boolean']['input']>;
   isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<InputMaybe<OrderBy>>>;
   spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
+  updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -362,10 +378,13 @@ export type ResolversTypes = {
   HealthcareProfessionalInput: HealthcareProfessionalInput;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Insurance: Insurance;
+  Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Locale: Locale;
   LocaleName: ResolverTypeWrapper<LocaleName>;
   LocaleNameInput: LocaleNameInput;
   Mutation: ResolverTypeWrapper<{}>;
+  OrderBy: OrderBy;
+  OrderDirection: OrderDirection;
   PhysicalAddress: ResolverTypeWrapper<PhysicalAddress>;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: ResolverTypeWrapper<{}>;
@@ -393,9 +412,11 @@ export type ResolversParentTypes = {
   HealthcareProfessional: HealthcareProfessional;
   HealthcareProfessionalInput: HealthcareProfessionalInput;
   ID: Scalars['ID']['output'];
+  Int: Scalars['Int']['output'];
   LocaleName: LocaleName;
   LocaleNameInput: LocaleNameInput;
   Mutation: {};
+  OrderBy: OrderBy;
   PhysicalAddress: PhysicalAddress;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: {};
@@ -513,6 +534,7 @@ export type SpokenLanguageResolvers<ContextType = any, ParentType extends Resolv
 };
 
 export type SubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Submission'] = ResolversParentTypes['Submission']> = {
+  createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   googleMapsUrl?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   healthcareProfessionalName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -520,6 +542,7 @@ export type SubmissionResolvers<ContextType = any, ParentType extends ResolversP
   isRejected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isUnderReview?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   spokenLanguages?: Resolver<Array<Maybe<ResolversTypes['SpokenLanguage']>>, ParentType, ContextType>;
+  updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

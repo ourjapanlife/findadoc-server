@@ -1,20 +1,20 @@
-import { DocumentData, getFirestore, Query } from 'firebase-admin/firestore'
+import { DocumentData, Query } from 'firebase-admin/firestore'
 import * as gqlType from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
+import { dbInstance } from '../firebaseDb'
 
 export const getSubmissionById = async (id: string) : Promise<dbSchema.Submission | null> => {
     try {
-        const db = getFirestore()
-        const submissionRef = db.collection('submissions')
+        const submissionRef = dbInstance.collection('submissions')
         const snapshot = await submissionRef.doc(id).get()
 
         if (!snapshot.exists) {
             return null
         }
+        
+        const submission = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
 
-        const convertedEntity = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
-
-        return convertedEntity
+        return submission
     } catch (error) {
         throw new Error(`Error retrieving submission: ${error}`)
     }
@@ -22,27 +22,62 @@ export const getSubmissionById = async (id: string) : Promise<dbSchema.Submissio
 
 export async function getSubmissions(filters: dbSchema.SubmissionSearchFilters = {}) {
     try {
-        const db = getFirestore()
-        let subRef: Query<DocumentData> = db.collection('submissions')
+        const {
+            googleMapsUrl,
+            healthcareProfessionalName,
+            isUnderReview,
+            isApproved,
+            isRejected,
+            orderBy = [{
+                fieldToOrder: 'createdDate',
+                orderDirection: 'desc'
+            }],
+            limit = 20,
+            createdDate,
+            updatedDate,
+            spokenLanguages
+        } = filters
 
-        if (filters.googleMapsUrl) {
-            subRef = subRef.where('googleMapsUrl', '==', filters.googleMapsUrl)
+        let subRef: Query<DocumentData> = dbInstance.collection('submissions')
+
+        if (googleMapsUrl) {
+            subRef = subRef.where('googleMapsUrl', '==', googleMapsUrl)
         }
 
-        if (filters.healthcareProfessionalName) {
-            subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
+        if (healthcareProfessionalName) {
+            subRef = subRef.where('healthcareProfessionalName', '==', healthcareProfessionalName)
         }
 
-        if (typeof filters.isUnderReview !== 'undefined') {
-            subRef = subRef.where('isUnderReview', '==', filters.isUnderReview)
+        if (typeof isUnderReview !== 'undefined') {
+            subRef = subRef.where('isUnderReview', '==', isUnderReview)
         }
 
-        if (typeof filters.isApproved !== 'undefined') {
-            subRef = subRef.where('isApproved', '==', filters.isApproved)
+        if (typeof isApproved !== 'undefined') {
+            subRef = subRef.where('isApproved', '==', isApproved)
         }
 
-        if (typeof filters.isRejected !== 'undefined') {
-            subRef = subRef.where('isRejected', '==', filters.isRejected)
+        if (typeof isRejected !== 'undefined') {
+            subRef = subRef.where('isRejected', '==', isRejected)
+        }
+
+        if (orderBy && Array.isArray(orderBy)) {
+            orderBy.forEach(order => {
+                if (order) {
+                    subRef = subRef.orderBy(order.fieldToOrder, order.orderDirection)
+                }
+            })
+        }
+
+        if (limit) {
+            subRef = subRef.limit(limit)
+        }
+
+        if (createdDate) {
+            subRef = subRef.where('createdDate', '==', createdDate)
+        }
+
+        if (updatedDate) {
+            subRef = subRef.where('updatedDate', '==', updatedDate)
         }
 
         const snapshot = await subRef.get()
@@ -50,8 +85,8 @@ export async function getSubmissions(filters: dbSchema.SubmissionSearchFilters =
         let submissions = snapshot.docs.map(doc => 
             mapDbEntityTogqlEntity({ ...doc.data(), id: doc.id}))
 
-        if (filters.spokenLanguages && filters.spokenLanguages.length) {
-            const requiredLanguages = filters.spokenLanguages
+        if (spokenLanguages && spokenLanguages.length) {
+            const requiredLanguages = spokenLanguages
                 .map((lang: { iso639_3: string }) => lang.iso639_3)
 
             submissions = submissions.filter(sub => 
@@ -65,22 +100,27 @@ export async function getSubmissions(filters: dbSchema.SubmissionSearchFilters =
     }
 }
 
-function convertToDbSubmission(submission: gqlType.Submission): 
+function convertToDbSubmission(submission: gqlType.SubmissionInput): 
     dbSchema.Submission {
     return {
         ...submission,
+        id: '',
+        isUnderReview: true,
+        isApproved: false,
+        isRejected: false,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString(),
         spokenLanguages: submission.spokenLanguages
             .filter(lang => lang !== null) as dbSchema.SpokenLanguage[]
     }
 }
 
-export const addSubmission = async (submission: gqlType.Submission): 
+export const addSubmission = async (submissionInput: gqlType.SubmissionInput): 
     Promise<dbSchema.Submission> => {
     try {
-        const dbSubmission = convertToDbSubmission(submission)
+        const dbSubmission = convertToDbSubmission(submissionInput)
 
-        const db = getFirestore()
-        const submissionRef = db.collection('submissions')
+        const submissionRef = dbInstance.collection('submissions')
 
         const docRef = await submissionRef.add(dbSubmission)
 
@@ -98,8 +138,7 @@ export const addSubmission = async (submission: gqlType.Submission):
 export const updateSubmission = async (id: string, updatedFields: Partial<dbSchema.Submission>): 
     Promise<string> => {
     try {
-        const db = getFirestore()
-        const submissionRef = db.collection('submissions').doc(id)
+        const submissionRef = dbInstance.collection('submissions').doc(id)
 
         const snapshot = await submissionRef.get()
 
@@ -107,7 +146,8 @@ export const updateSubmission = async (id: string, updatedFields: Partial<dbSche
 
         const updatedSubmission: dbSchema.Submission = {
             ...submissionToUpdate,
-            ...updatedFields
+            ...updatedFields,
+            updatedDate: new Date().toISOString()
         }
 
         await submissionRef.update(updatedSubmission)
@@ -174,7 +214,7 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlType.SpokenLan
     return validatedLanguages.map(gqlSpokenLanguageToDbSpokenLanguage)
 }
 
-export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlType.SubmissionSearchFilters):
+export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlType.SubmissionSearchFilters = {}):
     dbSchema.SubmissionSearchFilters => {
     const mappedLanguages = filters.spokenLanguages?.map(lang => lang ? {
         iso639_3: lang.iso639_3 ?? '',
@@ -186,17 +226,26 @@ export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlType.Submission
     const filteredLanguages = (mappedLanguages ?? [])
         .filter(lang => lang !== undefined) as dbSchema.SpokenLanguage[]
 
+    const mappedOrderBy = filters.orderBy ? filters.orderBy
+        .filter((o): o is gqlType.OrderBy => Boolean(o && o.fieldToOrder && o.orderDirection))
+        .map(order => ({
+            fieldToOrder: order.fieldToOrder as string,
+            orderDirection: order.orderDirection as dbSchema.OrderDirection
+        })) : undefined
+
     return {
         ...filters,
-        // fix: false might be a better default for these booleans than undefined.
-        // fix: false might be a better default for these booleans than undefined.
         googleMapsUrl: filters.googleMapsUrl === null ? undefined : filters.googleMapsUrl,
-        healthcareProfessionalName: filters.healthcareProfessionalName == null ? undefined : 
+        healthcareProfessionalName: filters.healthcareProfessionalName === null ? undefined : 
             filters.healthcareProfessionalName,
         spokenLanguages: filteredLanguages,
-        isUnderReview: filters.isUnderReview === null ? undefined : filters.isUnderReview,
-        isApproved: filters.isApproved === null ? undefined : filters.isApproved,
-        isRejected: filters.isRejected === null ? undefined : filters.isRejected
+        isUnderReview: filters.isUnderReview ?? undefined,
+        isApproved: filters.isApproved ?? undefined,
+        isRejected: filters.isRejected ?? undefined,
+        orderBy: mappedOrderBy,
+        limit: filters.limit === null ? undefined : filters.limit,
+        createdDate: filters.createdDate ?? undefined,
+        updatedDate: filters.updatedDate ?? undefined
     }
 }
 
@@ -208,7 +257,9 @@ const mapDbEntityTogqlEntity = (dbEntity: DocumentData) : dbSchema.Submission =>
         spokenLanguages: dbEntity.spokenLanguages,
         isUnderReview: dbEntity.isUnderReview,
         isApproved: dbEntity.isApproved,
-        isRejected: dbEntity.isRejected
+        isRejected: dbEntity.isRejected,
+        createdDate: dbEntity.createdDate,
+        updatedDate: dbEntity.updatedDate
     }
 
     return gqlEntity

@@ -35,7 +35,7 @@ const resolvers = {
         },
         submission: async (_parent: gqlType.Submission, args: { id: string }) => {
             const matchingSubmission = await submissionService.getSubmissionById(args.id)
-            
+
             return matchingSubmission
         }
     },
@@ -89,7 +89,9 @@ const resolvers = {
                     })),
                 isUnderReview: true,
                 isApproved: false,
-                isRejected: false
+                isRejected: false,
+                createdDate: new Date().toISOString(),
+                updatedDate: new Date().toISOString()
             }
 
             const newSubmission = await submissionService.addSubmission(submissionData)
