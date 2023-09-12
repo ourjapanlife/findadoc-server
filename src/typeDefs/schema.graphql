@@ -142,7 +142,7 @@ type Submission {
   updatedDate: String!
 }
 
-input SubmissionInput {
+input AddSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
   spokenLanguages: [SpokenLanguageInput]
@@ -150,6 +150,22 @@ input SubmissionInput {
   isApproved: Boolean
   isDeleted: Boolean
   isRejected: Boolean
+}
+
+input UpdateSubmissionInput {
+  googleMapsUrl: String!
+  healthcareProfessionalName: String!
+  spokenLanguages: [SpokenLanguageInput]!
+  isUnderReview: Boolean,
+  isApproved: Boolean,
+  isRejected: Boolean
+}
+
+input UpdateSubmissionInput {
+  googleMapsUrl: String!
+  healthcareProfessionalName: String!
+  spokenLanguages: [SpokenLanguageInput]!
+  isApproved: Boolean
 }
 
 input SubmissionSearchFilters {
@@ -237,11 +253,10 @@ type Mutation {
     input: FacilityInput
   ): Facility
   createSubmission(
-    input: SubmissionInput
+    input: AddSubmissionInput
   ): Submission
   updateSubmission(
     id: ID!
-    input: SubmissionInput
+    input: UpdateSubmissionInput
   ): Submission
 }
-

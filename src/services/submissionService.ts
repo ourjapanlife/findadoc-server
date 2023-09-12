@@ -4,6 +4,8 @@ import * as dbSchema from '../typeDefs/dbSchema'
 import { dbInstance } from '../firebaseDb'
 import { CustomErrors, ErrorCode, Result } from '../result'
 import { hasSpecialCharacters } from '../../utils/stringUtils'
+import { addFacility } from './facilityService'
+import { addHealthcareProfessional } from './healthcareProfessionalService'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -205,7 +207,6 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
         const submissionRef = dbInstance.collection('submissions').doc(submissionId)
 
         const snapshot = await submissionRef.get()
-
         const submissionToUpdate = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
 
         const updatedSubmissionValues: dbSchema.Submission = {
@@ -217,6 +218,60 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
         await submissionRef.set(updatedSubmissionValues, {merge: true})
 
         const updatedSubmission = await getSubmissionById(submissionRef.id)
+        if (fieldsToUpdate.isApproved === true) {
+            const facilityData: gqlTypes.FacilityInput = {
+                nameEn: submissionToUpdate.healthcareProfessionalName,
+                nameJa: submissionToUpdate.healthcareProfessionalName,
+                contact: {
+                    email: '',
+                    phone: '',
+                    website: '',
+                    mapsLink: submissionToUpdate.googleMapsUrl,
+                    address: {
+                        postalCode: '',
+                        prefectureEn: '',
+                        cityEn: '',
+                        addressLine1En: '',
+                        addressLine2En: '',
+                        prefectureJa: '',
+                        cityJa: '',
+                        addressLine1Ja: '',
+                        addressLine2Ja: ''
+                    }
+                },
+                healthcareProfessionals: [],
+                isDeleted: false
+            }
+
+            const healthcareProfessionalData: gqlTypes.HealthcareProfessional = {
+                id: '',
+                names: [{
+                    lastName: submissionToUpdate.healthcareProfessionalName,
+                    firstName: '',
+                    middleName: '',
+                    locale: gqlTypes.Locale.English
+                }],
+                degrees: [],
+                spokenLanguages: submissionToUpdate.spokenLanguages.map(gqlSpokenLanguageToDbSpokenLanguage),
+                specialties: [],
+                acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
+                isDeleted: false,
+                createdDate: new Date().toISOString(),
+                updatedDate: new Date().toISOString()
+            }
+            
+            const newFacilityResult = await addFacility(facilityData)
+            
+            if(newFacilityResult.data) {
+                healthcareProfessionalData.id = newFacilityResult.data.id
+            } else {
+                throw new Error('Failed to create new facility.')
+            }
+
+            await addHealthcareProfessional(healthcareProfessionalData)
+        }
+        
+        await submissionRef.update(updatedSubmission)
 
         return updatedSubmission as Result<dbSchema.Submission>
     } catch (error) {
@@ -400,3 +455,4 @@ const mapDbEntityTogqlEntity = (dbEntity: DocumentData) : dbSchema.Submission =>
 
     return gqlEntity
 }
+

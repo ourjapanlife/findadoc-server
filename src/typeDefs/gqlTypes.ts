@@ -16,6 +16,16 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AddSubmissionInput = {
+  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
+  isApproved?: InputMaybe<Scalars['Boolean']['input']>;
+  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
+  isRejected?: InputMaybe<Scalars['Boolean']['input']>;
+  isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
+  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
+};
+
 export type Contact = {
   __typename?: 'Contact';
   address: PhysicalAddress;
@@ -150,7 +160,13 @@ export type MutationCreateHealthcareProfessionalArgs = {
 
 
 export type MutationCreateSubmissionArgs = {
-  input?: InputMaybe<SubmissionInput>;
+  input?: InputMaybe<AddSubmissionInput>;
+};
+
+
+export type MutationUpdateFacilityArgs = {
+  id: Scalars['ID']['input'];
+  input?: InputMaybe<FacilityInput>;
 };
 
 
@@ -168,7 +184,7 @@ export type MutationUpdateHealthcareProfessionalArgs = {
 
 export type MutationUpdateSubmissionArgs = {
   id: Scalars['ID']['input'];
-  input?: InputMaybe<SubmissionInput>;
+  input?: InputMaybe<UpdateSubmissionInput>;
 };
 
 export type OrderBy = {
@@ -303,16 +319,6 @@ export type Submission = {
   updatedDate: Scalars['String']['output'];
 };
 
-export type SubmissionInput = {
-  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
-  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
-  isApproved?: InputMaybe<Scalars['Boolean']['input']>;
-  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
-  isRejected?: InputMaybe<Scalars['Boolean']['input']>;
-  isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
-  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
-};
-
 export type SubmissionSearchFilters = {
   createdDate?: InputMaybe<Scalars['String']['input']>;
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
@@ -325,6 +331,15 @@ export type SubmissionSearchFilters = {
   orderBy?: InputMaybe<Array<InputMaybe<OrderBy>>>;
   spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
   updatedDate?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateSubmissionInput = {
+  googleMapsUrl: Scalars['String']['input'];
+  healthcareProfessionalName: Scalars['String']['input'];
+  isApproved?: InputMaybe<Scalars['Boolean']['input']>;
+  isRejected?: InputMaybe<Scalars['Boolean']['input']>;
+  isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
+  spokenLanguages: Array<InputMaybe<SpokenLanguageInput>>;
 };
 
 
@@ -398,6 +413,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  AddSubmissionInput: AddSubmissionInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Contact: ResolverTypeWrapper<Contact>;
   ContactInput: ContactInput;
@@ -428,12 +444,13 @@ export type ResolversTypes = {
   SpokenLanguageInput: SpokenLanguageInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
-  SubmissionInput: SubmissionInput;
   SubmissionSearchFilters: SubmissionSearchFilters;
+  UpdateSubmissionInput: UpdateSubmissionInput;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  AddSubmissionInput: AddSubmissionInput;
   Boolean: Scalars['Boolean']['output'];
   Contact: Contact;
   ContactInput: ContactInput;
@@ -461,8 +478,8 @@ export type ResolversParentTypes = {
   SpokenLanguageInput: SpokenLanguageInput;
   String: Scalars['String']['output'];
   Submission: Submission;
-  SubmissionInput: SubmissionInput;
   SubmissionSearchFilters: SubmissionSearchFilters;
+  UpdateSubmissionInput: UpdateSubmissionInput;
 };
 
 export type ContactResolvers<ContextType = any, ParentType extends ResolversParentTypes['Contact'] = ResolversParentTypes['Contact']> = {
