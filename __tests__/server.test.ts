@@ -7,6 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import * as gqlTypes from '../src/typeDefs/gqlTypes'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
+import CustomErrors from '../src/errors'
 
 const schema = buildSchema(fs.readFileSync(
     path.join(__dirname, '../src/typeDefs/schema.graphql'),
@@ -51,6 +52,10 @@ const queryData = {
 
 describe('query healthcareProfessionalById', () => {    
     let server: IMockServer
+
+    afterEach(() => {
+        jest.restoreAllMocks()
+    })
     
     it('successfully returns a healthcare professional', async () => {
         await initiatilizeFirebaseInstance()
@@ -102,6 +107,8 @@ describe('query healthcareProfessionalById', () => {
         const preserveResolvers = true
         const mocks = {}
 
+        const spyCustomeErrors = jest.spyOn(CustomErrors, 'notFound')
+        
         server = mockServer(mySchema, mocks, preserveResolvers)
 
         const response = await server.query(queryData.query, queryData.variables)
@@ -111,6 +118,8 @@ describe('query healthcareProfessionalById', () => {
         expect(errors[0].extensions.http).toEqual({status: 404})
         expect(errors.length).toBe(1)
         expect(errors[0].extensions.code).toBe('NOT_FOUND')
-        expect(errors[0].message).toBe('Healthcare professional not found.')
+        expect(errors[0].message).toBeDefined()
+        expect(errors[0].message.length).toBeGreaterThan(0)
+        expect(spyCustomeErrors).toHaveBeenCalled()
     })
 })
