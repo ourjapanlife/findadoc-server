@@ -12,6 +12,7 @@
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
         "prod": "yarn prod:dockerstop && yarn prod:dockerstart",
         "prod:build": "echo '\n🧹 cleaning dist folder...\n' && rimraf dist/ && echo '\n➡ ➡ copying files...\n' && copyfiles 'src/typeDefs/schema.graphql' '.env.*' 'jest.config.js' 'dist' && echo '\n💻✨ compiling code...\n' && tsc",
+        "prod:builddigitalocean": "yarn prod:build",
         "prod:startserver": "echo '\n💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production node dist/src/index.js",
         "prod:dockerstart": "echo '\n🐳 🐳 🐳✨ Running docker compose...' && docker compose -f docker/docker-compose-api.yml up -d --build --remove-orphans --force-recreate",
         "prod:dockerstop": "echo '\n🐳 🐳 🐳✨ Stopping docker compose...' && docker compose -f docker/docker-compose-api.yml down",
@@ -33,6 +34,10 @@
     },
     "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
     "packageManager": "yarn@3.6.3",
+    "engines": {
+        "node": "20.x",
+        "yarn": "^3.6.3"
+    },
     "devDependencies": {
         "@graphql-codegen/cli": "^5.0.0",
         "@graphql-codegen/typescript": "^4.0.1",
