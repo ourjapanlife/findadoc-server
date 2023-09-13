@@ -12,19 +12,22 @@ const resolvers = {
 
                 return matchingFacilities
             } catch (error) {
-                return CustomErrors.notFound(`Failed to find facilities: ${error}`)
+                console.log(error)
+                return CustomErrors.notFound(`No facilities where found.`)
             } 
         },
-        facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
+        facility: async (_parent: gqlType.Facility, args: { id: string; }, contextValue: any) => {
             try {
                 if (!args.id || !args.id.trim()) {
                     throw new Error('An ID was not provided')
                 }
+                console.log(contextValue.dataSources)
                 const matchingFacility = await facilityService.getFacilityById(args.id)
 
                 return matchingFacility            
             } catch (error) {
-                return CustomErrors.notFound(`Failed to find the facility: ${error}`)
+                console.error(error)
+                return CustomErrors.notFound(`The facility does not exist.`)
             } 
         },
         // healthcareProfessionals: async () => {
@@ -42,7 +45,8 @@ const resolvers = {
 
                 return matchingHealthcareProfessional        
             } catch (error) {
-                return CustomErrors.notFound(`${error}`)
+                console.error(error)
+                return CustomErrors.notFound('The healthcare professional does not exist.')
             }  
         },
         submissions: async (_parent: gqlType.Submission, args: { filters: gqlType.SubmissionSearchFilters }) => {
@@ -53,7 +57,8 @@ const resolvers = {
 
                 return matchingSubmissions
             } catch (error) {
-                return CustomErrors.notFound(`Failed to find submissions: ${error}`)
+                console.error(error)
+                return CustomErrors.notFound(`No submissions where found.`)
             }
         },
         submission: async (_parent: gqlType.Submission, args: { id: string }) => {
@@ -65,7 +70,8 @@ const resolvers = {
 
                 return matchingSubmission           
             } catch (error) {
-                return CustomErrors.notFound(`Failed to find the submission: ${error}`)
+                console.error(error)
+                return CustomErrors.notFound(`The submission does not exist.`)
             }  
         }
     },
@@ -83,7 +89,8 @@ const resolvers = {
 
                 return newFacility
             } catch (error) {
-                return CustomErrors.missingInput(`Failed to create facility with healthcare professional: ${error}`)
+                console.error(error)
+                return CustomErrors.missingInput(`Failed to create facility with healthcare professional.`)
             }  
         },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
@@ -136,7 +143,8 @@ const resolvers = {
     
                 return newSubmission
             } catch (error) {
-                return CustomErrors.missingInput(`Failed to create submission: ${error}`)
+                console.log(error)
+                return CustomErrors.missingInput(`Failed to create submission`)
             }
         },
         updateSubmission: async (_parent: gqlType.Submission, args: {
