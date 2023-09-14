@@ -1,4 +1,4 @@
-import { PhysicalAddress, SpokenLanguageInput } from './gqlTypes'
+import { PhysicalAddress } from './gqlTypes'
 
 export type Contact = {
   email: string
