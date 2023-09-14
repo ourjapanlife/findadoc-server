@@ -3,19 +3,29 @@ import { startStandaloneServer } from '@apollo/server/standalone'
 import loadSchema from './schema'
 import resolvers from './resolvers'
 import { initiatilizeFirebaseInstance } from './firebaseDb'
+import { envVariables } from '../utils/environmentVariables'
 
-export const createApolloServer = async (port = 4000) => {
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
+
+export const createApolloServer = async () => {
     await initiatilizeFirebaseInstance()
 
     const server = new ApolloServer({
         typeDefs: loadSchema(),
-        resolvers
+        resolvers,
+        //allows the sandbox to be used in production as well as locally
+        introspection: true,
+        plugins: [
+            //enables the apollo sanbox as the landing page
+            ApolloServerPluginLandingPageLocalDefault()
+        ]
     })
   
-    const { url } = await startStandaloneServer(server, {listen: { port: port }})
+    console.log('⛽️ Starting server...')
+    const { url } = await startStandaloneServer(server, {listen: { port: parseInt(envVariables.serverPort()) }})
   
     // eslint-disable-next-line no-console
-    console.log(`🚀 Server ready at: ${url}`)
+    console.log(`\n🚀 🚀 🚀 Server ready at: ${url}\n`)
 
     return { server, url }
 }

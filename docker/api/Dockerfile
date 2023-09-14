@@ -24,6 +24,6 @@ RUN yarn prod:build
 
 
 # Run 
-EXPOSE 3001
+EXPOSE 4000
 
-CMD [ "yarn", "prod" ]
+CMD [ "yarn", "prod:startserver" ]
