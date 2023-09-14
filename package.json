@@ -37,6 +37,11 @@
         "node": "20.x",
         "yarn": "^3.6.3"
     },
+    "packageManager": "yarn@3.6.3",
+    "engines": {
+        "node": "20.x",
+        "yarn": "^3.6.3"
+    },
     "devDependencies": {
         "@graphql-codegen/cli": "^5.0.0",
         "@graphql-codegen/typescript": "^4.0.1",
@@ -44,12 +49,16 @@
         "@jest/globals": "^29.6.2",
         "@types/jest": "^29.5.4",
         "@types/node": "^20.5.9",
+        "@types/node": "^20.5.9",
         "@types/supertest": "^2.0.12",
+        "@typescript-eslint/eslint-plugin": "^6.5.0",
+        "@typescript-eslint/parser": "^6.5.0",
         "@typescript-eslint/eslint-plugin": "^6.5.0",
         "@typescript-eslint/parser": "^6.5.0",
         "all-contributors-cli": "^6.24.0",
         "eslint": "^8.20.0",
         "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-config-airbnb-typescript": "^17.1.0",
         "eslint-config-airbnb-typescript": "^17.1.0",
         "eslint-plugin-import": "^2.26.0",
         "eslint-plugin-json": "^3.1.0",
@@ -63,20 +72,28 @@
     },
     "dependencies": {
         "@apollo/server": "^4.9.3",
+        "@apollo/server": "^4.9.3",
         "@graphql-tools/mock": "^9.0.0",
         "@graphql-tools/schema": "^10.0.0",
         "copyfiles": "^2.4.1",
         "cross-env": "^7.0.3",
+        "copyfiles": "^2.4.1",
+        "cross-env": "^7.0.3",
         "csv-parse": "^5.3.3",
         "dotenv": "^16.3.1",
+        "firebase": "^10.3.1",
         "firebase": "^10.3.1",
         "firebase-admin": "^11.10.1",
         "graphql": "^16.8.0",
         "graphql-import-node": "^0.0.5",
         "graphql-tag": "^2.12.6",
         "rimraf": "^5.0.1",
+        "rimraf": "^5.0.1",
         "supertest": "^6.3.3"
     },
+    "resolutions": {
+        "long": "^4.0.0"
+    }
     "resolutions": {
         "long": "^4.0.0"
     }
