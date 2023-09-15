@@ -94,7 +94,7 @@ const resolvers = {
             } catch (error) {
                 console.error(error)
                 console.log('INPUT_FIELD:', JSON.stringify(args))
-                return CustomErrors.missingInput('Failed to create facility with healthcare prof. Please make sure the input fields are correct')
+                return CustomErrors.missingInput('Failed to create facility and Healthcare Professional.')
             }  
         },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
@@ -116,7 +116,7 @@ const resolvers = {
             } catch (error) {
                 console.log(error)
                 console.log('INPUT_FIELD:', JSON.stringify(args))
-                return CustomErrors.missingInput('Failed to create the healthcare professional. Please make sure the input fields are correct.')
+                return CustomErrors.missingInput('Failed to create the healthcare professional.')
             }
         },
         createSubmission: async (_parent: gqlType.Submission, args: {
@@ -157,7 +157,7 @@ const resolvers = {
             } catch (error) {
                 console.log(error)
                 console.log('INPUT_FIELDS:', JSON.stringify(args))
-                return CustomErrors.missingInput('Failed to create submission. Please make sure the input fields are filled out correctly')
+                return CustomErrors.missingInput('Failed to create submission.')
             }
         },
         updateSubmission: async (_parent: gqlType.Submission, args: {
@@ -192,7 +192,7 @@ const resolvers = {
             } catch (error) {
                 console.log(error)
                 console.log('INPUT_FIELDS:', JSON.stringify(args))
-                return CustomErrors.missingInput('Failed to update the submission. Please make sure the input fields are correct.')
+                return CustomErrors.missingInput('Failed to update the submission.')
             }
         }
     }

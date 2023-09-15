@@ -20,7 +20,7 @@ export const createApolloServer = async () => {
             ApolloServerPluginLandingPageLocalDefault()
         ],
         // Allows you to choose what error info is visable for client side
-        formatError: (formattedError) => ({
+        formatError: formattedError => ({
             message: formattedError.message
         })
     })
