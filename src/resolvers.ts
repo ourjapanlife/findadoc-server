@@ -3,7 +3,6 @@ import * as healthcareProfessionalService from './services/healthcareProfessiona
 import * as gqlType from './typeDefs/gqlTypes'
 import * as submissionService from './services/submissionService'
 import CustomErrors from './errors'
-import { json } from 'stream/consumers'
 
 const resolvers = {
     Query: {
@@ -14,7 +13,7 @@ const resolvers = {
                 return matchingFacilities
             } catch (error) {
                 console.log(error)
-                return CustomErrors.notFound(`No facilities where found.`)
+                return CustomErrors.notFound('No facilities where found.')
             } 
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
@@ -28,7 +27,7 @@ const resolvers = {
             } catch (error) {
                 console.log(error)
                 console.log('ID:', JSON.stringify(args))
-                return CustomErrors.notFound(`The facility does not exist.`)
+                return CustomErrors.notFound('The facility does not exist.')
             } 
         },
         // healthcareProfessionals: async () => {
@@ -61,7 +60,7 @@ const resolvers = {
             } catch (error) {
                 console.log(error)
                 console.log('FILTERS:', JSON.stringify(args))
-                return CustomErrors.notFound(`No submissions where found.`)
+                return CustomErrors.notFound('No submissions where found.')
             }
         },
         submission: async (_parent: gqlType.Submission, args: { id: string }) => {
@@ -75,7 +74,7 @@ const resolvers = {
             } catch (error) {
                 console.log(error)
                 console.log('ID:', JSON.stringify(args))
-                return CustomErrors.notFound(`The submission does not exist.`)
+                return CustomErrors.notFound('The submission does not exist.')
             }  
         }
     },
@@ -94,8 +93,8 @@ const resolvers = {
                 return newFacility
             } catch (error) {
                 console.error(error)
-                console.log('INPUT_FIELD:',JSON.stringify(args))
-                return CustomErrors.missingInput(`Failed to create facility with healthcare professional. Please make sure the input fields are filled out correctly`)
+                console.log('INPUT_FIELD:', JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to create facility with healthcare prof. Please make sure the input fields are correct')
             }  
         },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
@@ -116,8 +115,8 @@ const resolvers = {
                 return newHealthcareProfessional
             } catch (error) {
                 console.log(error)
-                console.log('INPUT_FIELD:',JSON.stringify(args))
-                return CustomErrors.missingInput(`Failed to create the healthcare professional. Please make sure the input fields are filled out correctly`)
+                console.log('INPUT_FIELD:', JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to create the healthcare professional. Please make sure the input fields are correct.')
             }
         },
         createSubmission: async (_parent: gqlType.Submission, args: {
@@ -157,8 +156,8 @@ const resolvers = {
                 return newSubmission
             } catch (error) {
                 console.log(error)
-                console.log('INPUT_FIELDS:',JSON.stringify(args))
-                return CustomErrors.missingInput(`Failed to create submission. Please make sure the input fields are filled out correctly`)
+                console.log('INPUT_FIELDS:', JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to create submission. Please make sure the input fields are filled out correctly')
             }
         },
         updateSubmission: async (_parent: gqlType.Submission, args: {
@@ -190,10 +189,10 @@ const resolvers = {
                 const updatedSubmission = await submissionService.getSubmissionById(args.id)
 
                 return updatedSubmission
-            } catch (error: any) {
+            } catch (error) {
                 console.log(error)
-                console.log('INPUT_FIELDS:',JSON.stringify(args))
-                return CustomErrors.missingInput('Failed to update the submission. Please make sure the input fields are filled out correctly')
+                console.log('INPUT_FIELDS:', JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to update the submission. Please make sure the input fields are correct.')
             }
         }
     }
