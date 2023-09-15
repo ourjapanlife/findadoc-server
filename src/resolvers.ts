@@ -3,6 +3,7 @@ import * as healthcareProfessionalService from './services/healthcareProfessiona
 import * as gqlType from './typeDefs/gqlTypes'
 import * as submissionService from './services/submissionService'
 import CustomErrors from './errors'
+import { json } from 'stream/consumers'
 
 const resolvers = {
     Query: {
@@ -16,17 +17,17 @@ const resolvers = {
                 return CustomErrors.notFound(`No facilities where found.`)
             } 
         },
-        facility: async (_parent: gqlType.Facility, args: { id: string; }, contextValue: any) => {
+        facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
             try {
                 if (!args.id || !args.id.trim()) {
                     throw new Error('An ID was not provided')
                 }
-                console.log(contextValue.dataSources)
                 const matchingFacility = await facilityService.getFacilityById(args.id)
 
                 return matchingFacility            
             } catch (error) {
-                console.error(error)
+                console.log(error)
+                console.log('ID:', JSON.stringify(args))
                 return CustomErrors.notFound(`The facility does not exist.`)
             } 
         },
@@ -45,7 +46,8 @@ const resolvers = {
 
                 return matchingHealthcareProfessional        
             } catch (error) {
-                console.error(error)
+                console.log(error)
+                console.log('ID:', JSON.stringify(args))
                 return CustomErrors.notFound('The healthcare professional does not exist.')
             }  
         },
@@ -57,7 +59,8 @@ const resolvers = {
 
                 return matchingSubmissions
             } catch (error) {
-                console.error(error)
+                console.log(error)
+                console.log('FILTERS:', JSON.stringify(args))
                 return CustomErrors.notFound(`No submissions where found.`)
             }
         },
@@ -70,7 +73,8 @@ const resolvers = {
 
                 return matchingSubmission           
             } catch (error) {
-                console.error(error)
+                console.log(error)
+                console.log('ID:', JSON.stringify(args))
                 return CustomErrors.notFound(`The submission does not exist.`)
             }  
         }
@@ -90,7 +94,8 @@ const resolvers = {
                 return newFacility
             } catch (error) {
                 console.error(error)
-                return CustomErrors.missingInput(`Failed to create facility with healthcare professional.`)
+                console.log('INPUT_FIELD:',JSON.stringify(args))
+                return CustomErrors.missingInput(`Failed to create facility with healthcare professional. Please make sure the input fields are filled out correctly`)
             }  
         },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
@@ -110,7 +115,9 @@ const resolvers = {
 
                 return newHealthcareProfessional
             } catch (error) {
-                return CustomErrors.missingInput(`Failed to create healthcare professional: ${error}`)
+                console.log(error)
+                console.log('INPUT_FIELD:',JSON.stringify(args))
+                return CustomErrors.missingInput(`Failed to create the healthcare professional. Please make sure the input fields are filled out correctly`)
             }
         },
         createSubmission: async (_parent: gqlType.Submission, args: {
@@ -121,6 +128,12 @@ const resolvers = {
             }
         }) => {
             try {
+                for (const value of Object.values(args.input)) {
+                    if (!value) {
+                        throw new Error('Missing Input')
+                    }
+                }
+                
                 const submissionData: gqlType.Submission = {
                     id: '',
                     googleMapsUrl: args.input.googleMapsUrl,
@@ -144,7 +157,8 @@ const resolvers = {
                 return newSubmission
             } catch (error) {
                 console.log(error)
-                return CustomErrors.missingInput(`Failed to create submission`)
+                console.log('INPUT_FIELDS:',JSON.stringify(args))
+                return CustomErrors.missingInput(`Failed to create submission. Please make sure the input fields are filled out correctly`)
             }
         },
         updateSubmission: async (_parent: gqlType.Submission, args: {
@@ -176,8 +190,10 @@ const resolvers = {
                 const updatedSubmission = await submissionService.getSubmissionById(args.id)
 
                 return updatedSubmission
-            } catch (error) {
-                return CustomErrors.missingInput(`Failed to update submission: ${error}`)
+            } catch (error: any) {
+                console.log(error)
+                console.log('INPUT_FIELDS:',JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to update the submission. Please make sure the input fields are filled out correctly')
             }
         }
     }
