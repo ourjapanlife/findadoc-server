@@ -106,8 +106,6 @@ describe('query healthcareProfessionalById', () => {
         const mySchema = addResolversToSchema({schema, resolvers})
         const preserveResolvers = true
         const mocks = {}
-
-        const spyCustomeErrors = jest.spyOn(CustomErrors, 'notFound')
         
         server = mockServer(mySchema, mocks, preserveResolvers)
 
@@ -118,8 +116,6 @@ describe('query healthcareProfessionalById', () => {
         expect(errors[0].extensions.http).toEqual({status: 404})
         expect(errors.length).toBe(1)
         expect(errors[0].extensions.code).toBe('NOT_FOUND')
-        expect(errors[0].message).toBeDefined()
-        expect(errors[0].message.length).toBeGreaterThan(0)
-        expect(spyCustomeErrors).toHaveBeenCalled()
+        expect(errors[0].message).toBe('The healthcare professional does not exist.')
     })
 })
