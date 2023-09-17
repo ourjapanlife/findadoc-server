@@ -7,7 +7,6 @@ import fs from 'fs'
 import path from 'path'
 import * as gqlTypes from '../src/typeDefs/gqlTypes'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
-import CustomErrors from '../src/errors'
 
 const schema = buildSchema(fs.readFileSync(
     path.join(__dirname, '../src/typeDefs/schema.graphql'),
