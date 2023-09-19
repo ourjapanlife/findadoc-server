@@ -76,6 +76,7 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
         }
 
         subRef = subRef.limit(filters.limit || 20)
+        subRef = subRef.offset(filters.offset || 0)
 
         const snapshot = await subRef.get()
 

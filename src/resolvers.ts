@@ -8,12 +8,20 @@ const resolvers = {
         facilities: async (_parent: gqlType.Facility, args: { filters: gqlType.FacilitySearchFilters }) => {
             const queryResults = await facilityService.searchFacilities(args.filters)
 
-            return queryResults
+            //TODO: add validation errors to gql errors
+            //TODO: add auth errors to gql errors
+            //TODO: add expections to gql errors
+
+            return queryResults.data
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
             const queryResults = await facilityService.getFacilityById(args.id)
 
-            return queryResults
+            //TODO: add validation errors to gql errors
+            //TODO: add auth errors to gql errors
+            //TODO: add expections to gql errors
+
+            return queryResults.data
         },
         // healthcareProfessionals: async () => {
         //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
