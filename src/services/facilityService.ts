@@ -4,7 +4,7 @@ import * as dbTypes from '../typeDefs/dbSchema'
 import { ErrorCode, Result } from '../result'
 import { addHealthcareProfessional } from './healthcareProfessionalService'
 import { dbInstance } from '../firebaseDb'
-import { hasSpecialCharacters } from '../../utils/stringUtils'
+import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils'
 
 export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility | null>> => {
     const validationResult = validateIdInput(id)
@@ -256,19 +256,128 @@ function validateContactInput(contactInput: gqlTypes.Contact): Result<boolean> {
         return validationResults
     }
 
-    // const facilityContact = {
-    //     address: contactInput.address as gqlTypes.PhysicalAddress,
-    //     email: contactInput.email as string,
-    //     mapsLink: contactInput.mapsLink as string,
-    //     phone: contactInput.phone as string,
-    //     website: contactInput.website as string
-    // }
-
-    if (contactInput.email && (hasSpecialCharacters(contactInput.email) || contactInput.email.length > 128)) {
+    if (contactInput.email && (isValidEmail(contactInput.email) || contactInput.email.length > 128)) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
-            field: 'id',
-            errorCode: ErrorCode.INVALID_ID,
+            field: 'email',
+            errorCode: ErrorCode.INVALID_EMAIL,
+            httpStatus: 400
+        })
+    }
+
+    if (contactInput.phone && !isValidPhoneNumber(contactInput.phone)) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'phone',
+            errorCode: ErrorCode.INVALID_PHONE_NUMBER,
+            httpStatus: 400
+        })
+    }
+
+    if (contactInput.website && !isValidWebsite(contactInput.website)) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'website',
+            errorCode: ErrorCode.INVALID_WEBSITE,
+            httpStatus: 400
+        })
+    }
+
+    if (contactInput.address) {
+        const addressValidationResults = validateAddressInput(contactInput.address)
+
+        if (addressValidationResults.hasErrors) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push(...addressValidationResults.errors as [])
+        }
+    }
+    
+    return validationResults
+}
+
+function validateAddressInput(input: gqlTypes.PhysicalAddressInput): Result<string> {
+    const validationResults: Result<string> = {
+        hasErrors: false,
+        errors: []
+    }
+
+    if (input.addressLine1En && input.addressLine1En.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'addressLine1En',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.addressLine2En && input.addressLine2En.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'addressLine2En',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.addressLine1Ja && input.addressLine1Ja.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'addressLine1Ja',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.addressLine2Ja && input.addressLine2Ja.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'addressLine2Ja',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.cityEn && input.cityEn.length > 64) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'cityEn',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.cityJa && input.cityJa.length > 64) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'cityJa',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.postalCode && input.postalCode.length > 18) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'postalCode',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.prefectureEn && input.prefectureEn.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'prefectureEn',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.prefectureJa && input.prefectureJa.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'prefectureJa',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
             httpStatus: 400
         })
     }
