@@ -66,6 +66,18 @@ export type FacilityInput = {
   nameJa?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type FacilitySearchFilters = {
+  contact?: InputMaybe<ContactInput>;
+  createdDate?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
+  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  nameEn?: InputMaybe<Scalars['String']['input']>;
+  nameJa?: InputMaybe<Scalars['String']['input']>;
+  orderBy?: InputMaybe<Array<InputMaybe<OrderBy>>>;
+  updatedDate?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type HealthcareProfessional = {
   __typename?: 'HealthcareProfessional';
   acceptedInsurance?: Maybe<Array<Maybe<Insurance>>>;
@@ -374,6 +386,7 @@ export type ResolversTypes = {
   DegreeInput: DegreeInput;
   Facility: ResolverTypeWrapper<Facility>;
   FacilityInput: FacilityInput;
+  FacilitySearchFilters: FacilitySearchFilters;
   HealthcareProfessional: ResolverTypeWrapper<HealthcareProfessional>;
   HealthcareProfessionalInput: HealthcareProfessionalInput;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
@@ -409,6 +422,7 @@ export type ResolversParentTypes = {
   DegreeInput: DegreeInput;
   Facility: Facility;
   FacilityInput: FacilityInput;
+  FacilitySearchFilters: FacilitySearchFilters;
   HealthcareProfessional: HealthcareProfessional;
   HealthcareProfessionalInput: HealthcareProfessionalInput;
   ID: Scalars['ID']['output'];

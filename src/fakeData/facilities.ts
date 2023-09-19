@@ -1,7 +1,7 @@
-import { Facility } from '../typeDefs/gqlTypes'
+import * as gqlTypes from '../typeDefs/gqlTypes'
 
 export const fakeFacilities = () => {
-    const facility : Facility = {
+    const facility : gqlTypes.FacilityInput = {
         nameEn: 'Zoo',
         nameJa: '動物園',
         contact: {
@@ -18,7 +18,6 @@ export const fakeFacilities = () => {
             website: 'https://zoo.test.com',
             mapsLink: ''
         },
-        healthcareProfessionalIds: [],
         healthcareProfessionals: []
     }
 

@@ -5,15 +5,15 @@ import * as submissionService from './services/submissionService'
 
 const resolvers = {
     Query: {
-        facilities: async () => {
-            const matchingFacilities = await facilityService.searchFacilities(['1'])
+        facilities: async (_parent: gqlType.Facility, args: { filters: gqlType.FacilitySearchFilters }) => {
+            const queryResults = await facilityService.searchFacilities(args.filters)
 
-            return matchingFacilities
+            return queryResults
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
-            const matchingFacility = await facilityService.getFacilityById(args.id)
+            const queryResults = await facilityService.getFacilityById(args.id)
 
-            return matchingFacility
+            return queryResults
         },
         // healthcareProfessionals: async () => {
         //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
@@ -29,7 +29,7 @@ const resolvers = {
         submissions: async (_parent: gqlType.Submission, args: { filters: gqlType.SubmissionSearchFilters }) => {
             const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
 
-            const matchingSubmissions = await submissionService.getSubmissions(searchFilters)
+            const matchingSubmissions = await submissionService.searchSubmissions(searchFilters)
 
             return matchingSubmissions
         },

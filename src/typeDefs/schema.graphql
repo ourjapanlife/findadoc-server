@@ -154,11 +154,24 @@ input SubmissionSearchFilters {
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
-  orderBy: [OrderBy]
-  limit: Int
   createdDate: String
   updatedDate: String
+  orderBy: [OrderBy]
+  limit: Int
 }
+
+input FacilitySearchFilters {
+  nameEn: String
+  nameJa: String
+  contact: ContactInput
+  healthcareProfessionalName: String
+  isDeleted: Boolean
+  createdDate: String
+  updatedDate: String
+  orderBy: [OrderBy]
+  limit: Int
+}
+
 
 input OrderBy {
   orderDirection: OrderDirection

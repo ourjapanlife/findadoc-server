@@ -64,7 +64,7 @@ export const initiatilizeFirebaseInstance = async () => {
     } else if (isTestingEnvironment || isLocal) {
         console.log('\n🔥 Connecting to firebase emulator...')
         console.log('TIP: if it doesn\'t connect after 10 secs,' +
-            'make sure you have the firebase emulator running using the "yarn dev" command')
+            'make sure you have the firebase emulator running using the "yarn dev:startlocaldb" command')
 
         await testFirestoreIsInitialized(newDbInstance)
         await setupSeedData(newDbInstance)
