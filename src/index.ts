@@ -18,7 +18,11 @@ export const createApolloServer = async () => {
         plugins: [
             //enables the apollo sanbox as the landing page
             ApolloServerPluginLandingPageLocalDefault()
-        ]
+        ],
+        // Allows you to choose what error info is visable for client side
+        formatError: formattedError => ({
+            message: formattedError.message
+        })
     })
   
     console.log('⛽️ Starting server...')
