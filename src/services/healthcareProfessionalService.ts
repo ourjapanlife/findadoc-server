@@ -10,7 +10,7 @@ export async function getHealthcareProfessionalById(id: string) {
     const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
 
     if (snapshot.docs.length < 1) {
-        CustomErrors.notFound('Healthcare professional not found.')
+        CustomErrors.notFound('The healthcare professional does not exist.')
     }
 
     const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())

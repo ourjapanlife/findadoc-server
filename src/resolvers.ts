@@ -2,26 +2,38 @@ import * as facilityService from './services/facilityService'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService'
 import * as gqlType from './typeDefs/gqlTypes'
 import * as submissionService from './services/submissionService'
+import CustomErrors from './errors'
 
 const resolvers = {
     Query: {
         facilities: async (_parent: gqlType.Facility, args: { filters: gqlType.FacilitySearchFilters }) => {
-            const queryResults = await facilityService.searchFacilities(args.filters)
+            try {
+                const queryResults = await facilityService.searchFacilities(args.filters)
 
-            //TODO: add validation errors to gql errors
-            //TODO: add auth errors to gql errors
-            //TODO: add expections to gql errors
+                //TODO: add validation errors to gql errors
+                //TODO: add auth errors to gql errors
+                //TODO: add expections to gql errors
 
-            return queryResults.data
+                return queryResults.data
+            } catch (error) {
+                console.log(error)
+                return CustomErrors.notFound('No facilities where found.')
+            } 
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
-            const queryResults = await facilityService.getFacilityById(args.id)
+            try {
+                const queryResults = await facilityService.getFacilityById(args.id)
 
-            //TODO: add validation errors to gql errors
-            //TODO: add auth errors to gql errors
-            //TODO: add expections to gql errors
+                //TODO: add validation errors to gql errors
+                //TODO: add auth errors to gql errors
+                //TODO: add expections to gql errors
 
-            return queryResults.data
+                return queryResults.data
+            } catch (error) {
+                console.log(error)
+                console.log('ID:', JSON.stringify(args))
+                return CustomErrors.notFound('The facility does not exist.')
+            } 
         },
         // healthcareProfessionals: async () => {
         //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
@@ -29,22 +41,46 @@ const resolvers = {
         //     return matchingProfessionals
         // },
         healthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: { id: string; }) => {
-            const matchingHealthcareProfessional = 
-            await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
+            try {
+                if (!args.id || !args.id.trim()) {
+                    throw new Error('An ID was not provided')
+                }
+                const matchingHealthcareProfessional = 
+                await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
 
-            return matchingHealthcareProfessional
+                return matchingHealthcareProfessional        
+            } catch (error) {
+                console.log(error)
+                console.log('ID:', JSON.stringify(args))
+                return CustomErrors.notFound('The healthcare professional does not exist.')
+            }  
         },
         submissions: async (_parent: gqlType.Submission, args: { filters: gqlType.SubmissionSearchFilters }) => {
-            const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
+            try {
+                const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
 
-            const matchingSubmissions = await submissionService.searchSubmissions(searchFilters)
+                const matchingSubmissions = await submissionService.searchSubmissions(searchFilters)
 
-            return matchingSubmissions
+                return matchingSubmissions
+            } catch (error) {
+                console.log(error)
+                console.log('FILTERS:', JSON.stringify(args))
+                return CustomErrors.notFound('No submissions where found.')
+            }
         },
         submission: async (_parent: gqlType.Submission, args: { id: string }) => {
-            const matchingSubmission = await submissionService.getSubmissionById(args.id)
+            try {
+                if (!args.id || !args.id.trim()) {
+                    throw new Error('An ID was not provided')
+                }
+                const matchingSubmission = await submissionService.getSubmissionById(args.id)
 
-            return matchingSubmission
+                return matchingSubmission           
+            } catch (error) {
+                console.log(error)
+                console.log('ID:', JSON.stringify(args))
+                return CustomErrors.notFound('The submission does not exist.')
+            }  
         }
     },
     Mutation: {
@@ -56,9 +92,15 @@ const resolvers = {
                 nameJa: string,
             }
         }) => {
-            const newFacility = await facilityService.addFacility(args.input)
+            try {
+                const newFacility = await facilityService.addFacility(args.input)
 
-            return newFacility
+                return newFacility
+            } catch (error) {
+                console.error(error)
+                console.log('INPUT_FIELD:', JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to create facility and Healthcare Professional.')
+            }  
         },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
             input:{
@@ -71,10 +113,16 @@ const resolvers = {
 
             }
         }) => {
-            const newHealthcareProfessional = 
-            await healthcareProfessionalService.addHealthcareProfessionalToFacility(args.input)
+            try {
+                const newHealthcareProfessional = 
+                await healthcareProfessionalService.addHealthcareProfessionalToFacility(args.input)
 
-            return newHealthcareProfessional
+                return newHealthcareProfessional
+            } catch (error) {
+                console.log(error)
+                console.log('INPUT_FIELD:', JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to create the healthcare professional.')
+            }
         },
         createSubmission: async (_parent: gqlType.Submission, args: {
             input:{
@@ -83,28 +131,39 @@ const resolvers = {
                 spokenLanguages: gqlType.SpokenLanguage[]
             }
         }) => {
-            const submissionData: gqlType.Submission = {
-                id: '',
-                googleMapsUrl: args.input.googleMapsUrl,
-                healthcareProfessionalName: args.input.healthcareProfessionalName,
-                spokenLanguages: args.input.spokenLanguages
-                    .filter(lang => lang !== null)
-                    .map(lang => ({
-                        iso639_3: lang.iso639_3,
-                        nameJa: lang.nameJa,
-                        nameEn: lang.nameEn,
-                        nameNative: lang.nameNative
-                    })),
-                isUnderReview: true,
-                isApproved: false,
-                isRejected: false,
-                createdDate: new Date().toISOString(),
-                updatedDate: new Date().toISOString()
+            try {
+                for (const value of Object.values(args.input)) {
+                    if (!value) {
+                        throw new Error('Missing Input')
+                    }
+                }
+                
+                const submissionData: gqlType.Submission = {
+                    id: '',
+                    googleMapsUrl: args.input.googleMapsUrl,
+                    healthcareProfessionalName: args.input.healthcareProfessionalName,
+                    spokenLanguages: args.input.spokenLanguages
+                        .filter(lang => lang !== null)
+                        .map(lang => ({
+                            iso639_3: lang.iso639_3,
+                            nameJa: lang.nameJa,
+                            nameEn: lang.nameEn,
+                            nameNative: lang.nameNative
+                        })),
+                    isUnderReview: true,
+                    isApproved: false,
+                    isRejected: false,
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString()
+                }
+                const newSubmission = await submissionService.addSubmission(submissionData)
+    
+                return newSubmission
+            } catch (error) {
+                console.log(error)
+                console.log('INPUT_FIELDS:', JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to create submission.')
             }
-
-            const newSubmission = await submissionService.addSubmission(submissionData)
-
-            return newSubmission
         },
         updateSubmission: async (_parent: gqlType.Submission, args: {
             id: string,
@@ -136,7 +195,9 @@ const resolvers = {
 
                 return updatedSubmission
             } catch (error) {
-                throw new Error(`Failed to update submission: ${error}`)
+                console.log(error)
+                console.log('INPUT_FIELDS:', JSON.stringify(args))
+                return CustomErrors.missingInput('Failed to update the submission.')
             }
         }
     }
