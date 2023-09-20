@@ -51,6 +51,10 @@ const queryData = {
 
 describe('query healthcareProfessionalById', () => {    
     let server: IMockServer
+
+    afterEach(() => {
+        jest.restoreAllMocks()
+    })
     
     it('successfully returns a healthcare professional', async () => {
         await initiatilizeFirebaseInstance()
@@ -101,7 +105,7 @@ describe('query healthcareProfessionalById', () => {
         const mySchema = addResolversToSchema({schema, resolvers})
         const preserveResolvers = true
         const mocks = {}
-
+        
         server = mockServer(mySchema, mocks, preserveResolvers)
 
         const response = await server.query(queryData.query, queryData.variables)
@@ -111,6 +115,6 @@ describe('query healthcareProfessionalById', () => {
         expect(errors[0].extensions.http).toEqual({status: 404})
         expect(errors.length).toBe(1)
         expect(errors[0].extensions.code).toBe('NOT_FOUND')
-        expect(errors[0].message).toBe('Healthcare professional not found.')
+        expect(errors[0].message).toBe('The healthcare professional does not exist.')
     })
 })
