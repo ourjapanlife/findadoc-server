@@ -66,6 +66,19 @@ export type FacilityInput = {
   nameJa?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type FacilitySearchFilters = {
+  contact?: InputMaybe<ContactInput>;
+  createdDate?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
+  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  nameEn?: InputMaybe<Scalars['String']['input']>;
+  nameJa?: InputMaybe<Scalars['String']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<InputMaybe<OrderBy>>>;
+  updatedDate?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type HealthcareProfessional = {
   __typename?: 'HealthcareProfessional';
   acceptedInsurance?: Maybe<Array<Maybe<Insurance>>>;
@@ -200,6 +213,11 @@ export type Query = {
 };
 
 
+export type QueryFacilitiesArgs = {
+  filters?: InputMaybe<FacilitySearchFilters>;
+};
+
+
 export type QueryFacilityArgs = {
   id: Scalars['ID']['input'];
 };
@@ -280,6 +298,7 @@ export type Submission = {
 export type SubmissionInput = {
   googleMapsUrl: Scalars['String']['input'];
   healthcareProfessionalName: Scalars['String']['input'];
+  isApproved: Scalars['Boolean']['input'];
   spokenLanguages: Array<InputMaybe<SpokenLanguageInput>>;
 };
 
@@ -291,6 +310,7 @@ export type SubmissionSearchFilters = {
   isRejected?: InputMaybe<Scalars['Boolean']['input']>;
   isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<InputMaybe<OrderBy>>>;
   spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
   updatedDate?: InputMaybe<Scalars['String']['input']>;
@@ -374,6 +394,7 @@ export type ResolversTypes = {
   DegreeInput: DegreeInput;
   Facility: ResolverTypeWrapper<Facility>;
   FacilityInput: FacilityInput;
+  FacilitySearchFilters: FacilitySearchFilters;
   HealthcareProfessional: ResolverTypeWrapper<HealthcareProfessional>;
   HealthcareProfessionalInput: HealthcareProfessionalInput;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
@@ -409,6 +430,7 @@ export type ResolversParentTypes = {
   DegreeInput: DegreeInput;
   Facility: Facility;
   FacilityInput: FacilityInput;
+  FacilitySearchFilters: FacilitySearchFilters;
   HealthcareProfessional: HealthcareProfessional;
   HealthcareProfessionalInput: HealthcareProfessionalInput;
   ID: Scalars['ID']['output'];
@@ -502,7 +524,7 @@ export type PhysicalAddressResolvers<ContextType = any, ParentType extends Resol
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  facilities?: Resolver<Maybe<Array<Maybe<ResolversTypes['Facility']>>>, ParentType, ContextType>;
+  facilities?: Resolver<Maybe<Array<Maybe<ResolversTypes['Facility']>>>, ParentType, ContextType, Partial<QueryFacilitiesArgs>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
   healthcareProfessionals?: Resolver<Maybe<Array<Maybe<ResolversTypes['HealthcareProfessional']>>>, ParentType, ContextType>;

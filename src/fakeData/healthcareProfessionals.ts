@@ -1,78 +1,77 @@
-import { HealthcareProfessional, Locale, LocaleName, Degree, 
-    Specialty, SpecialtyName, SpokenLanguage, Insurance } from '../typeDefs/gqlTypes'
+import * as gqlTypes from '../typeDefs/gqlTypes'
 
 export const fakeHealthcareProfessionals = () => {
-    const doctorDoctor : LocaleName = {
+    const doctorDoctor : gqlTypes.LocaleName = {
         lastName: 'Doctor',
         firstName: 'Doctor',
         middleName: 'MD',
-        locale: Locale.English
+        locale: gqlTypes.Locale.English
     }
-    const medicalDegree : Degree = {
+    const medicalDegree : gqlTypes.Degree = {
         nameJa: 'メヂカル',
         nameEn: 'Medical',
         abbreviation: 'MD'
     }
 
-    const japanese : SpokenLanguage = {
+    const japanese : gqlTypes.SpokenLanguage = {
         iso639_3: 'ja',
         nameJa: '日本語',
         nameEn: 'Japanese',
         nameNative: 'Japanese'
     }
 
-    const neurologyEn : SpecialtyName = {
+    const neurologyEn : gqlTypes.SpecialtyName = {
         name: 'Neurology',
-        locale: Locale.English
+        locale: gqlTypes.Locale.English
     }
 
-    const neurology : Specialty = {
+    const neurology : gqlTypes.Specialty = {
         names: [neurologyEn]
     }
 
-    const healthcareProfessionalOne : HealthcareProfessional = {
+    const healthcareProfessionalOne : gqlTypes.HealthcareProfessional = {
         names: [doctorDoctor],
         degrees: [medicalDegree],
         spokenLanguages: [japanese],
         specialties: [neurology],
-        acceptedInsurance: [Insurance.InternationalHealthInsurance],
+        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
         isDeleted: false
     }
 
-    const name : LocaleName = {
+    const name : gqlTypes.LocaleName = {
         lastName: 'チェ',
         firstName: 'ジェイコブ',
         middleName: 'ベイヤード',
-        locale: Locale.Japanese
+        locale: gqlTypes.Locale.Japanese
     }
-    const englishDegree : Degree = {
+    const englishDegree : gqlTypes.Degree = {
         nameJa: '英語',
         nameEn: 'English',
         abbreviation: 'En'
     }
 
-    const english : SpokenLanguage = {
+    const english : gqlTypes.SpokenLanguage = {
         iso639_3: 'en-US',
         nameJa: '英語',
         nameEn: 'English',
         nameNative: 'English'
     }
 
-    const specialtyName : SpecialtyName = {
+    const specialtyName : gqlTypes.SpecialtyName = {
         name: 'Pandas',
-        locale: Locale.English
+        locale: gqlTypes.Locale.English
     }
 
-    const pandaSpecialty : Specialty = {
+    const pandaSpecialty : gqlTypes.Specialty = {
         names: [specialtyName]
     }
 
-    const healthcareProfessionalTwo : HealthcareProfessional = {
+    const healthcareProfessionalTwo : gqlTypes.HealthcareProfessional = {
         names: [name],
         degrees: [englishDegree],
         spokenLanguages: [english],
         specialties: [pandaSpecialty],
-        acceptedInsurance: [Insurance.InternationalHealthInsurance],
+        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
         isDeleted: false
     }
 

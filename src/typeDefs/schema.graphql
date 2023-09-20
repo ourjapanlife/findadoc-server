@@ -145,6 +145,7 @@ input SubmissionInput {
   googleMapsUrl: String!
   healthcareProfessionalName: String!
   spokenLanguages: [SpokenLanguageInput]!
+  isApproved: Boolean!
 }
 
 input SubmissionSearchFilters {
@@ -154,11 +155,26 @@ input SubmissionSearchFilters {
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
-  orderBy: [OrderBy]
-  limit: Int
   createdDate: String
   updatedDate: String
+  orderBy: [OrderBy]
+  limit: Int
+  offset: Int
 }
+
+input FacilitySearchFilters {
+  nameEn: String
+  nameJa: String
+  contact: ContactInput
+  healthcareProfessionalName: String
+  isDeleted: Boolean
+  createdDate: String
+  updatedDate: String
+  orderBy: [OrderBy]
+  limit: Int
+  offset: Int
+}
+
 
 input OrderBy {
   orderDirection: OrderDirection
@@ -189,7 +205,7 @@ enum Insurance {
 }
 
 type Query {
-  facilities: [Facility]
+  facilities(filters: FacilitySearchFilters): [Facility]
   facility(id: ID!): Facility
   healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional

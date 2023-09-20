@@ -6,11 +6,15 @@ import CustomErrors from './errors'
 
 const resolvers = {
     Query: {
-        facilities: async () => {
+        facilities: async (_parent: gqlType.Facility, args: { filters: gqlType.FacilitySearchFilters }) => {
             try {
-                const matchingFacilities = await facilityService.searchFacilities(['1'])
+                const queryResults = await facilityService.searchFacilities(args.filters)
 
-                return matchingFacilities
+                //TODO: add validation errors to gql errors
+                //TODO: add auth errors to gql errors
+                //TODO: add expections to gql errors
+
+                return queryResults.data
             } catch (error) {
                 console.log(error)
                 return CustomErrors.notFound('No facilities where found.')
@@ -18,12 +22,13 @@ const resolvers = {
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
             try {
-                if (!args.id || !args.id.trim()) {
-                    throw new Error('An ID was not provided')
-                }
-                const matchingFacility = await facilityService.getFacilityById(args.id)
+                const queryResults = await facilityService.getFacilityById(args.id)
 
-                return matchingFacility            
+                //TODO: add validation errors to gql errors
+                //TODO: add auth errors to gql errors
+                //TODO: add expections to gql errors
+
+                return queryResults.data
             } catch (error) {
                 console.log(error)
                 console.log('ID:', JSON.stringify(args))
@@ -54,7 +59,7 @@ const resolvers = {
             try {
                 const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
 
-                const matchingSubmissions = await submissionService.getSubmissions(searchFilters)
+                const matchingSubmissions = await submissionService.searchSubmissions(searchFilters)
 
                 return matchingSubmissions
             } catch (error) {

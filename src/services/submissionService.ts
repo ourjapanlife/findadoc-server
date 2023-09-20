@@ -20,7 +20,7 @@ export const getSubmissionById = async (id: string) : Promise<dbSchema.Submissio
     }
 }
 
-export async function getSubmissions(filters: dbSchema.SubmissionSearchFilters = {}) {
+export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilters = {}) {
     try {
         const {
             googleMapsUrl,
