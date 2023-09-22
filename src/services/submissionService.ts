@@ -2,6 +2,7 @@ import { DocumentData, Query } from 'firebase-admin/firestore'
 import * as gqlType from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
 import { dbInstance } from '../firebaseDb'
+import { ErrorCode, Result } from '../result'
 
 export const getSubmissionById = async (id: string) : Promise<dbSchema.Submission | null> => {
     try {
@@ -116,23 +117,47 @@ function convertToDbSubmission(submission: gqlType.SubmissionInput):
 }
 
 export const addSubmission = async (submissionInput: gqlType.SubmissionInput): 
-    Promise<dbSchema.Submission> => {
-    try {
-        const dbSubmission = convertToDbSubmission(submissionInput)
-
-        const submissionRef = dbInstance.collection('submissions')
-
-        const docRef = await submissionRef.add(dbSubmission)
-
-        const newSubmission: dbSchema.Submission = {
-            ...dbSubmission,
-            id: docRef.id
-        }
-
-        return newSubmission
-    } catch (error) {
-        throw new Error(`Error adding submission: ${error}`)
+    Promise<Result<dbSchema.Submission>> => {
+    const addSubmissionResult: Result<dbSchema.Submission> = {
+        hasErrors: false,
+        errors: []
     }
+
+    const validationResults = validateSubmissionInputFields(submissionInput)
+
+    if (validationResults.hasErrors) {
+        return validationResults
+    }
+
+    const nonNullLanguages = submissionInput.spokenLanguages
+        .filter(lang => !!lang) as gqlType.SpokenLanguageInput[]
+
+    const spokenLanguagesResult = mapAndValidateSpokenLanguages(nonNullLanguages)
+
+    if (spokenLanguagesResult.hasErrors) {
+        return {
+            hasErrors: true,
+            errors: spokenLanguagesResult.errors
+        }
+    }
+
+    const dbSubmission = convertToDbSubmission({
+        ...submissionInput,
+        spokenLanguages: spokenLanguagesResult.data as gqlType.SpokenLanguageInput[]
+    })
+
+    const submissionRef = dbInstance.collection('submissions')
+
+    const docRef = await submissionRef.add(dbSubmission)
+
+    const newSubmission: dbSchema.Submission = {
+        ...dbSubmission,
+        id: docRef.id
+    }
+
+    addSubmissionResult.data = newSubmission
+
+    return addSubmissionResult
 }
 
 export const updateSubmission = async (id: string, updatedFields: Partial<dbSchema.Submission>): 
@@ -156,6 +181,51 @@ export const updateSubmission = async (id: string, updatedFields: Partial<dbSche
     } catch (error) {
         throw new Error(`Error updating submission: ${error}`)
     }
+}
+
+const validateSubmissionInputFields = (input: gqlType.SubmissionInput): Result<dbSchema.Submission> => {
+    const validatedSubmissionResult: Result<dbSchema.Submission> = {
+        hasErrors: false,
+        errors: []
+    }
+    
+    if (!input.googleMapsUrl || !input.googleMapsUrl.trim()) {
+        validatedSubmissionResult.hasErrors = true
+        validatedSubmissionResult.errors?.push({
+            field: 'googleMapsUrl',
+            errorCode: ErrorCode.MISSING_INPUT,
+            httpStatus: 400
+        })    
+    }
+
+    if (input.googleMapsUrl.length > 1028) {
+        validatedSubmissionResult.hasErrors = true
+        validatedSubmissionResult.errors?.push({
+            field: 'googleMapsUrl',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })    
+    }
+
+    if (!input.healthcareProfessionalName || !input.healthcareProfessionalName.trim()) {
+        validatedSubmissionResult.hasErrors = true
+        validatedSubmissionResult.errors?.push({
+            field: 'healthcareProfessionalName',
+            errorCode: ErrorCode.MISSING_INPUT,
+            httpStatus: 400
+        })
+    }
+
+    if (input.healthcareProfessionalName.length > 128) {
+        validatedSubmissionResult.hasErrors = true
+        validatedSubmissionResult.errors?.push({
+            field: 'healthcareProfessionalName',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    return validatedSubmissionResult
 }
 
 export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Partial<gqlType.Submission>):
@@ -195,23 +265,48 @@ function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlType.SpokenLanguage):
 }
 
 export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlType.SpokenLanguageInput[]): 
-    dbSchema.SpokenLanguage[] | undefined => {
-    if (!spokenLanguages || ! spokenLanguages.length) { return undefined }
+    Result<dbSchema.SpokenLanguage[]> => {
+    const validatedSpokenLanguagesResults: Result<dbSchema.SpokenLanguage[]> = {
+        hasErrors: false,
+        errors: []
+    }
+
+    if (!spokenLanguages) {
+        validatedSpokenLanguagesResults.hasErrors = true
+        validatedSpokenLanguagesResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.MISSING_INPUT,
+            httpStatus: 400
+        })
+        return validatedSpokenLanguagesResults
+    }
 
     const validatedLanguages = spokenLanguages
-        .filter(lang => lang && lang.iso639_3 && lang.nameJa && lang.nameEn && lang.nameNative)
+        .filter(lang => lang && 
+            lang.iso639_3?.trim() && 
+            lang.nameJa?.trim() && 
+            lang.nameEn?.trim() && 
+            lang.nameNative?.trim())
         .map(lang => ({
-            iso639_3: lang.iso639_3 as string,
-            nameJa: lang.nameJa as string,
-            nameEn: lang.nameEn as string,
-            nameNative: lang.nameNative as string
+            iso639_3: lang.iso639_3?.trim() as string,
+            nameJa: lang.nameJa?.trim() as string,
+            nameEn: lang.nameEn?.trim() as string,
+            nameNative: lang.nameNative?.trim() as string
         }))
     
     if (validatedLanguages.length !== spokenLanguages.length) {
-        throw new Error('Some spoken languages are missing required fields.')
+        validatedSpokenLanguagesResults.hasErrors = true
+        validatedSpokenLanguagesResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.MISSING_INPUT,
+            httpStatus: 400
+        })
+
+        return validatedSpokenLanguagesResults
     }
 
-    return validatedLanguages.map(gqlSpokenLanguageToDbSpokenLanguage)
+    validatedSpokenLanguagesResults.data = validatedLanguages.map(gqlSpokenLanguageToDbSpokenLanguage)
+    return validatedSpokenLanguagesResults
 }
 
 export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlType.SubmissionSearchFilters = {}):

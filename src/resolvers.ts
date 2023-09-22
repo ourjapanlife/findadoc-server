@@ -2,7 +2,7 @@ import * as facilityService from './services/facilityService'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService'
 import * as gqlType from './typeDefs/gqlTypes'
 import * as submissionService from './services/submissionService'
-import CustomErrors from './errors'
+import { CustomErrors } from './result'
 
 const resolvers = {
     Query: {
@@ -133,7 +133,7 @@ const resolvers = {
         }) => {
             try {
                 for (const value of Object.values(args.input)) {
-                    if (!value) {
+                    if (value === null || value === undefined) {
                         throw new Error('Missing Input')
                     }
                 }
@@ -156,9 +156,12 @@ const resolvers = {
                     createdDate: new Date().toISOString(),
                     updatedDate: new Date().toISOString()
                 }
-                const newSubmission = await submissionService.addSubmission(submissionData)
-    
-                return newSubmission
+                const addSubmissionResult = await submissionService.addSubmission(submissionData)
+
+                if (addSubmissionResult.hasErrors) {
+                    throw new Error('Failed to create submission.')
+                }
+                return addSubmissionResult.data
             } catch (error) {
                 console.log(error)
                 console.log('INPUT_FIELDS:', JSON.stringify(args))
@@ -177,9 +180,17 @@ const resolvers = {
             }
         }) => {
             try {
-                const updatedSpokenLanguages = args.input.spokenLanguages ?
-                    submissionService.mapAndValidateSpokenLanguages(args.input.spokenLanguages)
-                    : undefined
+                let updatedSpokenLanguages: gqlType.SpokenLanguage[] | undefined
+                
+                if (args.input.spokenLanguages) {
+                    const spokenLanguagesResult = submissionService
+                        .mapAndValidateSpokenLanguages(args.input.spokenLanguages)
+                    
+                    if (spokenLanguagesResult.hasErrors) {
+                        throw new Error('Invalid spoken Language provided.')
+                    }
+                    updatedSpokenLanguages = spokenLanguagesResult.data
+                }
                 
                 const gqlUpdatedFields: Partial<gqlType.Submission> = {
                     ...args.input,
