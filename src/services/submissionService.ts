@@ -101,11 +101,11 @@ export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilter
     }
 }
 
-function convertToDbSubmission(submission: gqlType.SubmissionInput): 
+function convertToDbSubmission(submission: gqlType.Submission): 
     dbSchema.Submission {
     return {
         ...submission,
-        id: '',
+        id: submission.id,
         isUnderReview: true,
         isApproved: false,
         isRejected: false,
@@ -116,7 +116,7 @@ function convertToDbSubmission(submission: gqlType.SubmissionInput):
     }
 }
 
-export const addSubmission = async (submissionInput: gqlType.SubmissionInput): 
+export const addSubmission = async (submissionInput: gqlType.Submission): 
     Promise<Result<dbSchema.Submission>> => {
     const addSubmissionResult: Result<dbSchema.Submission> = {
         hasErrors: false,
@@ -140,22 +140,21 @@ export const addSubmission = async (submissionInput: gqlType.SubmissionInput):
             errors: spokenLanguagesResult.errors
         }
     }
+    
+    const submissionRef = dbInstance.collection('submissions').doc()
+    const newSubmissionId = submissionRef.id
 
-    const dbSubmission = convertToDbSubmission({
+    const newSubmission = convertToDbSubmission({
         ...submissionInput,
-        spokenLanguages: spokenLanguagesResult.data as gqlType.SpokenLanguageInput[]
+        spokenLanguages: spokenLanguagesResult.data as gqlType.SpokenLanguageInput[],
+        id: newSubmissionId
     })
 
-    const submissionRef = dbInstance.collection('submissions')
-
-    const docRef = await submissionRef.add(dbSubmission)
-
-    const newSubmission: dbSchema.Submission = {
-        ...dbSubmission,
-        id: docRef.id
-    }
+    await submissionRef.set(newSubmission)
 
     addSubmissionResult.data = newSubmission
+    console.log('Generated new submission ID:', newSubmission.id)
+    console.log('newSubmission:', newSubmission)
 
     return addSubmissionResult
 }
