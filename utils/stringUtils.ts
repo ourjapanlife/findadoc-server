@@ -12,5 +12,5 @@ export function isValidPhoneNumber(phoneNumber: string) {
 }
 
 export function isValidWebsite(website: string) {
-    return /^((https?|ftp|smtp):\/\/)?(www.)?[a-z0-9]+\.[a-z]+(\/[a-zA-Z0-9-_#]+\/?)*$/g.test(website)
+    return /^((https?|ftp|smtp):\/\/)?(www.)?[a-z0-9-.]+\.[a-z]+(\/[a-zA-Z0-9-_#]+\/?)*$/g.test(website)
 }

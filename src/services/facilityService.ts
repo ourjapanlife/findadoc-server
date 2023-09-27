@@ -257,7 +257,7 @@ function validateContactInput(contactInput: gqlTypes.Contact): Result<boolean> {
         return validationResults
     }
 
-    if (contactInput.email && (isValidEmail(contactInput.email) || contactInput.email.length > 128)) {
+    if (contactInput.email && (!isValidEmail(contactInput.email) || contactInput.email.length > 128)) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'email',

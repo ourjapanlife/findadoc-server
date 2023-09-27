@@ -75,5 +75,65 @@ export const fakeHealthcareProfessionals = () => {
         isDeleted: false
     }
 
-    return [healthcareProfessionalOne, healthcareProfessionalTwo]
+    const nameTwo : gqlTypes.LocaleName = {
+        lastName: 'Shabadoo',
+        firstName: 'Joey',
+        middleName: 'JoJo Junior',
+        locale: gqlTypes.Locale.English
+    }
+
+    const cardiologySpecialty : gqlTypes.SpecialtyName = {
+        name: 'Cardiology',
+        locale: gqlTypes.Locale.English
+    }
+
+    const specialtyField : gqlTypes.Specialty = {
+        names: [cardiologySpecialty]
+    }
+
+    const healthcareProfessionalThree : gqlTypes.HealthcareProfessional = {
+        names: [nameTwo],
+        degrees: [medicalDegree],
+        spokenLanguages: [english],
+        specialties: [specialtyField],
+        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
+        isDeleted: false
+    }
+
+    const namefour : gqlTypes.LocaleName = {
+        lastName: 'Riviera',
+        firstName: 'Nick',
+        middleName: '',
+        locale: gqlTypes.Locale.English
+    }
+
+    const dermatologySpecialty : gqlTypes.SpecialtyName = {
+        name: 'dermatology',
+        locale: gqlTypes.Locale.English
+    }
+
+    const dermatologySpecialtyField : gqlTypes.Specialty = {
+        names: [dermatologySpecialty]
+    }
+
+    const spanish : gqlTypes.SpokenLanguage = {
+        iso639_3: 'es',
+        nameJa: 'スペイン語',
+        nameEn: 'Spanish',
+        nameNative: 'Español '
+    }
+
+    const healthcareProfessionalFour : gqlTypes.HealthcareProfessional = {
+        names: [namefour],
+        degrees: [medicalDegree],
+        spokenLanguages: [spanish],
+        specialties: [dermatologySpecialtyField],
+        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
+        isDeleted: false
+    }
+
+    return [healthcareProfessionalOne, 
+            healthcareProfessionalTwo, 
+            healthcareProfessionalThree, 
+            healthcareProfessionalFour]
 }
