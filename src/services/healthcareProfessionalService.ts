@@ -3,6 +3,7 @@ import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
 import { CustomErrors, Result } from '../result'
 import { dbInstance } from '../firebaseDb'
+import { DocumentData, Query } from 'firebase-admin/firestore'
 
 export async function getHealthcareProfessionalById(id: string) {
     try {
@@ -84,21 +85,65 @@ export async function addHealthcareProfessionalToFacility(facilityId: string,
     // TODO: decide if something should be returned
 }
 
-// export async function searchHealthcareProfessionals(userSearchQuery : string[]) {
-// TODO: make it filter by params
-// const db = getFirestore()
-// const healthcareProfessionalRef = db.collection('healthcareProfessionals')
-// const snapshot = await healthcareProfessionalRef.where('id', 'in', userSearchQuery).get()
+export async function searchHealthcareProfessionals(filters: gqlTypes.HealthcareProfessionalSearchFilters = {}) {
+    try {
+        let subRef: Query<DocumentData> = dbInstance.collection('healthcareProfessionals')
 
-// const healthcareProfessionals = [] as HealthcareProfessional[]
+        if (filters.isDeleted !== null && filters.isDeleted !== undefined) {
+            subRef = subRef.where('isDeleted', '==', filters.isDeleted)
+        }
 
-// snapshot.forEach(doc => {
-//     const convertedEntity = mapDbEntityTogqlEntity(doc.data().degrees)
+        if (filters.specialties && filters.specialties[0]) {
+            const specialitieName = filters.specialties[0].names?.map(obj => obj?.name)
+        
+            if (specialitieName !== undefined) {
+                subRef = subRef.where('specialities', 'array-contains', 
+                                      {name: {name: specialitieName[0], local: 'ENGLISH'}})
+            }
+        }
+        // subRef = subRef.limit(filters.limit || 20)
+        // subRef = subRef.offset(filters.offset || 0)
+        const snapshot = await subRef.get()
+       
+        const healthcareProfessionals = snapshot.docs.map(doc =>
+            mapDbEntityTogqlEntity({...doc.data(), id: doc.id}))
+        
+        const resultHealthcareProfessionals = {
+            data: healthcareProfessionals,
+            hasErrors: false
+        }
 
-//     healthcareProfessionals.push(convertedEntity)
-// })
+        console.log('found healthcare professionals', resultHealthcareProfessionals)
+        return resultHealthcareProfessionals
+    } catch (error) {
+        console.log(error)
+        throw new Error(`Error retrieving healthcare professionals: ${error}`)
+    }
+    // TODO: make it filter by params
+    // const db = getFirestore()
+    // const healthcareProfessionalRef = db.collection('healthcareProfessionals')
+    // const snapshot = await healthcareProfessionalRef.where('id', 'in', userSearchQuery).get()
+
+    // const healthcareProfessionals = [] as HealthcareProfessional[]
+
+    // snapshot.forEach(doc => {
+    //     const convertedEntity = mapDbEntityTogqlEntity(doc.data().degrees)
+
+    //     healthcareProfessionals.push(convertedEntity)
+    // })
 
 // return healthcareProfessionals
+}
+
+// function validateHealthcareProfessionalSearch(searchInput: gqlTypes.HealthcareProfessionalSearchFilters)
+// : Result<gqlTypes.HealthcareProfessional[]> {
+//     const validationResult: Result<gqlTypes.HealthcareProfessional[]> = {
+//         hasErrors: true,
+//         errors: []
+//     }
+
+//     searchInput.spokenLanguages
+
 // }
 
 function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
@@ -113,7 +158,7 @@ function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
     } satisfies gqlTypes.HealthcareProfessional
-    
+
     return gqlEntity
 }
 

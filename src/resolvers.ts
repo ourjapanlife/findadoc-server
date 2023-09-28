@@ -32,11 +32,18 @@ const resolvers = {
                 return CustomErrors.notFound('The facility does not exist.')
             } 
         },
-        // healthcareProfessionals: async () => {
-        //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
+        healthcareProfessionals: async (_parent: gqlType.HealthcareProfessional, 
+            args: {filters: gqlType.HealthcareProfessionalSearchFilters }) => {
+            try {
+                const matchingProfessionals = await healthcareProfessionalService
+                    .searchHealthcareProfessionals(args.filters)
 
-        //     return matchingProfessionals
-        // },
+                return matchingProfessionals.data 
+            } catch (error) {
+                console.log(error)
+                return CustomErrors.notFound('No heatlcare professionals where found')
+            }
+        },
         healthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: { id: string; }) => {
             try {
                 if (!args.id || !args.id.trim()) {

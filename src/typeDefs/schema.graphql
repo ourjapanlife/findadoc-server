@@ -53,7 +53,7 @@ input FacilityInput {
   nameEn: String
   nameJa: String
   contact: ContactInput
-  healthcareProfessionals: [HealthcareProfessionalInput!],
+  healthcareProfessionals: [HealthcareProfessionalInput!]
   healthcareProfessionalIds: [String]
   isDeleted: Boolean
 }
@@ -63,7 +63,7 @@ input HealthcareProfessionalInput {
   degrees: [DegreeInput!]!
   spokenLanguages: [SpokenLanguageInput!]!
   specialties: [SpecialtyInput!]!
-  acceptedInsurance: [Insurance!]!,
+  acceptedInsurance: [Insurance!]!
 }
 
 type HealthcareProfessional {
@@ -72,8 +72,8 @@ type HealthcareProfessional {
   degrees: [Degree!]!
   spokenLanguages: [SpokenLanguage!]!
   specialties: [Specialty!]!
-  acceptedInsurance: [Insurance!]!,
-  isDeleted: Boolean!,
+  acceptedInsurance: [Insurance!]!
+  isDeleted: Boolean!
   createdDate: String!
   updatedDate: String!
 }
@@ -89,11 +89,11 @@ type LocaleName {
   lastName: String!
   firstName: String!
   middleName: String!
-  locale: Locale! 
+  locale: Locale!
 }
 
 enum Locale {
-  ENGLISH,
+  ENGLISH
   JAPANESE
 }
 
@@ -174,6 +174,12 @@ input FacilitySearchFilters {
   offset: Int
 }
 
+input HealthcareProfessionalSearchFilters {
+  spokenLanguages: [SpokenLanguageInput]
+  specialties: [SpecialtyInput]
+  acceptedInsurance: [Insurance]
+  isDeleted: Boolean
+}
 
 input OrderBy {
   orderDirection: OrderDirection
@@ -206,7 +212,9 @@ enum Insurance {
 type Query {
   facilities(filters: FacilitySearchFilters): [Facility]
   facility(id: ID!): Facility
-  healthcareProfessionals: [HealthcareProfessional]
+  healthcareProfessionals(
+    filters: HealthcareProfessionalSearchFilters
+  ): [HealthcareProfessional]
   healthcareProfessional(id: ID!): HealthcareProfessional
   specialties: [Specialty]
   specialty(id: ID!): Specialty
@@ -219,24 +227,13 @@ type Query {
 type Mutation {
   createHealthcareProfessional(
     input: HealthcareProfessionalInput
-  ) : HealthcareProfessional
+  ): HealthcareProfessional
   updateHealthcareProfessional(
     id: ID!
     input: HealthcareProfessionalInput
-  ) : HealthcareProfessional
-  createFacilityWithHealthcareProfessional(
-    input: FacilityInput
-  ): Facility
-  updateFacility(
-    id: ID!
-    input: FacilityInput
-  ): Facility
-  createSubmission(
-    input: SubmissionInput
-  ): Submission
-  updateSubmission(
-    id: ID!
-    input: SubmissionInput
-  ): Submission
+  ): HealthcareProfessional
+  createFacilityWithHealthcareProfessional(input: FacilityInput): Facility
+  updateFacility(id: ID!, input: FacilityInput): Facility
+  createSubmission(input: SubmissionInput): Submission
+  updateSubmission(id: ID!, input: SubmissionInput): Submission
 }
-

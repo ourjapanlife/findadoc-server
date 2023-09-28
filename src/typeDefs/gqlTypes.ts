@@ -101,6 +101,13 @@ export type HealthcareProfessionalInput = {
   spokenLanguages: Array<SpokenLanguageInput>;
 };
 
+export type HealthcareProfessionalSearchFilters = {
+  acceptedInsurance?: InputMaybe<Array<InputMaybe<Insurance>>>;
+  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
+  specialties?: InputMaybe<Array<InputMaybe<SpecialtyInput>>>;
+  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
+};
+
 export enum Insurance {
   InsuranceNotAccepted = 'INSURANCE_NOT_ACCEPTED',
   InternationalHealthInsurance = 'INTERNATIONAL_HEALTH_INSURANCE',
@@ -232,6 +239,11 @@ export type QueryFacilityArgs = {
 
 export type QueryHealthcareProfessionalArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryHealthcareProfessionalsArgs = {
+  filters?: InputMaybe<HealthcareProfessionalSearchFilters>;
 };
 
 
@@ -403,6 +415,7 @@ export type ResolversTypes = {
   FacilitySearchFilters: FacilitySearchFilters;
   HealthcareProfessional: ResolverTypeWrapper<HealthcareProfessional>;
   HealthcareProfessionalInput: HealthcareProfessionalInput;
+  HealthcareProfessionalSearchFilters: HealthcareProfessionalSearchFilters;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Insurance: Insurance;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -439,6 +452,7 @@ export type ResolversParentTypes = {
   FacilitySearchFilters: FacilitySearchFilters;
   HealthcareProfessional: HealthcareProfessional;
   HealthcareProfessionalInput: HealthcareProfessionalInput;
+  HealthcareProfessionalSearchFilters: HealthcareProfessionalSearchFilters;
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
   LocaleName: LocaleName;
@@ -535,7 +549,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   facilities?: Resolver<Maybe<Array<Maybe<ResolversTypes['Facility']>>>, ParentType, ContextType, Partial<QueryFacilitiesArgs>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
-  healthcareProfessionals?: Resolver<Maybe<Array<Maybe<ResolversTypes['HealthcareProfessional']>>>, ParentType, ContextType>;
+  healthcareProfessionals?: Resolver<Maybe<Array<Maybe<ResolversTypes['HealthcareProfessional']>>>, ParentType, ContextType, Partial<QueryHealthcareProfessionalsArgs>>;
   specialties?: Resolver<Maybe<Array<Maybe<ResolversTypes['Specialty']>>>, ParentType, ContextType>;
   specialty?: Resolver<Maybe<ResolversTypes['Specialty']>, ParentType, ContextType, RequireFields<QuerySpecialtyArgs, 'id'>>;
   spokenLanguage?: Resolver<Maybe<ResolversTypes['SpokenLanguage']>, ParentType, ContextType, RequireFields<QuerySpokenLanguageArgs, 'iso639_3'>>;
