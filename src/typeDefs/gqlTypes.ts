@@ -298,7 +298,6 @@ export type Submission = {
 export type SubmissionInput = {
   googleMapsUrl: Scalars['String']['input'];
   healthcareProfessionalName: Scalars['String']['input'];
-  isApproved: Scalars['Boolean']['input'];
   spokenLanguages: Array<InputMaybe<SpokenLanguageInput>>;
 };
 

@@ -106,7 +106,7 @@ function convertToDbSubmission(submission: gqlType.Submission):
     return {
         ...submission,
         id: submission.id,
-        isUnderReview: true,
+        isUnderReview: false,
         isApproved: false,
         isRejected: false,
         createdDate: new Date().toISOString(),
@@ -153,8 +153,6 @@ export const addSubmission = async (submissionInput: gqlType.Submission):
     await submissionRef.set(newSubmission)
 
     addSubmissionResult.data = newSubmission
-    console.log('Generated new submission ID:', newSubmission.id)
-    console.log('newSubmission:', newSubmission)
 
     return addSubmissionResult
 }
