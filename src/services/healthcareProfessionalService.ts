@@ -5,17 +5,21 @@ import { CustomErrors, Result } from '../result'
 import { dbInstance } from '../firebaseDb'
 
 export async function getHealthcareProfessionalById(id: string) {
-    const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals')
-    const whereCondition = '=' as firebase.WhereFilterOp
-    const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
+    try {
+        const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals')
+        const whereCondition = '=' as firebase.WhereFilterOp
+        const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
+    
+        if (snapshot.docs.length < 1) {
+            throw new Error('No healthcare Professional found with this id')
+        }
+    
+        const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
 
-    if (snapshot.docs.length < 1) {
-        CustomErrors.notFound('The healthcare professional does not exist.')
+        return convertedEntity
+    } catch (error) {
+        throw new Error(`Error retrieving healthcare professional ${error}`)
     }
-
-    const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
-
-    return convertedEntity
 }
 
 export async function addHealthcareProfessional( 
@@ -23,51 +27,57 @@ export async function addHealthcareProfessional(
     FirebaseFirestore.DocumentReference<firebase.DocumentData>
 ) : Promise<Result<string>> {
     // TODO: add validation
-
-    if (!healthcareProfessionalRef) {
-        healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
-    }
-
-    const newHealthcareProfessional = {
-        id: healthcareProfessionalRef.id, 
-        acceptedInsurance: validateInsurance(input.acceptedInsurance as gqlTypes.Insurance[]),
-        degrees: mapAndValidateDegrees(input.degrees as dbTypes.Degree[]),
-        names: mapAndValidateNames(input.names as dbTypes.LocaleName[]),
-        specialties: mapAndValidateSpecialties(input.specialties as dbTypes.Specialty[]),
-        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as dbTypes.SpokenLanguage[]),
-        isDeleted: false,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    } satisfies dbTypes.HealthcareProfessional
-
-    await healthcareProfessionalRef.set(newHealthcareProfessional)
-
-    return {
-        data: newHealthcareProfessional.id,
-        hasErrors: false
+    try {
+        if (!healthcareProfessionalRef) {
+            healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
+        }
+    
+        const newHealthcareProfessional = {
+            id: healthcareProfessionalRef.id, 
+            acceptedInsurance: validateInsurance(input.acceptedInsurance as gqlTypes.Insurance[]),
+            degrees: mapAndValidateDegrees(input.degrees as dbTypes.Degree[]),
+            names: mapAndValidateNames(input.names as dbTypes.LocaleName[]),
+            specialties: mapAndValidateSpecialties(input.specialties as dbTypes.Specialty[]),
+            spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as dbTypes.SpokenLanguage[]),
+            isDeleted: false,
+            createdDate: new Date().toISOString(),
+            updatedDate: new Date().toISOString()
+        } satisfies dbTypes.HealthcareProfessional
+    
+        await healthcareProfessionalRef.set(newHealthcareProfessional)
+    
+        return {
+            data: newHealthcareProfessional.id,
+            hasErrors: false
+        }
+    } catch (error) {
+        throw new Error(`Error adding healthcare professional: ${error}`)
     }
 }
 
 export async function addHealthcareProfessionalToFacility(input: gqlTypes.HealthcareProfessionalInput) {
-    const facilityRef = dbInstance.collection('facilities').doc(input.facilityId as string)
-    const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
-
-    const newHealthcareProfessional = {
-        id: healthcareProfessionalRef.id, 
-        acceptedInsurance: validateInsurance(input.acceptedInsurance as []),
-        degrees: mapAndValidateDegrees(input.degrees as gqlTypes.Degree[]),
-        names: mapAndValidateNames(input.names as gqlTypes.LocaleName[]),
-        specialties: mapAndValidateSpecialties(input.specialties as gqlTypes.Specialty[]),
-        spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as gqlTypes.SpokenLanguage[]),
-        isDeleted: false
+    try {
+        const facilityRef = dbInstance.collection('facilities').doc(input.facilityId as string)
+        const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
+    
+        const newHealthcareProfessional = {
+            id: healthcareProfessionalRef.id, 
+            acceptedInsurance: validateInsurance(input.acceptedInsurance as []),
+            degrees: mapAndValidateDegrees(input.degrees as gqlTypes.Degree[]),
+            names: mapAndValidateNames(input.names as gqlTypes.LocaleName[]),
+            specialties: mapAndValidateSpecialties(input.specialties as gqlTypes.Specialty[]),
+            spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as gqlTypes.SpokenLanguage[]),
+            isDeleted: false
+        }
+    
+        await healthcareProfessionalRef.set(newHealthcareProfessional)
+    
+        facilityRef.update(
+            'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
+        ) 
+    } catch (error) {
+        throw new Error(`Error adding healthcare professional to facility: ${error}`)
     }
-
-    await healthcareProfessionalRef.set(newHealthcareProfessional)
-
-    facilityRef.update(
-        'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
-    )
-
     // TODO: decide if something should be returned
 }
 

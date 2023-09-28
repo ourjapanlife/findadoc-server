@@ -7,6 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import * as gqlTypes from '../src/typeDefs/gqlTypes'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
+import { ErrorCode } from '../src/result'
 
 const schema = buildSchema(fs.readFileSync(
     path.join(__dirname, '../src/typeDefs/schema.graphql'),
@@ -114,7 +115,8 @@ describe('query healthcareProfessionalById', () => {
 
         expect(errors[0].extensions.http).toEqual({status: 404})
         expect(errors.length).toBe(1)
-        expect(errors[0].extensions.code).toBe('NOT_FOUND')
+        expect(errors[0].extensions.code).toBe(ErrorCode.NOT_FOUND)
         expect(errors[0].message).toBe('The healthcare professional does not exist.')
     })
 })
+
