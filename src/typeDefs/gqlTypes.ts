@@ -18,27 +18,26 @@ export type Scalars = {
 
 export type Contact = {
   __typename?: 'Contact';
-  address?: Maybe<PhysicalAddress>;
-  email?: Maybe<Scalars['String']['output']>;
-  id?: Maybe<Scalars['ID']['output']>;
-  mapsLink?: Maybe<Scalars['String']['output']>;
-  phone?: Maybe<Scalars['String']['output']>;
-  website?: Maybe<Scalars['String']['output']>;
+  address: PhysicalAddress;
+  email: Scalars['String']['output'];
+  mapsLink: Scalars['String']['output'];
+  phone: Scalars['String']['output'];
+  website: Scalars['String']['output'];
 };
 
 export type ContactInput = {
-  address?: InputMaybe<PhysicalAddressInput>;
-  email?: InputMaybe<Scalars['String']['input']>;
-  mapsLink?: InputMaybe<Scalars['String']['input']>;
-  phone?: InputMaybe<Scalars['String']['input']>;
-  website?: InputMaybe<Scalars['String']['input']>;
+  address: PhysicalAddressInput;
+  email: Scalars['String']['input'];
+  mapsLink: Scalars['String']['input'];
+  phone: Scalars['String']['input'];
+  website: Scalars['String']['input'];
 };
 
 export type Degree = {
   __typename?: 'Degree';
-  abbreviation?: Maybe<Scalars['String']['output']>;
-  nameEn?: Maybe<Scalars['String']['output']>;
-  nameJa?: Maybe<Scalars['String']['output']>;
+  abbreviation: Scalars['String']['output'];
+  nameEn: Scalars['String']['output'];
+  nameJa: Scalars['String']['output'];
 };
 
 export type DegreeInput = {
@@ -49,21 +48,22 @@ export type DegreeInput = {
 
 export type Facility = {
   __typename?: 'Facility';
-  contact?: Maybe<Contact>;
-  healthcareProfessionalIds?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  healthcareProfessionals?: Maybe<Array<Maybe<HealthcareProfessional>>>;
-  id?: Maybe<Scalars['ID']['output']>;
-  isDeleted?: Maybe<Scalars['Boolean']['output']>;
-  nameEn?: Maybe<Scalars['String']['output']>;
-  nameJa?: Maybe<Scalars['String']['output']>;
+  contact: Contact;
+  createdDate: Scalars['String']['output'];
+  healthcareProfessionalIds: Array<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isDeleted: Scalars['Boolean']['output'];
+  nameEn: Scalars['String']['output'];
+  nameJa: Scalars['String']['output'];
+  updatedDate: Scalars['String']['output'];
 };
 
 export type FacilityInput = {
-  contact?: InputMaybe<ContactInput>;
-  healthcareProfessionals: Array<InputMaybe<HealthcareProfessionalInput>>;
-  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
-  nameEn?: InputMaybe<Scalars['String']['input']>;
-  nameJa?: InputMaybe<Scalars['String']['input']>;
+  contact: ContactInput;
+  healthcareProfessionalIds: Array<Scalars['String']['input']>;
+  healthcareProfessionals: Array<HealthcareProfessionalInput>;
+  nameEn: Scalars['String']['input'];
+  nameJa: Scalars['String']['input'];
 };
 
 export type FacilitySearchFilters = {
@@ -81,23 +81,23 @@ export type FacilitySearchFilters = {
 
 export type HealthcareProfessional = {
   __typename?: 'HealthcareProfessional';
-  acceptedInsurance?: Maybe<Array<Maybe<Insurance>>>;
-  degrees?: Maybe<Array<Maybe<Degree>>>;
-  id?: Maybe<Scalars['ID']['output']>;
-  isDeleted?: Maybe<Scalars['Boolean']['output']>;
-  names?: Maybe<Array<Maybe<LocaleName>>>;
-  specialties?: Maybe<Array<Maybe<Specialty>>>;
-  spokenLanguages?: Maybe<Array<Maybe<SpokenLanguage>>>;
+  acceptedInsurance: Array<Insurance>;
+  createdDate: Scalars['String']['output'];
+  degrees: Array<Degree>;
+  id: Scalars['ID']['output'];
+  isDeleted: Scalars['Boolean']['output'];
+  names: Array<LocaleName>;
+  specialties: Array<Specialty>;
+  spokenLanguages: Array<SpokenLanguage>;
+  updatedDate: Scalars['String']['output'];
 };
 
 export type HealthcareProfessionalInput = {
-  acceptedInsurance?: InputMaybe<Array<InputMaybe<Insurance>>>;
-  degrees?: InputMaybe<Array<InputMaybe<DegreeInput>>>;
-  facilityId?: InputMaybe<Scalars['String']['input']>;
-  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
-  names?: InputMaybe<Array<InputMaybe<LocaleNameInput>>>;
-  specialties?: InputMaybe<Array<InputMaybe<SpecialtyInput>>>;
-  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
+  acceptedInsurance: Array<Insurance>;
+  degrees: Array<DegreeInput>;
+  names: Array<LocaleNameInput>;
+  specialties: Array<SpecialtyInput>;
+  spokenLanguages: Array<SpokenLanguageInput>;
 };
 
 export enum Insurance {
@@ -113,16 +113,16 @@ export enum Locale {
 
 export type LocaleName = {
   __typename?: 'LocaleName';
-  firstName?: Maybe<Scalars['String']['output']>;
-  lastName?: Maybe<Scalars['String']['output']>;
-  locale?: Maybe<Locale>;
-  middleName?: Maybe<Scalars['String']['output']>;
+  firstName: Scalars['String']['output'];
+  lastName: Scalars['String']['output'];
+  locale: Locale;
+  middleName: Scalars['String']['output'];
 };
 
 export type LocaleNameInput = {
-  firstName?: InputMaybe<Scalars['String']['input']>;
-  lastName?: InputMaybe<Scalars['String']['input']>;
-  locale?: InputMaybe<Locale>;
+  firstName: Scalars['String']['input'];
+  lastName: Scalars['String']['input'];
+  locale: Locale;
   middleName?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -174,16 +174,15 @@ export enum OrderDirection {
 
 export type PhysicalAddress = {
   __typename?: 'PhysicalAddress';
-  addressLine1En?: Maybe<Scalars['String']['output']>;
-  addressLine1Ja?: Maybe<Scalars['String']['output']>;
-  addressLine2En?: Maybe<Scalars['String']['output']>;
-  addressLine2Ja?: Maybe<Scalars['String']['output']>;
-  cityEn?: Maybe<Scalars['String']['output']>;
-  cityJa?: Maybe<Scalars['String']['output']>;
-  id?: Maybe<Scalars['ID']['output']>;
-  postalCode?: Maybe<Scalars['String']['output']>;
-  prefectureEn?: Maybe<Scalars['String']['output']>;
-  prefectureJa?: Maybe<Scalars['String']['output']>;
+  addressLine1En: Scalars['String']['output'];
+  addressLine1Ja: Scalars['String']['output'];
+  addressLine2En: Scalars['String']['output'];
+  addressLine2Ja: Scalars['String']['output'];
+  cityEn: Scalars['String']['output'];
+  cityJa: Scalars['String']['output'];
+  postalCode: Scalars['String']['output'];
+  prefectureEn: Scalars['String']['output'];
+  prefectureJa: Scalars['String']['output'];
 };
 
 export type PhysicalAddressInput = {
@@ -249,7 +248,7 @@ export type QuerySubmissionsArgs = {
 
 export type Specialty = {
   __typename?: 'Specialty';
-  names?: Maybe<Array<SpecialtyName>>;
+  names: Array<SpecialtyName>;
 };
 
 export type SpecialtyInput = {
@@ -258,8 +257,8 @@ export type SpecialtyInput = {
 
 export type SpecialtyName = {
   __typename?: 'SpecialtyName';
-  locale?: Maybe<Locale>;
-  name?: Maybe<Scalars['String']['output']>;
+  locale: Locale;
+  name: Scalars['String']['output'];
 };
 
 export type SpecialtyNameInput = {
@@ -269,17 +268,17 @@ export type SpecialtyNameInput = {
 
 export type SpokenLanguage = {
   __typename?: 'SpokenLanguage';
-  iso639_3?: Maybe<Scalars['String']['output']>;
-  nameEn?: Maybe<Scalars['String']['output']>;
-  nameJa?: Maybe<Scalars['String']['output']>;
-  nameNative?: Maybe<Scalars['String']['output']>;
+  iso639_3: Scalars['String']['output'];
+  nameEn: Scalars['String']['output'];
+  nameJa: Scalars['String']['output'];
+  nameNative: Scalars['String']['output'];
 };
 
 export type SpokenLanguageInput = {
-  iso639_3?: InputMaybe<Scalars['String']['input']>;
-  nameEn?: InputMaybe<Scalars['String']['input']>;
-  nameJa?: InputMaybe<Scalars['String']['input']>;
-  nameNative?: InputMaybe<Scalars['String']['input']>;
+  iso639_3: Scalars['String']['input'];
+  nameEn: Scalars['String']['input'];
+  nameJa: Scalars['String']['input'];
+  nameNative: Scalars['String']['input'];
 };
 
 export type Submission = {
@@ -454,49 +453,51 @@ export type ResolversParentTypes = {
 };
 
 export type ContactResolvers<ContextType = any, ParentType extends ResolversParentTypes['Contact'] = ResolversParentTypes['Contact']> = {
-  address?: Resolver<Maybe<ResolversTypes['PhysicalAddress']>, ParentType, ContextType>;
-  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  mapsLink?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  phone?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  website?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  address?: Resolver<ResolversTypes['PhysicalAddress'], ParentType, ContextType>;
+  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  mapsLink?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  phone?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  website?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type DegreeResolvers<ContextType = any, ParentType extends ResolversParentTypes['Degree'] = ResolversParentTypes['Degree']> = {
-  abbreviation?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  nameEn?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  nameJa?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  abbreviation?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  nameEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type FacilityResolvers<ContextType = any, ParentType extends ResolversParentTypes['Facility'] = ResolversParentTypes['Facility']> = {
-  contact?: Resolver<Maybe<ResolversTypes['Contact']>, ParentType, ContextType>;
-  healthcareProfessionalIds?: Resolver<Maybe<Array<Maybe<ResolversTypes['String']>>>, ParentType, ContextType>;
-  healthcareProfessionals?: Resolver<Maybe<Array<Maybe<ResolversTypes['HealthcareProfessional']>>>, ParentType, ContextType>;
-  id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  isDeleted?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  nameEn?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  nameJa?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  contact?: Resolver<ResolversTypes['Contact'], ParentType, ContextType>;
+  createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  healthcareProfessionalIds?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isDeleted?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  nameEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type HealthcareProfessionalResolvers<ContextType = any, ParentType extends ResolversParentTypes['HealthcareProfessional'] = ResolversParentTypes['HealthcareProfessional']> = {
-  acceptedInsurance?: Resolver<Maybe<Array<Maybe<ResolversTypes['Insurance']>>>, ParentType, ContextType>;
-  degrees?: Resolver<Maybe<Array<Maybe<ResolversTypes['Degree']>>>, ParentType, ContextType>;
-  id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  isDeleted?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  names?: Resolver<Maybe<Array<Maybe<ResolversTypes['LocaleName']>>>, ParentType, ContextType>;
-  specialties?: Resolver<Maybe<Array<Maybe<ResolversTypes['Specialty']>>>, ParentType, ContextType>;
-  spokenLanguages?: Resolver<Maybe<Array<Maybe<ResolversTypes['SpokenLanguage']>>>, ParentType, ContextType>;
+  acceptedInsurance?: Resolver<Array<ResolversTypes['Insurance']>, ParentType, ContextType>;
+  createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  degrees?: Resolver<Array<ResolversTypes['Degree']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isDeleted?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  names?: Resolver<Array<ResolversTypes['LocaleName']>, ParentType, ContextType>;
+  specialties?: Resolver<Array<ResolversTypes['Specialty']>, ParentType, ContextType>;
+  spokenLanguages?: Resolver<Array<ResolversTypes['SpokenLanguage']>, ParentType, ContextType>;
+  updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type LocaleNameResolvers<ContextType = any, ParentType extends ResolversParentTypes['LocaleName'] = ResolversParentTypes['LocaleName']> = {
-  firstName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  lastName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  locale?: Resolver<Maybe<ResolversTypes['Locale']>, ParentType, ContextType>;
-  middleName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  firstName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  lastName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  locale?: Resolver<ResolversTypes['Locale'], ParentType, ContextType>;
+  middleName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -509,16 +510,15 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type PhysicalAddressResolvers<ContextType = any, ParentType extends ResolversParentTypes['PhysicalAddress'] = ResolversParentTypes['PhysicalAddress']> = {
-  addressLine1En?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  addressLine1Ja?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  addressLine2En?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  addressLine2Ja?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  cityEn?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  cityJa?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  postalCode?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  prefectureEn?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  prefectureJa?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  addressLine1En?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  addressLine1Ja?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  addressLine2En?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  addressLine2Ja?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  cityEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  cityJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  postalCode?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  prefectureEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  prefectureJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -536,21 +536,21 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
 };
 
 export type SpecialtyResolvers<ContextType = any, ParentType extends ResolversParentTypes['Specialty'] = ResolversParentTypes['Specialty']> = {
-  names?: Resolver<Maybe<Array<ResolversTypes['SpecialtyName']>>, ParentType, ContextType>;
+  names?: Resolver<Array<ResolversTypes['SpecialtyName']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type SpecialtyNameResolvers<ContextType = any, ParentType extends ResolversParentTypes['SpecialtyName'] = ResolversParentTypes['SpecialtyName']> = {
-  locale?: Resolver<Maybe<ResolversTypes['Locale']>, ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  locale?: Resolver<ResolversTypes['Locale'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type SpokenLanguageResolvers<ContextType = any, ParentType extends ResolversParentTypes['SpokenLanguage'] = ResolversParentTypes['SpokenLanguage']> = {
-  iso639_3?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  nameEn?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  nameJa?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  nameNative?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  iso639_3?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  nameEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  nameNative?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

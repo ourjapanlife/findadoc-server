@@ -1,31 +1,29 @@
 type Contact {
-  id: ID
-  email: String
-  phone: String
-  website: String
-  mapsLink: String
-  address: PhysicalAddress
+  email: String!
+  phone: String!
+  website: String!
+  mapsLink: String!
+  address: PhysicalAddress!
 }
 
 input ContactInput {
-  email: String
-  phone: String
-  website: String
-  mapsLink: String
-  address: PhysicalAddressInput
+  email: String!
+  phone: String!
+  website: String!
+  mapsLink: String!
+  address: PhysicalAddressInput!
 }
 
 type PhysicalAddress {
-  id: ID
-  postalCode: String
-  prefectureEn: String
-  cityEn: String
-  addressLine1En: String
-  addressLine2En: String
-  prefectureJa: String
-  cityJa: String
-  addressLine1Ja: String
-  addressLine2Ja: String
+  postalCode: String!
+  prefectureEn: String!
+  cityEn: String!
+  addressLine1En: String!
+  addressLine2En: String!
+  prefectureJa: String!
+  cityJa: String!
+  addressLine1Ja: String!
+  addressLine2Ja: String!
 }
 
 input PhysicalAddressInput {
@@ -41,55 +39,56 @@ input PhysicalAddressInput {
 }
 
 type Facility {
-  id: ID
-  nameEn: String
-  nameJa: String
-  contact: Contact
-  healthcareProfessionalIds: [String]
-  healthcareProfessionals: [HealthcareProfessional],
-  isDeleted: Boolean
+  id: ID!
+  nameEn: String!
+  nameJa: String!
+  contact: Contact!
+  healthcareProfessionalIds: [String!]!
+  isDeleted: Boolean!
+  createdDate: String!
+  updatedDate: String!
 }
 
 input FacilityInput {
-  nameEn: String
-  nameJa: String
-  contact: ContactInput
-  healthcareProfessionals: [HealthcareProfessionalInput]!,
-  isDeleted: Boolean
+  nameEn: String!
+  nameJa: String!
+  contact: ContactInput!
+  healthcareProfessionals: [HealthcareProfessionalInput!]!,
+  healthcareProfessionalIds: [String!]!
 }
 
 input HealthcareProfessionalInput {
-  facilityId: String
-  names: [LocaleNameInput]
-  degrees: [DegreeInput]
-  spokenLanguages: [SpokenLanguageInput]
-  specialties: [SpecialtyInput]
-  acceptedInsurance: [Insurance],
-  isDeleted: Boolean
+  names: [LocaleNameInput!]!
+  degrees: [DegreeInput!]!
+  spokenLanguages: [SpokenLanguageInput!]!
+  specialties: [SpecialtyInput!]!
+  acceptedInsurance: [Insurance!]!,
 }
 
 type HealthcareProfessional {
-  id: ID
-  names: [LocaleName]
-  degrees: [Degree]
-  spokenLanguages: [SpokenLanguage]
-  specialties: [Specialty]
-  acceptedInsurance: [Insurance],
-  isDeleted: Boolean
+  id: ID!
+  names: [LocaleName!]!
+  degrees: [Degree!]!
+  spokenLanguages: [SpokenLanguage!]!
+  specialties: [Specialty!]!
+  acceptedInsurance: [Insurance!]!,
+  isDeleted: Boolean!,
+  createdDate: String!
+  updatedDate: String!
 }
 
 input LocaleNameInput {
-  lastName: String
-  firstName: String
+  lastName: String!
+  firstName: String!
   middleName: String
-  locale: Locale
+  locale: Locale!
 }
 
 type LocaleName {
-  lastName: String
-  firstName: String
-  middleName: String
-  locale: Locale 
+  lastName: String!
+  firstName: String!
+  middleName: String!
+  locale: Locale! 
 }
 
 enum Locale {
@@ -102,7 +101,7 @@ input SpecialtyInput {
 }
 
 type Specialty {
-  names: [SpecialtyName!]
+  names: [SpecialtyName!]!
 }
 
 input SpecialtyNameInput {
@@ -111,22 +110,22 @@ input SpecialtyNameInput {
 }
 
 type SpecialtyName {
-  name: String
-  locale: Locale
+  name: String!
+  locale: Locale!
 }
 
 input SpokenLanguageInput {
-  iso639_3: String
-  nameJa: String
-  nameEn: String
-  nameNative: String
+  iso639_3: String!
+  nameJa: String!
+  nameEn: String!
+  nameNative: String!
 }
 
 type SpokenLanguage {
-  iso639_3: String
-  nameJa: String
-  nameEn: String
-  nameNative: String
+  iso639_3: String!
+  nameJa: String!
+  nameEn: String!
+  nameNative: String!
 }
 
 type Submission {
@@ -192,9 +191,9 @@ input DegreeInput {
 }
 
 type Degree {
-  nameJa: String
-  nameEn: String
-  abbreviation: String
+  nameJa: String!
+  nameEn: String!
+  abbreviation: String!
 }
 
 enum Insurance {
