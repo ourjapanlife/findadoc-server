@@ -73,3 +73,60 @@ describe('createSubmission', () => {
         expect(newSubmissionData.id).toBeDefined()
     })
 })
+
+const getSubmissionByIdQuery = {
+    query:
+    `query GetSubmission($id: ID!) {
+        submission(id: $id) {
+          id
+          createdDate
+          updatedDate
+          googleMapsUrl
+          healthcareProfessionalName
+          spokenLanguages {
+            iso639_3
+            nameJa
+            nameEn
+            nameNative
+          }
+          isUnderReview
+          isApproved
+          isRejected
+        }
+      }`,
+    variables: {
+        id: ''
+    }
+}
+
+describe('getSubmissionById', () => {
+    let url: string
+    let newSubmissionId: string
+
+    const server = new ApolloServer({
+        typeDefs: loadSchema(),
+        resolvers
+    })
+
+    beforeAll(async () => {
+        ({ url } = await startStandaloneServer(server, { listen: {port: 0}}))
+        await initiatilizeFirebaseInstance()
+    })
+
+    afterAll(async () => {
+        await server?.stop()
+    })
+
+    it('fetches a submission with the matching ID', async () => {
+        const response = await request(url).post('/').send(queryData)
+        newSubmissionId = response.body.data.createSubmission.id
+        getSubmissionByIdQuery.variables.id = newSubmissionId
+
+        const fetchResponse = await request(url).post('/').send(getSubmissionByIdQuery)
+        const fetchedSubmissionData = fetchResponse.body.data.submission
+
+        console.log('fetchResponse.body:', fetchResponse.body);
+
+        expect(fetchedSubmissionData.id).toBe(newSubmissionId)
+    })
+})
