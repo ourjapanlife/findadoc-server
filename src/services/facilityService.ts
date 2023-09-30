@@ -1,11 +1,16 @@
 import { DocumentData, Query } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
-import * as dbTypes from '../typeDefs/dbSchema'
+import * as dbSchema from '../typeDefs/dbSchema'
 import { ErrorCode, Result } from '../result'
 import { addHealthcareProfessional } from './healthcareProfessionalService'
 import { dbInstance } from '../firebaseDb'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils'
 
+/**
+ * Gets the Facility from the database that matches on the id.
+ * @param id A string that matches the id of the Firestore Document for the Facility.
+ * @returns A Facility object.
+ */
 export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility | null>> => {
     const validationResult = validateIdInput(id)
 
@@ -94,14 +99,21 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
     }
 }
 
-export async function addFacility(input: gqlTypes.FacilityInput): Promise<Result<string>> {
-    const validationResult = validateAddFacilitiesInput(input)
+/**
+ * Adds a new Facility with a new HealthcareProfessional. 
+ * Only a list containing the `HealthcareProfessional.id` will 
+ * be returned and not the whole HealthcareProfessional Entity.
+ * @param facilityInput 
+ * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was added.
+ */
+export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promise<Result<dbSchema.Facility>> {
+    const validationResult = validateAddFacilitiesInput(facilityInput)
 
     if (validationResult.hasErrors) {
         return validationResult
     }
 
-    const addFacilityResult : Result<string> = {
+    const addFacilityResult : Result<dbSchema.Facility> = {
         hasErrors: false,
         errors: []
     }
@@ -109,49 +121,62 @@ export async function addFacility(input: gqlTypes.FacilityInput): Promise<Result
     const facilityRef = dbInstance.collection('facilities').doc()
     const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
 
-    const healthcareProfessionalIds = [] as string[]
-
-    if (input.healthcareProfessionals && input.healthcareProfessionals.length) {
-        for await (const profEntity of input.healthcareProfessionals) {
+    if (facilityInput.healthcareProfessionals && facilityInput.healthcareProfessionals.length) {
+        for await (const profEntity of facilityInput.healthcareProfessionals) {
             const healthcareProfAddResults = await addHealthcareProfessional(
-                profEntity as gqlTypes.HealthcareProfessional, healthcareProfessionalRef
+                profEntity, healthcareProfessionalRef
             )
 
             if (healthcareProfAddResults.hasErrors && healthcareProfAddResults.errors?.length) {
                 addFacilityResult.hasErrors = true
                 addFacilityResult.errors?.concat(healthcareProfAddResults.errors)
             } else {
-                healthcareProfessionalIds.push(healthcareProfAddResults.data as string)
+                facilityInput.healthcareProfessionalIds.push(healthcareProfAddResults.data as string)
             }
         }
     }
 
-    const newFacility = {
-        id: facilityRef.id as string,
-        contact: input.contact as dbTypes.Contact || undefined,
-        healthcareProfessionalIds: healthcareProfessionalIds,
-        // we just save the ids to the db, then load the full entities when we need them in queries
-        healthcareProfessionals: [],
-        nameEn: input.nameEn as string,
-        nameJa: input.nameJa as string,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    } satisfies dbTypes.Facility
+    const newFacility = convertToDbFacility(facilityInput, facilityRef.id)
 
     await facilityRef.set(newFacility)
 
-    addFacilityResult.data = newFacility.id
+    addFacilityResult.data = newFacility
 
     return addFacilityResult
 }
 
+/**
+ * Converts the values for FacilityInput variables to the format they will be stored as in the database.
+ * @param facility - The `FacilityInput` variables that were passed in the API request.
+ * @param id - The ID of the Facility in the Firestore collection.
+ * @returns 
+ */
+function convertToDbFacility(facility: gqlTypes.FacilityInput, id: string): dbSchema.Facility {
+    return {
+        ...facility,
+        id: id,
+        nameEn: facility.nameEn,
+        nameJa: facility.nameJa,
+        contact: facility.contact,
+        healthcareProfessionalIds: facility.healthcareProfessionalIds,
+        healthcareProfessionals: [],
+        isDeleted: false,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
+
+    } as gqlTypes.Facility
+}
+
 const mapDbEntityTogqlEntity = (dbEntity: DocumentData): gqlTypes.Facility => {
     const gqlEntity = {
+        id: dbEntity.id,
         nameEn: dbEntity.nameEn,
         nameJa: dbEntity.nameJa,
         contact: dbEntity.contact,
         healthcareProfessionalIds: dbEntity.healthcareProfessionalIds,
-        healthcareProfessionals: dbEntity.healthcareProfessionals
+        createdDate: dbEntity.createdDate,
+        updatedDate: dbEntity.updatedDate,
+        isDeleted: dbEntity.isDeleted
     } satisfies gqlTypes.Facility
 
     return gqlEntity
@@ -211,8 +236,8 @@ function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilte
     return validationResults
 }
 
-function validateAddFacilitiesInput(input: gqlTypes.FacilityInput): Result<string> {
-    const validationResults: Result<string> = {
+function validateAddFacilitiesInput(input: gqlTypes.FacilityInput): Result<dbSchema.Facility> {
+    const validationResults: Result<dbSchema.Facility> = {
         hasErrors: false,
         errors: []
     }
@@ -247,7 +272,7 @@ function validateAddFacilitiesInput(input: gqlTypes.FacilityInput): Result<strin
     return validationResults
 }
 
-function validateContactInput(contactInput: gqlTypes.Contact): Result<boolean> {
+function validateContactInput(contactInput: gqlTypes.ContactInput): Result<boolean> {
     const validationResults: Result<boolean> = {
         hasErrors: false,
         errors: []
@@ -257,7 +282,7 @@ function validateContactInput(contactInput: gqlTypes.Contact): Result<boolean> {
         return validationResults
     }
 
-    if (contactInput.email && (isValidEmail(contactInput.email) || contactInput.email.length > 128)) {
+    if (contactInput.email && (!isValidEmail(contactInput.email) || contactInput.email.length > 128)) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'email',
