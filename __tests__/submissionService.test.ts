@@ -119,14 +119,23 @@ describe('getSubmissionById', () => {
 
     it('fetches a submission with the matching ID', async () => {
         const response = await request(url).post('/').send(queryData)
+
         newSubmissionId = response.body.data.createSubmission.id
         getSubmissionByIdQuery.variables.id = newSubmissionId
 
         const fetchResponse = await request(url).post('/').send(getSubmissionByIdQuery)
         const fetchedSubmissionData = fetchResponse.body.data.submission
 
-        console.log('fetchResponse.body:', fetchResponse.body);
+        const createdSubmission = queryData.variables.input
+
+        console.log('fetchResponse.body:', fetchResponse.body)
 
         expect(fetchedSubmissionData.id).toBe(newSubmissionId)
+        expect(fetchedSubmissionData.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
+        expect(fetchedSubmissionData.healthcareProfessionalName).toBe(createdSubmission.healthcareProfessionalName)
+        expect(fetchedSubmissionData.spokenLanguages).toEqual(createdSubmission.spokenLanguages)
+        expect(typeof fetchedSubmissionData.isUnderReview).toBe('boolean')
+        expect(typeof fetchedSubmissionData.isApproved).toBe('boolean')
+        expect(typeof fetchedSubmissionData.isRejected).toBe('boolean')
     })
 })
