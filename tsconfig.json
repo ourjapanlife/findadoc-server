@@ -15,7 +15,7 @@
     "include": [
         "src/**/*",
         "utils/**/*",
-        "__tests__/server.test.ts"
+        "__tests__/*"
     ],
     "exclude": [
         "node_modules"

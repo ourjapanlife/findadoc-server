@@ -145,7 +145,6 @@ input SubmissionInput {
   googleMapsUrl: String!
   healthcareProfessionalName: String!
   spokenLanguages: [SpokenLanguageInput]!
-  isApproved: Boolean!
 }
 
 input SubmissionSearchFilters {
