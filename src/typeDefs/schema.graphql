@@ -7,11 +7,11 @@ type Contact {
 }
 
 input ContactInput {
-  email: String!
-  phone: String!
-  website: String!
-  mapsLink: String!
-  address: PhysicalAddressInput!
+  email: String
+  phone: String
+  website: String
+  mapsLink: String
+  address: PhysicalAddressInput
 }
 
 type PhysicalAddress {
@@ -50,11 +50,12 @@ type Facility {
 }
 
 input FacilityInput {
-  nameEn: String!
-  nameJa: String!
-  contact: ContactInput!
-  healthcareProfessionals: [HealthcareProfessionalInput!]!,
-  healthcareProfessionalIds: [String!]!
+  nameEn: String
+  nameJa: String
+  contact: ContactInput
+  healthcareProfessionals: [HealthcareProfessionalInput!],
+  healthcareProfessionalIds: [String]
+  isDeleted: Boolean
 }
 
 input HealthcareProfessionalInput {
@@ -224,6 +225,10 @@ type Mutation {
     input: HealthcareProfessionalInput
   ) : HealthcareProfessional
   createFacilityWithHealthcareProfessional(
+    input: FacilityInput
+  ): Facility
+  updateFacility(
+    id: ID!
     input: FacilityInput
   ): Facility
   createSubmission(

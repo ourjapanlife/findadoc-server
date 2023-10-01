@@ -26,11 +26,11 @@ export type Contact = {
 };
 
 export type ContactInput = {
-  address: PhysicalAddressInput;
-  email: Scalars['String']['input'];
-  mapsLink: Scalars['String']['input'];
-  phone: Scalars['String']['input'];
-  website: Scalars['String']['input'];
+  address?: InputMaybe<PhysicalAddressInput>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  mapsLink?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+  website?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Degree = {
@@ -59,11 +59,12 @@ export type Facility = {
 };
 
 export type FacilityInput = {
-  contact: ContactInput;
-  healthcareProfessionalIds: Array<Scalars['String']['input']>;
-  healthcareProfessionals: Array<HealthcareProfessionalInput>;
-  nameEn: Scalars['String']['input'];
-  nameJa: Scalars['String']['input'];
+  contact?: InputMaybe<ContactInput>;
+  healthcareProfessionalIds?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  healthcareProfessionals?: InputMaybe<Array<HealthcareProfessionalInput>>;
+  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
+  nameEn?: InputMaybe<Scalars['String']['input']>;
+  nameJa?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type FacilitySearchFilters = {
@@ -131,6 +132,7 @@ export type Mutation = {
   createFacilityWithHealthcareProfessional?: Maybe<Facility>;
   createHealthcareProfessional?: Maybe<HealthcareProfessional>;
   createSubmission?: Maybe<Submission>;
+  updateFacility?: Maybe<Facility>;
   updateHealthcareProfessional?: Maybe<HealthcareProfessional>;
   updateSubmission?: Maybe<Submission>;
 };
@@ -148,6 +150,12 @@ export type MutationCreateHealthcareProfessionalArgs = {
 
 export type MutationCreateSubmissionArgs = {
   input?: InputMaybe<SubmissionInput>;
+};
+
+
+export type MutationUpdateFacilityArgs = {
+  id: Scalars['ID']['input'];
+  input?: InputMaybe<FacilityInput>;
 };
 
 
@@ -505,6 +513,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   createFacilityWithHealthcareProfessional?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, Partial<MutationCreateFacilityWithHealthcareProfessionalArgs>>;
   createHealthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, Partial<MutationCreateHealthcareProfessionalArgs>>;
   createSubmission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, Partial<MutationCreateSubmissionArgs>>;
+  updateFacility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<MutationUpdateFacilityArgs, 'id'>>;
   updateHealthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<MutationUpdateHealthcareProfessionalArgs, 'id'>>;
   updateSubmission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<MutationUpdateSubmissionArgs, 'id'>>;
 };

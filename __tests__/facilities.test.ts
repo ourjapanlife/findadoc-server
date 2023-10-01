@@ -207,3 +207,87 @@ describe('getFacilityById', () => {
         expect(facilityData.updatedDate).toBeDefined()
     })
 })
+
+describe('updateFacility', () => {
+    let url: string
+
+    const server = new ApolloServer({
+        typeDefs: loadSchema(),
+        resolvers
+    })
+
+    beforeAll(async () => {
+        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
+        await initiatilizeFirebaseInstance()
+    })
+
+    afterAll(async () => {
+        await server?.stop()
+    })
+    
+    it('updates the Facility fields included in the input', async () => {
+        // Create a new facility
+        const newFacility = await request(url).post('/').send(queryData)
+
+        // Get the ID of the new facility
+        const facilityId = newFacility.body.data.createFacilityWithHealthcareProfessional.id
+
+        // Mutation to update the facility
+        const facilityQuery = {
+            query: `mutation Mutation($input: FacilityInput, $updateFacilityId: ID!) {
+                updateFacility(input: $input, id: $updateFacilityId) {
+                  id
+                  nameEn
+                  nameJa
+                  contact {
+                    email
+                    phone
+                    website
+                    mapsLink
+                    address {
+                      postalCode
+                      prefectureEn
+                      cityEn
+                      addressLine1En
+                      addressLine2En
+                      prefectureJa
+                      cityJa
+                      addressLine1Ja
+                      addressLine2Ja
+                    }
+                  }
+                  healthcareProfessionalIds
+                  isDeleted
+                  createdDate
+                  updatedDate
+                }
+              }`,
+            variables: {
+                updateFacilityId: facilityId,
+                input: {
+                    nameEn: 'some NEW facility name EN',
+                    nameJa: 'some NEW facility name JA',
+                    contact: {
+                        phone: '111-111-1111'
+                    },
+                    isDeleted: true
+                }
+                  
+            }
+        }
+        const facility = await request(url).post('/').send(facilityQuery)
+
+        // Compare the data returned by getFacilityById to the new facility stored in the database
+        const updatedFacilityData = facility.body.data.updateFacility
+        const updatedFields = facilityQuery.variables.input
+
+        expect(updatedFacilityData.id).toBe(facilityId)
+        expect(updatedFacilityData.nameEn).toBe(updatedFields.nameEn)
+        expect(updatedFacilityData.nameJa).toBe(updatedFields.nameJa)
+        expect(updatedFacilityData.contact.phone).toBe(updatedFields.contact.phone)
+        expect(updatedFacilityData.healthcareProfessionalIds).toHaveLength(1)
+        expect(updatedFacilityData.isDeleted).toBe(updatedFields.isDeleted)
+        expect(updatedFacilityData.createdDate).toBeDefined()
+        expect(updatedFacilityData.updatedDate).toBeDefined()
+    })
+})
