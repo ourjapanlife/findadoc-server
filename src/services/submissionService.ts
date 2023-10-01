@@ -1,24 +1,57 @@
 import { DocumentData, Query } from 'firebase-admin/firestore'
-import * as gqlType from '../typeDefs/gqlTypes'
+import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
 import { dbInstance } from '../firebaseDb'
 import { ErrorCode, Result } from '../result'
+import { hasSpecialCharacters } from '../../utils/stringUtils'
 
-export const getSubmissionById = async (id: string) : Promise<dbSchema.Submission | null> => {
+export const getSubmissionById = async (id: string) : Promise<Result<gqlTypes.Submission| null>> => {
     try {
-        const submissionRef = dbInstance.collection('submissions')
-        const snapshot = await submissionRef.doc(id).get()
+        const validationResult = validateIdInput(id)
 
-        if (!snapshot.exists) {
-            return null
+        if (validationResult.hasErrors) {
+            return validationResult
         }
-        
-        const submission = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
+    
+        const submissionRef = dbInstance.collection('submissions')
+        const snapshot = await submissionRef.where('id', '==', id).get()
 
-        return submission
-    } catch (error) {
-        throw new Error(`Error retrieving submission: ${error}`)
+        if (snapshot.docs.length < 1) {
+            return {
+                data: null,
+                hasErrors: false
+            }
+        }
+
+        const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
+
+        const searchResults = {
+            data: convertedEntity,
+            hasErrors: false
+        }
+    
+        return searchResults
+    } catch (e) {
+        throw new Error(`Error retrieving submission: ${e}`)
     }
+}
+
+function validateIdInput(id: string): Result<gqlTypes.Submission> {
+    const validationResults: Result<gqlTypes.Submission> = {
+        hasErrors: false,
+        errors: []
+    }
+
+    if (id && (hasSpecialCharacters(id) || id.length > 4096)) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'id',
+            errorCode: ErrorCode.INVALID_ID,
+            httpStatus: 400
+        })
+    }
+
+    return validationResults
 }
 
 export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilters = {}) {
@@ -101,7 +134,7 @@ export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilter
     }
 }
 
-function convertToDbSubmission(submission: gqlType.Submission): 
+function convertToDbSubmission(submission: gqlTypes.Submission): 
     dbSchema.Submission {
     return {
         ...submission,
@@ -116,7 +149,7 @@ function convertToDbSubmission(submission: gqlType.Submission):
     }
 }
 
-export const addSubmission = async (submissionInput: gqlType.Submission): 
+export const addSubmission = async (submissionInput: gqlTypes.Submission): 
     Promise<Result<dbSchema.Submission>> => {
     const addSubmissionResult: Result<dbSchema.Submission> = {
         hasErrors: false,
@@ -130,7 +163,7 @@ export const addSubmission = async (submissionInput: gqlType.Submission):
     }
 
     const nonNullLanguages = submissionInput.spokenLanguages
-        .filter(lang => !!lang) as gqlType.SpokenLanguageInput[]
+        .filter(lang => !!lang) as gqlTypes.SpokenLanguageInput[]
 
     const spokenLanguagesResult = mapAndValidateSpokenLanguages(nonNullLanguages)
 
@@ -146,7 +179,7 @@ export const addSubmission = async (submissionInput: gqlType.Submission):
 
     const newSubmission = convertToDbSubmission({
         ...submissionInput,
-        spokenLanguages: spokenLanguagesResult.data as gqlType.SpokenLanguageInput[],
+        spokenLanguages: spokenLanguagesResult.data as gqlTypes.SpokenLanguageInput[],
         id: newSubmissionId
     })
 
@@ -157,30 +190,32 @@ export const addSubmission = async (submissionInput: gqlType.Submission):
     return addSubmissionResult
 }
 
-export const updateSubmission = async (id: string, updatedFields: Partial<dbSchema.Submission>): 
-    Promise<string> => {
+export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<dbSchema.Submission>): 
+    Promise<Result<dbSchema.Submission | null>> => {
     try {
-        const submissionRef = dbInstance.collection('submissions').doc(id)
+        const submissionRef = dbInstance.collection('submissions').doc(submissionId)
 
         const snapshot = await submissionRef.get()
 
         const submissionToUpdate = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
 
-        const updatedSubmission: dbSchema.Submission = {
+        const updatedSubmissionValues: dbSchema.Submission = {
             ...submissionToUpdate,
-            ...updatedFields,
+            ...fieldsToUpdate,
             updatedDate: new Date().toISOString()
         }
 
-        await submissionRef.update(updatedSubmission)
+        await submissionRef.set(updatedSubmissionValues, {merge: true})
 
-        return 'Submission updated successfully!'
+        const updatedSubmission = await getSubmissionById(submissionRef.id)
+
+        return updatedSubmission as Result<dbSchema.Submission>
     } catch (error) {
         throw new Error(`Error updating submission: ${error}`)
     }
 }
 
-const validateSubmissionInputFields = (input: gqlType.SubmissionInput): Result<dbSchema.Submission> => {
+const validateSubmissionInputFields = (input: gqlTypes.SubmissionInput): Result<dbSchema.Submission> => {
     const validatedSubmissionResult: Result<dbSchema.Submission> = {
         hasErrors: false,
         errors: []
@@ -195,7 +230,7 @@ const validateSubmissionInputFields = (input: gqlType.SubmissionInput): Result<d
         })    
     }
 
-    if (input.googleMapsUrl.length > 1028) {
+    if (input.googleMapsUrl && input.googleMapsUrl.length > 1028) {
         validatedSubmissionResult.hasErrors = true
         validatedSubmissionResult.errors?.push({
             field: 'googleMapsUrl',
@@ -213,7 +248,7 @@ const validateSubmissionInputFields = (input: gqlType.SubmissionInput): Result<d
         })
     }
 
-    if (input.healthcareProfessionalName.length > 128) {
+    if (input.healthcareProfessionalName && input.healthcareProfessionalName.length > 128) {
         validatedSubmissionResult.hasErrors = true
         validatedSubmissionResult.errors?.push({
             field: 'healthcareProfessionalName',
@@ -225,7 +260,7 @@ const validateSubmissionInputFields = (input: gqlType.SubmissionInput): Result<d
     return validatedSubmissionResult
 }
 
-export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Partial<gqlType.Submission>):
+export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Partial<gqlTypes.Submission>):
     Partial<dbSchema.Submission> {
     const { spokenLanguages, ...remainingSubmissionFields } = submission
     
@@ -236,7 +271,7 @@ export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Parti
     return {
         ...remainingSubmissionFields,
         spokenLanguages: spokenLanguages
-            .filter((lang): lang is gqlType.SpokenLanguage => 
+            .filter((lang): lang is gqlTypes.SpokenLanguage => 
                 lang !== null && lang !== undefined &&
                 typeof lang.iso639_3 === 'string' &&
                 typeof lang.nameJa === 'string' &&
@@ -251,7 +286,7 @@ export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Parti
     }
 }
 
-function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlType.SpokenLanguage): 
+function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage): 
     dbSchema.SpokenLanguage {
     return {
         iso639_3: lang.iso639_3 as string,
@@ -261,7 +296,7 @@ function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlType.SpokenLanguage):
     }
 }
 
-export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlType.SpokenLanguageInput[]): 
+export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLanguageInput[]): 
     Result<dbSchema.SpokenLanguage[]> => {
     const validatedSpokenLanguagesResults: Result<dbSchema.SpokenLanguage[]> = {
         hasErrors: false,
@@ -306,7 +341,7 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlType.SpokenLan
     return validatedSpokenLanguagesResults
 }
 
-export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlType.SubmissionSearchFilters = {}):
+export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlTypes.SubmissionSearchFilters = {}):
     dbSchema.SubmissionSearchFilters => {
     const mappedLanguages = filters.spokenLanguages?.map(lang => lang ? {
         iso639_3: lang.iso639_3 ?? '',
@@ -319,7 +354,7 @@ export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlType.Submission
         .filter(lang => lang !== undefined) as dbSchema.SpokenLanguage[]
 
     const mappedOrderBy = filters.orderBy ? filters.orderBy
-        .filter((o): o is gqlType.OrderBy => Boolean(o && o.fieldToOrder && o.orderDirection))
+        .filter((o): o is gqlTypes.OrderBy => Boolean(o && o.fieldToOrder && o.orderDirection))
         .map(order => ({
             fieldToOrder: order.fieldToOrder as string,
             orderDirection: order.orderDirection as dbSchema.OrderDirection
