@@ -18,7 +18,8 @@ export const fakeFacilities = () => {
             website: 'https://zoo.test.com',
             mapsLink: ''
         },
-        healthcareProfessionals: []
+        healthcareProfessionals: [],
+        healthcareProfessionalIds: []
     }
 
     return [facility]

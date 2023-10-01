@@ -16,7 +16,6 @@ const resolvers = {
 
                 return queryResults.data
             } catch (error) {
-                console.log(error)
                 return CustomErrors.notFound('No facilities where found.')
             } 
         },
@@ -30,8 +29,6 @@ const resolvers = {
 
                 return queryResults.data
             } catch (error) {
-                console.log(error)
-                console.log('ID:', JSON.stringify(args))
                 return CustomErrors.notFound('The facility does not exist.')
             } 
         },
@@ -50,8 +47,6 @@ const resolvers = {
 
                 return matchingHealthcareProfessional        
             } catch (error) {
-                console.log(error)
-                console.log('ID:', JSON.stringify(args))
                 return CustomErrors.notFound('The healthcare professional does not exist.')
             }  
         },
@@ -63,8 +58,6 @@ const resolvers = {
 
                 return matchingSubmissions
             } catch (error) {
-                console.log(error)
-                console.log('FILTERS:', JSON.stringify(args))
                 return CustomErrors.notFound('No submissions where found.')
             }
         },
@@ -77,17 +70,16 @@ const resolvers = {
 
                 return matchingSubmission           
             } catch (error) {
-                console.log(error)
-                console.log('ID:', JSON.stringify(args))
                 return CustomErrors.notFound('The submission does not exist.')
             }  
         }
     },
     Mutation: {
-        createFacilityWithHealthcareProfessional: async (_parent: gqlType.Facility, args: {
+        createFacilityWithHealthcareProfessional: async (_parent: gqlType.FacilityInput, args: {
             input: {
-                contact: gqlType.Contact,
-                healthcareProfessionals: gqlType.HealthcareProfessional[],
+                contact: gqlType.ContactInput,
+                healthcareProfessionals: gqlType.HealthcareProfessionalInput[],
+                healthcareProfessionalIds: string[],
                 nameEn: string,
                 nameJa: string,
             }
@@ -95,32 +87,49 @@ const resolvers = {
             try {
                 const newFacility = await facilityService.addFacility(args.input)
 
-                return newFacility
+                return newFacility.data
             } catch (error) {
-                console.error(error)
-                console.log('INPUT_FIELD:', JSON.stringify(args))
                 return CustomErrors.missingInput('Failed to create facility and Healthcare Professional.')
             }  
+        },
+        updateFacility: async (_parent: gqlType.Facility, args: {
+            id: string,
+            input: {
+                id: string,
+                nameEn?: string,
+                nameJa?: string,
+                contact?: gqlType.Contact,
+                healthcareProfessionalIds?: string[],
+                isDeleted?: boolean,
+                createdDate?: string,
+                updatedDate?: string
+            }
+        }) => {
+            const updatedFacility = await facilityService.updateFacility(args.id, args.input)
+
+            return updatedFacility.data
         },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
             input:{
                 facilityId: string,
-                acceptedInsurance: gqlType.Insurance[],
-                degrees: gqlType.Degree[],
-                names: gqlType.LocaleName[]
-                specialties: gqlType.Specialty[]
-                spokenLanguages: gqlType.SpokenLanguage[]
+                healthcareProfessionalInput: {
+                    acceptedInsurance: gqlType.Insurance[],
+                    degrees: gqlType.Degree[],
+                    names: gqlType.LocaleName[]
+                    specialties: gqlType.Specialty[]
+                    spokenLanguages: gqlType.SpokenLanguage[]
+                }
 
             }
         }) => {
             try {
                 const newHealthcareProfessional = 
-                await healthcareProfessionalService.addHealthcareProfessionalToFacility(args.input)
+                await healthcareProfessionalService.addHealthcareProfessionalToFacility(
+                    args.input.facilityId, args.input.healthcareProfessionalInput
+                )
 
                 return newHealthcareProfessional
             } catch (error) {
-                console.log(error)
-                console.log('INPUT_FIELD:', JSON.stringify(args))
                 return CustomErrors.missingInput('Failed to create the healthcare professional.')
             }
         },
@@ -163,8 +172,6 @@ const resolvers = {
                 }
                 return addSubmissionResult.data
             } catch (error) {
-                console.log(error)
-                console.log('INPUT_FIELDS:', JSON.stringify(args))
                 return CustomErrors.missingInput('Failed to create submission.')
             }
         },
@@ -206,8 +213,6 @@ const resolvers = {
 
                 return updatedSubmission
             } catch (error) {
-                console.log(error)
-                console.log('INPUT_FIELDS:', JSON.stringify(args))
                 return CustomErrors.missingInput('Failed to update the submission.')
             }
         }

@@ -1,6 +1,6 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
-import * as dbTypes from '../typeDefs/dbSchema'
+import * as dbSchema from '../typeDefs/dbSchema'
 import { CustomErrors, Result } from '../result'
 import { dbInstance } from '../firebaseDb'
 
@@ -23,7 +23,7 @@ export async function getHealthcareProfessionalById(id: string) {
 }
 
 export async function addHealthcareProfessional( 
-    input: gqlTypes.HealthcareProfessional, healthcareProfessionalRef?: 
+    input: gqlTypes.HealthcareProfessionalInput, healthcareProfessionalRef?: 
     FirebaseFirestore.DocumentReference<firebase.DocumentData>
 ) : Promise<Result<string>> {
     // TODO: add validation
@@ -35,14 +35,14 @@ export async function addHealthcareProfessional(
         const newHealthcareProfessional = {
             id: healthcareProfessionalRef.id, 
             acceptedInsurance: validateInsurance(input.acceptedInsurance as gqlTypes.Insurance[]),
-            degrees: mapAndValidateDegrees(input.degrees as dbTypes.Degree[]),
-            names: mapAndValidateNames(input.names as dbTypes.LocaleName[]),
-            specialties: mapAndValidateSpecialties(input.specialties as dbTypes.Specialty[]),
-            spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as dbTypes.SpokenLanguage[]),
+            degrees: mapAndValidateDegrees(input.degrees as dbSchema.Degree[]),
+            names: mapAndValidateNames(input.names as dbSchema.LocaleName[]),
+            specialties: mapAndValidateSpecialties(input.specialties as dbSchema.Specialty[]),
+            spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as dbSchema.SpokenLanguage[]),
             isDeleted: false,
             createdDate: new Date().toISOString(),
             updatedDate: new Date().toISOString()
-        } satisfies dbTypes.HealthcareProfessional
+        } satisfies dbSchema.HealthcareProfessional
     
         await healthcareProfessionalRef.set(newHealthcareProfessional)
     
@@ -55,18 +55,21 @@ export async function addHealthcareProfessional(
     }
 }
 
-export async function addHealthcareProfessionalToFacility(input: gqlTypes.HealthcareProfessionalInput) {
+export async function addHealthcareProfessionalToFacility(facilityId: string, 
+    healthcareProfessional: gqlTypes.HealthcareProfessionalInput) {
     try {
-        const facilityRef = dbInstance.collection('facilities').doc(input.facilityId as string)
+        const facilityRef = dbInstance.collection('facilities').doc(facilityId)
         const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
     
         const newHealthcareProfessional = {
             id: healthcareProfessionalRef.id, 
-            acceptedInsurance: validateInsurance(input.acceptedInsurance as []),
-            degrees: mapAndValidateDegrees(input.degrees as gqlTypes.Degree[]),
-            names: mapAndValidateNames(input.names as gqlTypes.LocaleName[]),
-            specialties: mapAndValidateSpecialties(input.specialties as gqlTypes.Specialty[]),
-            spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as gqlTypes.SpokenLanguage[]),
+            acceptedInsurance: validateInsurance(healthcareProfessional.acceptedInsurance as []),
+            degrees: mapAndValidateDegrees(healthcareProfessional.degrees as gqlTypes.Degree[]),
+            names: mapAndValidateNames(healthcareProfessional.names as gqlTypes.LocaleName[]),
+            specialties: mapAndValidateSpecialties(healthcareProfessional.specialties as gqlTypes.Specialty[]),
+            spokenLanguages: mapAndValidateLanguages(
+                healthcareProfessional.spokenLanguages as gqlTypes.SpokenLanguage[]
+            ),
             isDeleted: false
         }
     
@@ -106,7 +109,9 @@ function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
         spokenLanguages: dbEntity.spokenLanguages,
         specialties: dbEntity.specialties,
         acceptedInsurance: dbEntity.acceptedInsurance,
-        isDeleted: dbEntity.isDeleted
+        isDeleted: dbEntity.isDeleted,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
     } satisfies gqlTypes.HealthcareProfessional
     
     return gqlEntity
@@ -115,7 +120,7 @@ function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
 function mapAndValidateDegrees(degreesInput: gqlTypes.Degree[]) {
     try {
         const degrees = degreesInput.map((degree: gqlTypes.Degree) => {
-            const newDegree: dbTypes.Degree = {
+            const newDegree: dbSchema.Degree = {
                 nameJa: degree.nameJa as string,
                 nameEn: degree.nameEn as string,
                 abbreviation: degree.abbreviation as string
@@ -166,10 +171,10 @@ function mapAndValidateSpecialties(specialtiesInput: gqlTypes.Specialty[]) {
     }
 }
 
-function mapAndValidateSpecialtyNames(specialtyNamesInput: gqlTypes.SpecialtyName[]): dbTypes.SpecialtyName[] {
+function mapAndValidateSpecialtyNames(specialtyNamesInput: gqlTypes.SpecialtyName[]): dbSchema.SpecialtyName[] {
     try {
         const specialtyNames = specialtyNamesInput.map((name: gqlTypes.SpecialtyName) => {
-            const newSpecialtyName : dbTypes.SpecialtyName = {
+            const newSpecialtyName : dbSchema.SpecialtyName = {
                 name: name.name as string,
                 locale: name.locale as gqlTypes.Locale
             }
@@ -177,13 +182,13 @@ function mapAndValidateSpecialtyNames(specialtyNamesInput: gqlTypes.SpecialtyNam
             return newSpecialtyName
         })
 
-        return specialtyNames as dbTypes.SpecialtyName[]
+        return specialtyNames as dbSchema.SpecialtyName[]
     } catch (e) {
         throw CustomErrors.missingInput('The specialty names cannot be empty.')
     }
 }
 
-function mapAndValidateLanguages(languagesInput: gqlTypes.SpokenLanguage[]): dbTypes.SpokenLanguage[] {
+function mapAndValidateLanguages(languagesInput: gqlTypes.SpokenLanguage[]): dbSchema.SpokenLanguage[] {
     // TODO: Write conditional to check if already exists
     try {
         const languages = languagesInput.map((language: gqlTypes.SpokenLanguage) => {
@@ -197,7 +202,7 @@ function mapAndValidateLanguages(languagesInput: gqlTypes.SpokenLanguage[]): dbT
             return newLanguage
         })
 
-        return languages as dbTypes.SpokenLanguage[]
+        return languages as dbSchema.SpokenLanguage[]
     } catch (e) {
         throw CustomErrors.missingInput('The languages cannot be empty.')
     }

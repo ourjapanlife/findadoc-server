@@ -29,13 +29,12 @@ export const fakeHealthcareProfessionals = () => {
         names: [neurologyEn]
     }
 
-    const healthcareProfessionalOne : gqlTypes.HealthcareProfessional = {
+    const healthcareProfessionalOne : gqlTypes.HealthcareProfessionalInput = {
         names: [doctorDoctor],
         degrees: [medicalDegree],
         spokenLanguages: [japanese],
         specialties: [neurology],
-        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
-        isDeleted: false
+        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance]
     }
 
     const name : gqlTypes.LocaleName = {
@@ -66,13 +65,12 @@ export const fakeHealthcareProfessionals = () => {
         names: [specialtyName]
     }
 
-    const healthcareProfessionalTwo : gqlTypes.HealthcareProfessional = {
+    const healthcareProfessionalTwo : gqlTypes.HealthcareProfessionalInput = {
         names: [name],
         degrees: [englishDegree],
         spokenLanguages: [english],
         specialties: [pandaSpecialty],
-        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
-        isDeleted: false
+        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance]
     }
 
     return [healthcareProfessionalOne, healthcareProfessionalTwo]
