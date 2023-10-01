@@ -142,9 +142,13 @@ type Submission {
 }
 
 input SubmissionInput {
-  googleMapsUrl: String!
-  healthcareProfessionalName: String!
-  spokenLanguages: [SpokenLanguageInput]!
+  googleMapsUrl: String
+  healthcareProfessionalName: String
+  spokenLanguages: [SpokenLanguageInput]
+  isUnderReview: Boolean
+  isApproved: Boolean
+  isDeleted: Boolean
+  isRejected: Boolean
 }
 
 input SubmissionSearchFilters {
