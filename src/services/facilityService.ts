@@ -107,7 +107,7 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
  * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was added.
  */
 export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promise<Result<dbSchema.Facility>> {
-    const validationResult = validateAddFacilitiesInput(facilityInput)
+    const validationResult = validateAddFacilityInput(facilityInput)
 
     if (validationResult.hasErrors) {
         return validationResult
@@ -131,7 +131,7 @@ export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promis
                 addFacilityResult.hasErrors = true
                 addFacilityResult.errors?.concat(healthcareProfAddResults.errors)
             } else {
-                facilityInput.healthcareProfessionalIds.push(healthcareProfAddResults.data as string)
+                facilityInput.healthcareProfessionalIds?.push(healthcareProfAddResults.data as string)
             }
         }
     }
@@ -143,6 +143,37 @@ export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promis
     addFacilityResult.data = newFacility
 
     return addFacilityResult
+}
+
+/**
+ * Updates a Facility in the database with the params.
+ * @param facilityId The ID of the facility in the database.
+ * @param fieldsToUpdate The values that should be updated. They will be created if they don't exist.
+ * @returns The updated Facility.
+ */
+export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<dbSchema.Facility>): 
+    Promise<Result<dbSchema.Facility | null>> => {
+    try {
+        const facilityRef = dbInstance.collection('facilities').doc(facilityId)
+
+        const snapshot = await facilityRef.get()
+
+        const facilityToUpdate = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
+
+        const updatedFacilityValues: dbSchema.Facility = {
+            ...facilityToUpdate,
+            ...fieldsToUpdate,
+            updatedDate: new Date().toISOString()
+        }
+
+        await facilityRef.set(updatedFacilityValues, {merge: true})
+
+        const updatedFacility = await getFacilityById(facilityRef.id)
+
+        return updatedFacility
+    } catch (error) {
+        throw new Error(`Error updating facility: ${error}`)
+    }
 }
 
 /**
@@ -236,7 +267,7 @@ function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilte
     return validationResults
 }
 
-function validateAddFacilitiesInput(input: gqlTypes.FacilityInput): Result<dbSchema.Facility> {
+function validateAddFacilityInput(input: gqlTypes.FacilityInput): Result<dbSchema.Facility> {
     const validationResults: Result<dbSchema.Facility> = {
         hasErrors: false,
         errors: []

@@ -92,6 +92,23 @@ const resolvers = {
                 return CustomErrors.missingInput('Failed to create facility and Healthcare Professional.')
             }  
         },
+        updateFacility: async (_parent: gqlType.Facility, args: {
+            id: string,
+            input: {
+                id: string,
+                nameEn?: string,
+                nameJa?: string,
+                contact?: gqlType.Contact,
+                healthcareProfessionalIds?: string[],
+                isDeleted?: boolean,
+                createdDate?: string,
+                updatedDate?: string
+            }
+        }) => {
+            const updatedFacility = await facilityService.updateFacility(args.id, args.input)
+
+            return updatedFacility.data
+        },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
             input:{
                 facilityId: string,
