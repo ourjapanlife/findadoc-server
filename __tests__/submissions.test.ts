@@ -199,7 +199,7 @@ describe('getSubmissionById', () => {
                 }
               }`,
             variables: {
-                    submissionId: submissionId
+                submissionId: submissionId
             }
         }
 
@@ -220,9 +220,6 @@ describe('getSubmissionById', () => {
     })
 
     it('get an error when submission does not exist', async () => {
-        // Create a new Submission
-        const newSubmission = await request(url).post('/').send(queryData)
-        
         // Create a non existing uuid
         const submissionId = 'f34ec7a260e9'
         
@@ -247,7 +244,7 @@ describe('getSubmissionById', () => {
                 }
               }`,
             variables: {
-                    submissionId: submissionId
+                submissionId: submissionId
             }
         }
 
