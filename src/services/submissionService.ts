@@ -28,8 +28,8 @@ export const getSubmissionById = async (id: string) : Promise<Result<gqlTypes.Su
         }
 
         return searchResults
-    } catch (error: string | undefined | any) {
-        return CustomErrors.notFound(error)
+    } catch (error) {
+        return CustomErrors.notFound(`${error}`)
     }
 }
 
