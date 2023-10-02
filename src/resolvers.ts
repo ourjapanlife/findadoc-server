@@ -16,7 +16,7 @@ const resolvers = {
 
                 return queryResults.data
             } catch (error) {
-                return CustomErrors.notFound('No facilities where found.')
+                return CustomErrors.notFound('No facilities were found.')
             } 
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
@@ -58,7 +58,7 @@ const resolvers = {
 
                 return matchingSubmissions
             } catch (error) {
-                return CustomErrors.notFound('No submissions where found.')
+                return CustomErrors.notFound('No submissions were found.')
             }
         },
         submission: async (_parent: gqlType.Submission, args: { id: string }) => {
