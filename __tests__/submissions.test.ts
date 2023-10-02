@@ -218,4 +218,47 @@ describe('getSubmissionById', () => {
         expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
         expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
     })
+
+    it('get an error when submission does not exist', async () => {
+        // Create a new Submission
+        const newSubmission = await request(url).post('/').send(queryData)
+        
+        // Create a non existing uuid
+        const submissionId = 'f34ec7a260e9'
+        
+        // Query to get the Submission by non existing uuid
+        const submissionQuery = {
+            query: `query Query($submissionId: ID!) {
+                submission(id: $submissionId) {
+                  id
+                  googleMapsUrl
+                  healthcareProfessionalName
+                  spokenLanguages {
+                    iso639_3
+                    nameJa
+                    nameEn
+                    nameNative
+                  }
+                  isUnderReview
+                  isApproved
+                  isRejected
+                  createdDate
+                  updatedDate
+                }
+              }`,
+            variables: {
+                    submissionId: submissionId
+            }
+        }
+
+        const submission = await request(url).post('/').send(submissionQuery)
+
+        // Compare the data returned in the response to the updated fields that were sent
+        const submissionErrorResponse = submission.body
+
+        expect(submissionErrorResponse.errors[0].message).toBe('Error: Submission was not found.')
+        expect(submissionErrorResponse.errors[0].extensions.code).toBe('NOT_FOUND')
+        expect(submission.status).toBe(404)
+        expect(submissionErrorResponse.data.submission).toEqual(null)
+    })
 })
