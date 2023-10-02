@@ -303,9 +303,13 @@ export type Submission = {
 };
 
 export type SubmissionInput = {
-  googleMapsUrl: Scalars['String']['input'];
-  healthcareProfessionalName: Scalars['String']['input'];
-  spokenLanguages: Array<InputMaybe<SpokenLanguageInput>>;
+  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
+  isApproved?: InputMaybe<Scalars['Boolean']['input']>;
+  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
+  isRejected?: InputMaybe<Scalars['Boolean']['input']>;
+  isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
+  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
 };
 
 export type SubmissionSearchFilters = {

@@ -62,16 +62,9 @@ const resolvers = {
             }
         },
         submission: async (_parent: gqlType.Submission, args: { id: string }) => {
-            try {
-                if (!args.id || !args.id.trim()) {
-                    throw new Error('An ID was not provided')
-                }
-                const matchingSubmission = await submissionService.getSubmissionById(args.id)
+            const matchingSubmission = await submissionService.getSubmissionById(args.id)
 
-                return matchingSubmission           
-            } catch (error) {
-                return CustomErrors.notFound('The submission does not exist.')
-            }  
+            return matchingSubmission
         }
     },
     Mutation: {
@@ -178,6 +171,7 @@ const resolvers = {
         updateSubmission: async (_parent: gqlType.Submission, args: {
             id: string,
             input: {
+                id: string,
                 googleMapsUrl?: string,
                 healthcareProfessionalName?: string,
                 spokenLanguages?: gqlType.SpokenLanguage[],
@@ -186,35 +180,9 @@ const resolvers = {
                 isRejected?: boolean
             }
         }) => {
-            try {
-                let updatedSpokenLanguages: gqlType.SpokenLanguage[] | undefined
-                
-                if (args.input.spokenLanguages) {
-                    const spokenLanguagesResult = submissionService
-                        .mapAndValidateSpokenLanguages(args.input.spokenLanguages)
-                    
-                    if (spokenLanguagesResult.hasErrors) {
-                        throw new Error('Invalid spoken Language provided.')
-                    }
-                    updatedSpokenLanguages = spokenLanguagesResult.data
-                }
-                
-                const gqlUpdatedFields: Partial<gqlType.Submission> = {
-                    ...args.input,
-                    spokenLanguages: updatedSpokenLanguages
-                }
+            const updatedSubmission = await submissionService.updateSubmission(args.id, args.input)
 
-                const dbUpdatedFields = submissionService
-                    .convertGqlSubmissionUpdateToDbSubmissionUpdate(gqlUpdatedFields)
-
-                await submissionService.updateSubmission(args.id, dbUpdatedFields)
-
-                const updatedSubmission = await submissionService.getSubmissionById(args.id)
-
-                return updatedSubmission
-            } catch (error) {
-                return CustomErrors.missingInput('Failed to update the submission.')
-            }
+            return updatedSubmission.data
         }
     }
 }
