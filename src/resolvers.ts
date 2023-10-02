@@ -64,7 +64,7 @@ const resolvers = {
         submission: async (_parent: gqlType.Submission, args: { id: string }) => {
             const matchingSubmission = await submissionService.getSubmissionById(args.id)
 
-            return matchingSubmission
+            return matchingSubmission.data
         }
     },
     Mutation: {

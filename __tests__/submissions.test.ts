@@ -153,3 +153,69 @@ describe('updateSubmission', () => {
         expect(submissionResponse.isRejected).toBe(updatedFields.isRejected)
     })
 })
+
+describe('getSubmissionById', () => {
+    let url: string
+
+    const server = new ApolloServer({
+        typeDefs: loadSchema(),
+        resolvers
+    })
+
+    beforeAll(async () => {
+        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
+        await initiatilizeFirebaseInstance()
+    })
+
+    afterAll(async () => {
+        await server?.stop()
+    })
+    
+    it('get the submission that matches the id', async () => {
+        // Create a new Submission
+        const newSubmission = await request(url).post('/').send(queryData)
+        
+        // Get the ID of the new Submission
+        const submissionId = newSubmission.body.data.createSubmission.id
+        
+        // Query to get the Submission by id
+        const submissionQuery = {
+            query: `query Query($submissionId: ID!) {
+                submission(id: $submissionId) {
+                  id
+                  googleMapsUrl
+                  healthcareProfessionalName
+                  spokenLanguages {
+                    iso639_3
+                    nameJa
+                    nameEn
+                    nameNative
+                  }
+                  isUnderReview
+                  isApproved
+                  isRejected
+                  createdDate
+                  updatedDate
+                }
+              }`,
+            variables: {
+                    submissionId: submissionId
+            }
+        }
+
+        const submission = await request(url).post('/').send(submissionQuery)
+
+        // Compare the data returned in the response to the updated fields that were sent
+        const submissionResponse = submission.body.data.submission
+
+        const createdSubmission = newSubmission.body.data.createSubmission
+    
+        expect(submissionResponse.id).toBe(submissionId)
+        expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
+        expect(submissionResponse.healthcareProfessionalName).toBe(createdSubmission.healthcareProfessionalName)
+        expect(submissionResponse.spokenLanguages).toEqual(createdSubmission.spokenLanguages)
+        expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
+        expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
+        expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
+    })
+})
