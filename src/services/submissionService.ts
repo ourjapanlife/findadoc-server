@@ -5,6 +5,11 @@ import { dbInstance } from '../firebaseDb'
 import { CustomErrors, ErrorCode, Result } from '../result'
 import { hasSpecialCharacters } from '../../utils/stringUtils'
 
+/**
+ * Gets the Submission from the database that matches the id.
+ * @param id A string that matches the id of the Firestore Document for the Submission.
+ * @returns A Submission object.
+ */
 export const getSubmissionById = async (id: string) : Promise<Result<gqlTypes.Submission| null>> => {
     try {
         const validationResult = validateIdInput(id)
