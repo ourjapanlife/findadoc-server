@@ -2,9 +2,14 @@ import { DocumentData, Query } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
 import { dbInstance } from '../firebaseDb'
-import { ErrorCode, Result } from '../result'
+import { CustomErrors, ErrorCode, Result } from '../result'
 import { hasSpecialCharacters } from '../../utils/stringUtils'
 
+/**
+ * Gets the Submission from the database that matches the id.
+ * @param id A string that matches the id of the Firestore Document for the Submission.
+ * @returns A Submission object.
+ */
 export const getSubmissionById = async (id: string) : Promise<Result<gqlTypes.Submission| null>> => {
     try {
         const validationResult = validateIdInput(id)
@@ -15,12 +20,9 @@ export const getSubmissionById = async (id: string) : Promise<Result<gqlTypes.Su
     
         const submissionRef = dbInstance.collection('submissions')
         const snapshot = await submissionRef.where('id', '==', id).get()
-
+        
         if (snapshot.docs.length < 1) {
-            return {
-                data: null,
-                hasErrors: false
-            }
+            throw new Error('Submission was not found.')
         }
 
         const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
@@ -29,10 +31,10 @@ export const getSubmissionById = async (id: string) : Promise<Result<gqlTypes.Su
             data: convertedEntity,
             hasErrors: false
         }
-    
+
         return searchResults
-    } catch (e) {
-        throw new Error(`Error retrieving submission: ${e}`)
+    } catch (error) {
+        return CustomErrors.notFound(`${error}`)
     }
 }
 
