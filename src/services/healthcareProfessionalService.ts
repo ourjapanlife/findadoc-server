@@ -54,34 +54,49 @@ export async function addHealthcareProfessional(
         throw new Error(`Error adding healthcare professional: ${error}`)
     }
 }
-
-export async function addHealthcareProfessionalToFacility(facilityId: string, 
-    healthcareProfessional: gqlTypes.HealthcareProfessionalInput) {
+/**
+ * Adds a HealthcareProfessional to an existing Facility
+ * @param healthcareProfessionalInput 
+ * @returns A HealthcareProfessional object
+ */
+export async function addHealthcareProfessionalToFacility( 
+    healthcareProfessionalInput: gqlTypes.HealthcareProfessionalInput
+) {
     try {
-        const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-        const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
-    
-        const newHealthcareProfessional = {
-            id: healthcareProfessionalRef.id, 
-            acceptedInsurance: validateInsurance(healthcareProfessional.acceptedInsurance as []),
-            degrees: mapAndValidateDegrees(healthcareProfessional.degrees as gqlTypes.Degree[]),
-            names: mapAndValidateNames(healthcareProfessional.names as gqlTypes.LocaleName[]),
-            specialties: mapAndValidateSpecialties(healthcareProfessional.specialties as gqlTypes.Specialty[]),
-            spokenLanguages: mapAndValidateLanguages(
-                healthcareProfessional.spokenLanguages as gqlTypes.SpokenLanguage[]
-            ),
-            isDeleted: false
+        const addHealthcareProfessionalResult : Result<dbSchema.HealthcareProfessional> = {
+            hasErrors: false,
+            errors: []
         }
-    
+
+        // Creates the HealthcareProfessional document and returns a reference
+        const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
+        
+        // Maps the input into the format it will be saved in the database
+        const newHealthcareProfessional = convertToDbHealthcareProfessional(
+            healthcareProfessionalRef.id, healthcareProfessionalInput
+        )
+
+        // Updates the HealthcareProfessional document with the mapped input
         await healthcareProfessionalRef.set(newHealthcareProfessional)
-    
-        facilityRef.update(
-            'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
-        ) 
+        
+        const facilitiesIds = healthcareProfessionalInput.facilityIds
+
+        // Adds the HealthcareProfessional ID to each Facility it belongs to
+        facilitiesIds.map(facilityId => {
+            const facilityRef = dbInstance.collection('facilities').doc(facilityId)
+
+            facilityRef.update(
+                'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
+            )
+        })
+
+        // Returns the newly created HealthcareProfessional
+        addHealthcareProfessionalResult.data = newHealthcareProfessional
+
+        return addHealthcareProfessionalResult
     } catch (error) {
-        throw new Error(`Error adding healthcare professional to facility: ${error}`)
+        throw new Error(`Error adding HealthcareProfessional to Facility: ${error}`)
     }
-    // TODO: decide if something should be returned
 }
 
 // export async function searchHealthcareProfessionals(userSearchQuery : string[]) {
@@ -100,6 +115,24 @@ export async function addHealthcareProfessionalToFacility(facilityId: string,
 
 // return healthcareProfessionals
 // }
+
+function convertToDbHealthcareProfessional(
+    id: string, healthcareProfessionalInput: gqlTypes.HealthcareProfessionalInput
+) {
+    return {
+        id: id, 
+        acceptedInsurance: validateInsurance(healthcareProfessionalInput.acceptedInsurance as gqlTypes.Insurance[]),
+        degrees: mapAndValidateDegrees(healthcareProfessionalInput.degrees as dbSchema.Degree[]),
+        names: mapAndValidateNames(healthcareProfessionalInput.names as dbSchema.LocaleName[]),
+        specialties: mapAndValidateSpecialties(healthcareProfessionalInput.specialties as dbSchema.Specialty[]),
+        spokenLanguages: mapAndValidateLanguages(
+            healthcareProfessionalInput.spokenLanguages as dbSchema.SpokenLanguage[]
+        ),
+        isDeleted: false,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
+    } as dbSchema.HealthcareProfessional
+}
 
 function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
     const gqlEntity = {
@@ -215,3 +248,4 @@ function validateInsurance(insuranceInput: gqlTypes.Insurance[] | undefined) {
         return insuranceInput
     }
 }
+
