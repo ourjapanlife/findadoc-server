@@ -54,67 +54,50 @@ export async function addHealthcareProfessional(
         throw new Error(`Error adding healthcare professional: ${error}`)
     }
 }
+
 /**
- * Adds a HealthcareProfessional to an existing Facility
+ * Creates a HealthcareProfessional and adds it to the listed facilities
  * @param healthcareProfessionalInput 
  * @returns A HealthcareProfessional object
  */
 export async function addHealthcareProfessionalToFacility( 
     healthcareProfessionalInput: gqlTypes.HealthcareProfessionalInput
 ) {
-    try {
-        const addHealthcareProfessionalResult : Result<dbSchema.HealthcareProfessional> = {
-            hasErrors: false,
-            errors: []
-        }
+    const addHealthcareProfessionalResult : Result<dbSchema.HealthcareProfessional> = {
+        hasErrors: false,
+        errors: []
+    }
 
-        // Creates the HealthcareProfessional document and returns a reference
+    if (healthcareProfessionalInput.facilityIds.length == 0) {
+        throw CustomErrors.missingInput('The list of facilityIds cannot be empty.')
+    }
+
+    try {
         const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
-        
-        // Maps the input into the format it will be saved in the database
+    
         const newHealthcareProfessional = convertToDbHealthcareProfessional(
             healthcareProfessionalRef.id, healthcareProfessionalInput
         )
 
-        // Updates the HealthcareProfessional document with the mapped input
         await healthcareProfessionalRef.set(newHealthcareProfessional)
-        
-        const facilitiesIds = healthcareProfessionalInput.facilityIds
 
-        // Adds the HealthcareProfessional ID to each Facility it belongs to
-        facilitiesIds.map(facilityId => {
+        const facilities = healthcareProfessionalInput.facilityIds
+
+        facilities.map(async facilityId => {
             const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-
+                
             facilityRef.update(
                 'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
             )
         })
 
-        // Returns the newly created HealthcareProfessional
         addHealthcareProfessionalResult.data = newHealthcareProfessional
 
         return addHealthcareProfessionalResult
     } catch (error) {
-        throw new Error(`Error adding HealthcareProfessional to Facility: ${error}`)
+        throw new Error(`Error adding healthcare professional to Facility: ${error}`)
     }
 }
-
-// export async function searchHealthcareProfessionals(userSearchQuery : string[]) {
-// TODO: make it filter by params
-// const db = getFirestore()
-// const healthcareProfessionalRef = db.collection('healthcareProfessionals')
-// const snapshot = await healthcareProfessionalRef.where('id', 'in', userSearchQuery).get()
-
-// const healthcareProfessionals = [] as HealthcareProfessional[]
-
-// snapshot.forEach(doc => {
-//     const convertedEntity = mapDbEntityTogqlEntity(doc.data().degrees)
-
-//     healthcareProfessionals.push(convertedEntity)
-// })
-
-// return healthcareProfessionals
-// }
 
 function convertToDbHealthcareProfessional(
     id: string, healthcareProfessionalInput: gqlTypes.HealthcareProfessionalInput

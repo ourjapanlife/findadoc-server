@@ -90,7 +90,8 @@ const queryData = {
                             nameEn: 'some language EN',
                             iso639_3: 'en'
                         }
-                    ]
+                    ],
+                    facilityIds: []
                 }
             ],
             nameEn: 'some facility name EN',
@@ -118,7 +119,7 @@ describe('createFacilityWithHealthcareProfessional', () => {
     
     it('creates a new Facility with a new HealthcareProfessional', async () => {
         const response = await request(url).post('/').send(queryData)
-        
+
         const inputData = queryData.variables.input
         const newFacilityData = response.body.data.createFacilityWithHealthcareProfessional
 
