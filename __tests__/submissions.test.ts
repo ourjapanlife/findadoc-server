@@ -259,3 +259,276 @@ describe('getSubmissionById', () => {
         expect(submissionErrorResponse.data.submission).toEqual(null)
     })
 })
+
+describe('sereachSubmissions', () => {
+    let url: string
+
+    const server = new ApolloServer({
+        typeDefs: loadSchema(),
+        resolvers
+    })
+
+    beforeAll(async () => {
+        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
+        await initiatilizeFirebaseInstance()
+    })
+
+    afterAll(async () => {
+        await server?.stop()
+    })
+
+    it('get submissions using the language filter', async () => {
+        // Create a new Submission
+        const newSubmission = await request(url).post('/').send(queryData)
+    
+        // Query to get the Submission using language filter
+        const submissionQuery = {
+            query: `query Query($filters: SubmissionSearchFilters) {
+                submissions(filters: $filters) {
+                  googleMapsUrl
+                  createdDate
+                  id
+                  healthcareProfessionalName
+                  isApproved
+                  isRejected
+                  isUnderReview
+                  spokenLanguages {
+                    iso639_3
+                    nameEn
+                    nameJa
+                    nameNative
+                  }
+                  updatedDate
+                }
+              }`,
+            variables: {
+                filters: {
+                    spokenLanguages: [
+                        {
+                            iso639_3: 'en',
+                            nameEn: 'English',
+                            nameJa: '英語',
+                            nameNative: 'English'
+                        }
+                    ]
+                }
+            }
+        }
+
+        const submission = await request(url).post('/').send(submissionQuery)
+
+        const submissionResponse = submission.body.data.submissions[0]
+        
+        const createdSubmission = newSubmission.body.data.createSubmission
+
+        expect(submissionResponse.id).toBe(createdSubmission.id)
+        expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
+        expect(submissionResponse.createdDate).toBe(createdSubmission.createdDate)
+        expect(submissionResponse.healthcareProfessionalName)
+            .toBe(createdSubmission.healthcareProfessionalName)
+        expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
+        expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
+        expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
+        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmission.spokenLanguages)
+    })
+
+    it('get submissions using the googleMapUrl filter', async () => {
+        // Create a new Submission
+        const newSubmission = await request(url).post('/').send(queryData)
+
+        // get googleUrl of newSubmission
+        const googleMapsUrlNewSubmission = newSubmission.body.data.createSubmission.googleMapsUrl
+    
+        // Query to get the Submission using googleMapUrl filter
+        const submissionQuery = {
+            query: `query Query($filters: SubmissionSearchFilters) {
+                submissions(filters: $filters) {
+                  googleMapsUrl
+                  createdDate
+                  id
+                  healthcareProfessionalName
+                  isApproved
+                  isRejected
+                  isUnderReview
+                  spokenLanguages {
+                    iso639_3
+                    nameEn
+                    nameJa
+                    nameNative
+                  }
+                  updatedDate
+                }
+              }`,
+            variables: {
+                filters: {
+                    googleMapsUrl: googleMapsUrlNewSubmission
+                }
+            }
+        }
+
+        const submission = await request(url).post('/').send(submissionQuery)
+
+        // Compare the data returned in the response to the createSubmission
+        const submissionResponse = submission.body.data.submissions[0]
+        
+        const createdSubmission = newSubmission.body.data.createSubmission
+
+        expect(submissionResponse.id).toBe(createdSubmission.id)
+        expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
+        expect(submissionResponse.createdDate).toBe(createdSubmission.createdDate)
+        expect(submissionResponse.healthcareProfessionalName)
+            .toBe(createdSubmission.healthcareProfessionalName)
+        expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
+        expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
+        expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
+        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmission.spokenLanguages)
+    })
+
+    it('get submissions using the createDate filter', async () => {
+        // Create a new Submission
+        const newSubmission = await request(url).post('/').send(queryData)
+        
+        // get create date of newSubmission
+        const createDateNewSubmission = newSubmission.body.data.createSubmission.createDate
+
+        // Query to get the Submission using createDate filter
+        const submissionQuery = {
+            query: `query Query($filters: SubmissionSearchFilters) {
+                submissions(filters: $filters) {
+                  googleMapsUrl
+                  createdDate
+                  id
+                  healthcareProfessionalName
+                  isApproved
+                  isRejected
+                  isUnderReview
+                  spokenLanguages {
+                    iso639_3
+                    nameEn
+                    nameJa
+                    nameNative
+                  }
+                  updatedDate
+                }
+              }`,
+            variables: {
+                filters: {
+                    createdDate: createDateNewSubmission
+                }
+            }
+        }
+
+        const submission = await request(url).post('/').send(submissionQuery)
+
+        // Compare the data returned in the response to the created data
+        const submissionResponse = submission.body.data.submissions[0]
+        
+        const createdSubmission = newSubmission.body.data.createSubmission
+
+        expect(submissionResponse.id).toBe(createdSubmission.id)
+        expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
+        expect(submissionResponse.createdDate).toBe(createdSubmission.createdDate)
+        expect(submissionResponse.healthcareProfessionalName).toBe(createdSubmission.healthcareProfessionalName)
+        expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
+        expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
+        expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
+        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmission.spokenLanguages)
+    })
+
+    it('get submissions using multiple filters combining isApproved, isRejected and underReview', 
+       async () => {
+           // In this test beside testing the filters I want to test if it excepts multiple filters
+
+           // Create a new Submission
+           const newSubmission = await request(url).post('/').send(queryData)
+
+           // get isApproved, isRejected, isUnderReview of newSubmission
+           const isApprovedNewSubmission = newSubmission.body.data.createSubmission.isApproved
+           const isRejectedNewSubmission = newSubmission.body.data.createSubmission.isRejected
+           const isUnderReviewNewSubmission = newSubmission.body.data.createSubmission.isUnderReview
+
+           // Query to get the Submission using 3 filters
+           const submissionQuery = {
+               query: `query Query($filters: SubmissionSearchFilters) {
+                submissions(filters: $filters) {
+                  googleMapsUrl
+                  createdDate
+                  id
+                  healthcareProfessionalName
+                  isApproved
+                  isRejected
+                  isUnderReview
+                  spokenLanguages {
+                    iso639_3
+                    nameEn
+                    nameJa
+                    nameNative
+                  }
+                  updatedDate
+                }
+              }`,
+               variables: {
+                   filters: {
+                       isApproved: isApprovedNewSubmission,
+                       isRejected: isRejectedNewSubmission,
+                       isUnderReview: isUnderReviewNewSubmission
+                   }
+               }
+           }
+
+           const submission = await request(url).post('/').send(submissionQuery)
+        
+           // Compare the data returned in the response to the createSubmission
+           const submissionResponse = submission.body.data.submissions[0]
+        
+           const createdSubmission = newSubmission.body.data.createSubmission
+
+           expect(submissionResponse.id).toBe(createdSubmission.id)
+           expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
+           expect(submissionResponse.createdDate).toBe(createdSubmission.createdDate)
+           expect(submissionResponse.healthcareProfessionalName).toBe(createdSubmission.healthcareProfessionalName)
+           expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
+           expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
+           expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
+           expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmission.spokenLanguages)
+       })
+
+    it('get all the submissions without filters', async () => {
+        /* I wanted to create two new submissions to test if I got more than 1 submissions back 
+        if I want to get all the submissions. But the linting doesn't allow variables that are not used.
+        Since we dont' delete our emulator data yet after every test it works fine. In the future when we delete our
+        data from the emulator we should create multiple submissions.*/
+
+        // const newSubmissionOne = await request(url).post('/').send(queryData)
+        // const newSubmissionTwo = await request(url).post('/').send(queryData)
+     
+        // Query to get the Submission using googleMapUrl filter
+        const submissionQuery = {
+            query: `query Query($filters: SubmissionSearchFilters) {
+            submissions(filters: $filters) {
+              googleMapsUrl
+              createdDate
+              id
+              healthcareProfessionalName
+              isApproved
+              isRejected
+              isUnderReview
+              spokenLanguages {
+                iso639_3
+                nameEn
+                nameJa
+                nameNative
+              }
+              updatedDate
+            }
+          }`
+        }
+
+        const submission = await request(url).post('/').send(submissionQuery)
+    
+        // Compare the data returned in the response with desired length
+        const submissionResponse = submission.body.data.submissions
+
+        expect(submissionResponse.length).toBeGreaterThan(1)
+    })
+})
