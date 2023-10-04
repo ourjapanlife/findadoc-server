@@ -317,6 +317,7 @@ describe('sereachSubmissions', () => {
 
         const submission = await request(url).post('/').send(submissionQuery)
 
+        // Compare the data returned in the response to the createSubmission
         const submissionResponse = submission.body.data.submissions[0]
         
         const createdSubmission = newSubmission.body.data.createSubmission
