@@ -218,6 +218,7 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
         await submissionRef.set(updatedSubmissionValues, {merge: true})
 
         const updatedSubmission = await getSubmissionById(submissionRef.id)
+
         if (fieldsToUpdate.isApproved === true) {
             const facilityData: gqlTypes.FacilityInput = {
                 nameEn: submissionToUpdate.healthcareProfessionalName,
@@ -262,7 +263,7 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
             
             const newFacilityResult = await addFacility(facilityData)
             
-            if(newFacilityResult.data) {
+            if (newFacilityResult.data) {
                 healthcareProfessionalData.id = newFacilityResult.data.id
             } else {
                 throw new Error('Failed to create new facility.')
@@ -279,7 +280,7 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
     }
 }
 
-const validateSubmissionInputFields = (input: gqlTypes.SubmissionInput): Result<dbSchema.Submission> => {
+const validateSubmissionInputFields = (input: gqlTypes.AddSubmissionInput): Result<dbSchema.Submission> => {
     const validatedSubmissionResult: Result<dbSchema.Submission> = {
         hasErrors: false,
         errors: []

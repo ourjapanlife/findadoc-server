@@ -170,12 +170,6 @@ export type MutationUpdateFacilityArgs = {
 };
 
 
-export type MutationUpdateFacilityArgs = {
-  id: Scalars['ID']['input'];
-  input?: InputMaybe<FacilityInput>;
-};
-
-
 export type MutationUpdateHealthcareProfessionalArgs = {
   id: Scalars['ID']['input'];
   input?: InputMaybe<HealthcareProfessionalInput>;
