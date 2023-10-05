@@ -5,6 +5,8 @@ import request from 'supertest'
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
+import { initializeTestEnvironment, RulesTestEnvironment} from '@firebase/rules-unit-testing'
+import fs from 'fs'
 
 const queryData = {
     query: `mutation Mutation($input: SubmissionInput) {
@@ -76,6 +78,7 @@ describe('createSubmission', () => {
 
 describe('updateSubmission', () => {
     let url: string
+    let testEnv: RulesTestEnvironment
 
     const server = new ApolloServer({
         typeDefs: loadSchema(),
@@ -84,17 +87,26 @@ describe('updateSubmission', () => {
 
     beforeAll(async () => {
         ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        await initiatilizeFirebaseInstance()
+        testEnv = await initializeTestEnvironment({
+            projectId: process.env.FIRESTORE_PROJECT_ID,
+            firestore: {
+                rules: fs.readFileSync('./firestore.rules', 'utf8')
+            }
+        })
+    })
+
+    beforeEach(async () => {
+        await testEnv.clearFirestore()
     })
 
     afterAll(async () => {
-        await server?.stop()
+        await server?.stop()  
     })
     
     it('updates a Submission with the fields included in the input', async () => {
         // Create a new Submission
         const newSubmission = await request(url).post('/').send(queryData)
-        
+
         // Get the ID of the new Submission
         const submissionId = newSubmission.body.data.createSubmission.id
 
@@ -138,10 +150,11 @@ describe('updateSubmission', () => {
             }
         }
 
-        const submission = await request(url).post('/').send(submissionQuery)
+        // Get the submission query data
+        const searchResult = await request(url).post('/').send(submissionQuery)
 
         // Compare the data returned in the response to the updated fields that were sent
-        const submissionResponse = submission.body.data.updateSubmission
+        const submissionResponse = searchResult.body.data.updateSubmission
         const updatedFields = submissionQuery.variables.input
 
         expect(submissionResponse.id).toBe(submissionId)
@@ -156,6 +169,7 @@ describe('updateSubmission', () => {
 
 describe('getSubmissionById', () => {
     let url: string
+    let testEnv: RulesTestEnvironment
 
     const server = new ApolloServer({
         typeDefs: loadSchema(),
@@ -164,19 +178,31 @@ describe('getSubmissionById', () => {
 
     beforeAll(async () => {
         ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        await initiatilizeFirebaseInstance()
+        testEnv = await initializeTestEnvironment({
+            projectId: process.env.FIRESTORE_PROJECT_ID,
+            firestore: {
+                rules: fs.readFileSync('./firestore.rules', 'utf8')
+            }
+        })
+    })
+
+    beforeEach(async () => {
+        await testEnv.clearFirestore()
     })
 
     afterAll(async () => {
-        await server?.stop()
+        await server?.stop()  
     })
     
     it('get the submission that matches the id', async () => {
         // Create a new Submission
         const newSubmission = await request(url).post('/').send(queryData)
+
+        // Destructure newSubmission
+        const createdSubmissionData = newSubmission.body.data.createSubmission
         
         // Get the ID of the new Submission
-        const submissionId = newSubmission.body.data.createSubmission.id
+        const submissionId = createdSubmissionData.id
         
         // Query to get the Submission by id
         const submissionQuery = {
@@ -203,20 +229,19 @@ describe('getSubmissionById', () => {
             }
         }
 
-        const submission = await request(url).post('/').send(submissionQuery)
+        // Get the submission by id query data
+        const searchResult = await request(url).post('/').send(submissionQuery)
 
         // Compare the data returned in the response to the updated fields that were sent
-        const submissionResponse = submission.body.data.submission
-
-        const createdSubmission = newSubmission.body.data.createSubmission
+        const submissionResponse = searchResult.body.data.submission
     
         expect(submissionResponse.id).toBe(submissionId)
-        expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
-        expect(submissionResponse.healthcareProfessionalName).toBe(createdSubmission.healthcareProfessionalName)
-        expect(submissionResponse.spokenLanguages).toEqual(createdSubmission.spokenLanguages)
-        expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
-        expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
-        expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
+        expect(submissionResponse.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
+        expect(submissionResponse.healthcareProfessionalName).toBe(createdSubmissionData.healthcareProfessionalName)
+        expect(submissionResponse.spokenLanguages).toEqual(createdSubmissionData.spokenLanguages)
+        expect(submissionResponse.isApproved).toBe(createdSubmissionData.isApproved)
+        expect(submissionResponse.isUnderReview).toBe(createdSubmissionData.isUnderReview)
+        expect(submissionResponse.isRejected).toBe(createdSubmissionData.isRejected)
     })
 
     it('get an error when submission does not exist', async () => {
@@ -248,20 +273,22 @@ describe('getSubmissionById', () => {
             }
         }
 
-        const submission = await request(url).post('/').send(submissionQuery)
+        // Get error data
+        const searchData = await request(url).post('/').send(submissionQuery)
 
         // Compare the data returned in the response to the updated fields that were sent
-        const submissionErrorResponse = submission.body
+        const submissionErrorResponse = searchData .body
 
         expect(submissionErrorResponse.errors[0].message).toBe('Error: Submission was not found.')
         expect(submissionErrorResponse.errors[0].extensions.code).toBe('NOT_FOUND')
-        expect(submission.status).toBe(404)
+        expect(searchData .status).toBe(404)
         expect(submissionErrorResponse.data.submission).toEqual(null)
     })
 })
 
-describe('sereachSubmissions', () => {
+describe('searchSubmissions', () => {
     let url: string
+    let testEnv: RulesTestEnvironment
 
     const server = new ApolloServer({
         typeDefs: loadSchema(),
@@ -270,17 +297,29 @@ describe('sereachSubmissions', () => {
 
     beforeAll(async () => {
         ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        await initiatilizeFirebaseInstance()
+        testEnv = await initializeTestEnvironment({
+            projectId: process.env.FIRESTORE_PROJECT_ID,
+            firestore: {
+                rules: fs.readFileSync('./firestore.rules', 'utf8')
+            }
+        })
+    })
+
+    beforeEach(async () => {
+        await testEnv.clearFirestore()
     })
 
     afterAll(async () => {
-        await server?.stop()
+        await server?.stop()  
     })
 
     it('get submissions using the language filter', async () => {
         // Create a new Submission
         const newSubmission = await request(url).post('/').send(queryData)
-    
+
+        // Destructure newSubmission result data 
+        const createdSubmissionData = newSubmission.body.data.createSubmission
+
         // Query to get the Submission using language filter
         const submissionQuery = {
             query: `query Query($filters: SubmissionSearchFilters) {
@@ -315,29 +354,31 @@ describe('sereachSubmissions', () => {
             }
         }
 
-        const submission = await request(url).post('/').send(submissionQuery)
+        // Get the submissions query data
+        const searchResult = await request(url).post('/').send(submissionQuery)
 
-        // Compare the data returned in the response to the createSubmission
-        const submissionResponse = submission.body.data.submissions[0]
+        // Compare the data returned in the response to the createdSubmission
+        const resultData = searchResult.body.data.submissions[0]
         
-        const createdSubmission = newSubmission.body.data.createSubmission
-
-        expect(submissionResponse.id).toBe(createdSubmission.id)
-        expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
-        expect(submissionResponse.createdDate).toBe(createdSubmission.createdDate)
-        expect(submissionResponse.healthcareProfessionalName)
-            .toBe(createdSubmission.healthcareProfessionalName)
-        expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
-        expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
-        expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
-        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmission.spokenLanguages)
+        expect(resultData.id).toBe(createdSubmissionData.id)
+        expect(resultData.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
+        expect(resultData.createdDate).toBe(createdSubmissionData.createdDate)
+        expect(resultData.healthcareProfessionalName)
+            .toBe(createdSubmissionData.healthcareProfessionalName)
+        expect(resultData.isApproved).toBe(createdSubmissionData.isApproved)
+        expect(resultData.isRejected).toBe(createdSubmissionData.isRejected)
+        expect(resultData.isUnderReview).toBe(createdSubmissionData.isUnderReview)
+        expect(resultData.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
     })
 
     it('get submissions using the googleMapUrl filter', async () => {
         // Create a new Submission
         const newSubmission = await request(url).post('/').send(queryData)
 
-        // get googleUrl of newSubmission
+        // Destructure newSubmission result data
+        const createdSubmissionData = newSubmission.body.data.createSubmission
+
+        // Get googleUrl of newSubmission
         const googleMapsUrlNewSubmission = newSubmission.body.data.createSubmission.googleMapsUrl
     
         // Query to get the Submission using googleMapUrl filter
@@ -367,30 +408,31 @@ describe('sereachSubmissions', () => {
             }
         }
 
-        const submission = await request(url).post('/').send(submissionQuery)
+        const searchResult = await request(url).post('/').send(submissionQuery)
 
         // Compare the data returned in the response to the createSubmission
-        const submissionResponse = submission.body.data.submissions[0]
-        
-        const createdSubmission = newSubmission.body.data.createSubmission
+        const submissionResponse = searchResult.body.data.submissions[0]
 
-        expect(submissionResponse.id).toBe(createdSubmission.id)
-        expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
-        expect(submissionResponse.createdDate).toBe(createdSubmission.createdDate)
+        expect(submissionResponse.id).toBe(createdSubmissionData.id)
+        expect(submissionResponse.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
+        expect(submissionResponse.createdDate).toBe(createdSubmissionData.createdDate)
         expect(submissionResponse.healthcareProfessionalName)
-            .toBe(createdSubmission.healthcareProfessionalName)
-        expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
-        expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
-        expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
-        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmission.spokenLanguages)
+            .toBe(createdSubmissionData.healthcareProfessionalName)
+        expect(submissionResponse.isApproved).toBe(createdSubmissionData.isApproved)
+        expect(submissionResponse.isRejected).toBe(createdSubmissionData.isRejected)
+        expect(submissionResponse.isUnderReview).toBe(createdSubmissionData.isUnderReview)
+        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
     })
 
     it('get submissions using the createDate filter', async () => {
         // Create a new Submission
         const newSubmission = await request(url).post('/').send(queryData)
         
-        // get create date of newSubmission
-        const createDateNewSubmission = newSubmission.body.data.createSubmission.createDate
+        // Destructure newSubmission result data
+        const createdSubmissionData = newSubmission.body.data.createSubmission
+
+        // Get createDate 
+        const newSubmissionCreateDate = createdSubmissionData.createDate
 
         // Query to get the Submission using createDate filter
         const submissionQuery = {
@@ -414,39 +456,41 @@ describe('sereachSubmissions', () => {
               }`,
             variables: {
                 filters: {
-                    createdDate: createDateNewSubmission
+                    createdDate: newSubmissionCreateDate
                 }
             }
         }
 
-        const submission = await request(url).post('/').send(submissionQuery)
+        // Get the submissions query data
+        const searchResult = await request(url).post('/').send(submissionQuery)
 
-        // Compare the data returned in the response to the created data
-        const submissionResponse = submission.body.data.submissions[0]
+        // Compare the data returned in the response to the createdSubmissionsData
+        const resultData = searchResult.body.data.submissions[0]
         
-        const createdSubmission = newSubmission.body.data.createSubmission
-
-        expect(submissionResponse.id).toBe(createdSubmission.id)
-        expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
-        expect(submissionResponse.createdDate).toBe(createdSubmission.createdDate)
-        expect(submissionResponse.healthcareProfessionalName).toBe(createdSubmission.healthcareProfessionalName)
-        expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
-        expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
-        expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
-        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmission.spokenLanguages)
+        expect(resultData.id).toBe(createdSubmissionData.id)
+        expect(resultData.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
+        expect(resultData.createdDate).toBe(createdSubmissionData.createdDate)
+        expect(resultData.healthcareProfessionalName).toBe(createdSubmissionData.healthcareProfessionalName)
+        expect(resultData.isApproved).toBe(createdSubmissionData.isApproved)
+        expect(resultData.isRejected).toBe(createdSubmissionData.isRejected)
+        expect(resultData.isUnderReview).toBe(createdSubmissionData.isUnderReview)
+        expect(resultData.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
     })
 
     it('get submissions using multiple filters combining isApproved, isRejected and underReview', 
        async () => {
            // In this test beside testing the filters I want to test if it excepts multiple filters
-
+           
            // Create a new Submission
            const newSubmission = await request(url).post('/').send(queryData)
 
-           // get isApproved, isRejected, isUnderReview of newSubmission
-           const isApprovedNewSubmission = newSubmission.body.data.createSubmission.isApproved
-           const isRejectedNewSubmission = newSubmission.body.data.createSubmission.isRejected
-           const isUnderReviewNewSubmission = newSubmission.body.data.createSubmission.isUnderReview
+           // Destructure newSubmission result data
+           const createdSubmissionData = newSubmission.body.data.createSubmission
+
+           // Get isApproved, isRejected, isUnderReview of createSubmission
+           const isApprovedNewSubmission = createdSubmissionData.isApproved
+           const isRejectedNewSubmission = createdSubmissionData.isRejected
+           const isUnderReviewNewSubmission = createdSubmissionData.isUnderReview
 
            // Query to get the Submission using 3 filters
            const submissionQuery = {
@@ -477,32 +521,31 @@ describe('sereachSubmissions', () => {
                }
            }
 
-           const submission = await request(url).post('/').send(submissionQuery)
+           //Get the submissions query data
+           const searchResult = await request(url).post('/').send(submissionQuery)
         
            // Compare the data returned in the response to the createSubmission
-           const submissionResponse = submission.body.data.submissions[0]
+           const resultData = searchResult.body.data.submissions[0]
         
-           const createdSubmission = newSubmission.body.data.createSubmission
-
-           expect(submissionResponse.id).toBe(createdSubmission.id)
-           expect(submissionResponse.googleMapsUrl).toBe(createdSubmission.googleMapsUrl)
-           expect(submissionResponse.createdDate).toBe(createdSubmission.createdDate)
-           expect(submissionResponse.healthcareProfessionalName).toBe(createdSubmission.healthcareProfessionalName)
-           expect(submissionResponse.isApproved).toBe(createdSubmission.isApproved)
-           expect(submissionResponse.isRejected).toBe(createdSubmission.isRejected)
-           expect(submissionResponse.isUnderReview).toBe(createdSubmission.isUnderReview)
-           expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmission.spokenLanguages)
+           expect(resultData.id).toBe(createdSubmissionData.id)
+           expect(resultData.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
+           expect(resultData.createdDate).toBe(createdSubmissionData.createdDate)
+           expect(resultData.healthcareProfessionalName).toBe(createdSubmissionData.healthcareProfessionalName)
+           expect(resultData.isApproved).toBe(createdSubmissionData.isApproved)
+           expect(resultData.isRejected).toBe(createdSubmissionData.isRejected)
+           expect(resultData.isUnderReview).toBe(createdSubmissionData.isUnderReview)
+           expect(resultData.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
        })
 
     it('get all the submissions without filters', async () => {
-        /* I wanted to create two new submissions to test if I got more than 1 submissions back 
-        if I want to get all the submissions. But the linting doesn't allow variables that are not used.
-        Since we dont' delete our emulator data yet after every test it works fine. In the future when we delete our
-        data from the emulator we should create multiple submissions.*/
+        // Create two new submissons to be able to see that we get 2 submissions back
+        const newSubmissionOne = await request(url).post('/').send(queryData)
+        const newSubmissionTwo = await request(url).post('/').send(queryData)
+ 
+        // Destructure newSubmission result data 
+        const createdSubmissionOneData = newSubmissionOne.body.data.createSubmission
+        const createdSubmissionTwoData = newSubmissionTwo.body.data.createSubmission
 
-        // const newSubmissionOne = await request(url).post('/').send(queryData)
-        // const newSubmissionTwo = await request(url).post('/').send(queryData)
-     
         // Query to get the Submission using googleMapUrl filter
         const submissionQuery = {
             query: `query Query($filters: SubmissionSearchFilters) {
@@ -525,11 +568,14 @@ describe('sereachSubmissions', () => {
           }`
         }
 
-        const submission = await request(url).post('/').send(submissionQuery)
+        // Get the query data
+        const searchResult = await request(url).post('/').send(submissionQuery)
     
-        // Compare the data returned in the response with desired length
-        const submissionResponse = submission.body.data.submissions
-
-        expect(submissionResponse.length).toBeGreaterThan(1)
+        // Get all the submissions data
+        const allSubmissionsData = searchResult.body.data.submissions
+        
+        expect(allSubmissionsData.length).toBe(2)
+        expect(allSubmissionsData[1].id).toBe(createdSubmissionOneData.id)
+        expect(allSubmissionsData[0].id).toBe(createdSubmissionTwoData.id)
     })
 })
