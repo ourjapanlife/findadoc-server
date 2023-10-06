@@ -58,6 +58,109 @@ function validateIdInput(id: string): Result<gqlTypes.Submission> {
     return validationResults
 }
 
+function validateSubmissionSearchFilters(filters: dbSchema.SubmissionSearchFilters): Result<gqlTypes.Submission[]> {
+    const validationResults: Result<gqlTypes.Submission[]> = {
+        hasErrors: false,
+        errors: []
+    }
+
+    const { orderBy, limit } = filters
+
+    if (orderBy?.some(order => order.fieldToOrder === 'id')) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'orderBy',
+            errorCode: ErrorCode.INVALID_SEARCH_OPTION,
+            httpStatus: 400
+        })
+    }
+
+    const validFields = [
+        'googleMapsUrl',
+        'healthcareProfessionalName',
+        'isUnderReview', 
+        'isApproved',
+        'isRejected', 
+        'createdDate', 
+        'updatedDate'
+    ]
+    
+    const invalidOrder = orderBy?.find(order => !validFields.includes(order.fieldToOrder))
+
+    if (invalidOrder) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'orderBy',
+            errorCode: ErrorCode.INVALID_ORDERBY_FIELD,
+            httpStatus: 400
+        })
+    }
+
+    if (orderBy && orderBy.length > 2) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'orderBy',
+            errorCode: ErrorCode.MAX_LIMIT,
+            httpStatus: 400
+        })
+    }
+
+    if (limit && (limit < 0)) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'limit',
+            errorCode: ErrorCode.MIN_LIMIT,
+            httpStatus: 400
+        })
+    }
+
+    if (limit && (limit > 1000)) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'limit',
+            errorCode: ErrorCode.MAX_LIMIT,
+            httpStatus: 400
+        })
+    }
+
+    if (filters.googleMapsUrl === '' || (filters.googleMapsUrl && !filters.googleMapsUrl.trim())) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'googleMapsUrl',
+            errorCode: ErrorCode.MISSING_INPUT,
+            httpStatus: 400
+        })
+    }
+
+    if (filters.healthcareProfessionalName === '' || 
+       (filters.healthcareProfessionalName && !filters.healthcareProfessionalName.trim())) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'healthcareProfessionalName',
+            errorCode: ErrorCode.MISSING_INPUT,
+            httpStatus: 400
+        })
+    }
+
+    if (filters.spokenLanguages) {
+        for (const lang of filters.spokenLanguages) {
+            if ((!lang.iso639_3 || !lang.iso639_3.trim()) &&
+               (!lang.nameEn || !lang.nameEn.trim()) &&
+               (!lang.nameJa || !lang.nameJa.trim()) &&
+               (!lang.nameNative || !lang.nameNative.trim())) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: 'spokenLanguages',
+                    errorCode: ErrorCode.MISSING_INPUT,
+                    httpStatus: 400
+                })
+            }
+        }
+    }
+
+    return validationResults
+}
+
 /**
  * Get all the submissions in the database when no filters are provided.
  * When there are filters provided it will return all the submissions according to the filters.
@@ -67,6 +170,12 @@ function validateIdInput(id: string): Result<gqlTypes.Submission> {
  */
 export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilters = {}) {
     try {
+        const validationResult = validateSubmissionSearchFilters(filters)
+
+        if (validationResult.hasErrors) {
+            return validationResult
+        }
+
         const {
             googleMapsUrl,
             healthcareProfessionalName,
@@ -138,7 +247,6 @@ export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilter
                 requiredLanguages.every((reqLang: string) =>
                     sub.spokenLanguages.some(subLang => subLang?.iso639_3 === reqLang)))
         }
-
         return submissions
     } catch (error) {
         throw new Error(`Error retrieving submissions: ${error}`)
