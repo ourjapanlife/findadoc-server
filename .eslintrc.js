@@ -40,7 +40,7 @@ module.exports = {
         }
     ],
     ignorePatterns: [
-        'src/typeDefs/gqlTypes.ts', 
+        'src/typeDefs/gqlTypes.ts',
         'typesgeneratorconfig.ts',
         'dist'
     ],
@@ -69,7 +69,7 @@ module.exports = {
         'arrow-spacing': 'error',
         'block-spacing': ['error', 'always'],
         'brace-style': ['error', '1tbs', { allowSingleLine: true }],
-        camelcase: ['error', {allow: ['639_3']}],
+        camelcase: ['error', { allow: ['639_3'] }],
         'comma-dangle': ['error', 'never'],
         'comma-spacing': ['error', { before: false, after: true }],
         'comma-style': 'error',
@@ -91,7 +91,15 @@ module.exports = {
         'key-spacing': ['error', { beforeColon: false, afterColon: true }],
         'keyword-spacing': ['error', { before: true, after: true }],
         'linebreak-style': ['error', 'unix'], // no carriage returns
-        'max-len': ['error', { code: 120 }], // be friendly to laptops
+        'max-len': ['error', {
+            code: 120,
+            ignoreComments: true,
+            ignoreTrailingComments: true,
+            ignoreUrls: true,
+            ignoreStrings: true,
+            ignoreTemplateLiterals: true,
+            ignoreRegExpLiterals: true
+        }], // be friendly to laptops
         'newline-after-var': 'error',
         'require-atomic-updates': 'warn', // I'd prefer warn
         'no-constant-condition': 'error',
