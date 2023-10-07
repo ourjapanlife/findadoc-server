@@ -95,7 +95,16 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
 
         return searchResults
     } catch (error) {
-        throw new Error(`Error retrieving submissions: ${error}`)
+        console.log(`Error retrieving facilities: ${error}`)
+        
+        return {
+            hasErrors: true,
+            errors: [{
+                field: 'searchFacilities',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
 }
 
@@ -113,7 +122,7 @@ export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promis
         return validationResult
     }
 
-    const addFacilityResult : Result<dbSchema.Facility> = {
+    const addFacilityResult: Result<dbSchema.Facility> = {
         hasErrors: false,
         errors: []
     }
@@ -151,7 +160,7 @@ export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promis
  * @param fieldsToUpdate The values that should be updated. They will be created if they don't exist.
  * @returns The updated Facility.
  */
-export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<dbSchema.Facility>): 
+export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<dbSchema.Facility>):
     Promise<Result<dbSchema.Facility | null>> => {
     try {
         const facilityRef = dbInstance.collection('facilities').doc(facilityId)
@@ -166,7 +175,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
             updatedDate: new Date().toISOString()
         }
 
-        await facilityRef.set(updatedFacilityValues, {merge: true})
+        await facilityRef.set(updatedFacilityValues, { merge: true })
 
         const updatedFacility = await getFacilityById(facilityRef.id)
 
@@ -348,7 +357,7 @@ function validateContactInput(contactInput: gqlTypes.ContactInput): Result<boole
             validationResults.errors?.push(...addressValidationResults.errors as [])
         }
     }
-    
+
     return validationResults
 }
 

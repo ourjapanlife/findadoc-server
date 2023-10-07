@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import * as facilityService from './services/facilityService'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService'
 import * as gqlType from './typeDefs/gqlTypes'
@@ -7,17 +8,18 @@ import { CustomErrors } from './result'
 const resolvers = {
     Query: {
         facilities: async (_parent: gqlType.Facility, args: { filters: gqlType.FacilitySearchFilters }) => {
-            try {
-                const queryResults = await facilityService.searchFacilities(args.filters)
+            const queryResults = await facilityService.searchFacilities(args.filters)
 
-                //TODO: add validation errors to gql errors
-                //TODO: add auth errors to gql errors
-                //TODO: add expections to gql errors
+            if (queryResults.hasErrors) {
+                throw new GraphQLError('Validation Failed', {
+                    extensions: {
+                        code: 'BAD_USER_INPUT',
+                        errors: queryResults.errors
+                    }
+                })
+            }
 
-                return queryResults.data
-            } catch (error) {
-                return CustomErrors.notFound('No facilities were found.')
-            } 
+            return queryResults.data
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
             try {
@@ -30,7 +32,7 @@ const resolvers = {
                 return queryResults.data
             } catch (error) {
                 return CustomErrors.notFound('The facility does not exist.')
-            } 
+            }
         },
         // healthcareProfessionals: async () => {
         //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
@@ -42,13 +44,13 @@ const resolvers = {
                 if (!args.id || !args.id.trim()) {
                     throw new Error('An ID was not provided')
                 }
-                const matchingHealthcareProfessional = 
-                await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
+                const matchingHealthcareProfessional =
+                    await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
 
-                return matchingHealthcareProfessional        
+                return matchingHealthcareProfessional
             } catch (error) {
                 return CustomErrors.notFound('The healthcare professional does not exist.')
-            }  
+            }
         },
         submissions: async (_parent: gqlType.Submission, args: { filters: gqlType.SubmissionSearchFilters }) => {
             try {
@@ -83,7 +85,7 @@ const resolvers = {
                 return newFacility.data
             } catch (error) {
                 return CustomErrors.missingInput('Failed to create facility and Healthcare Professional.')
-            }  
+            }
         },
         updateFacility: async (_parent: gqlType.Facility, args: {
             id: string,
@@ -103,17 +105,17 @@ const resolvers = {
             return updatedFacility.data
         },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessionalInput, args: {
-            input:{
-                    acceptedInsurance: gqlType.Insurance[],
-                    degrees: gqlType.Degree[],
-                    names: gqlType.LocaleName[]
-                    specialties: gqlType.Specialty[]
-                    spokenLanguages: gqlType.SpokenLanguage[],
-                    facilityIds: string[],
+            input: {
+                acceptedInsurance: gqlType.Insurance[],
+                degrees: gqlType.Degree[],
+                names: gqlType.LocaleName[]
+                specialties: gqlType.Specialty[]
+                spokenLanguages: gqlType.SpokenLanguage[],
+                facilityIds: string[],
 
             }
         }) => {
-            const newHealthcareProfessional = 
+            const newHealthcareProfessional =
                 await healthcareProfessionalService.addHealthcareProfessionalToFacility(
                     args.input
                 )
@@ -121,7 +123,7 @@ const resolvers = {
             return newHealthcareProfessional.data
         },
         createSubmission: async (_parent: gqlType.Submission, args: {
-            input:{
+            input: {
                 googleMapsUrl: string,
                 healthcareProfessionalName: string,
                 spokenLanguages: gqlType.SpokenLanguage[]
@@ -133,7 +135,7 @@ const resolvers = {
                         throw new Error('Missing Input')
                     }
                 }
-                
+
                 const submissionData: gqlType.Submission = {
                     id: '',
                     googleMapsUrl: args.input.googleMapsUrl,
