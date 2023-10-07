@@ -1,7 +1,7 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
-import { CustomErrors, Result } from '../result'
+import { CustomErrors, ErrorCode, Result } from '../result'
 import { dbInstance } from '../firebaseDb'
 
 export async function getHealthcareProfessionalById(id: string) {
@@ -55,51 +55,73 @@ export async function addHealthcareProfessional(
     }
 }
 
-export async function addHealthcareProfessionalToFacility(facilityId: string, 
-    healthcareProfessional: gqlTypes.HealthcareProfessionalInput) {
+/**
+ * Creates a HealthcareProfessional and adds it to the listed facilities
+ * @param healthcareProfessionalInput 
+ * @returns A HealthcareProfessional object
+ */
+export async function addHealthcareProfessionalToFacility( 
+    healthcareProfessionalInput: gqlTypes.HealthcareProfessionalInput
+) {
+    const addHealthcareProfessionalResult : Result<dbSchema.HealthcareProfessional> = {
+        hasErrors: false,
+        errors: []
+    }
+
+    if (!healthcareProfessionalInput.facilityIds.length) {
+        addHealthcareProfessionalResult.hasErrors = true
+        addHealthcareProfessionalResult.errors?.push({
+            field: 'facilityId',
+            errorCode: ErrorCode.ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED,
+            httpStatus: 400
+        })
+        throw CustomErrors.missingInput('The list of facilityIds cannot be empty.')
+    }
+
     try {
-        const facilityRef = dbInstance.collection('facilities').doc(facilityId)
         const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
     
-        const newHealthcareProfessional = {
-            id: healthcareProfessionalRef.id, 
-            acceptedInsurance: validateInsurance(healthcareProfessional.acceptedInsurance as []),
-            degrees: mapAndValidateDegrees(healthcareProfessional.degrees as gqlTypes.Degree[]),
-            names: mapAndValidateNames(healthcareProfessional.names as gqlTypes.LocaleName[]),
-            specialties: mapAndValidateSpecialties(healthcareProfessional.specialties as gqlTypes.Specialty[]),
-            spokenLanguages: mapAndValidateLanguages(
-                healthcareProfessional.spokenLanguages as gqlTypes.SpokenLanguage[]
-            ),
-            isDeleted: false
-        }
-    
+        const newHealthcareProfessional = convertToDbHealthcareProfessional(
+            healthcareProfessionalRef.id, healthcareProfessionalInput
+        )
+
         await healthcareProfessionalRef.set(newHealthcareProfessional)
-    
-        facilityRef.update(
-            'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
-        ) 
+
+        const facilities = healthcareProfessionalInput.facilityIds
+
+        facilities.map(async facilityId => {
+            const facilityRef = dbInstance.collection('facilities').doc(facilityId)
+                
+            facilityRef.update(
+                'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
+            )
+        })
+
+        addHealthcareProfessionalResult.data = newHealthcareProfessional
+
+        return addHealthcareProfessionalResult
     } catch (error) {
-        throw new Error(`Error adding healthcare professional to facility: ${error}`)
+        throw new Error(`Error adding healthcare professional to Facility: ${error}`)
     }
-    // TODO: decide if something should be returned
 }
 
-// export async function searchHealthcareProfessionals(userSearchQuery : string[]) {
-// TODO: make it filter by params
-// const db = getFirestore()
-// const healthcareProfessionalRef = db.collection('healthcareProfessionals')
-// const snapshot = await healthcareProfessionalRef.where('id', 'in', userSearchQuery).get()
-
-// const healthcareProfessionals = [] as HealthcareProfessional[]
-
-// snapshot.forEach(doc => {
-//     const convertedEntity = mapDbEntityTogqlEntity(doc.data().degrees)
-
-//     healthcareProfessionals.push(convertedEntity)
-// })
-
-// return healthcareProfessionals
-// }
+function convertToDbHealthcareProfessional(
+    id: string, healthcareProfessionalInput: gqlTypes.HealthcareProfessionalInput
+) {
+    return {
+        id: id, 
+        acceptedInsurance: validateInsurance(healthcareProfessionalInput.acceptedInsurance as gqlTypes.Insurance[]),
+        degrees: mapAndValidateDegrees(healthcareProfessionalInput.degrees as dbSchema.Degree[]),
+        names: mapAndValidateNames(healthcareProfessionalInput.names as dbSchema.LocaleName[]),
+        specialties: mapAndValidateSpecialties(healthcareProfessionalInput.specialties as dbSchema.Specialty[]),
+        spokenLanguages: mapAndValidateLanguages(
+            healthcareProfessionalInput.spokenLanguages as dbSchema.SpokenLanguage[]
+        ),
+        isDeleted: false,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
+    } as dbSchema.HealthcareProfessional
+}
 
 function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
     const gqlEntity = {
@@ -215,3 +237,4 @@ function validateInsurance(insuranceInput: gqlTypes.Insurance[] | undefined) {
         return insuranceInput
     }
 }
+

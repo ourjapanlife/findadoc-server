@@ -96,6 +96,7 @@ export type HealthcareProfessional = {
 export type HealthcareProfessionalInput = {
   acceptedInsurance: Array<Insurance>;
   degrees: Array<DegreeInput>;
+  facilityIds: Array<Scalars['String']['input']>;
   names: Array<LocaleNameInput>;
   specialties: Array<SpecialtyInput>;
   spokenLanguages: Array<SpokenLanguageInput>;

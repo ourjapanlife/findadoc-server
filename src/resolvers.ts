@@ -102,29 +102,23 @@ const resolvers = {
 
             return updatedFacility.data
         },
-        createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessional, args: {
+        createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessionalInput, args: {
             input:{
-                facilityId: string,
-                healthcareProfessionalInput: {
                     acceptedInsurance: gqlType.Insurance[],
                     degrees: gqlType.Degree[],
                     names: gqlType.LocaleName[]
                     specialties: gqlType.Specialty[]
-                    spokenLanguages: gqlType.SpokenLanguage[]
-                }
+                    spokenLanguages: gqlType.SpokenLanguage[],
+                    facilityIds: string[],
 
             }
         }) => {
-            try {
-                const newHealthcareProfessional = 
+            const newHealthcareProfessional = 
                 await healthcareProfessionalService.addHealthcareProfessionalToFacility(
-                    args.input.facilityId, args.input.healthcareProfessionalInput
+                    args.input
                 )
 
-                return newHealthcareProfessional
-            } catch (error) {
-                return CustomErrors.missingInput('Failed to create the healthcare professional.')
-            }
+            return newHealthcareProfessional.data
         },
         createSubmission: async (_parent: gqlType.Submission, args: {
             input:{

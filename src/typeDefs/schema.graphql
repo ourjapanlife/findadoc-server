@@ -64,6 +64,7 @@ input HealthcareProfessionalInput {
   spokenLanguages: [SpokenLanguageInput!]!
   specialties: [SpecialtyInput!]!
   acceptedInsurance: [Insurance!]!,
+  facilityIds: [String!]!
 }
 
 type HealthcareProfessional {
