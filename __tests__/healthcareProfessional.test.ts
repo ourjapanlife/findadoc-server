@@ -177,7 +177,7 @@ describe('createHealthcareProfessional', () => {
     })
     
     afterAll(async () => {
-        await server?.stop()
+        await server.stop()
     })
     
     it('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
@@ -196,13 +196,14 @@ describe('createHealthcareProfessional', () => {
         expect(newHealthcareProfessionalData.updatedDate).toBeDefined()
     })
 
-    it('throws an error if the list of facilityIds is empty', async () => {
+    it('failing: throws an error if the list of facilityIds is empty', async () => {
         facilityIds.pop()
 
         const response = await request(url).post('/').send(healthcareProfessionalQueryData)
 
+        // console.log('response =', response.body)
         const errors = response.body.errors[0]
-
+        
         expect(errors.message).toBe('The list of facilityIds cannot be empty.')
         expect(errors.extensions.code).toBe(ErrorCode.MISSING_INPUT)
         expect(response.statusCode).toBe(400)

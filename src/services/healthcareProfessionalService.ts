@@ -1,7 +1,7 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
-import { CustomErrors, Result } from '../result'
+import { CustomErrors, ErrorCode, Result } from '../result'
 import { dbInstance } from '../firebaseDb'
 
 export async function getHealthcareProfessionalById(id: string) {
@@ -68,7 +68,13 @@ export async function addHealthcareProfessionalToFacility(
         errors: []
     }
 
-    if (healthcareProfessionalInput.facilityIds.length == 0) {
+    if (!healthcareProfessionalInput.facilityIds.length) {
+        addHealthcareProfessionalResult.hasErrors = true
+        addHealthcareProfessionalResult.errors?.push({
+            field: 'facilityId',
+            errorCode: ErrorCode.ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED,
+            httpStatus: 400
+        })
         throw CustomErrors.missingInput('The list of facilityIds cannot be empty.')
     }
 
