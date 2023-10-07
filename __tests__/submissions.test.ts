@@ -244,7 +244,7 @@ describe('getSubmissionById', () => {
         expect(submissionResponse.isRejected).toBe(createdSubmissionData.isRejected)
     })
 
-    it('get an error when submission does not exist', async () => {
+    it('failing: returns an error when submission does not exist', async () => {
         // Create a non existing uuid
         const submissionId = 'f34ec7a260e9'
         
@@ -277,11 +277,11 @@ describe('getSubmissionById', () => {
         const searchData = await request(url).post('/').send(submissionQuery)
 
         // Compare the data returned in the response to the updated fields that were sent
-        const submissionErrorResponse = searchData .body
+        const submissionErrorResponse = searchData.body
 
         expect(submissionErrorResponse.errors[0].message).toBe('Error: Submission was not found.')
         expect(submissionErrorResponse.errors[0].extensions.code).toBe('NOT_FOUND')
-        expect(searchData .status).toBe(404)
+        expect(searchData.status).toBe(404)
         expect(submissionErrorResponse.data.submission).toEqual(null)
     })
 })
