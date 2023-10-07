@@ -1605,6 +1605,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@firebase/rules-unit-testing@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "@firebase/rules-unit-testing@npm:3.0.1"
+  dependencies:
+    node-fetch: 2.6.7
+  peerDependencies:
+    firebase: ^10.0.0
+  checksum: 795b9fd1c2ce6d1cdfb99153e062364cc0706649c037eaf5e4cdb56064cf88d3e9380381601de5dd1e989dc35e8f09d88ef4b683bc767e07cac6acbceffe81c1
+  languageName: node
+  linkType: hard
+
 "@firebase/storage-compat@npm:0.3.2":
   version: 0.3.2
   resolution: "@firebase/storage-compat@npm:0.3.2"
@@ -6540,6 +6551,7 @@ __metadata:
   resolution: "findadoc-server@workspace:."
   dependencies:
     "@apollo/server": ^4.9.3
+    "@firebase/rules-unit-testing": ^3.0.1
     "@graphql-codegen/cli": ^5.0.0
     "@graphql-codegen/typescript": ^4.0.1
     "@graphql-codegen/typescript-resolvers": ^4.0.1

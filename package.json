@@ -7,7 +7,7 @@
         "dev": "echo '\n🧶 Installing yarn dependencies...🧶\n' && yarn && yarn generate && yarn dev:startserver",
         "dev:startserver": "echo '\n💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development ts-node-dev --no-notify --exit-child src/index.ts",
         "dev:startlocaldb": "firebase login && firebase emulators:start --project='find-a-doc-japan' --only firestore",
-        "test": "jest --runInBand --detectOpenHandles --forceExit --setupFiles",
+        "test": "echo '\n🧶 Installing yarn dependencies...🧶\n' && yarn && jest --forceExit --maxWorkers=1",
         "test:dockerstart": "docker-compose -f 'docker/docker-compose-test.yml' up -d --build",
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
         "prod": "yarn prod:dockerstop && yarn prod:dockerstart",
@@ -38,6 +38,7 @@
         "yarn": "^3.6.3"
     },
     "devDependencies": {
+        "@firebase/rules-unit-testing": "^3.0.1",
         "@graphql-codegen/cli": "^5.0.0",
         "@graphql-codegen/typescript": "^4.0.1",
         "@graphql-codegen/typescript-resolvers": "^4.0.1",

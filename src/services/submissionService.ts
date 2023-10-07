@@ -56,6 +56,13 @@ function validateIdInput(id: string): Result<gqlTypes.Submission> {
     return validationResults
 }
 
+/**
+ * Get all the submissions in the database when no filters are provided.
+ * When there are filters provided it will return all the submissions according to the filters.
+ * @param filters An object that contains parameters to filter on. 
+ * When no parameters are provided, filters is an empty object.
+ * @returns A submissions object
+ */
 export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilters = {}) {
     try {
         const {
