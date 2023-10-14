@@ -23,8 +23,10 @@ export const createApolloServer = async () => {
         // Allows you to choose what error info is visable for client side
         formatError: gqlError => {
             console.log('gqlError', gqlError)
-            
+
+            //these are the errors that are thrown in the resolvers using the Result.errors object
             if (gqlError.extensions?.errors) {
+                //let's format these errors similar to native apollo gql errors. 
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const formattedErrors = (gqlError.extensions.errors as any[])
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -273,6 +273,15 @@ function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilte
         })
     }
 
+    if (searchInput.limit && searchInput.limit < 0) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'limit',
+            errorCode: ErrorCode.MIN_LIMIT,
+            httpStatus: 400
+        })
+    }
+
     return validationResults
 }
 

@@ -1,38 +1,24 @@
-import { GraphQLError } from 'graphql';
+import { GraphQLError } from 'graphql'
 import * as facilityService from './services/facilityService'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService'
 import * as gqlType from './typeDefs/gqlTypes'
 import * as submissionService from './services/submissionService'
-import { CustomErrors } from './result'
+import { CustomErrors, Result } from './result'
 
 const resolvers = {
     Query: {
         facilities: async (_parent: gqlType.Facility, args: { filters: gqlType.FacilitySearchFilters }) => {
             const queryResults = await facilityService.searchFacilities(args.filters)
 
-            if (queryResults.hasErrors) {
-                throw new GraphQLError('Validation Failed', {
-                    extensions: {
-                        code: 'BAD_USER_INPUT',
-                        errors: queryResults.errors
-                    }
-                })
-            }
+            convertErrorsToGqlErrors(queryResults)
 
             return queryResults.data
         },
         facility: async (_parent: gqlType.Facility, args: { id: string; }) => {
-            try {
-                const queryResults = await facilityService.getFacilityById(args.id)
+            const queryResults = await facilityService.getFacilityById(args.id)
 
-                //TODO: add validation errors to gql errors
-                //TODO: add auth errors to gql errors
-                //TODO: add expections to gql errors
-
-                return queryResults.data
-            } catch (error) {
-                return CustomErrors.notFound('The facility does not exist.')
-            }
+            convertErrorsToGqlErrors(queryResults)
+            return queryResults.data
         },
         // healthcareProfessionals: async () => {
         //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
@@ -80,9 +66,10 @@ const resolvers = {
             }
         }) => {
             try {
-                const newFacility = await facilityService.addFacility(args.input)
+                const newFacilityResult = await facilityService.addFacility(args.input)
 
-                return newFacility.data
+                convertErrorsToGqlErrors(newFacilityResult)
+                return newFacilityResult.data
             } catch (error) {
                 return CustomErrors.missingInput('Failed to create facility and Healthcare Professional.')
             }
@@ -100,9 +87,10 @@ const resolvers = {
                 updatedDate?: string
             }
         }) => {
-            const updatedFacility = await facilityService.updateFacility(args.id, args.input)
+            const updateFacilityResult = await facilityService.updateFacility(args.id, args.input)
 
-            return updatedFacility.data
+            convertErrorsToGqlErrors(updateFacilityResult)
+            return updateFacilityResult.data
         },
         createHealthcareProfessional: async (_parent: gqlType.HealthcareProfessionalInput, args: {
             input: {
@@ -115,12 +103,11 @@ const resolvers = {
 
             }
         }) => {
-            const newHealthcareProfessional =
-                await healthcareProfessionalService.addHealthcareProfessionalToFacility(
-                    args.input
-                )
+            const addHealthcareProfessionalResult =
+                await healthcareProfessionalService.addHealthcareProfessionalToFacility(args.input)
 
-            return newHealthcareProfessional.data
+            convertErrorsToGqlErrors(addHealthcareProfessionalResult)
+            return addHealthcareProfessionalResult.data
         },
         createSubmission: async (_parent: gqlType.Submission, args: {
             input: {
@@ -156,9 +143,7 @@ const resolvers = {
                 }
                 const addSubmissionResult = await submissionService.addSubmission(submissionData)
 
-                if (addSubmissionResult.hasErrors) {
-                    throw new Error('Failed to create submission.')
-                }
+                convertErrorsToGqlErrors(addSubmissionResult)
                 return addSubmissionResult.data
             } catch (error) {
                 return CustomErrors.missingInput('Failed to create submission.')
@@ -176,10 +161,22 @@ const resolvers = {
                 isRejected?: boolean
             }
         }) => {
-            const updatedSubmission = await submissionService.updateSubmission(args.id, args.input)
+            const updatedSubmissionResult = await submissionService.updateSubmission(args.id, args.input)
 
-            return updatedSubmission.data
+            convertErrorsToGqlErrors(updatedSubmissionResult)
+            return updatedSubmissionResult.data
         }
+    }
+}
+
+function convertErrorsToGqlErrors(resultObject: Result<unknown>): void {
+    if (resultObject.hasErrors) {
+        throw new GraphQLError('Validation Failed', {
+            extensions: {
+                code: 'BAD_USER_INPUT',
+                errors: resultObject.errors
+            }
+        })
     }
 }
 
