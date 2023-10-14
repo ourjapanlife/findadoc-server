@@ -45,6 +45,8 @@ export async function addHealthcareProfessional(
         } satisfies dbSchema.HealthcareProfessional
     
         await healthcareProfessionalRef.set(newHealthcareProfessional)
+
+        console.log(`DB-ADD: Added healthcare professional ${newHealthcareProfessional.id}`)
     
         return {
             data: newHealthcareProfessional.id,

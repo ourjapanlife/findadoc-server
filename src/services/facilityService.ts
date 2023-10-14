@@ -140,6 +140,8 @@ export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promis
 
     await facilityRef.set(newFacility)
 
+    console.log(`DB-ADD: Added facility ${facilityRef.id}`)
+
     addFacilityResult.data = newFacility
 
     return addFacilityResult
@@ -167,6 +169,8 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         }
 
         await facilityRef.set(updatedFacilityValues, {merge: true})
+
+        console.log(`DB-UPDATE: Added facility ${facilityRef.id}`)
 
         const updatedFacility = await getFacilityById(facilityRef.id)
 
