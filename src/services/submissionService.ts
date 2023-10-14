@@ -12,17 +12,17 @@ import { addHealthcareProfessional } from './healthcareProfessionalService'
  * @param id A string that matches the id of the Firestore Document for the Submission.
  * @returns A Submission object.
  */
-export const getSubmissionById = async (id: string) : Promise<Result<gqlTypes.Submission| null>> => {
+export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Submission | null>> => {
     try {
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
             return validationResult
         }
-    
+
         const submissionRef = dbInstance.collection('submissions')
         const snapshot = await submissionRef.where('id', '==', id).get()
-        
+
         if (snapshot.docs.length < 1) {
             throw new Error('Submission was not found.')
         }
@@ -127,15 +127,15 @@ export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilter
 
         const snapshot = await subRef.get()
 
-        let submissions = snapshot.docs.map(doc => 
-            mapDbEntityTogqlEntity({ ...doc.data(), id: doc.id}))
+        let submissions = snapshot.docs.map(doc =>
+            mapDbEntityTogqlEntity({ ...doc.data(), id: doc.id }))
 
         if (spokenLanguages && spokenLanguages.length) {
             const requiredLanguages = spokenLanguages
                 .map((lang: { iso639_3: string }) => lang.iso639_3)
 
-            submissions = submissions.filter(sub => 
-                requiredLanguages.every((reqLang: string) => 
+            submissions = submissions.filter(sub =>
+                requiredLanguages.every((reqLang: string) =>
                     sub.spokenLanguages.some(subLang => subLang.iso639_3 === reqLang)))
         }
 
@@ -145,7 +145,7 @@ export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilter
     }
 }
 
-function convertToDbSubmission(submission: gqlTypes.Submission): 
+function convertToDbSubmission(submission: gqlTypes.Submission):
     dbSchema.Submission {
     return {
         ...submission,
@@ -160,7 +160,7 @@ function convertToDbSubmission(submission: gqlTypes.Submission):
     }
 }
 
-export const addSubmission = async (submissionInput: gqlTypes.Submission): 
+export const addSubmission = async (submissionInput: gqlTypes.Submission):
     Promise<Result<dbSchema.Submission>> => {
     const addSubmissionResult: Result<dbSchema.Submission> = {
         hasErrors: false,
@@ -184,7 +184,7 @@ export const addSubmission = async (submissionInput: gqlTypes.Submission):
             errors: spokenLanguagesResult.errors
         }
     }
-    
+
     const submissionRef = dbInstance.collection('submissions').doc()
     const newSubmissionId = submissionRef.id
 
@@ -201,9 +201,16 @@ export const addSubmission = async (submissionInput: gqlTypes.Submission):
     return addSubmissionResult
 }
 
-export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<dbSchema.Submission>): 
-    Promise<Result<dbSchema.Submission | null>> => {
+export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<dbSchema.Submission>):
+    Promise<Result<void>> => {
     try {
+        //business logic: a submission can't be unapproved once it's approved.
+        if (fieldsToUpdate.isApproved) {
+            const approvalResult = await approveSubmission(submissionId)
+
+            return approvalResult
+        }
+
         const submissionRef = dbInstance.collection('submissions').doc(submissionId)
 
         const snapshot = await submissionRef.get()
@@ -215,11 +222,11 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
             updatedDate: new Date().toISOString()
         }
 
-        await submissionRef.set(updatedSubmissionValues, {merge: true})
+        await submissionRef.set(updatedSubmissionValues, { merge: true })
 
         const updatedSubmission = await getSubmissionById(submissionRef.id)
 
-        if (fieldsToUpdate.isApproved === true) {
+        if (fieldsToUpdate.isApproved) {
             const facilityData: gqlTypes.FacilityInput = {
                 nameEn: submissionToUpdate.healthcareProfessionalName,
                 nameJa: submissionToUpdate.healthcareProfessionalName,
@@ -260,9 +267,9 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
                 createdDate: new Date().toISOString(),
                 updatedDate: new Date().toISOString()
             }
-            
+
             const newFacilityResult = await addFacility(facilityData)
-            
+
             if (newFacilityResult.data) {
                 healthcareProfessionalData.id = newFacilityResult.data.id
             } else {
@@ -271,12 +278,92 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
 
             await addHealthcareProfessional(healthcareProfessionalData)
         }
-        
+
         await submissionRef.update(updatedSubmission)
+
+        console.log(`DB-UPDATE: Submission ${submissionId} was updated.`)
 
         return updatedSubmission as Result<dbSchema.Submission>
     } catch (error) {
         throw new Error(`Error updating submission: ${error}`)
+    }
+}
+
+/**
+ * Approves a submission. Once approved, it creates a new facility and/or healthcare professional(s).
+ * Once it's approved, it can't be unapproved.
+ * @param submissionId the submission to approve
+ * @returns service result any errors
+ */
+export const approveSubmission = async (submissionId: string): Promise<Result<void>> => {
+    const approveResult: Result<void> = {
+        hasErrors: false,
+        errors: []
+    }
+
+    try {
+        const submissionRef = dbInstance.collection('submissions').doc(submissionId)
+        const snapshot = await submissionRef.get()
+        const currentSubmission = snapshot.data()
+
+        if (!currentSubmission) {
+            approveResult.errors?.push({
+                field: 'submissionId',
+                errorCode: ErrorCode.NOT_FOUND,
+                httpStatus: 400
+            })
+
+            return approveResult
+        }
+
+        //business logic: we can't approve a submission that's already approved. let's confirm it was previously not approved. 
+        if (currentSubmission?.isApproved) {
+            approveResult.errors?.push({
+                field: 'isApproved',
+                errorCode: ErrorCode.SUBMISSION_ALREADY_APPROVED,
+                httpStatus: 400
+            })
+
+            return approveResult
+        }
+
+        //update the submission to approved
+        currentSubmission.isApproved = true
+        currentSubmission.updatedDate = new Date().toISOString()
+
+        await submissionRef.set(currentSubmission, { merge: true })
+
+        console.log(`DB-UPDATE: Submission ${submissionId} was approved.`)
+
+        //try creating healthcare professional(s)
+        for await (const healthcareProfessional of currentSubmission.healthcareProfessionals) {
+            const addHealthcareProfessionalResult = await addHealthcareProfessional(healthcareProfessional)
+
+            if (addHealthcareProfessionalResult.hasErrors) {
+                approveResult.errors?.concat(addHealthcareProfessionalResult.errors!)
+                return approveResult
+            }
+        }
+
+        //try creating the facility
+        const createFacilityResult = await addFacility(currentSubmission)
+
+        if (createFacilityResult.hasErrors) {
+            approveResult.errors?.concat(createFacilityResult.errors!)
+            return approveResult
+        }
+
+        return approveResult
+    } catch (error) {
+        console.log(`Error approving submission ${submissionId}: ${error}`)
+
+        approveResult.errors?.push({
+            field: 'isApproved',
+            errorCode: ErrorCode.SERVER_ERROR,
+            httpStatus: 500
+        })
+
+        return approveResult
     }
 }
 
@@ -285,14 +372,14 @@ const validateSubmissionInputFields = (input: gqlTypes.AddSubmissionInput): Resu
         hasErrors: false,
         errors: []
     }
-    
+
     if (!input.googleMapsUrl || !input.googleMapsUrl.trim()) {
         validatedSubmissionResult.hasErrors = true
         validatedSubmissionResult.errors?.push({
             field: 'googleMapsUrl',
             errorCode: ErrorCode.MISSING_INPUT,
             httpStatus: 400
-        })    
+        })
     }
 
     if (input.googleMapsUrl && input.googleMapsUrl.length > 1028) {
@@ -301,7 +388,7 @@ const validateSubmissionInputFields = (input: gqlTypes.AddSubmissionInput): Resu
             field: 'googleMapsUrl',
             errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
             httpStatus: 400
-        })    
+        })
     }
 
     if (!input.healthcareProfessionalName || !input.healthcareProfessionalName.trim()) {
@@ -328,7 +415,7 @@ const validateSubmissionInputFields = (input: gqlTypes.AddSubmissionInput): Resu
 export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Partial<gqlTypes.Submission>):
     Partial<dbSchema.Submission> {
     const { spokenLanguages, ...remainingSubmissionFields } = submission
-    
+
     if (!spokenLanguages) {
         return { ...remainingSubmissionFields }
     }
@@ -336,7 +423,7 @@ export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Parti
     return {
         ...remainingSubmissionFields,
         spokenLanguages: spokenLanguages
-            .filter((lang): lang is gqlTypes.SpokenLanguage => 
+            .filter((lang): lang is gqlTypes.SpokenLanguage =>
                 lang !== null && lang !== undefined &&
                 typeof lang.iso639_3 === 'string' &&
                 typeof lang.nameJa === 'string' &&
@@ -351,7 +438,7 @@ export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Parti
     }
 }
 
-function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage): 
+function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage):
     dbSchema.SpokenLanguage {
     return {
         iso639_3: lang.iso639_3 as string,
@@ -361,7 +448,7 @@ function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage):
     }
 }
 
-export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLanguageInput[]): 
+export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLanguageInput[]):
     Result<dbSchema.SpokenLanguage[]> => {
     const validatedSpokenLanguagesResults: Result<dbSchema.SpokenLanguage[]> = {
         hasErrors: false,
@@ -379,10 +466,10 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLa
     }
 
     const validatedLanguages = spokenLanguages
-        .filter(lang => lang && 
-            lang.iso639_3?.trim() && 
-            lang.nameJa?.trim() && 
-            lang.nameEn?.trim() && 
+        .filter(lang => lang &&
+            lang.iso639_3?.trim() &&
+            lang.nameJa?.trim() &&
+            lang.nameEn?.trim() &&
             lang.nameNative?.trim())
         .map(lang => ({
             iso639_3: lang.iso639_3?.trim() as string,
@@ -390,7 +477,7 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLa
             nameEn: lang.nameEn?.trim() as string,
             nameNative: lang.nameNative?.trim() as string
         }))
-    
+
     if (validatedLanguages.length !== spokenLanguages.length) {
         validatedSpokenLanguagesResults.hasErrors = true
         validatedSpokenLanguagesResults.errors?.push({
@@ -428,7 +515,7 @@ export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlTypes.Submissio
     return {
         ...filters,
         googleMapsUrl: filters.googleMapsUrl === null ? undefined : filters.googleMapsUrl,
-        healthcareProfessionalName: filters.healthcareProfessionalName === null ? undefined : 
+        healthcareProfessionalName: filters.healthcareProfessionalName === null ? undefined :
             filters.healthcareProfessionalName,
         spokenLanguages: filteredLanguages,
         isUnderReview: filters.isUnderReview ?? undefined,
@@ -441,7 +528,7 @@ export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlTypes.Submissio
     }
 }
 
-const mapDbEntityTogqlEntity = (dbEntity: DocumentData) : dbSchema.Submission => {
+const mapDbEntityTogqlEntity = (dbEntity: DocumentData): dbSchema.Submission => {
     const gqlEntity = {
         id: dbEntity.id,
         googleMapsUrl: dbEntity.googleMapsUrl,
