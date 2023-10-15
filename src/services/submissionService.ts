@@ -6,6 +6,7 @@ import { CustomErrors, ErrorCode, Result } from '../result'
 import { hasSpecialCharacters } from '../../utils/stringUtils'
 import { addFacility } from './facilityService'
 import { addHealthcareProfessional } from './healthcareProfessionalService'
+import { satisfies } from 'semver'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -201,10 +202,11 @@ export const addSubmission = async (submissionInput: gqlTypes.Submission):
     return addSubmissionResult
 }
 
-export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<dbSchema.Submission>):
+export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>):
     Promise<Result<void>> => {
     try {
-        //business logic: a submission can't be unapproved once it's approved.
+        //business logic: a submission can't be updated or unapproved once it's approved.
+        //business logic: you can't approve and update at the same time. 
         if (fieldsToUpdate.isApproved) {
             const approvalResult = await approveSubmission(submissionId)
 
@@ -212,80 +214,36 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
         }
 
         const submissionRef = dbInstance.collection('submissions').doc(submissionId)
-
         const snapshot = await submissionRef.get()
-        const submissionToUpdate = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
+        const submissionToUpdate = snapshot.data() as dbSchema.Submission
 
-        const updatedSubmissionValues: dbSchema.Submission = {
-            ...submissionToUpdate,
-            ...fieldsToUpdate,
+        const updatedSubmissionValues: Partial<dbSchema.Submission> = {
+            //TODO: guarantee the fields in updatesubmissioninput match submission so this doesn't break. maybe a test?
+            ...fieldsToUpdate as Partial<dbSchema.Submission>,
+            //business logic: don't allow updating approval status after the previous check
+            isApproved: submissionToUpdate.isApproved,
             updatedDate: new Date().toISOString()
         }
 
         await submissionRef.set(updatedSubmissionValues, { merge: true })
 
-        const updatedSubmission = await getSubmissionById(submissionRef.id)
+        console.log(`DB-UPDATE: Submission ${submissionId} was updated. \n Fields updated: ${JSON.stringify(fieldsToUpdate)}`)
 
-        if (fieldsToUpdate.isApproved) {
-            const facilityData: gqlTypes.FacilityInput = {
-                nameEn: submissionToUpdate.healthcareProfessionalName,
-                nameJa: submissionToUpdate.healthcareProfessionalName,
-                contact: {
-                    email: '',
-                    phone: '',
-                    website: '',
-                    mapsLink: submissionToUpdate.googleMapsUrl,
-                    address: {
-                        postalCode: '',
-                        prefectureEn: '',
-                        cityEn: '',
-                        addressLine1En: '',
-                        addressLine2En: '',
-                        prefectureJa: '',
-                        cityJa: '',
-                        addressLine1Ja: '',
-                        addressLine2Ja: ''
-                    }
-                },
-                healthcareProfessionals: [],
-                isDeleted: false
-            }
-
-            const healthcareProfessionalData: gqlTypes.HealthcareProfessional = {
-                id: '',
-                names: [{
-                    lastName: submissionToUpdate.healthcareProfessionalName,
-                    firstName: '',
-                    middleName: '',
-                    locale: gqlTypes.Locale.English
-                }],
-                degrees: [],
-                spokenLanguages: submissionToUpdate.spokenLanguages.map(gqlSpokenLanguageToDbSpokenLanguage),
-                specialties: [],
-                acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
-                isDeleted: false,
-                createdDate: new Date().toISOString(),
-                updatedDate: new Date().toISOString()
-            }
-
-            const newFacilityResult = await addFacility(facilityData)
-
-            if (newFacilityResult.data) {
-                healthcareProfessionalData.id = newFacilityResult.data.id
-            } else {
-                throw new Error('Failed to create new facility.')
-            }
-
-            await addHealthcareProfessional(healthcareProfessionalData)
+        return {
+            hasErrors: false,
+            errors: []
         }
-
-        await submissionRef.update(updatedSubmission)
-
-        console.log(`DB-UPDATE: Submission ${submissionId} was updated.`)
-
-        return updatedSubmission as Result<dbSchema.Submission>
     } catch (error) {
-        throw new Error(`Error updating submission: ${error}`)
+        console.log(`Error approving submission ${submissionId}: ${error}`)
+
+        return {
+            hasErrors: true,
+            errors: [{
+                field: 'submissionId',
+                errorCode: ErrorCode.SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
 }
 
