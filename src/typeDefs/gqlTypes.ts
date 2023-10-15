@@ -16,6 +16,16 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AddSubmissionInput = {
+  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
+  isApproved?: InputMaybe<Scalars['Boolean']['input']>;
+  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
+  isRejected?: InputMaybe<Scalars['Boolean']['input']>;
+  isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
+  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
+};
+
 export type Contact = {
   __typename?: 'Contact';
   address: PhysicalAddress;
@@ -85,6 +95,7 @@ export type HealthcareProfessional = {
   acceptedInsurance: Array<Insurance>;
   createdDate: Scalars['String']['output'];
   degrees: Array<Degree>;
+  facilityIds: Array<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   isDeleted: Scalars['Boolean']['output'];
   names: Array<LocaleName>;
@@ -150,7 +161,7 @@ export type MutationCreateHealthcareProfessionalArgs = {
 
 
 export type MutationCreateSubmissionArgs = {
-  input?: InputMaybe<SubmissionInput>;
+  input?: InputMaybe<AddSubmissionInput>;
 };
 
 
@@ -168,7 +179,7 @@ export type MutationUpdateHealthcareProfessionalArgs = {
 
 export type MutationUpdateSubmissionArgs = {
   id: Scalars['ID']['input'];
-  input?: InputMaybe<SubmissionInput>;
+  input?: InputMaybe<UpdateSubmissionInput>;
 };
 
 export type OrderBy = {
@@ -293,24 +304,16 @@ export type SpokenLanguageInput = {
 export type Submission = {
   __typename?: 'Submission';
   createdDate: Scalars['String']['output'];
+  facility?: Maybe<Facility>;
   googleMapsUrl: Scalars['String']['output'];
   healthcareProfessionalName: Scalars['String']['output'];
+  healthcareProfessionals?: Maybe<Array<Maybe<HealthcareProfessional>>>;
   id: Scalars['ID']['output'];
   isApproved: Scalars['Boolean']['output'];
   isRejected: Scalars['Boolean']['output'];
   isUnderReview: Scalars['Boolean']['output'];
   spokenLanguages: Array<Maybe<SpokenLanguage>>;
   updatedDate: Scalars['String']['output'];
-};
-
-export type SubmissionInput = {
-  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
-  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
-  isApproved?: InputMaybe<Scalars['Boolean']['input']>;
-  isDeleted?: InputMaybe<Scalars['Boolean']['input']>;
-  isRejected?: InputMaybe<Scalars['Boolean']['input']>;
-  isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
-  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
 };
 
 export type SubmissionSearchFilters = {
@@ -325,6 +328,18 @@ export type SubmissionSearchFilters = {
   orderBy?: InputMaybe<Array<InputMaybe<OrderBy>>>;
   spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
   updatedDate?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateSubmissionInput = {
+  facility?: InputMaybe<FacilityInput>;
+  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionals?: InputMaybe<Array<InputMaybe<HealthcareProfessionalInput>>>;
+  id: Scalars['ID']['input'];
+  isApproved?: InputMaybe<Scalars['Boolean']['input']>;
+  isRejected?: InputMaybe<Scalars['Boolean']['input']>;
+  isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
+  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
 };
 
 
@@ -398,6 +413,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  AddSubmissionInput: AddSubmissionInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Contact: ResolverTypeWrapper<Contact>;
   ContactInput: ContactInput;
@@ -428,12 +444,13 @@ export type ResolversTypes = {
   SpokenLanguageInput: SpokenLanguageInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
-  SubmissionInput: SubmissionInput;
   SubmissionSearchFilters: SubmissionSearchFilters;
+  UpdateSubmissionInput: UpdateSubmissionInput;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  AddSubmissionInput: AddSubmissionInput;
   Boolean: Scalars['Boolean']['output'];
   Contact: Contact;
   ContactInput: ContactInput;
@@ -461,8 +478,8 @@ export type ResolversParentTypes = {
   SpokenLanguageInput: SpokenLanguageInput;
   String: Scalars['String']['output'];
   Submission: Submission;
-  SubmissionInput: SubmissionInput;
   SubmissionSearchFilters: SubmissionSearchFilters;
+  UpdateSubmissionInput: UpdateSubmissionInput;
 };
 
 export type ContactResolvers<ContextType = any, ParentType extends ResolversParentTypes['Contact'] = ResolversParentTypes['Contact']> = {
@@ -497,6 +514,7 @@ export type HealthcareProfessionalResolvers<ContextType = any, ParentType extend
   acceptedInsurance?: Resolver<Array<ResolversTypes['Insurance']>, ParentType, ContextType>;
   createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   degrees?: Resolver<Array<ResolversTypes['Degree']>, ParentType, ContextType>;
+  facilityIds?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isDeleted?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   names?: Resolver<Array<ResolversTypes['LocaleName']>, ParentType, ContextType>;
@@ -570,8 +588,10 @@ export type SpokenLanguageResolvers<ContextType = any, ParentType extends Resolv
 
 export type SubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Submission'] = ResolversParentTypes['Submission']> = {
   createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType>;
   googleMapsUrl?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   healthcareProfessionalName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  healthcareProfessionals?: Resolver<Maybe<Array<Maybe<ResolversTypes['HealthcareProfessional']>>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isApproved?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isRejected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;

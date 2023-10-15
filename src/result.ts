@@ -12,7 +12,9 @@ export type Error = {
     httpStatus?: number,
 }
 
+
 export enum ErrorCode {
+    SERVER_ERROR = 'SERVER_ERROR',
     NOT_FOUND = 'NOT_FOUND',
     MISSING_INPUT = 'MISSING_INPUT',
     NEGATIVE_NUMBER = 'NEGATIVE_NUMBER',
@@ -23,6 +25,7 @@ export enum ErrorCode {
     INVALID_EMAIL = 'INVALID_EMAIL',
     INVALID_PHONE_NUMBER = 'INVALID_PHONE_NUMBER',
     INVALID_WEBSITE = 'INVALID_WEBSITE',
+    SUBMISSION_ALREADY_APPROVED = 'SUBMISSION_ALREADY_APPROVED',
     ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED = 'ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED',
     INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR'
 }
@@ -36,7 +39,7 @@ export const CustomErrors = {
                     status: 404
                 }
             }
-        }) 
+        })
     },
     missingInput: (message: string) => {
         throw new GraphQLError(message, {
@@ -46,6 +49,6 @@ export const CustomErrors = {
                     status: 400
                 }
             }
-        }) 
+        })
     }
 }

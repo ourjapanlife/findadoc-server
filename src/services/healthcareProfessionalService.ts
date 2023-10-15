@@ -39,12 +39,15 @@ export async function addHealthcareProfessional(
             names: mapAndValidateNames(input.names as dbSchema.LocaleName[]),
             specialties: mapAndValidateSpecialties(input.specialties as dbSchema.Specialty[]),
             spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as dbSchema.SpokenLanguage[]),
+            facilityIds: input.facilityIds ?? [] as string[],
             isDeleted: false,
             createdDate: new Date().toISOString(),
             updatedDate: new Date().toISOString()
         } satisfies dbSchema.HealthcareProfessional
     
         await healthcareProfessionalRef.set(newHealthcareProfessional)
+
+        console.log(`DB-ADD: Added healthcare professional ${newHealthcareProfessional.id}`)
     
         return {
             data: newHealthcareProfessional.id,
@@ -131,6 +134,7 @@ function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
         spokenLanguages: dbEntity.spokenLanguages,
         specialties: dbEntity.specialties,
         acceptedInsurance: dbEntity.acceptedInsurance,
+        facilityIds: dbEntity.facilityIds,
         isDeleted: dbEntity.isDeleted,
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()

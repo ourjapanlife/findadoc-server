@@ -74,6 +74,7 @@ type HealthcareProfessional {
   spokenLanguages: [SpokenLanguage!]!
   specialties: [Specialty!]!
   acceptedInsurance: [Insurance!]!,
+  facilityIds: [String!]!
   isDeleted: Boolean!,
   createdDate: String!
   updatedDate: String!
@@ -133,6 +134,8 @@ type SpokenLanguage {
 type Submission {
   id: ID!
   googleMapsUrl: String!
+  facility: Facility
+  healthcareProfessionals: [HealthcareProfessional]
   healthcareProfessionalName: String!
   spokenLanguages: [SpokenLanguage]!
   isUnderReview: Boolean!
@@ -142,13 +145,25 @@ type Submission {
   updatedDate: String!
 }
 
-input SubmissionInput {
+input AddSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
   spokenLanguages: [SpokenLanguageInput]
   isUnderReview: Boolean
   isApproved: Boolean
   isDeleted: Boolean
+  isRejected: Boolean
+}
+
+input UpdateSubmissionInput {
+  id: ID!
+  googleMapsUrl: String
+  healthcareProfessionalName: String
+  spokenLanguages: [SpokenLanguageInput]
+  facility: FacilityInput
+  healthcareProfessionals: [HealthcareProfessionalInput]
+  isUnderReview: Boolean,
+  isApproved: Boolean,
   isRejected: Boolean
 }
 
@@ -237,11 +252,10 @@ type Mutation {
     input: FacilityInput
   ): Facility
   createSubmission(
-    input: SubmissionInput
+    input: AddSubmissionInput
   ): Submission
   updateSubmission(
     id: ID!
-    input: SubmissionInput
+    input: UpdateSubmissionInput
   ): Submission
 }
-

@@ -26,6 +26,7 @@ export type HealthcareProfessional = {
     spokenLanguages: SpokenLanguage[],
     specialties: Specialty[],
     acceptedInsurance: Insurance[],
+    facilityIds: string[],
     isDeleted: boolean,
     createdDate: string,
     updatedDate: string
