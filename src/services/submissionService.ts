@@ -192,6 +192,9 @@ export const addSubmission = async (submissionInput: gqlTypes.Submission):
     const newSubmission = convertToDbSubmission({
         ...submissionInput,
         spokenLanguages: spokenLanguagesResult.data as gqlTypes.SpokenLanguageInput[],
+        //business logic: can't create an already approved/rejected submission
+        isApproved: false,
+        isRejected: false,
         id: newSubmissionId
     })
 
