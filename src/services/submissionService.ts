@@ -6,14 +6,13 @@ import { CustomErrors, ErrorCode, Result } from '../result'
 import { hasSpecialCharacters } from '../../utils/stringUtils'
 import { addFacility } from './facilityService'
 import { addHealthcareProfessional } from './healthcareProfessionalService'
-import { satisfies } from 'semver'
 
 /**
  * Gets the Submission from the database that matches the id.
  * @param id A string that matches the id of the Firestore Document for the Submission.
  * @returns A Submission object.
  */
-export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Submission | null>> => {
+export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Submission>> => {
     try {
         const validationResult = validateIdInput(id)
 
@@ -28,7 +27,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
             throw new Error('Submission was not found.')
         }
 
-        const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
+        const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data() as dbSchema.Submission)
 
         const searchResults = {
             data: convertedEntity,
@@ -137,7 +136,7 @@ export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilter
 
             submissions = submissions.filter(sub =>
                 requiredLanguages.every((reqLang: string) =>
-                    sub.spokenLanguages.some(subLang => subLang.iso639_3 === reqLang)))
+                    sub.spokenLanguages.some(subLang => subLang?.iso639_3 === reqLang)))
         }
 
         return submissions
@@ -146,22 +145,21 @@ export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilter
     }
 }
 
-function convertToDbSubmission(submission: gqlTypes.Submission):
-    dbSchema.Submission {
+function convertToDbSubmission(input: gqlTypes.AddSubmissionInput, newId: string): dbSchema.Submission {
     return {
-        ...submission,
-        id: submission.id,
+        googleMapsUrl: input.googleMapsUrl as string,
+        healthcareProfessionalName: input.healthcareProfessionalName as string,
+        id: newId,
         isUnderReview: false,
         isApproved: false,
         isRejected: false,
+        spokenLanguages: input.spokenLanguages?.filter(lang => lang !== null) as dbSchema.SpokenLanguage[],
         createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString(),
-        spokenLanguages: submission.spokenLanguages
-            .filter(lang => lang !== null) as dbSchema.SpokenLanguage[]
+        updatedDate: new Date().toISOString()
     }
 }
 
-export const addSubmission = async (submissionInput: gqlTypes.Submission):
+export const addSubmission = async (submissionInput: gqlTypes.AddSubmissionInput):
     Promise<Result<dbSchema.Submission>> => {
     const addSubmissionResult: Result<dbSchema.Submission> = {
         hasErrors: false,
@@ -174,9 +172,7 @@ export const addSubmission = async (submissionInput: gqlTypes.Submission):
         return validationResults
     }
 
-    const nonNullLanguages = submissionInput.spokenLanguages
-        .filter(lang => !!lang) as gqlTypes.SpokenLanguageInput[]
-
+    const nonNullLanguages = submissionInput.spokenLanguages?.filter(lang => !!lang) as gqlTypes.SpokenLanguageInput[]
     const spokenLanguagesResult = mapAndValidateSpokenLanguages(nonNullLanguages)
 
     if (spokenLanguagesResult.hasErrors) {
@@ -186,20 +182,13 @@ export const addSubmission = async (submissionInput: gqlTypes.Submission):
         }
     }
 
+    submissionInput.spokenLanguages = spokenLanguagesResult.data
+
     const submissionRef = dbInstance.collection('submissions').doc()
     const newSubmissionId = submissionRef.id
-
-    const newSubmission = convertToDbSubmission({
-        ...submissionInput,
-        spokenLanguages: spokenLanguagesResult.data as gqlTypes.SpokenLanguageInput[],
-        //business logic: can't create an already approved/rejected submission
-        isApproved: false,
-        isRejected: false,
-        id: newSubmissionId
-    })
+    const newSubmission = convertToDbSubmission(submissionInput, newSubmissionId)
 
     await submissionRef.set(newSubmission)
-
     addSubmissionResult.data = newSubmission
 
     return addSubmissionResult
@@ -489,12 +478,14 @@ export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlTypes.Submissio
     }
 }
 
-const mapDbEntityTogqlEntity = (dbEntity: DocumentData): dbSchema.Submission => {
+const mapDbEntityTogqlEntity = (dbEntity: DocumentData): gqlTypes.Submission => {
     const gqlEntity = {
         id: dbEntity.id,
         googleMapsUrl: dbEntity.googleMapsUrl,
         healthcareProfessionalName: dbEntity.healthcareProfessionalName,
         spokenLanguages: dbEntity.spokenLanguages,
+        facility: dbEntity.facility,
+        healthcareProfessionals: dbEntity.healthcareProfessionals,
         isUnderReview: dbEntity.isUnderReview,
         isApproved: dbEntity.isApproved,
         isRejected: dbEntity.isRejected,

@@ -134,8 +134,7 @@ const resolvers = {
                     }
                 }
                 
-                const submissionData: gqlType.Submission = {
-                    id: '',
+                const submissionData: gqlType.AddSubmissionInput = {
                     googleMapsUrl: args.input.googleMapsUrl,
                     healthcareProfessionalName: args.input.healthcareProfessionalName,
                     spokenLanguages: args.input.spokenLanguages
@@ -148,9 +147,7 @@ const resolvers = {
                         })),
                     isUnderReview: true,
                     isApproved: false,
-                    isRejected: false,
-                    createdDate: new Date().toISOString(),
-                    updatedDate: new Date().toISOString()
+                    isRejected: false
                 }
                 const addSubmissionResult = await submissionService.addSubmission(submissionData)
 
@@ -162,12 +159,13 @@ const resolvers = {
                 return CustomErrors.missingInput('Failed to create submission.')
             }
         },
-        updateSubmission: async (_parent: gqlType.Submission, args: {
+        updateSubmission: async (_parent: gqlType.UpdateSubmissionInput, args: {
             id: string,
             input: {
                 id: string,
                 googleMapsUrl?: string,
                 healthcareProfessionalName?: string,
+                healthcareProfessionals: gqlType.HealthcareProfessional[],
                 spokenLanguages?: gqlType.SpokenLanguage[],
                 isUnderReview?: boolean,
                 isApproved?: boolean,
