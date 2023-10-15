@@ -6,7 +6,7 @@ export type Result<T> = {
     errors?: Error[]
 }
 
-type Error = {
+export type Error = {
     field: string,
     errorCode: ErrorCode,
     httpStatus?: number,
@@ -23,7 +23,8 @@ export enum ErrorCode {
     INVALID_EMAIL = 'INVALID_EMAIL',
     INVALID_PHONE_NUMBER = 'INVALID_PHONE_NUMBER',
     INVALID_WEBSITE = 'INVALID_WEBSITE',
-    ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED = 'ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED'
+    ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED = 'ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED',
+    INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR'
 }
 
 export const CustomErrors = {
