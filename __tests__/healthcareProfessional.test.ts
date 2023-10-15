@@ -5,7 +5,7 @@ import request from 'supertest'
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
-import { ErrorCode } from '../src/result'
+import { Error, ErrorCode } from '../src/result'
 
 const facilityIds = [] as string[]
 
@@ -163,9 +163,9 @@ describe('createHealthcareProfessional', () => {
         typeDefs: loadSchema(),
         resolvers
     })
-    
+
     beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
+        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
         await initiatilizeFirebaseInstance()
 
         // Create a new Facility to add HealthProfessionals to
@@ -175,14 +175,17 @@ describe('createHealthcareProfessional', () => {
 
         facilityIds.push(facilityId)
     })
-    
+
     afterAll(async () => {
         await server.stop()
     })
-    
+
     it('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
         const response = await request(url).post('/').send(healthcareProfessionalQueryData)
-        
+
+        //should not have errors
+        expect(response.body.errors).toBeUndefined()
+
         const inputData = healthcareProfessionalQueryData.variables.input
         const newHealthcareProfessionalData = response.body.data.createHealthcareProfessional
 
@@ -197,16 +200,20 @@ describe('createHealthcareProfessional', () => {
     })
 
     it('failing: throws an error if the list of facilityIds is empty', async () => {
+        //clear facilityIds so the empty list will throw a validation error
         facilityIds.pop()
 
         const response = await request(url).post('/').send(healthcareProfessionalQueryData)
 
-        // console.log('response =', response.body)
-        const errors = response.body.errors[0]
-        
-        expect(errors.message).toBe('The list of facilityIds cannot be empty.')
-        expect(errors.extensions.code).toBe(ErrorCode.MISSING_INPUT)
-        expect(response.statusCode).toBe(400)
+        expect(response.body.errors).toBeDefined()
+        expect(response.body.errors[0].extensions.errors[0]).toBeDefined()
+        expect(response.body.errors[0].extensions.errors.length).toEqual(1)
+
+        const error = response.body.errors[0].extensions.errors[0] as Error
+
+        expect(error.field).toBe('facilityId')
+        expect(error.errorCode).toBe(ErrorCode.ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED)
+        expect(error.httpStatus).toBe(400)
     })
 })
 

@@ -120,6 +120,9 @@ describe('createFacilityWithHealthcareProfessional', () => {
     it('creates a new Facility with a new HealthcareProfessional', async () => {
         const response = await request(url).post('/').send(queryData)
 
+        //should not have errors
+        expect(response.body.errors).toBeUndefined()
+
         const inputData = queryData.variables.input
         const newFacilityData = response.body.data.createFacilityWithHealthcareProfessional
 
@@ -192,10 +195,13 @@ describe('getFacilityById', () => {
                 facilityId: facilityId
             }
         }
-        const facility = await request(url).post('/').send(facilityQuery)
+        const response = await request(url).post('/').send(facilityQuery)
+
+        //should not have errors
+        expect(response.body.errors).toBeUndefined()
 
         // Compare the data returned by getFacilityById to the new facility stored in the database
-        const facilityData = facility.body.data.facility
+        const facilityData = response.body.data.facility
         const inputData = queryData.variables.input
 
         expect(facilityData.id).toBe(facilityId)
@@ -229,6 +235,9 @@ describe('updateFacility', () => {
     it('updates the Facility fields included in the input', async () => {
         // Create a new facility
         const newFacility = await request(url).post('/').send(queryData)
+
+        //should not have errors
+        expect(newFacility.body.errors).toBeUndefined()
 
         // Get the ID of the new facility
         const facilityId = newFacility.body.data.createFacilityWithHealthcareProfessional.id
@@ -277,6 +286,9 @@ describe('updateFacility', () => {
             }
         }
         const facility = await request(url).post('/').send(facilityQuery)
+
+        //should not have errors
+        expect(facility.body.errors).toBeUndefined()
 
         // Compare the data returned by getFacilityById to the new facility stored in the database
         const updatedFacilityData = facility.body.data.updateFacility

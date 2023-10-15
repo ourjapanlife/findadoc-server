@@ -78,7 +78,7 @@ export async function addHealthcareProfessionalToFacility(
             errorCode: ErrorCode.ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED,
             httpStatus: 400
         })
-        throw CustomErrors.missingInput('The list of facilityIds cannot be empty.')
+        return addHealthcareProfessionalResult
     }
 
     try {
