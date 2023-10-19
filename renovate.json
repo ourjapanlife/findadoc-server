@@ -19,10 +19,6 @@
             "matchDatasources": ["docker"],
             "matchPackageNames": ["postgres"],
             "allowedVersions": "/14*/"
-        },
-        {
-            "matchConfidence": ["high", "very high"],
-            "groupName": "high merge confidence"
         }
     ]
 }
