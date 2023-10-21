@@ -27,7 +27,8 @@ export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facil
         }
     }
 
-    const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
+    const dbFacility = snapshot.docs[0].data() as dbSchema.Facility
+    const convertedEntity = mapDbEntityTogqlEntity(dbFacility)
 
     const searchResults = {
         data: convertedEntity,
@@ -37,6 +38,12 @@ export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facil
     return searchResults
 }
 
+/**
+ * This is a search function that will return a list of Facilities that match the filters. 
+ * - At the moment, filters have to match exactly, and there is no fuzzy search.
+ * @param filters All the optional filters that can be applied to the search.
+ * @returns The matching Facilities.
+ */
 export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters = {}):
     Promise<Result<gqlTypes.Facility[]>> {
     try {
@@ -46,41 +53,42 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
             return validationResult
         }
 
-        let subRef: Query<DocumentData> = dbInstance.collection('facilities')
+        let searchRef : Query<DocumentData> = dbInstance.collection('facilities')
 
         if (filters.nameEn) {
-            subRef = subRef.where('nameEn', '==', filters.nameEn)
+            searchRef = searchRef.where('nameEn', '==', filters.nameEn)
         }
 
         if (filters.nameJa) {
-            subRef = subRef.where('nameJa', '==', filters.nameJa)
+            searchRef = searchRef.where('nameJa', '==', filters.nameJa)
         }
 
         if (filters.createdDate) {
-            subRef = subRef.where('createdDate', '==', filters.createdDate)
+            searchRef = searchRef.where('createdDate', '==', filters.createdDate)
         }
 
         if (filters.updatedDate) {
-            subRef = subRef.where('updatedDate', '==', filters.updatedDate)
+            searchRef = searchRef.where('updatedDate', '==', filters.updatedDate)
         }
 
         if (filters.orderBy && Array.isArray(filters.orderBy)) {
             filters.orderBy.forEach(order => {
                 if (order) {
-                    subRef = subRef.orderBy(order.fieldToOrder as string,
+                    searchRef = searchRef.orderBy(order.fieldToOrder as string,
                         order.orderDirection as gqlTypes.OrderDirection)
                 }
             })
         } else {
-            subRef = subRef.orderBy('createdDate', gqlTypes.OrderDirection.Desc)
+            searchRef = searchRef.orderBy('createdDate', gqlTypes.OrderDirection.Desc)
         }
 
-        subRef = subRef.limit(filters.limit || 20)
-        subRef = subRef.offset(filters.offset || 0)
+        searchRef = searchRef.limit(filters.limit || 20)
+        searchRef = searchRef.offset(filters.offset || 0)
 
-        const snapshot = await subRef.get()
+        const snapshot = await searchRef.get()
         const dbFacilities = snapshot.docs
-        const gqlFacilities = dbFacilities.map(mapDbEntityTogqlEntity)
+        const gqlFacilities = dbFacilities.map(dbFacility =>
+            mapDbEntityTogqlEntity(dbFacility.data() as dbSchema.Facility))
 
         const searchResults = {
             data: gqlFacilities,
@@ -123,11 +131,13 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
 
     const facilityRef = dbInstance.collection('facilities').doc()
     const newFacilityId = facilityRef.id
-    const newDbFacility = convertToDbFacility(facilityInput, newFacilityId)
+    const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
 
     await facilityRef.set(newDbFacility)
 
     console.log(`DB-CREATE: CREATE facility ${newFacilityId}. Entity: ${JSON.stringify(newDbFacility)}`)
+
+    //TODO: Add new facilityid to associated healthcare professionals. 
 
     createFacilityResult.data = newFacilityId
 
@@ -163,31 +173,34 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         const dbFacilityToUpdate = snapshot.data() as dbSchema.Facility
         const updatedDbFacility: dbSchema.Facility = {
             ...dbFacilityToUpdate,
+            //todo the partial update should happen right here
             updatedDate: new Date().toISOString()
         }
+
+        //TODO fix this: add/remove healthcareprofessionalIds based on the actions. 
+        //TODO update the associated healthcare professionals based on these changes. 
 
         // Object.keys((fieldsToUpdate, currentKey) => {
         // const key = fieldsToUpdate[currentKey] as keyof gqlTypes.UpdateFacilityInput
         // (Object.keys(fieldsToUpdate) as (keyof typeof fieldsToUpdate)[]).forEach((currentKey, index) => {
 
-        for (const currentKey in fieldsToUpdate) {
-            if (currentKey && currentKey in updatedDbFacility) {
-                updatedDbFacility[currentKey as keyof gqlTypes.UpdateFacilityInput] =
-                    fieldsToUpdate[currentKey as keyof gqlTypes.UpdateFacilityInput]
-            }
+        // for (const currentKey in fieldsToUpdate) {
+        //     if (currentKey && currentKey in updatedDbFacility) {
+        //         updatedDbFacility[currentKey as keyof gqlTypes.UpdateFacilityInput] =
+        //             fieldsToUpdate[currentKey as keyof gqlTypes.UpdateFacilityInput]
+        //     }
 
-            if(currentKey === 'healthcareProfessionalIds' && fieldsToUpdate.healthcareProfessionalIds) {
-                fieldsToUpdate.healthcareProfessionalIds.forEach((relationship, index) => {
-                    if(relationship.action === gqlTypes.AssociationAction.Add) {
-                        updatedDbFacility.healthcareProfessionalIds?.push(id)
-                    } 
-                    if(relationship?.action === gqlTypes.AssociationAction.Remove) {
-                        updatedDbFacility.healthcareProfessionalIds?.splice(index, 1)
-                    }
-                }
-            }
-        }
-
+        //     if(currentKey === 'healthcareProfessionalIds' && fieldsToUpdate.healthcareProfessionalIds) {
+        //         fieldsToUpdate.healthcareProfessionalIds.forEach((relationship, index) => {
+        //             if(relationship.action === gqlTypes.AssociationAction.Add) {
+        //                 updatedDbFacility.healthcareProfessionalIds?.push(id)
+        //             } 
+        //             if(relationship?.action === gqlTypes.AssociationAction.Remove) {
+        //                 updatedDbFacility.healthcareProfessionalIds?.splice(index, 1)
+        //             }
+        //         }
+        //     }
+        // }
 
         await facilityRef.set(updatedDbFacility, { merge: true })
 
@@ -200,25 +213,27 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
 }
 
 /**
- * Converts the values for FacilityInput variables to the format they will be stored as in the database.
+ * Converts the values for FacilityInput to the format they will be stored as in the database.
  * @param input - The `FacilityInput` variables that were passed in the API request.
  * @param newId - The ID of the Facility in the Firestore collection.
  * @returns 
  */
-function convertToDbFacility(input: gqlTypes.CreateFacilityInput, newId: string): dbSchema.Facility {
+function mapGqlCreateInputToDbEntity(input: gqlTypes.CreateFacilityInput, newId: string): dbSchema.Facility {
     return {
-        ...input,
         id: newId,
         nameEn: input.nameEn,
         nameJa: input.nameJa,
         contact: input.contact,
+        healthcareProfessionalIds: input.healthcareProfessionalIds as string[],
+        //business rule: createdDate cannot be set by the user.
         createdDate: new Date().toISOString(),
+        //business rule: updatedDate is updated on every change.
         updatedDate: new Date().toISOString()
 
-    } as dbSchema.Facility
+    } satisfies dbSchema.Facility
 }
 
-const mapDbEntityTogqlEntity = (dbEntity: DocumentData): gqlTypes.Facility => {
+const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Facility): gqlTypes.Facility => {
     const gqlEntity = {
         id: dbEntity.id,
         nameEn: dbEntity.nameEn,
@@ -337,7 +352,7 @@ function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput): Resul
         errors: []
     }
 
-    if(!input.nameEn) {
+    if (!input.nameEn) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'nameEn',
@@ -355,7 +370,7 @@ function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput): Resul
         })
     }
 
-    if(!input.nameJa) {
+    if (!input.nameJa) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'nameJa',

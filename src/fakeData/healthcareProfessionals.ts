@@ -29,7 +29,7 @@ export const fakeHealthcareProfessionals = () => {
         names: [neurologyEn]
     }
 
-    const healthcareProfessionalOne : gqlTypes.HealthcareProfessionalInput = {
+    const healthcareProfessionalOne : gqlTypes.CreateHealthcareProfessionalInput = {
         names: [doctorDoctor],
         degrees: [medicalDegree],
         spokenLanguages: [japanese],
@@ -66,7 +66,7 @@ export const fakeHealthcareProfessionals = () => {
         names: [specialtyName]
     }
 
-    const healthcareProfessionalTwo : gqlTypes.HealthcareProfessionalInput = {
+    const healthcareProfessionalTwo : gqlTypes.CreateHealthcareProfessionalInput = {
         names: [name],
         degrees: [englishDegree],
         spokenLanguages: [english],
