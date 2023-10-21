@@ -56,8 +56,9 @@ const resolvers = {
         }
     },
     Mutation: {
-        createFacility: async (_parent: unknown, args: { input: gqlType.CreateHealthcareProfessionalInput 
-            }) => {
+        createFacility: async (_parent: unknown, args: {
+            input: gqlType.CreateFacilityInput
+        }) => {
             try {
                 const newFacilityResult = await facilityService.createFacility(args.input)
 
@@ -67,22 +68,36 @@ const resolvers = {
                 return CustomErrors.missingInput('Failed to create facility and Healthcare Professional.')
             }
         },
-        updateFacility: async (_parent: unknown, args: { input: gqlType.UpdateFacilityInput 
+        updateFacility: async (_parent: unknown, args: {
+            id: string,
+            input: gqlType.UpdateFacilityInput
         }) => {
             const updateFacilityResult = await facilityService.updateFacility(args.id, args.input)
 
             convertErrorsToGqlErrors(updateFacilityResult)
             return updateFacilityResult.data
         },
-        createHealthcareProfessional: async (_parent: unknown, args: { input: gqlType.CreateHealthcareProfessionalInput
+        createHealthcareProfessional: async (_parent: unknown, args: {
+            input: gqlType.CreateHealthcareProfessionalInput
         }) => {
             const createHealthcareProfessionalResult =
-                await healthcareProfessionalService.addHealthcareProfessionalToFacility(args.input)
+                await healthcareProfessionalService.createHealthcareProfessional(args.input)
 
             convertErrorsToGqlErrors(createHealthcareProfessionalResult)
             return createHealthcareProfessionalResult.data
         },
-        createSubmission: async (_parent: unknown, args: { input: gqlType.CreateSubmissionInput
+        updateHealthcareProfessional: async (_parent: unknown, args: {
+            id: string,
+            input: gqlType.UpdateHealthcareProfessionalInput
+        }) => {
+            const updateProfessionalResult =
+                await healthcareProfessionalService.updateHealthcareProfessional(args.id, args.input)
+
+            convertErrorsToGqlErrors(updateProfessionalResult)
+            return updateProfessionalResult.data
+        },
+        createSubmission: async (_parent: unknown, args: {
+            input: gqlType.CreateSubmissionInput
         }) => {
             try {
                 for (const value of Object.values(args.input)) {
