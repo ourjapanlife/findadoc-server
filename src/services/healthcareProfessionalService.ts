@@ -22,8 +22,8 @@ export async function getHealthcareProfessionalById(id: string) {
     }
 }
 
-export async function addHealthcareProfessional( 
-    input: gqlTypes.HealthcareProfessionalInput, healthcareProfessionalRef?: 
+export async function createHealthcareProfessional( 
+    input: gqlTypes.CreateHealthcareProfessionalInput, healthcareProfessionalRef?: 
     FirebaseFirestore.DocumentReference<firebase.DocumentData>
 ) : Promise<Result<string>> {
     // TODO: add validation
@@ -47,14 +47,14 @@ export async function addHealthcareProfessional(
     
         await healthcareProfessionalRef.set(newHealthcareProfessional)
 
-        console.log(`DB-ADD: Added healthcare professional ${newHealthcareProfessional.id}`)
+        console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessional.id}. Entity: ${JSON.stringify(newHealthcareProfessional)}`)
     
         return {
             data: newHealthcareProfessional.id,
             hasErrors: false
         }
     } catch (error) {
-        throw new Error(`Error adding healthcare professional: ${error}`)
+        throw new Error(`Error creating healthcare professional: ${error}`)
     }
 }
 
@@ -64,7 +64,7 @@ export async function addHealthcareProfessional(
  * @returns A HealthcareProfessional object
  */
 export async function addHealthcareProfessionalToFacility( 
-    healthcareProfessionalInput: gqlTypes.HealthcareProfessionalInput
+    healthcareProfessionalInput: gqlTypes.CreateHealthcareProfessionalInput
 ) {
     const addHealthcareProfessionalResult : Result<dbSchema.HealthcareProfessional> = {
         hasErrors: false,
@@ -75,7 +75,7 @@ export async function addHealthcareProfessionalToFacility(
         addHealthcareProfessionalResult.hasErrors = true
         addHealthcareProfessionalResult.errors?.push({
             field: 'facilityId',
-            errorCode: ErrorCode.ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED,
+            errorCode: ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED,
             httpStatus: 400
         })
         return addHealthcareProfessionalResult
@@ -109,7 +109,7 @@ export async function addHealthcareProfessionalToFacility(
 }
 
 function convertToDbHealthcareProfessional(
-    id: string, healthcareProfessionalInput: gqlTypes.HealthcareProfessionalInput
+    id: string, healthcareProfessionalInput: gqlTypes.HealthcareProfessional
 ) {
     return {
         id: id, 
@@ -120,7 +120,6 @@ function convertToDbHealthcareProfessional(
         spokenLanguages: mapAndValidateLanguages(
             healthcareProfessionalInput.spokenLanguages as dbSchema.SpokenLanguage[]
         ),
-        isDeleted: false,
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
     } as dbSchema.HealthcareProfessional
@@ -135,7 +134,6 @@ function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
         specialties: dbEntity.specialties,
         acceptedInsurance: dbEntity.acceptedInsurance,
         facilityIds: dbEntity.facilityIds,
-        isDeleted: dbEntity.isDeleted,
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
     } satisfies gqlTypes.HealthcareProfessional

@@ -212,7 +212,7 @@ describe('createHealthcareProfessional', () => {
         const error = response.body.errors[0].extensions.errors[0] as Error
 
         expect(error.field).toBe('facilityId')
-        expect(error.errorCode).toBe(ErrorCode.ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED)
+        expect(error.errorCode).toBe(ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED)
         expect(error.httpStatus).toBe(400)
     })
 })

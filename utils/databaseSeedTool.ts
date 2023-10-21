@@ -1,5 +1,5 @@
-import { addHealthcareProfessional } from '../src/services/healthcareProfessionalService'
-import { addFacility } from '../src/services/facilityService'
+import { createHealthcareProfessional } from '../src/services/healthcareProfessionalService'
+import { createFacility } from '../src/services/facilityService'
 
 import { fakeHealthcareProfessionals } from '../src/fakeData/healthcareProfessionals'
 import { fakeFacilities } from '../src/fakeData/facilities'
@@ -16,10 +16,10 @@ export const seedDatabase = async () => {
     facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
 
     for await (const hp of healthcareProfessionals) {
-        await addHealthcareProfessional(hp)
+        await createHealthcareProfessional(hp)
     }
 
     for await (const facility of facilities) {
-        await addFacility(facility)
+        await createFacility(facility)
     }
 }

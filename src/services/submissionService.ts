@@ -4,8 +4,8 @@ import * as dbSchema from '../typeDefs/dbSchema'
 import { dbInstance } from '../firebaseDb'
 import { CustomErrors, ErrorCode, Result } from '../result'
 import { hasSpecialCharacters } from '../../utils/stringUtils'
-import { addFacility } from './facilityService'
-import { addHealthcareProfessional } from './healthcareProfessionalService'
+import { createFacility } from './facilityService'
+import { createHealthcareProfessional } from './healthcareProfessionalService'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -145,7 +145,7 @@ export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilter
     }
 }
 
-function convertToDbSubmission(input: gqlTypes.AddSubmissionInput, newId: string): dbSchema.Submission {
+function convertToDbSubmission(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
     return {
         googleMapsUrl: input.googleMapsUrl as string,
         healthcareProfessionalName: input.healthcareProfessionalName as string,
@@ -159,9 +159,9 @@ function convertToDbSubmission(input: gqlTypes.AddSubmissionInput, newId: string
     }
 }
 
-export const addSubmission = async (submissionInput: gqlTypes.AddSubmissionInput):
+export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
     Promise<Result<dbSchema.Submission>> => {
-    const addSubmissionResult: Result<dbSchema.Submission> = {
+    const createSubmissionResult: Result<dbSchema.Submission> = {
         hasErrors: false,
         errors: []
     }
@@ -189,9 +189,9 @@ export const addSubmission = async (submissionInput: gqlTypes.AddSubmissionInput
     const newSubmission = convertToDbSubmission(submissionInput, newSubmissionId)
 
     await submissionRef.set(newSubmission)
-    addSubmissionResult.data = newSubmission
+    createSubmissionResult.data = newSubmission
 
-    return addSubmissionResult
+    return createSubmissionResult
 }
 
 export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>):
@@ -287,16 +287,16 @@ export const approveSubmission = async (submissionId: string): Promise<Result<vo
 
         //try creating healthcare professional(s)
         for await (const healthcareProfessional of currentSubmission.healthcareProfessionals) {
-            const addHealthcareProfessionalResult = await addHealthcareProfessional(healthcareProfessional)
+            const createHealthcareProfessionalResult = await createHealthcareProfessional(healthcareProfessional)
 
-            if (addHealthcareProfessionalResult.hasErrors) {
-                approveResult.errors?.concat(addHealthcareProfessionalResult.errors!)
+            if (createHealthcareProfessionalResult.hasErrors) {
+                approveResult.errors?.concat(createHealthcareProfessionalResult.errors!)
                 return approveResult
             }
         }
 
         //try creating the facility
-        const createFacilityResult = await addFacility(currentSubmission)
+        const createFacilityResult = await createFacility(currentSubmission)
 
         if (createFacilityResult.hasErrors) {
             approveResult.errors?.concat(createFacilityResult.errors!)
@@ -317,7 +317,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<vo
     }
 }
 
-const validateSubmissionInputFields = (input: gqlTypes.AddSubmissionInput): Result<dbSchema.Submission> => {
+const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): Result<dbSchema.Submission> => {
     const validatedSubmissionResult: Result<dbSchema.Submission> = {
         hasErrors: false,
         errors: []

@@ -16,28 +16,6 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
-export type AddFacilityInput = {
-  contact?: InputMaybe<ContactInput>;
-  healthcareProfessionalIds?: InputMaybe<Array<InputMaybe<Relationship>>>;
-  nameEn?: InputMaybe<Scalars['String']['input']>;
-  nameJa?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type AddHealthcareProfessionalInput = {
-  acceptedInsurance: Array<InputMaybe<Insurance>>;
-  degrees: Array<InputMaybe<DegreeInput>>;
-  facilityIds: Array<InputMaybe<Relationship>>;
-  names: Array<LocaleNameInput>;
-  specialties: Array<InputMaybe<SpecialtyInput>>;
-  spokenLanguages: Array<SpokenLanguageInput>;
-};
-
-export type AddSubmissionInput = {
-  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
-  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
-  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
-};
-
 export type Contact = {
   __typename?: 'Contact';
   address: PhysicalAddress;
@@ -53,6 +31,28 @@ export type ContactInput = {
   mapsLink?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
   website?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateFacilityInput = {
+  contact?: InputMaybe<ContactInput>;
+  healthcareProfessionalIds?: InputMaybe<Array<InputMaybe<Relationship>>>;
+  nameEn?: InputMaybe<Scalars['String']['input']>;
+  nameJa?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateHealthcareProfessionalInput = {
+  acceptedInsurance: Array<InputMaybe<Insurance>>;
+  degrees: Array<InputMaybe<DegreeInput>>;
+  facilityIds: Array<InputMaybe<Relationship>>;
+  names: Array<LocaleNameInput>;
+  specialties: Array<InputMaybe<SpecialtyInput>>;
+  spokenLanguages: Array<SpokenLanguageInput>;
+};
+
+export type CreateSubmissionInput = {
+  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
+  spokenLanguages?: InputMaybe<Array<InputMaybe<SpokenLanguageInput>>>;
 };
 
 export type Degree = {
@@ -158,17 +158,17 @@ export type Mutation = {
 
 
 export type MutationCreateFacilityArgs = {
-  input?: InputMaybe<AddFacilityInput>;
+  input?: InputMaybe<CreateFacilityInput>;
 };
 
 
 export type MutationCreateHealthcareProfessionalArgs = {
-  input?: InputMaybe<AddHealthcareProfessionalInput>;
+  input?: InputMaybe<CreateHealthcareProfessionalInput>;
 };
 
 
 export type MutationCreateSubmissionArgs = {
-  input?: InputMaybe<AddSubmissionInput>;
+  input?: InputMaybe<CreateSubmissionInput>;
 };
 
 
@@ -374,10 +374,10 @@ export type UpdateHealthcareProfessionalInput = {
 };
 
 export type UpdateSubmissionInput = {
-  facility?: InputMaybe<AddFacilityInput>;
+  facility?: InputMaybe<CreateFacilityInput>;
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
-  healthcareProfessionals?: InputMaybe<Array<InputMaybe<AddHealthcareProfessionalInput>>>;
+  healthcareProfessionals?: InputMaybe<Array<InputMaybe<CreateHealthcareProfessionalInput>>>;
   id: Scalars['ID']['input'];
   isApproved?: InputMaybe<Scalars['Boolean']['input']>;
   isRejected?: InputMaybe<Scalars['Boolean']['input']>;
@@ -456,12 +456,12 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
-  AddFacilityInput: AddFacilityInput;
-  AddHealthcareProfessionalInput: AddHealthcareProfessionalInput;
-  AddSubmissionInput: AddSubmissionInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Contact: ResolverTypeWrapper<Contact>;
   ContactInput: ContactInput;
+  CreateFacilityInput: CreateFacilityInput;
+  CreateHealthcareProfessionalInput: CreateHealthcareProfessionalInput;
+  CreateSubmissionInput: CreateSubmissionInput;
   Degree: ResolverTypeWrapper<Degree>;
   DegreeInput: DegreeInput;
   Facility: ResolverTypeWrapper<Facility>;
@@ -498,12 +498,12 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
-  AddFacilityInput: AddFacilityInput;
-  AddHealthcareProfessionalInput: AddHealthcareProfessionalInput;
-  AddSubmissionInput: AddSubmissionInput;
   Boolean: Scalars['Boolean']['output'];
   Contact: Contact;
   ContactInput: ContactInput;
+  CreateFacilityInput: CreateFacilityInput;
+  CreateHealthcareProfessionalInput: CreateHealthcareProfessionalInput;
+  CreateSubmissionInput: CreateSubmissionInput;
   Degree: Degree;
   DegreeInput: DegreeInput;
   Facility: Facility;

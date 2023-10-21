@@ -2,7 +2,7 @@ import { DocumentData, Query } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
 import { ErrorCode, Result } from '../result'
-import { addHealthcareProfessional } from './healthcareProfessionalService'
+import { createHealthcareProfessional } from './healthcareProfessionalService'
 import { dbInstance } from '../firebaseDb'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils'
 
@@ -109,20 +109,20 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
 }
 
 /**
- * Adds a new Facility with a new HealthcareProfessional. 
+ * Creates a new Facility with a new HealthcareProfessional. 
  * Only a list containing the `HealthcareProfessional.id` will 
  * be returned and not the whole HealthcareProfessional Entity.
  * @param facilityInput 
- * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was added.
+ * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was created.
  */
-export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promise<Result<dbSchema.Facility>> {
-    const validationResult = validateAddFacilityInput(facilityInput)
+export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput): Promise<Result<dbSchema.Facility>> {
+    const validationResult = validateCreateFacilityInput(facilityInput)
 
     if (validationResult.hasErrors) {
         return validationResult
     }
 
-    const addFacilityResult: Result<dbSchema.Facility> = {
+    const createFacilityResult: Result<dbSchema.Facility> = {
         hasErrors: false,
         errors: []
     }
@@ -132,28 +132,28 @@ export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promis
 
     if (facilityInput.healthcareProfessionals && facilityInput.healthcareProfessionals.length) {
         for await (const profEntity of facilityInput.healthcareProfessionals) {
-            const healthcareProfAddResults = await addHealthcareProfessional(
+            const createHealthcareProfResults = await createHealthcareProfessional(
                 profEntity, healthcareProfessionalRef
             )
 
-            if (healthcareProfAddResults.hasErrors && healthcareProfAddResults.errors?.length) {
-                addFacilityResult.hasErrors = true
-                addFacilityResult.errors?.concat(healthcareProfAddResults.errors)
+            if (createHealthcareProfResults.hasErrors && createHealthcareProfResults.errors?.length) {
+                createFacilityResult.hasErrors = true
+                createFacilityResult.errors?.concat(createHealthcareProfResults.errors)
             } else {
-                facilityInput.healthcareProfessionalIds?.push(healthcareProfAddResults.data as string)
+                facilityInput.healthcareProfessionalIds?.push(createHealthcareProfResults.data as string)
             }
         }
     }
 
-    const newFacility = convertToDbFacility(facilityInput, facilityRef.id)
+    const newDbFacility = convertToDbFacility(facilityInput, facilityRef.id)
 
-    await facilityRef.set(newFacility)
+    await facilityRef.set(newDbFacility)
 
-    console.log(`DB-ADD: Added facility ${facilityRef.id}`)
+    console.log(`DB-CREATE: CREATE facility ${facilityRef.id}. Entity: ${JSON.stringify(newDbFacility)}`)
 
-    addFacilityResult.data = newFacility
+    createFacilityResult.data = newDbFacility
 
-    return addFacilityResult
+    return createFacilityResult
 }
 
 /**
@@ -171,15 +171,15 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
 
         const facilityToUpdate = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
 
-        const updatedFacilityValues: dbSchema.Facility = {
+        const updatedDbFacility: dbSchema.Facility = {
             ...facilityToUpdate,
             ...fieldsToUpdate,
             updatedDate: new Date().toISOString()
         }
 
-        await facilityRef.set(updatedFacilityValues, { merge: true })
+        await facilityRef.set(updatedDbFacility, { merge: true })
 
-        console.log(`DB-UPDATE: Added facility ${facilityRef.id}`)
+        console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(updatedDbFacility)}`)
 
         const updatedFacility = await getFacilityById(facilityRef.id)
 
@@ -195,7 +195,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
  * @param id - The ID of the Facility in the Firestore collection.
  * @returns 
  */
-function convertToDbFacility(facility: gqlTypes.FacilityInput, id: string): dbSchema.Facility {
+function convertToDbFacility(facility: gqlTypes.Facility, id: string): dbSchema.Facility {
     return {
         ...facility,
         id: id,
@@ -204,7 +204,6 @@ function convertToDbFacility(facility: gqlTypes.FacilityInput, id: string): dbSc
         contact: facility.contact,
         healthcareProfessionalIds: facility.healthcareProfessionalIds,
         healthcareProfessionals: [],
-        isDeleted: false,
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
 
@@ -219,8 +218,7 @@ const mapDbEntityTogqlEntity = (dbEntity: DocumentData): gqlTypes.Facility => {
         contact: dbEntity.contact,
         healthcareProfessionalIds: dbEntity.healthcareProfessionalIds,
         createdDate: dbEntity.createdDate,
-        updatedDate: dbEntity.updatedDate,
-        isDeleted: dbEntity.isDeleted
+        updatedDate: dbEntity.updatedDate
     } satisfies gqlTypes.Facility
 
     return gqlEntity
@@ -289,7 +287,7 @@ function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilte
     return validationResults
 }
 
-function validateAddFacilityInput(input: gqlTypes.FacilityInput): Result<dbSchema.Facility> {
+function validateCreateFacilityInput(input: gqlTypes.FacilityInput): Result<dbSchema.Facility> {
     const validationResults: Result<dbSchema.Facility> = {
         hasErrors: false,
         errors: []

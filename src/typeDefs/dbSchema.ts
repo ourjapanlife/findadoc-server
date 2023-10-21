@@ -15,8 +15,7 @@ export type Facility = {
     contact: Contact
     healthcareProfessionalIds: string[]
     createdDate: string,
-    updatedDate: string,
-    isDeleted: boolean
+    updatedDate: string
 }
 
 export type HealthcareProfessional = {
@@ -27,7 +26,6 @@ export type HealthcareProfessional = {
     specialties: Specialty[],
     acceptedInsurance: Insurance[],
     facilityIds: string[],
-    isDeleted: boolean,
     createdDate: string,
     updatedDate: string
 }

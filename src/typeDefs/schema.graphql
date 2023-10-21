@@ -8,7 +8,7 @@ type Facility {
   updatedDate: String!
 }
 
-input AddFacilityInput {
+input CreateFacilityInput {
   nameEn: String
   nameJa: String
   contact: ContactInput
@@ -47,7 +47,7 @@ type HealthcareProfessional {
   updatedDate: String!
 }
 
-input AddHealthcareProfessionalInput {
+input CreateHealthcareProfessionalInput {
   names: [LocaleNameInput!]!
   spokenLanguages: [SpokenLanguageInput!]!
   degrees: [DegreeInput]!
@@ -93,7 +93,7 @@ type Submission {
   updatedDate: String!
 }
 
-input AddSubmissionInput {
+input CreateSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
   spokenLanguages: [SpokenLanguageInput]
@@ -104,8 +104,8 @@ input UpdateSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
   spokenLanguages: [SpokenLanguageInput]
-  facility: AddFacilityInput
-  healthcareProfessionals: [AddHealthcareProfessionalInput]
+  facility: CreateFacilityInput
+  healthcareProfessionals: [CreateHealthcareProfessionalInput]
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
@@ -266,7 +266,7 @@ type Query {
 
 type Mutation {
   createHealthcareProfessional(
-    input: AddHealthcareProfessionalInput
+    input: CreateHealthcareProfessionalInput
   ) : HealthcareProfessional
   updateHealthcareProfessional(
     id: ID!
@@ -274,7 +274,7 @@ type Mutation {
   ) : HealthcareProfessional
   deleteHealthcareProfessional(id: ID!) : Boolean
   createFacility(
-    input: AddFacilityInput
+    input: CreateFacilityInput
   ): Facility
   updateFacility(
     id: ID!
@@ -282,7 +282,7 @@ type Mutation {
   ): Facility
   deleteFacility(id: ID!) : Boolean
   createSubmission(
-    input: AddSubmissionInput
+    input: CreateSubmissionInput
   ): Submission
   updateSubmission(
     id: ID!
