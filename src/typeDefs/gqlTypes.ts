@@ -20,16 +20,16 @@ export type Contact = {
   __typename?: 'Contact';
   address: PhysicalAddress;
   email: Scalars['String']['output'];
-  mapsLink: Scalars['String']['output'];
+  googleMapsUrl: Scalars['String']['output'];
   phone: Scalars['String']['output'];
-  website: Scalars['String']['output'];
+  website?: Maybe<Scalars['String']['output']>;
 };
 
 export type CreateFacilityInput = {
-  contact?: InputMaybe<Contact>;
+  contact: Contact;
   healthcareProfessionalIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  nameEn?: InputMaybe<Scalars['String']['input']>;
-  nameJa?: InputMaybe<Scalars['String']['input']>;
+  nameEn: Scalars['String']['input'];
+  nameJa: Scalars['String']['input'];
 };
 
 export type CreateHealthcareProfessionalInput = {
@@ -184,8 +184,8 @@ export type MutationUpdateSubmissionArgs = {
 };
 
 export type OrderBy = {
-  fieldToOrder?: InputMaybe<Scalars['String']['input']>;
-  orderDirection?: InputMaybe<OrderDirection>;
+  fieldToOrder: Scalars['String']['input'];
+  orderDirection: OrderDirection;
 };
 
 export enum OrderDirection {
@@ -474,9 +474,9 @@ export type ResolversParentTypes = {
 export type ContactResolvers<ContextType = any, ParentType extends ResolversParentTypes['Contact'] = ResolversParentTypes['Contact']> = {
   address?: Resolver<ResolversTypes['PhysicalAddress'], ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  mapsLink?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  googleMapsUrl?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   phone?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  website?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  website?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
