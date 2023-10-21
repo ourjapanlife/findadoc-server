@@ -3,7 +3,7 @@ type Facility {
   nameEn: String!
   nameJa: String!
   contact: Contact!
-  healthcareProfessionalIds: [Relationship]!
+  healthcareProfessionalIds: [Relationship!]!
   createdDate: String!
   updatedDate: String!
 }
@@ -12,7 +12,7 @@ input CreateFacilityInput {
   nameEn: String
   nameJa: String
   contact: ContactInput
-  healthcareProfessionalIds: [Relationship]
+  healthcareProfessionalIds: [Relationship!]
 }
 
 input UpdateFacilityInput {
@@ -20,7 +20,7 @@ input UpdateFacilityInput {
   nameEn: String
   nameJa: String
   contact: ContactInput
-  healthcareProfessionalIds: [Relationship]
+  healthcareProfessionalIds: [Relationship!]
 }
 
 input FacilitySearchFilters {
@@ -30,7 +30,7 @@ input FacilitySearchFilters {
   healthcareProfessionalName: String
   createdDate: String
   updatedDate: String
-  orderBy: [OrderBy]
+  orderBy: [OrderBy!]
   limit: Int
   offset: Int
 }
@@ -42,39 +42,39 @@ type HealthcareProfessional {
   degrees: [Degree!]!
   specialties: [Specialty!]!
   acceptedInsurance: [Insurance!]!
-  facilityIds: [Relationship]!
+  facilityIds: [Relationship!]!
   createdDate: String!
   updatedDate: String!
 }
 
 input CreateHealthcareProfessionalInput {
   names: [LocaleNameInput!]!
-  spokenLanguages: [SpokenLanguageInput!]!
-  degrees: [DegreeInput]!
-  specialties: [SpecialtyInput]!
-  acceptedInsurance: [Insurance]!
-  facilityIds: [Relationship]!
+  spokenLanguages: [SpokenLanguageInput!]
+  degrees: [DegreeInput!]
+  specialties: [SpecialtyInput!]
+  acceptedInsurance: [Insurance!]
+  facilityIds: [Relationship!]!
 }
 
 input UpdateHealthcareProfessionalInput {
   id: ID!
-  names: [LocaleNameInput]
-  spokenLanguages: [SpokenLanguageInput]
-  degrees: [DegreeInput]
-  specialties: [SpecialtyInput]
-  acceptedInsurance: [Insurance]
-  facilityIds: [Relationship]
+  names: [LocaleNameInput!]
+  spokenLanguages: [SpokenLanguageInput!]
+  degrees: [DegreeInput!]
+  specialties: [SpecialtyInput!]
+  acceptedInsurance: [Insurance!]
+  facilityIds: [Relationship!]
 }
 
 input HealthcareProfessionalSearchFilters {
-  names: [LocaleNameInput]
-  spokenLanguages: [SpokenLanguageInput]
-  degrees: [DegreeInput]
-  specialties: [SpecialtyInput]
-  acceptedInsurance: [Insurance]
+  names: [LocaleNameInput!]
+  spokenLanguages: [SpokenLanguageInput!]
+  degrees: [DegreeInput!]
+  specialties: [SpecialtyInput!]
+  acceptedInsurance: [Insurance!]
   createdDate: String
   updatedDate: String
-  orderBy: [OrderBy]
+  orderBy: [OrderBy!]
   limit: Int
   offset: Int
 }
@@ -83,9 +83,9 @@ type Submission {
   id: ID!
   googleMapsUrl: String!
   healthcareProfessionalName: String!
-  spokenLanguages: [SpokenLanguage]!
+  spokenLanguages: [SpokenLanguage!]!
   facility: Facility
-  healthcareProfessionals: [HealthcareProfessional]
+  healthcareProfessionals: [HealthcareProfessional!]
   isUnderReview: Boolean!
   isApproved: Boolean!
   isRejected: Boolean!
