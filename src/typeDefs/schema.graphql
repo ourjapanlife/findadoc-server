@@ -9,9 +9,9 @@ type Facility {
 }
 
 input CreateFacilityInput {
-  nameEn: String
-  nameJa: String
-  contact: ContactInput
+  nameEn: String!
+  nameJa: String!
+  contact: Contact!
   healthcareProfessionalIds: [ID!]
 }
 
@@ -19,14 +19,14 @@ input UpdateFacilityInput {
   id: ID!
   nameEn: String
   nameJa: String
-  contact: ContactInput
+  contact: Contact
   healthcareProfessionalIds: [Relationship!]
 }
 
 input FacilitySearchFilters {
   nameEn: String
   nameJa: String
-  contact: ContactInput
+  contact: Contact
   healthcareProfessionalName: String
   createdDate: String
   updatedDate: String
@@ -48,29 +48,29 @@ type HealthcareProfessional {
 }
 
 input CreateHealthcareProfessionalInput {
-  names: [LocaleNameInput!]!
-  spokenLanguages: [SpokenLanguageInput!]
-  degrees: [DegreeInput!]
-  specialties: [SpecialtyInput!]
+  names: [LocaleName!]!
+  spokenLanguages: [SpokenLanguage!]
+  degrees: [Degree!]
+  specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   facilityIds: [ID!]!
 }
 
 input UpdateHealthcareProfessionalInput {
   id: ID!
-  names: [LocaleNameInput!]
-  spokenLanguages: [SpokenLanguageInput!]
-  degrees: [DegreeInput!]
-  specialties: [SpecialtyInput!]
+  names: [LocaleName!]
+  spokenLanguages: [SpokenLanguage!]
+  degrees: [Degree!]
+  specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   facilityIds: [Relationship!]
 }
 
 input HealthcareProfessionalSearchFilters {
-  names: [LocaleNameInput!]
-  spokenLanguages: [SpokenLanguageInput!]
-  degrees: [DegreeInput!]
-  specialties: [SpecialtyInput!]
+  names: [LocaleName!]
+  spokenLanguages: [SpokenLanguage!]
+  degrees: [Degree!]
+  specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   createdDate: String
   updatedDate: String
@@ -96,14 +96,14 @@ type Submission {
 input CreateSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput!]
+  spokenLanguages: [SpokenLanguage!]
 }
 
 input UpdateSubmissionInput {
   id: ID!
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput!]
+  spokenLanguages: [SpokenLanguage!]
   facility: CreateFacilityInput
   healthcareProfessionals: [CreateHealthcareProfessionalInput!]
   isUnderReview: Boolean
@@ -114,7 +114,7 @@ input UpdateSubmissionInput {
 input SubmissionSearchFilters {
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput!]
+  spokenLanguages: [SpokenLanguage!]
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
@@ -137,19 +137,11 @@ enum RelationshipAction {
 }
 
 type Contact {
+  googleMapsUrl: String!
   email: String!
   phone: String!
-  website: String!
-  mapsLink: String!
-  address: PhysicalAddress!
-}
-
-input ContactInput {
-  email: String
-  phone: String
   website: String
-  mapsLink: String
-  address: PhysicalAddressInput
+  address: PhysicalAddress!
 }
 
 type PhysicalAddress {
@@ -164,25 +156,6 @@ type PhysicalAddress {
   addressLine2Ja: String!
 }
 
-input PhysicalAddressInput {
-  postalCode: String
-  prefectureEn: String
-  cityEn: String
-  addressLine1En: String
-  addressLine2En: String
-  prefectureJa: String
-  cityJa: String
-  addressLine1Ja: String
-  addressLine2Ja: String
-}
-
-input LocaleNameInput {
-  lastName: String!
-  firstName: String!
-  middleName: String
-  locale: Locale!
-}
-
 type LocaleName {
   lastName: String!
   firstName: String!
@@ -195,29 +168,13 @@ enum Locale {
   JAPANESE
 }
 
-input SpecialtyInput {
-  names: [SpecialtyNameInput!]
-}
-
 type Specialty {
   names: [SpecialtyName!]!
-}
-
-input SpecialtyNameInput {
-  name: String
-  locale: Locale
 }
 
 type SpecialtyName {
   name: String!
   locale: Locale!
-}
-
-input SpokenLanguageInput {
-  iso639_3: String!
-  nameJa: String!
-  nameEn: String!
-  nameNative: String!
 }
 
 type SpokenLanguage {
@@ -228,19 +185,13 @@ type SpokenLanguage {
 }
 
 input OrderBy {
-  orderDirection: OrderDirection
-  fieldToOrder: String
+  orderDirection: OrderDirection!
+  fieldToOrder: String!
 }
 
 enum OrderDirection {
   asc
   desc
-}
-
-input DegreeInput {
-  nameJa: String
-  nameEn: String
-  abbreviation: String
 }
 
 type Degree {
