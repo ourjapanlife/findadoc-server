@@ -1,7 +1,7 @@
 import * as firebase from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
-import { CustomErrors, ErrorCode, Result } from '../result'
+import { ErrorCode, Result } from '../result'
 import { dbInstance } from '../firebaseDb'
 
 export async function getHealthcareProfessionalById(id: string) {
@@ -31,24 +31,28 @@ export async function getHealthcareProfessionalById(id: string) {
  * @returns the id of the newly created HealthcareProfessional. (if you need the full object, query it by id)
  */
 export async function createHealthcareProfessional(
-    input: gqlTypes.CreateHealthcareProfessionalInput, healthcareProfessionalRef?:
-        FirebaseFirestore.DocumentReference<firebase.DocumentData>
+    input: gqlTypes.CreateHealthcareProfessionalInput,
+    healthcareProfessionalRef?: FirebaseFirestore.DocumentReference<firebase.DocumentData>
 ): Promise<Result<string>> {
-    // TODO: add validation
     try {
+        const validationResult = validateCreateProfessionalInput(input)
+
+        if (validationResult.hasErrors) {
+            return validationResult
+        }
+
         if (!healthcareProfessionalRef) {
             healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
         }
 
         const newHealthcareProfessional = {
             id: healthcareProfessionalRef.id,
-            acceptedInsurance: validateInsurance(input.acceptedInsurance as gqlTypes.Insurance[]),
-            degrees: mapAndValidateDegrees(input.degrees as dbSchema.Degree[]),
-            names: mapAndValidateNames(input.names as dbSchema.LocaleName[]),
-            specialties: mapAndValidateSpecialties(input.specialties as dbSchema.Specialty[]),
-            spokenLanguages: mapAndValidateLanguages(input.spokenLanguages as dbSchema.SpokenLanguage[]),
+            acceptedInsurance: input.acceptedInsurance as gqlTypes.Insurance[],
+            degrees: input.degrees as dbSchema.Degree[],
+            names: input.names as dbSchema.LocaleName[],
+            specialties: input.specialties as dbSchema.Specialty[],
+            spokenLanguages: input.spokenLanguages as dbSchema.SpokenLanguage[],
             facilityIds: input.facilityIds ?? [] as string[],
-            isDeleted: false,
             createdDate: new Date().toISOString(),
             updatedDate: new Date().toISOString()
         } satisfies dbSchema.HealthcareProfessional
@@ -56,6 +60,8 @@ export async function createHealthcareProfessional(
         await healthcareProfessionalRef.set(newHealthcareProfessional)
 
         console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessional.id}. Entity: ${JSON.stringify(newHealthcareProfessional)}`)
+
+        //TODO: add healthcare professional id to associated facility
 
         return {
             data: newHealthcareProfessional.id,
@@ -100,8 +106,7 @@ export const updateHealthcareProfessional = async (
             updatedDate: new Date().toISOString()
         }
 
-        ///////
-
+        //TODO: process facility id changes. Update the facility with the associations as well. 
 
         await professionalRef.set(updatedDbProfessional, { merge: true })
 
@@ -164,22 +169,22 @@ export const updateHealthcareProfessional = async (
 //     }
 // }
 
-function convertToDbHealthcareProfessional(
-    id: string, healthcareProfessionalInput: gqlTypes.HealthcareProfessional
-) {
-    return {
-        id: id,
-        acceptedInsurance: validateInsurance(healthcareProfessionalInput.acceptedInsurance as gqlTypes.Insurance[]),
-        degrees: mapAndValidateDegrees(healthcareProfessionalInput.degrees as dbSchema.Degree[]),
-        names: mapAndValidateNames(healthcareProfessionalInput.names as dbSchema.LocaleName[]),
-        specialties: mapAndValidateSpecialties(healthcareProfessionalInput.specialties as dbSchema.Specialty[]),
-        spokenLanguages: mapAndValidateLanguages(
-            healthcareProfessionalInput.spokenLanguages as dbSchema.SpokenLanguage[]
-        ),
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    } as dbSchema.HealthcareProfessional
-}
+// function convertToDbHealthcareProfessional(
+//     id: string, healthcareProfessionalInput: gqlTypes.HealthcareProfessional
+// ) {
+//     return {
+//         id: id,
+//         acceptedInsurance: validateInsurance(healthcareProfessionalInput.acceptedInsurance as gqlTypes.Insurance[]),
+//         degrees: mapAndValidateDegrees(healthcareProfessionalInput.degrees as dbSchema.Degree[]),
+//         names: mapAndValidateNames(healthcareProfessionalInput.names as dbSchema.LocaleName[]),
+//         specialties: mapAndValidateSpecialties(healthcareProfessionalInput.specialties as dbSchema.Specialty[]),
+//         spokenLanguages: mapAndValidateLanguages(
+//             healthcareProfessionalInput.spokenLanguages as dbSchema.SpokenLanguage[]
+//         ),
+//         createdDate: new Date().toISOString(),
+//         updatedDate: new Date().toISOString()
+//     } as dbSchema.HealthcareProfessional
+// }
 
 function mapDbEntityTogqlEntity(dbEntity: firebase.DocumentData) {
     const gqlEntity = {
@@ -197,108 +202,29 @@ function mapDbEntityTogqlEntity(dbEntity: firebase.DocumentData) {
     return gqlEntity
 }
 
-function mapAndValidateDegrees(degreesInput: gqlTypes.Degree[]) {
-    try {
-        const degrees = degreesInput.map((degree: gqlTypes.Degree) => {
-            const newDegree: dbSchema.Degree = {
-                nameJa: degree.nameJa as string,
-                nameEn: degree.nameEn as string,
-                abbreviation: degree.abbreviation as string
-            }
+function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcareProfessionalInput>): Result<string> {
+    const validationResults: Result<string> = {
+        hasErrors: false,
+        errors: []
+    }
 
-            return newDegree
+    //business rule: at least one facility id is required
+    if (!input.facilityIds || input.facilityIds.length < 1) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'facilityIds',
+            errorCode: ErrorCode.MIN_ONE_FACILITYID_REQUIRED,
+            httpStatus: 400
         })
-
-        return degrees
-    } catch (e) {
-        throw CustomErrors.missingInput('The degree cannot be empty.')
     }
-}
 
-function mapAndValidateNames(namesInput: gqlTypes.LocaleName[]) {
-    try {
-        const names = namesInput.map((name: gqlTypes.LocaleName) => {
-            const newLocaleName = {
-                lastName: name.lastName as string,
-                firstName: name.firstName as string,
-                middleName: name.middleName as string,
-                locale: name.locale as gqlTypes.Locale
-            }
+    validateNames(input.names, validationResults)
+    validateDegrees(input.degrees, validationResults)
+    validateSpecialties(input.specialties, validationResults)
+    validateInsurance(input.acceptedInsurance, validationResults)
+    validateSpokenLanguages(input.spokenLanguages, validationResults)
 
-            return newLocaleName
-        })
-
-        return names
-    } catch (e) {
-        throw CustomErrors.missingInput('The name cannot be empty.')
-    }
-}
-
-function mapAndValidateSpecialties(specialtiesInput: gqlTypes.Specialty[]) {
-    try {
-        const specialties = specialtiesInput.map((specialty: gqlTypes.Specialty) => {
-            const newSpecialty = {
-
-                names: mapAndValidateSpecialtyNames(specialty.names as gqlTypes.SpecialtyName[])
-            }
-
-            return newSpecialty
-        })
-
-        return specialties
-    } catch (e) {
-        throw CustomErrors.missingInput('The specialties cannot be empty.')
-    }
-}
-
-function mapAndValidateSpecialtyNames(specialtyNamesInput: gqlTypes.SpecialtyName[]): dbSchema.SpecialtyName[] {
-    try {
-        const specialtyNames = specialtyNamesInput.map((name: gqlTypes.SpecialtyName) => {
-            const newSpecialtyName: dbSchema.SpecialtyName = {
-                name: name.name as string,
-                locale: name.locale as gqlTypes.Locale
-            }
-
-            return newSpecialtyName
-        })
-
-        return specialtyNames as dbSchema.SpecialtyName[]
-    } catch (e) {
-        throw CustomErrors.missingInput('The specialty names cannot be empty.')
-    }
-}
-
-function mapAndValidateLanguages(languagesInput: gqlTypes.SpokenLanguage[]): dbSchema.SpokenLanguage[] {
-    // TODO: Write conditional to check if already exists
-    try {
-        const languages = languagesInput.map((language: gqlTypes.SpokenLanguage) => {
-            const newLanguage = {
-                iso639_3: language.iso639_3,
-                nameJa: language.nameJa,
-                nameEn: language.nameEn,
-                nameNative: language.nameNative
-            }
-
-            return newLanguage
-        })
-
-        return languages as dbSchema.SpokenLanguage[]
-    } catch (e) {
-        throw CustomErrors.missingInput('The languages cannot be empty.')
-    }
-}
-
-function validateInsurance(insuranceInput: gqlTypes.Insurance[] | undefined) {
-    if (insuranceInput == undefined || insuranceInput.length < 1) {
-        throw CustomErrors.missingInput('The insurance cannot be empty.')
-    } else {
-        return insuranceInput
-    }
-}
-
-
-function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateFacilityInput>): Result<string> {
-    return validateCreateProfessionalInput(input as gqlTypes.CreateHealthcareProfessionalInput)
+    return validationResults
 }
 
 function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfessionalInput): Result<string> {
@@ -307,34 +233,39 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
         errors: []
     }
 
-    if (!input.names) {
+    //business rule: at least one facility id is required
+    if (!input.facilityIds || input.facilityIds.length < 1) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
-            field: 'names',
+            field: 'facilityIds',
+            errorCode: ErrorCode.MIN_ONE_FACILITYID_REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    validateNames(input.names, validationResults)
+    validateDegrees(input.degrees, validationResults)
+    validateSpecialties(input.specialties, validationResults)
+    validateInsurance(input.acceptedInsurance, validationResults)
+    validateSpokenLanguages(input.spokenLanguages, validationResults)
+
+    return validationResults
+}
+
+function validateDegrees(
+    degrees: gqlTypes.InputMaybe<gqlTypes.Degree[]> | undefined,
+    validationResults: Result<string>
+): void {
+    if (!degrees) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'degrees',
             errorCode: ErrorCode.REQUIRED,
             httpStatus: 400
         })
     }
 
-    if (input.names && input.names.length > 16) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'names',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.degrees) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'degrees',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    }
-
-    if(input.degrees && input.degrees.length > 64) {
+    if (degrees && degrees.length > 64) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'degrees',
@@ -343,7 +274,7 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
         })
     }
 
-    input.degrees?.forEach(degree => {
+    degrees?.forEach(degree => {
         if (degree.nameJa && degree.nameJa.length > 64) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
@@ -370,9 +301,38 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
                 httpStatus: 400
             })
         }
+    })
+
+    //TODO validate each degree
+}
+
+function validateNames(names: gqlTypes.LocaleName[] | undefined | null, validationResults: Result<string>): void {
+    if (!names) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'names',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
     }
 
-    if(!input.specialties) {
+    if (names && names.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'names',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    //TODO validate each name
+}
+
+function validateSpecialties(
+    specialties: gqlTypes.Specialty[] | undefined | null,
+    validationResults: Result<string>
+): void {
+    if (!specialties) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'specialties',
@@ -381,23 +341,64 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
         })
     }
 
-    if (input.nameJa && input.nameJa.length > 128) {
+    if (specialties && specialties.length > 16) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
-            field: 'nameJa',
+            field: 'specialties',
             errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
             httpStatus: 400
         })
     }
 
-    if (input.contact) {
-        const contactValidationResults = validateContactInput(input.contact)
+    //TODO validate each specialty
+}
 
-        if (contactValidationResults.hasErrors) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push(...contactValidationResults.errors as [])
-        }
+function validateInsurance(
+    insurance: gqlTypes.Insurance[] | undefined | null,
+    validationResults: Result<string>
+): void {
+    if (!insurance) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'insurance',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
     }
 
-    return validationResults
+    if (insurance && insurance.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'insurance',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    //TODO validate each insurance
+}
+
+function validateSpokenLanguages(
+    spokenLanguages: gqlTypes.SpokenLanguage[] | undefined | null,
+    validationResults: Result<string>
+): void {
+    if (!spokenLanguages) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    if (spokenLanguages && spokenLanguages.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    //TODO validate each spoken Language
 }
