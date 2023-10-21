@@ -172,8 +172,7 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
         return validationResults
     }
 
-    const nonNullLanguages = submissionInput.spokenLanguages?.filter(lang => !!lang) as gqlTypes.SpokenLanguageInput[]
-    const spokenLanguagesResult = mapAndValidateSpokenLanguages(nonNullLanguages)
+    const spokenLanguagesResult = mapAndValidateSpokenLanguages(submissionInput.spokenLanguages)
 
     if (spokenLanguagesResult.hasErrors) {
         return {
@@ -398,7 +397,7 @@ function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage):
     }
 }
 
-export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLanguageInput[]):
+export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLanguage[] | undefined | null):
     Result<dbSchema.SpokenLanguage[]> => {
     const validatedSpokenLanguagesResults: Result<dbSchema.SpokenLanguage[]> = {
         hasErrors: false,
@@ -428,7 +427,7 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLa
             nameNative: lang.nameNative?.trim() as string
         }))
 
-    if (validatedLanguages.length !== spokenLanguages.length) {
+    if (validatedLanguages.length < 1) {
         validatedSpokenLanguagesResults.hasErrors = true
         validatedSpokenLanguagesResults.errors?.push({
             field: 'spokenLanguages',
