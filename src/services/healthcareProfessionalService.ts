@@ -9,11 +9,11 @@ export async function getHealthcareProfessionalById(id: string) {
         const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals')
         const whereCondition = '=' as firebase.WhereFilterOp
         const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
-    
+
         if (snapshot.docs.length < 1) {
             throw new Error('No healthcare Professional found with this id')
         }
-    
+
         const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
 
         return convertedEntity
@@ -22,18 +22,26 @@ export async function getHealthcareProfessionalById(id: string) {
     }
 }
 
-export async function createHealthcareProfessional( 
-    input: gqlTypes.CreateHealthcareProfessionalInput, healthcareProfessionalRef?: 
-    FirebaseFirestore.DocumentReference<firebase.DocumentData>
-) : Promise<Result<string>> {
+/**
+ * Creates a HealthcareProfessional.
+ * - if you add any facilityids, it will update the corresponding facility by adding this healthcare professional id to their list
+ * - business logic: a healthcare professional must be associated with at least one facility (otherwise no one can find them)
+ * @param input the new HealthcareProfessional object
+ * @param healthcareProfessionalRef optional: if you have an open firebase transaction, you can pass it here
+ * @returns the id of the newly created HealthcareProfessional. (if you need the full object, query it by id)
+ */
+export async function createHealthcareProfessional(
+    input: gqlTypes.CreateHealthcareProfessionalInput, healthcareProfessionalRef?:
+        FirebaseFirestore.DocumentReference<firebase.DocumentData>
+): Promise<Result<string>> {
     // TODO: add validation
     try {
         if (!healthcareProfessionalRef) {
             healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
         }
-    
+
         const newHealthcareProfessional = {
-            id: healthcareProfessionalRef.id, 
+            id: healthcareProfessionalRef.id,
             acceptedInsurance: validateInsurance(input.acceptedInsurance as gqlTypes.Insurance[]),
             degrees: mapAndValidateDegrees(input.degrees as dbSchema.Degree[]),
             names: mapAndValidateNames(input.names as dbSchema.LocaleName[]),
@@ -44,11 +52,11 @@ export async function createHealthcareProfessional(
             createdDate: new Date().toISOString(),
             updatedDate: new Date().toISOString()
         } satisfies dbSchema.HealthcareProfessional
-    
+
         await healthcareProfessionalRef.set(newHealthcareProfessional)
 
         console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessional.id}. Entity: ${JSON.stringify(newHealthcareProfessional)}`)
-    
+
         return {
             data: newHealthcareProfessional.id,
             hasErrors: false
@@ -59,60 +67,108 @@ export async function createHealthcareProfessional(
 }
 
 /**
- * Creates a HealthcareProfessional and adds it to the listed facilities
- * @param healthcareProfessionalInput 
- * @returns A HealthcareProfessional object
+ * Updates a Healthcare Professional in the database based on the id. 
+ * - It will only update the fields that are provided and are not null.
+ * - If you want to create a new HealthcareProfessional, you need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
+ * - If you want to link an existing HealthcareProfessional to a Facility, add the healthcareprofessionalId to the `healthcareProfessionalIds` array. 
+     Use the action to add or remove the association. If an id isn't in the list, no change will occur. 
+ * @param facilityId The ID of the facility in the database.
+ * @param fieldsToUpdate The values that should be updated. They will be created if they don't exist.
+ * @returns The updated Facility.
  */
-export async function addHealthcareProfessionalToFacility( 
-    healthcareProfessionalInput: gqlTypes.CreateHealthcareProfessionalInput
-) {
-    const addHealthcareProfessionalResult : Result<dbSchema.HealthcareProfessional> = {
-        hasErrors: false,
-        errors: []
-    }
-
-    if (!healthcareProfessionalInput.facilityIds.length) {
-        addHealthcareProfessionalResult.hasErrors = true
-        addHealthcareProfessionalResult.errors?.push({
-            field: 'facilityId',
-            errorCode: ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED,
-            httpStatus: 400
-        })
-        return addHealthcareProfessionalResult
-    }
-
+export const updateHealthcareProfessional = async (
+    id: string,
+    fieldsToUpdate: Partial<gqlTypes.UpdateHealthcareProfessionalInput>
+): Promise<Result<void>> => {
     try {
-        const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
-    
-        const newHealthcareProfessional = convertToDbHealthcareProfessional(
-            healthcareProfessionalRef.id, healthcareProfessionalInput
-        )
+        const validationResult = validateUpdateProfessionalInput(fieldsToUpdate)
 
-        await healthcareProfessionalRef.set(newHealthcareProfessional)
+        if (validationResult.hasErrors) {
+            return validationResult as Result<void>
+        }
 
-        const facilities = healthcareProfessionalInput.facilityIds
+        const updatedProfessionalResult: Result<void> = {
+            hasErrors: false,
+            errors: []
+        }
 
-        facilities.map(async facilityId => {
-            const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-                
-            facilityRef.update(
-                'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
-            )
-        })
+        const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
+        const snapshot = await professionalRef.get()
+        const dbProfessionalToUpdate = snapshot.data() as dbSchema.HealthcareProfessional
+        const updatedDbProfessional: dbSchema.HealthcareProfessional = {
+            ...dbProfessionalToUpdate,
+            updatedDate: new Date().toISOString()
+        }
 
-        addHealthcareProfessionalResult.data = newHealthcareProfessional
+        ///////
 
-        return addHealthcareProfessionalResult
+
+        await professionalRef.set(updatedDbProfessional, { merge: true })
+
+        console.log(`DB-UPDATE: Updated healthcare professional ${professionalRef.id}. Entity: ${JSON.stringify(updatedDbProfessional)}`)
+
+        return updatedProfessionalResult
     } catch (error) {
-        throw new Error(`Error adding healthcare professional to Facility: ${error}`)
+        throw new Error(`Error updating healthcare professional: ${error}`)
     }
 }
+
+//TODO solve this later
+// /**
+//  * Creates a HealthcareProfessional and adds it to the listed facilities
+//  * @param healthcareProfessionalInput 
+//  * @returns A HealthcareProfessional object
+//  */
+// export async function addHealthcareProfessionalToFacility( 
+//     healthcareProfessionalInput: gqlTypes.CreateHealthcareProfessionalInput
+// ) {
+//     const addHealthcareProfessionalResult : Result<dbSchema.HealthcareProfessional> = {
+//         hasErrors: false,
+//         errors: []
+//     }
+
+//     if (!healthcareProfessionalInput.facilityIds.length) {
+//         addHealthcareProfessionalResult.hasErrors = true
+//         addHealthcareProfessionalResult.errors?.push({
+//             field: 'facilityId',
+//             errorCode: ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED,
+//             httpStatus: 400
+//         })
+//         return addHealthcareProfessionalResult
+//     }
+
+//     try {
+//         const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
+
+//         const newHealthcareProfessional = convertToDbHealthcareProfessional(
+//             healthcareProfessionalRef.id, healthcareProfessionalInput
+//         )
+
+//         await healthcareProfessionalRef.set(newHealthcareProfessional)
+
+//         const facilities = healthcareProfessionalInput.facilityIds
+
+//         facilities.map(async facilityId => {
+//             const facilityRef = dbInstance.collection('facilities').doc(facilityId)
+
+//             facilityRef.update(
+//                 'healthcareProfessionalIds', firebase.FieldValue.arrayUnion(healthcareProfessionalRef.id)
+//             )
+//         })
+
+//         addHealthcareProfessionalResult.data = newHealthcareProfessional
+
+//         return addHealthcareProfessionalResult
+//     } catch (error) {
+//         throw new Error(`Error adding healthcare professional to Facility: ${error}`)
+//     }
+// }
 
 function convertToDbHealthcareProfessional(
     id: string, healthcareProfessionalInput: gqlTypes.HealthcareProfessional
 ) {
     return {
-        id: id, 
+        id: id,
         acceptedInsurance: validateInsurance(healthcareProfessionalInput.acceptedInsurance as gqlTypes.Insurance[]),
         degrees: mapAndValidateDegrees(healthcareProfessionalInput.degrees as dbSchema.Degree[]),
         names: mapAndValidateNames(healthcareProfessionalInput.names as dbSchema.LocaleName[]),
@@ -125,7 +181,7 @@ function convertToDbHealthcareProfessional(
     } as dbSchema.HealthcareProfessional
 }
 
-function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
+function mapDbEntityTogqlEntity(dbEntity: firebase.DocumentData) {
     const gqlEntity = {
         id: dbEntity.id,
         names: dbEntity.names,
@@ -137,7 +193,7 @@ function mapDbEntityTogqlEntity(dbEntity : firebase.DocumentData) {
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
     } satisfies gqlTypes.HealthcareProfessional
-    
+
     return gqlEntity
 }
 
@@ -149,10 +205,10 @@ function mapAndValidateDegrees(degreesInput: gqlTypes.Degree[]) {
                 nameEn: degree.nameEn as string,
                 abbreviation: degree.abbreviation as string
             }
-    
+
             return newDegree
         })
-    
+
         return degrees
     } catch (e) {
         throw CustomErrors.missingInput('The degree cannot be empty.')
@@ -182,7 +238,7 @@ function mapAndValidateSpecialties(specialtiesInput: gqlTypes.Specialty[]) {
     try {
         const specialties = specialtiesInput.map((specialty: gqlTypes.Specialty) => {
             const newSpecialty = {
-            
+
                 names: mapAndValidateSpecialtyNames(specialty.names as gqlTypes.SpecialtyName[])
             }
 
@@ -198,7 +254,7 @@ function mapAndValidateSpecialties(specialtiesInput: gqlTypes.Specialty[]) {
 function mapAndValidateSpecialtyNames(specialtyNamesInput: gqlTypes.SpecialtyName[]): dbSchema.SpecialtyName[] {
     try {
         const specialtyNames = specialtyNamesInput.map((name: gqlTypes.SpecialtyName) => {
-            const newSpecialtyName : dbSchema.SpecialtyName = {
+            const newSpecialtyName: dbSchema.SpecialtyName = {
                 name: name.name as string,
                 locale: name.locale as gqlTypes.Locale
             }
@@ -240,3 +296,108 @@ function validateInsurance(insuranceInput: gqlTypes.Insurance[] | undefined) {
     }
 }
 
+
+function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateFacilityInput>): Result<string> {
+    return validateCreateProfessionalInput(input as gqlTypes.CreateHealthcareProfessionalInput)
+}
+
+function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfessionalInput): Result<string> {
+    const validationResults: Result<string> = {
+        hasErrors: false,
+        errors: []
+    }
+
+    if (!input.names) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'names',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    if (input.names && input.names.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'names',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (!input.degrees) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'degrees',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    if(input.degrees && input.degrees.length > 64) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'degrees',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    input.degrees?.forEach(degree => {
+        if (degree.nameJa && degree.nameJa.length > 64) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'degrees',
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (degree.nameEn && degree.nameEn.length > 64) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'degrees',
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (degree.abbreviation && degree.abbreviation.length > 64) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'degrees',
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+    }
+
+    if(!input.specialties) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'specialties',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    if (input.nameJa && input.nameJa.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameJa',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.contact) {
+        const contactValidationResults = validateContactInput(input.contact)
+
+        if (contactValidationResults.hasErrors) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push(...contactValidationResults.errors as [])
+        }
+    }
+
+    return validationResults
+}

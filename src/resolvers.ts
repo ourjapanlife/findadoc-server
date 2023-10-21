@@ -40,9 +40,7 @@ const resolvers = {
         },
         submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }) => {
             try {
-                const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
-
-                const matchingSubmissions = await submissionService.searchSubmissions(searchFilters)
+                const matchingSubmissions = await submissionService.searchSubmissions(args.filters)
 
                 return matchingSubmissions
             } catch (error) {
@@ -100,24 +98,7 @@ const resolvers = {
             input: gqlType.CreateSubmissionInput
         }) => {
             try {
-                for (const value of Object.values(args.input)) {
-                    if (value === null || value === undefined) {
-                        throw new Error('Missing Input')
-                    }
-                }
-                const submissionData: gqlType.CreateSubmissionInput = {
-                    googleMapsUrl: args.input.googleMapsUrl,
-                    healthcareProfessionalName: args.input.healthcareProfessionalName,
-                    spokenLanguages: args.input.spokenLanguages
-                        .filter(lang => lang !== null)
-                        .map(lang => ({
-                            iso639_3: lang.iso639_3,
-                            nameJa: lang.nameJa,
-                            nameEn: lang.nameEn,
-                            nameNative: lang.nameNative
-                        }))
-                }
-                const createSubmissionResult = await submissionService.createSubmission(submissionData)
+                const createSubmissionResult = await submissionService.createSubmission(args.input)
 
                 convertErrorsToGqlErrors(createSubmissionResult)
                 return createSubmissionResult.data

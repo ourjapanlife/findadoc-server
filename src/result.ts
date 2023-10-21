@@ -12,10 +12,10 @@ export type Error = {
     httpStatus?: number,
 }
 
-
 export enum ErrorCode {
     SERVER_ERROR = 'SERVER_ERROR',
     NOT_FOUND = 'NOT_FOUND',
+    REQUIRED = 'REQUIRED',
     MISSING_INPUT = 'MISSING_INPUT',
     NEGATIVE_NUMBER = 'NEGATIVE_NUMBER',
     INVALID_ID = 'INVALID_ID',

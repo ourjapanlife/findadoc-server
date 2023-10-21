@@ -2,7 +2,6 @@ import { DocumentData, Query } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
 import { ErrorCode, Result } from '../result'
-import { createHealthcareProfessional } from './healthcareProfessionalService'
 import { dbInstance } from '../firebaseDb'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils'
 
@@ -57,10 +56,6 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
             subRef = subRef.where('nameJa', '==', filters.nameJa)
         }
 
-        if (filters.isDeleted !== null && filters.isDeleted !== undefined) {
-            subRef = subRef.where('isDeleted', '==', filters.isDeleted)
-        }
-
         if (filters.createdDate) {
             subRef = subRef.where('createdDate', '==', filters.createdDate)
         }
@@ -84,19 +79,18 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
         subRef = subRef.offset(filters.offset || 0)
 
         const snapshot = await subRef.get()
-
-        const facilities = snapshot.docs.map(doc =>
-            mapDbEntityTogqlEntity({ ...doc.data(), id: doc.id }))
+        const dbFacilities = snapshot.docs
+        const gqlFacilities = dbFacilities.map(mapDbEntityTogqlEntity)
 
         const searchResults = {
-            data: facilities,
+            data: gqlFacilities,
             hasErrors: false
         }
 
         return searchResults
     } catch (error) {
         console.log(`Error retrieving facilities: ${error}`)
-        
+
         return {
             hasErrors: true,
             errors: [{
@@ -109,81 +103,97 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
 }
 
 /**
- * Creates a new Facility with a new HealthcareProfessional. 
- * Only a list containing the `HealthcareProfessional.id` will 
- * be returned and not the whole HealthcareProfessional Entity.
+ * Creates a new Facility. 
+ * Any healthcareprofessionalIds will build an association, but it won't create a healthcare professional. 
+ * You need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
  * @param facilityInput 
  * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was created.
  */
-export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput): Promise<Result<dbSchema.Facility>> {
+export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput): Promise<Result<string>> {
     const validationResult = validateCreateFacilityInput(facilityInput)
 
     if (validationResult.hasErrors) {
         return validationResult
     }
 
-    const createFacilityResult: Result<dbSchema.Facility> = {
+    const createFacilityResult: Result<string> = {
         hasErrors: false,
         errors: []
     }
 
     const facilityRef = dbInstance.collection('facilities').doc()
-    const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
-
-    if (facilityInput.healthcareProfessionals && facilityInput.healthcareProfessionals.length) {
-        for await (const profEntity of facilityInput.healthcareProfessionals) {
-            const createHealthcareProfResults = await createHealthcareProfessional(
-                profEntity, healthcareProfessionalRef
-            )
-
-            if (createHealthcareProfResults.hasErrors && createHealthcareProfResults.errors?.length) {
-                createFacilityResult.hasErrors = true
-                createFacilityResult.errors?.concat(createHealthcareProfResults.errors)
-            } else {
-                facilityInput.healthcareProfessionalIds?.push(createHealthcareProfResults.data as string)
-            }
-        }
-    }
-
-    const newDbFacility = convertToDbFacility(facilityInput, facilityRef.id)
+    const newFacilityId = facilityRef.id
+    const newDbFacility = convertToDbFacility(facilityInput, newFacilityId)
 
     await facilityRef.set(newDbFacility)
 
-    console.log(`DB-CREATE: CREATE facility ${facilityRef.id}. Entity: ${JSON.stringify(newDbFacility)}`)
+    console.log(`DB-CREATE: CREATE facility ${newFacilityId}. Entity: ${JSON.stringify(newDbFacility)}`)
 
-    createFacilityResult.data = newDbFacility
+    createFacilityResult.data = newFacilityId
 
     return createFacilityResult
 }
 
 /**
- * Updates a Facility in the database with the params.
+ * Updates a Facility in the database with the params in the database based on the id. 
+ * - It will only update the fields that are provided and are not null.
+ * - If you want to create a new HealthcareProfessional, you need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
+ * - If you want to link an existing HealthcareProfessional to a Facility, add the healthcareprofessionalId to the `healthcareProfessionalIds` array. 
+     Use the action to add or remove the association. If an id isn't in the list, no change will occur. 
  * @param facilityId The ID of the facility in the database.
  * @param fieldsToUpdate The values that should be updated. They will be created if they don't exist.
  * @returns The updated Facility.
  */
-export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<dbSchema.Facility>):
-    Promise<Result<dbSchema.Facility | null>> => {
+export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<gqlTypes.UpdateFacilityInput>):
+    Promise<Result<void>> => {
     try {
+        const validationResult = validateUpdateFacilityInput(fieldsToUpdate)
+
+        if (validationResult.hasErrors) {
+            return validationResult as Result<void>
+        }
+
+        const updateFacilityResult: Result<void> = {
+            hasErrors: false,
+            errors: []
+        }
+
         const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-
         const snapshot = await facilityRef.get()
-
-        const facilityToUpdate = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
-
+        const dbFacilityToUpdate = snapshot.data() as dbSchema.Facility
         const updatedDbFacility: dbSchema.Facility = {
-            ...facilityToUpdate,
-            ...fieldsToUpdate,
+            ...dbFacilityToUpdate,
             updatedDate: new Date().toISOString()
         }
+
+        // Object.keys((fieldsToUpdate, currentKey) => {
+        // const key = fieldsToUpdate[currentKey] as keyof gqlTypes.UpdateFacilityInput
+        // (Object.keys(fieldsToUpdate) as (keyof typeof fieldsToUpdate)[]).forEach((currentKey, index) => {
+
+        for (const currentKey in fieldsToUpdate) {
+            if (currentKey && currentKey in updatedDbFacility) {
+                updatedDbFacility[currentKey as keyof gqlTypes.UpdateFacilityInput] =
+                    fieldsToUpdate[currentKey as keyof gqlTypes.UpdateFacilityInput]
+            }
+
+            if(currentKey === 'healthcareProfessionalIds' && fieldsToUpdate.healthcareProfessionalIds) {
+                fieldsToUpdate.healthcareProfessionalIds.forEach((relationship, index) => {
+                    if(relationship.action === gqlTypes.AssociationAction.Add) {
+                        updatedDbFacility.healthcareProfessionalIds?.push(id)
+                    } 
+                    if(relationship?.action === gqlTypes.AssociationAction.Remove) {
+                        updatedDbFacility.healthcareProfessionalIds?.splice(index, 1)
+                    }
+                }
+            }
+        }
+
 
         await facilityRef.set(updatedDbFacility, { merge: true })
 
         console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(updatedDbFacility)}`)
 
-        const updatedFacility = await getFacilityById(facilityRef.id)
-
-        return updatedFacility
+        return updateFacilityResult
     } catch (error) {
         throw new Error(`Error updating facility: ${error}`)
     }
@@ -191,23 +201,21 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
 
 /**
  * Converts the values for FacilityInput variables to the format they will be stored as in the database.
- * @param facility - The `FacilityInput` variables that were passed in the API request.
- * @param id - The ID of the Facility in the Firestore collection.
+ * @param input - The `FacilityInput` variables that were passed in the API request.
+ * @param newId - The ID of the Facility in the Firestore collection.
  * @returns 
  */
-function convertToDbFacility(facility: gqlTypes.Facility, id: string): dbSchema.Facility {
+function convertToDbFacility(input: gqlTypes.CreateFacilityInput, newId: string): dbSchema.Facility {
     return {
-        ...facility,
-        id: id,
-        nameEn: facility.nameEn,
-        nameJa: facility.nameJa,
-        contact: facility.contact,
-        healthcareProfessionalIds: facility.healthcareProfessionalIds,
-        healthcareProfessionals: [],
+        ...input,
+        id: newId,
+        nameEn: input.nameEn,
+        nameJa: input.nameJa,
+        contact: input.contact,
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
 
-    } as gqlTypes.Facility
+    } as dbSchema.Facility
 }
 
 const mapDbEntityTogqlEntity = (dbEntity: DocumentData): gqlTypes.Facility => {
@@ -287,8 +295,8 @@ function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilte
     return validationResults
 }
 
-function validateCreateFacilityInput(input: gqlTypes.FacilityInput): Result<dbSchema.Facility> {
-    const validationResults: Result<dbSchema.Facility> = {
+function validateUpdateFacilityInput(input: Partial<gqlTypes.UpdateFacilityInput>): Result<string> {
+    const validationResults: Result<string> = {
         hasErrors: false,
         errors: []
     }
@@ -323,7 +331,61 @@ function validateCreateFacilityInput(input: gqlTypes.FacilityInput): Result<dbSc
     return validationResults
 }
 
-function validateContactInput(contactInput: gqlTypes.ContactInput): Result<boolean> {
+function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput): Result<string> {
+    const validationResults: Result<string> = {
+        hasErrors: false,
+        errors: []
+    }
+
+    if(!input.nameEn) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameEn',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    if (input.nameEn && input.nameEn.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameEn',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if(!input.nameJa) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameJa',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    if (input.nameJa && input.nameJa.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameJa',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.contact) {
+        const contactValidationResults = validateContactInput(input.contact)
+
+        if (contactValidationResults.hasErrors) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push(...contactValidationResults.errors as [])
+        }
+    }
+
+    return validationResults
+}
+
+function validateContactInput(contactInput: gqlTypes.Contact): Result<boolean> {
     const validationResults: Result<boolean> = {
         hasErrors: false,
         errors: []
@@ -372,7 +434,7 @@ function validateContactInput(contactInput: gqlTypes.ContactInput): Result<boole
     return validationResults
 }
 
-function validateAddressInput(input: gqlTypes.PhysicalAddressInput): Result<string> {
+function validateAddressInput(input: gqlTypes.PhysicalAddress): Result<string> {
     const validationResults: Result<string> = {
         hasErrors: false,
         errors: []
