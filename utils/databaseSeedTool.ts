@@ -11,13 +11,15 @@ export const seedDatabase = async () => {
     const healthcareProfessionals = fakeHealthcareProfessionals()
     const facilities = fakeFacilities()
     
-    const healthcareProfessionalForFacility = healthcareProfessionals[0]
-    
-    facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
+    const healthcareProfessionalIds: string[] = []
 
     for await (const hp of healthcareProfessionals) {
-        await createHealthcareProfessional(hp)
+        const createResult = await createHealthcareProfessional(hp)
+
+        healthcareProfessionalIds.push(createResult.data as string)
     }
+    
+    facilities[0].healthcareProfessionalIds = healthcareProfessionalIds
 
     for await (const facility of facilities) {
         await createFacility(facility)
