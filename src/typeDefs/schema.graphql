@@ -3,7 +3,7 @@ type Facility {
   nameEn: String!
   nameJa: String!
   contact: Contact!
-  healthcareProfessionalIds: [Relationship!]!
+  healthcareProfessionalIds: [ID!]!
   createdDate: String!
   updatedDate: String!
 }
@@ -12,7 +12,7 @@ input CreateFacilityInput {
   nameEn: String
   nameJa: String
   contact: ContactInput
-  healthcareProfessionalIds: [Relationship!]
+  healthcareProfessionalIds: [ID!]
 }
 
 input UpdateFacilityInput {
@@ -42,7 +42,7 @@ type HealthcareProfessional {
   degrees: [Degree!]!
   specialties: [Specialty!]!
   acceptedInsurance: [Insurance!]!
-  facilityIds: [Relationship!]!
+  facilityIds: [ID!]!
   createdDate: String!
   updatedDate: String!
 }
@@ -53,7 +53,7 @@ input CreateHealthcareProfessionalInput {
   degrees: [DegreeInput!]
   specialties: [SpecialtyInput!]
   acceptedInsurance: [Insurance!]
-  facilityIds: [Relationship!]!
+  facilityIds: [ID!]!
 }
 
 input UpdateHealthcareProfessionalInput {
@@ -96,16 +96,16 @@ type Submission {
 input CreateSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput]
+  spokenLanguages: [SpokenLanguageInput!]
 }
 
 input UpdateSubmissionInput {
   id: ID!
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput]
+  spokenLanguages: [SpokenLanguageInput!]
   facility: CreateFacilityInput
-  healthcareProfessionals: [CreateHealthcareProfessionalInput]
+  healthcareProfessionals: [CreateHealthcareProfessionalInput!]
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
@@ -114,13 +114,13 @@ input UpdateSubmissionInput {
 input SubmissionSearchFilters {
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput]
+  spokenLanguages: [SpokenLanguageInput!]
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
   createdDate: String
   updatedDate: String
-  orderBy: [OrderBy]
+  orderBy: [OrderBy!]
   limit: Int
   offset: Int
 }
@@ -196,7 +196,7 @@ enum Locale {
 }
 
 input SpecialtyInput {
-  names: [SpecialtyNameInput]
+  names: [SpecialtyNameInput!]
 }
 
 type Specialty {
@@ -257,36 +257,36 @@ enum Insurance {
 
 type Query {
   facility(id: ID!): Facility
-  facilities(filters: FacilitySearchFilters): [Facility]
+  facilities(filters: FacilitySearchFilters!): [Facility]
   healthcareProfessional(id: ID!): HealthcareProfessional
-  healthcareProfessionals(filters: HealthcareProfessionalSearchFilters): [HealthcareProfessional]
+  healthcareProfessionals(filters: HealthcareProfessionalSearchFilters!): [HealthcareProfessional]
   submission(id: ID!): Submission
-  submissions(filters: SubmissionSearchFilters): [Submission]
+  submissions(filters: SubmissionSearchFilters!): [Submission]
 }
 
 type Mutation {
   createHealthcareProfessional(
-    input: CreateHealthcareProfessionalInput
+    input: CreateHealthcareProfessionalInput!
   ) : HealthcareProfessional
   updateHealthcareProfessional(
     id: ID!
-    input: UpdateHealthcareProfessionalInput
+    input: UpdateHealthcareProfessionalInput!
   ) : HealthcareProfessional
   deleteHealthcareProfessional(id: ID!) : Boolean
   createFacility(
-    input: CreateFacilityInput
+    input: CreateFacilityInput!
   ): Facility
   updateFacility(
     id: ID!
-    input: UpdateFacilityInput
+    input: UpdateFacilityInput!
   ): Facility
   deleteFacility(id: ID!) : Boolean
   createSubmission(
-    input: CreateSubmissionInput
+    input: CreateSubmissionInput!
   ): Submission
   updateSubmission(
     id: ID!
-    input: UpdateSubmissionInput
+    input: UpdateSubmissionInput!
   ): Submission
   deleteSubmission(id: ID!) : Boolean
 }
