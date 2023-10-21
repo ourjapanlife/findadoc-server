@@ -65,78 +65,72 @@ function validateIdInput(id: string): Result<gqlTypes.Submission> {
  * When no parameters are provided, filters is an empty object.
  * @returns A submissions object
  */
-export async function searchSubmissions(filters: dbSchema.SubmissionSearchFilters = {}) {
+export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilters) {
     try {
-        const {
-            googleMapsUrl,
-            healthcareProfessionalName,
-            isUnderReview,
-            isApproved,
-            isRejected,
-            orderBy = [{
-                fieldToOrder: 'createdDate',
-                orderDirection: 'desc'
-            }],
-            limit = 20,
-            createdDate,
-            updatedDate,
-            spokenLanguages
-        } = filters
+        //TODO: convert this to a validation method instead of a mapping method
+        // const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
 
         let subRef: Query<DocumentData> = dbInstance.collection('submissions')
 
-        if (googleMapsUrl) {
-            subRef = subRef.where('googleMapsUrl', '==', googleMapsUrl)
+        if (filters.googleMapsUrl) {
+            subRef = subRef.where('googleMapsUrl', '==', filters.googleMapsUrl)
         }
 
-        if (healthcareProfessionalName) {
-            subRef = subRef.where('healthcareProfessionalName', '==', healthcareProfessionalName)
+        if (filters.healthcareProfessionalName) {
+            subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
         }
 
-        if (typeof isUnderReview !== 'undefined') {
-            subRef = subRef.where('isUnderReview', '==', isUnderReview)
+        if (typeof filters.isUnderReview !== 'undefined') {
+            subRef = subRef.where('isUnderReview', '==', filters.isUnderReview)
         }
 
-        if (typeof isApproved !== 'undefined') {
-            subRef = subRef.where('isApproved', '==', isApproved)
+        if (typeof filters.isApproved !== 'undefined') {
+            subRef = subRef.where('isApproved', '==', filters.isApproved)
         }
 
-        if (typeof isRejected !== 'undefined') {
-            subRef = subRef.where('isRejected', '==', isRejected)
+        if (typeof filters.isRejected !== 'undefined') {
+            subRef = subRef.where('isRejected', '==', filters.isRejected)
         }
 
-        if (orderBy && Array.isArray(orderBy)) {
-            orderBy.forEach(order => {
+        if (filters.orderBy && Array.isArray(filters.orderBy)) {
+            filters.orderBy.forEach(order => {
                 if (order) {
                     subRef = subRef.orderBy(order.fieldToOrder, order.orderDirection)
                 }
             })
+        } else {
+            //default
+            subRef = subRef.orderBy('createdDate', 'desc')
         }
 
-        if (limit) {
-            subRef = subRef.limit(limit)
+        //default is 20
+        subRef = subRef.limit(filters.limit ?? 20)
+
+        if (filters.createdDate) {
+            subRef = subRef.where('createdDate', '==', filters.createdDate)
         }
 
-        if (createdDate) {
-            subRef = subRef.where('createdDate', '==', createdDate)
-        }
-
-        if (updatedDate) {
-            subRef = subRef.where('updatedDate', '==', updatedDate)
+        if (filters.updatedDate) {
+            subRef = subRef.where('updatedDate', '==', filters.updatedDate)
         }
 
         const snapshot = await subRef.get()
 
-        let submissions = snapshot.docs.map(doc =>
-            mapDbEntityTogqlEntity({ ...doc.data(), id: doc.id }))
+        const submissions = snapshot.docs.map(doc => mapDbEntityTogqlEntity({
+            ...doc.data() as dbSchema.Submission,
+            id: doc.id
+        } satisfies dbSchema.Submission))
 
-        if (spokenLanguages && spokenLanguages.length) {
-            const requiredLanguages = spokenLanguages
-                .map((lang: { iso639_3: string }) => lang.iso639_3)
+        const shouldFilterSubmissionsBySpokenLanguages = filters.spokenLanguages && filters.spokenLanguages.length
 
-            submissions = submissions.filter(sub =>
-                requiredLanguages.every((reqLang: string) =>
+        if (shouldFilterSubmissionsBySpokenLanguages) {
+            const requiredLanguages = filters.spokenLanguages?.map((lang: { iso639_3: string }) => lang.iso639_3)
+
+            const filteredSubmissions = submissions.filter(sub =>
+                requiredLanguages?.every((reqLang: string) =>
                     sub.spokenLanguages.some(subLang => subLang?.iso639_3 === reqLang)))
+
+            return filteredSubmissions
         }
 
         return submissions
@@ -154,6 +148,8 @@ function convertToDbSubmission(input: gqlTypes.CreateSubmissionInput, newId: str
         isApproved: false,
         isRejected: false,
         spokenLanguages: input.spokenLanguages?.filter(lang => lang !== null) as dbSchema.SpokenLanguage[],
+        facility: undefined,
+        healthcareProfessionals: [],
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
     }
@@ -253,7 +249,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<vo
     try {
         const submissionRef = dbInstance.collection('submissions').doc(submissionId)
         const snapshot = await submissionRef.get()
-        const currentSubmission = snapshot.data()
+        const currentSubmission = snapshot.data() as dbSchema.Submission
 
         if (!currentSubmission) {
             approveResult.errors?.push({
@@ -285,7 +281,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<vo
         console.log(`DB-UPDATE: Submission ${submissionId} was approved.`)
 
         //try creating healthcare professional(s)
-        for await (const healthcareProfessional of currentSubmission.healthcareProfessionals) {
+        for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
             const createHealthcareProfessionalResult = await createHealthcareProfessional(healthcareProfessional)
 
             if (createHealthcareProfessionalResult.hasErrors) {
@@ -295,7 +291,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<vo
         }
 
         //try creating the facility
-        const createFacilityResult = await createFacility(currentSubmission)
+        const createFacilityResult = await createFacility(currentSubmission.facility as dbSchema.Facility)
 
         if (createFacilityResult.hasErrors) {
             approveResult.errors?.concat(createFacilityResult.errors!)
@@ -322,7 +318,7 @@ const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): R
         errors: []
     }
 
-    if (!input.googleMapsUrl || !input.googleMapsUrl.trim()) {
+    if (!input.googleMapsUrl?.trim()) {
         validatedSubmissionResult.hasErrors = true
         validatedSubmissionResult.errors?.push({
             field: 'googleMapsUrl',
@@ -361,41 +357,44 @@ const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): R
     return validatedSubmissionResult
 }
 
-export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Partial<gqlTypes.Submission>):
-    Partial<dbSchema.Submission> {
-    const { spokenLanguages, ...remainingSubmissionFields } = submission
+// export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Partial<gqlTypes.Submission>):
+//     Partial<dbSchema.Submission> {
+//     const { spokenLanguages, ...remainingSubmissionFields } = submission
 
-    if (!spokenLanguages) {
-        return { ...remainingSubmissionFields }
-    }
+//     if (!spokenLanguages) {
+//         return {
+//             facility: remainingSubmissionFields.facility ? remainingSubmissionFields.facility : undefined,
+//             ...remainingSubmissionFields
+//         }
+//     }
 
-    return {
-        ...remainingSubmissionFields,
-        spokenLanguages: spokenLanguages
-            .filter((lang): lang is gqlTypes.SpokenLanguage =>
-                lang !== null && lang !== undefined &&
-                typeof lang.iso639_3 === 'string' &&
-                typeof lang.nameJa === 'string' &&
-                typeof lang.nameEn === 'string' &&
-                typeof lang.nameNative === 'string')
-            .map((lang): dbSchema.SpokenLanguage => ({
-                iso639_3: lang.iso639_3 as string,
-                nameJa: lang.nameJa as string,
-                nameEn: lang.nameEn as string,
-                nameNative: lang.nameNative as string
-            }))
-    }
-}
+//     return {
+//         ...remainingSubmissionFields,
+//         spokenLanguages: spokenLanguages
+//             .filter((lang): lang is gqlTypes.SpokenLanguage =>
+//                 lang !== null && lang !== undefined &&
+//                 typeof lang.iso639_3 === 'string' &&
+//                 typeof lang.nameJa === 'string' &&
+//                 typeof lang.nameEn === 'string' &&
+//                 typeof lang.nameNative === 'string')
+//             .map((lang): dbSchema.SpokenLanguage => ({
+//                 iso639_3: lang.iso639_3 as string,
+//                 nameJa: lang.nameJa as string,
+//                 nameEn: lang.nameEn as string,
+//                 nameNative: lang.nameNative as string
+//             }))
+//     }
+// }
 
-function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage):
-    dbSchema.SpokenLanguage {
-    return {
-        iso639_3: lang.iso639_3 as string,
-        nameJa: lang.nameJa as string,
-        nameEn: lang.nameEn as string,
-        nameNative: lang.nameNative as string
-    }
-}
+// function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage):
+//     dbSchema.SpokenLanguage {
+//     return {
+//         iso639_3: lang.iso639_3 as string,
+//         nameJa: lang.nameJa as string,
+//         nameEn: lang.nameEn as string,
+//         nameNative: lang.nameNative as string
+//     }
+// }
 
 export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLanguage[] | undefined | null):
     Result<dbSchema.SpokenLanguage[]> => {
@@ -438,46 +437,46 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLa
         return validatedSpokenLanguagesResults
     }
 
-    validatedSpokenLanguagesResults.data = validatedLanguages.map(gqlSpokenLanguageToDbSpokenLanguage)
+    validatedSpokenLanguagesResults.data = validatedLanguages
     return validatedSpokenLanguagesResults
 }
 
-export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlTypes.SubmissionSearchFilters = {}):
-    dbSchema.SubmissionSearchFilters => {
-    const mappedLanguages = filters.spokenLanguages?.map(lang => lang ? {
-        iso639_3: lang.iso639_3 ?? '',
-        nameJa: lang.nameJa ?? '',
-        nameEn: lang.nameEn ?? '',
-        nameNative: lang.nameNative ?? ''
-    } : undefined)
+// export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlTypes.SubmissionSearchFilters = {}):
+//     dbSchema.SubmissionSearchFilters => {
+//     const mappedLanguages = filters.spokenLanguages?.map(lang => lang ? {
+//         iso639_3: lang.iso639_3 ?? '',
+//         nameJa: lang.nameJa ?? '',
+//         nameEn: lang.nameEn ?? '',
+//         nameNative: lang.nameNative ?? ''
+//     } : undefined)
 
-    const filteredLanguages = (mappedLanguages ?? [])
-        .filter(lang => lang !== undefined) as dbSchema.SpokenLanguage[]
+//     const filteredLanguages = (mappedLanguages ?? [])
+//         .filter(lang => lang !== undefined) as dbSchema.SpokenLanguage[]
 
-    const mappedOrderBy = filters.orderBy ? filters.orderBy
-        .filter((o): o is gqlTypes.OrderBy => Boolean(o && o.fieldToOrder && o.orderDirection))
-        .map(order => ({
-            fieldToOrder: order.fieldToOrder as string,
-            orderDirection: order.orderDirection as dbSchema.OrderDirection
-        })) : undefined
+//     const mappedOrderBy = filters.orderBy ? filters.orderBy
+//         .filter((o): o is gqlTypes.OrderBy => Boolean(o && o.fieldToOrder && o.orderDirection))
+//         .map(order => ({
+//             fieldToOrder: order.fieldToOrder as string,
+//             orderDirection: order.orderDirection as dbSchema.OrderDirection
+//         })) : undefined
 
-    return {
-        ...filters,
-        googleMapsUrl: filters.googleMapsUrl === null ? undefined : filters.googleMapsUrl,
-        healthcareProfessionalName: filters.healthcareProfessionalName === null ? undefined :
-            filters.healthcareProfessionalName,
-        spokenLanguages: filteredLanguages,
-        isUnderReview: filters.isUnderReview ?? undefined,
-        isApproved: filters.isApproved ?? undefined,
-        isRejected: filters.isRejected ?? undefined,
-        orderBy: mappedOrderBy,
-        limit: filters.limit === null ? undefined : filters.limit,
-        createdDate: filters.createdDate ?? undefined,
-        updatedDate: filters.updatedDate ?? undefined
-    }
-}
+//     return {
+//         ...filters,
+//         googleMapsUrl: filters.googleMapsUrl === null ? undefined : filters.googleMapsUrl,
+//         healthcareProfessionalName: filters.healthcareProfessionalName === null ? undefined :
+//             filters.healthcareProfessionalName,
+//         spokenLanguages: filteredLanguages,
+//         isUnderReview: filters.isUnderReview ?? undefined,
+//         isApproved: filters.isApproved ?? undefined,
+//         isRejected: filters.isRejected ?? undefined,
+//         orderBy: mappedOrderBy,
+//         limit: filters.limit === null ? undefined : filters.limit,
+//         createdDate: filters.createdDate ?? undefined,
+//         updatedDate: filters.updatedDate ?? undefined
+//     }
+// }
 
-const mapDbEntityTogqlEntity = (dbEntity: DocumentData): gqlTypes.Submission => {
+const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submission => {
     const gqlEntity = {
         id: dbEntity.id,
         googleMapsUrl: dbEntity.googleMapsUrl,
