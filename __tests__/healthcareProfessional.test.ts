@@ -8,16 +8,21 @@ import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 import { Error, ErrorCode } from '../src/result'
 
 const facilityIds = [] as string[]
+const healthcareProfessionalIds = [] as string[]
 
-const facilityQueryData = {
-    query: `mutation CreateFacilityWithHealthcareProfessional($input: FacilityInput) {
-        createFacilityWithHealthcareProfessional(input: $input) {
+const facilityMutationRequest = {
+    query: `mutation CreateFacility($input: FacilityInput) {
+        CreateFacilityInput(input: $input) {
           id
         }
       }`,
     variables: {
         input: {
             contact: {
+                googleMapsUrl: null,
+                email: null,
+                phone: null,
+                website: null,
                 address: {
                     addressLine1En: null,
                     addressLine1Ja: null,
@@ -28,53 +33,9 @@ const facilityQueryData = {
                     cityJa: null,
                     prefectureEn: null,
                     prefectureJa: null
-                },
-                email: null,
-                mapsLink: null,
-                phone: null,
-                website: null
-            },
-            healthcareProfessionalIds: null,
-            healthcareProfessionals: [
-                {
-                    acceptedInsurance: 'JAPANESE_HEALTH_INSURANCE',
-                    degrees: [
-                        {
-                            nameJa: null,
-                            nameEn: null,
-                            abbreviation: null
-                        }
-                    ],
-                    facilityIds: [],
-                    names: [
-                        {
-                            middleName: null,
-                            locale: 'ENGLISH',
-                            lastName: 'null',
-                            firstName: 'null'
-                        }
-                    ],
-                    specialties: [
-                        {
-                            names: [
-                                {
-                                    name: null,
-                                    locale: null
-                                }
-                            ]
-                        }
-                    ],
-                    spokenLanguages: [
-                        {
-                            nameNative: 'null',
-                            nameEn: 'null',
-                            iso639_3: 'null',
-                            nameJa: 'null'
-                        }
-                    ]
                 }
-            ],
-            isDeleted: null,
+            },
+            healthcareProfessionalIds: healthcareProfessionalIds,
             nameEn: null,
             nameJa: null
         }
@@ -82,7 +43,7 @@ const facilityQueryData = {
 
 }
 
-const healthcareProfessionalQueryData = {
+const healthcareProfessionalMutationRequest = {
     query: `mutation Mutation($input: HealthcareProfessionalInput) {
         createHealthcareProfessional(input: $input) {
           id
@@ -110,7 +71,6 @@ const healthcareProfessionalQueryData = {
             }
           }
           acceptedInsurance
-          isDeleted
           createdDate
           updatedDate
         }
@@ -169,7 +129,7 @@ describe('createHealthcareProfessional', () => {
         await initiatilizeFirebaseInstance()
 
         // Create a new Facility to add HealthProfessionals to
-        const facility = await request(url).post('/').send(facilityQueryData)
+        const facility = await request(url).post('/').send(facilityMutationRequest)
 
         const facilityId = await facility.body.data.createFacilityWithHealthcareProfessional.id
 
@@ -181,12 +141,12 @@ describe('createHealthcareProfessional', () => {
     })
 
     it('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
-        const response = await request(url).post('/').send(healthcareProfessionalQueryData)
+        const response = await request(url).post('/').send(healthcareProfessionalMutationRequest)
 
         //should not have errors
         expect(response.body.errors).toBeUndefined()
 
-        const inputData = healthcareProfessionalQueryData.variables.input
+        const inputData = healthcareProfessionalMutationRequest.variables.input
         const newHealthcareProfessionalData = response.body.data.createHealthcareProfessional
 
         expect(newHealthcareProfessionalData.id).toBeDefined()
@@ -194,7 +154,6 @@ describe('createHealthcareProfessional', () => {
         expect(newHealthcareProfessionalData.degrees).toEqual(inputData.degrees)
         expect(newHealthcareProfessionalData.spokenLanguages).toEqual(inputData.spokenLanguages)
         expect(newHealthcareProfessionalData.acceptedInsurance).toEqual(inputData.acceptedInsurance)
-        expect(newHealthcareProfessionalData.isDeleted).toBe(false)
         expect(newHealthcareProfessionalData.createdDate).toBeDefined()
         expect(newHealthcareProfessionalData.updatedDate).toBeDefined()
     })
@@ -203,7 +162,7 @@ describe('createHealthcareProfessional', () => {
         //clear facilityIds so the empty list will throw a validation error
         facilityIds.pop()
 
-        const response = await request(url).post('/').send(healthcareProfessionalQueryData)
+        const response = await request(url).post('/').send(healthcareProfessionalMutationRequest)
 
         expect(response.body.errors).toBeDefined()
         expect(response.body.errors[0].extensions.errors[0]).toBeDefined()

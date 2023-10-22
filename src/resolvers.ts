@@ -56,64 +56,66 @@ const resolvers = {
     Mutation: {
         createFacility: async (_parent: unknown, args: {
             input: gqlType.CreateFacilityInput
-        }) => {
+        }): Promise<string> => {
             try {
                 const newFacilityResult = await facilityService.createFacility(args.input)
 
                 convertErrorsToGqlErrors(newFacilityResult)
-                return newFacilityResult.data
+                return newFacilityResult.data as string
             } catch (error) {
                 return CustomErrors.missingInput('Failed to create facility and Healthcare Professional.')
             }
         },
+
         updateFacility: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateFacilityInput
-        }) => {
+        }): Promise<void> => {
             const updateFacilityResult = await facilityService.updateFacility(args.id, args.input)
 
             convertErrorsToGqlErrors(updateFacilityResult)
-            return updateFacilityResult.data
         },
+
         createHealthcareProfessional: async (_parent: unknown, args: {
             input: gqlType.CreateHealthcareProfessionalInput
-        }) => {
+        }): Promise<string> => {
             const createHealthcareProfessionalResult =
                 await healthcareProfessionalService.createHealthcareProfessional(args.input)
 
             convertErrorsToGqlErrors(createHealthcareProfessionalResult)
-            return createHealthcareProfessionalResult.data
+            return createHealthcareProfessionalResult.data as string
         },
+
         updateHealthcareProfessional: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateHealthcareProfessionalInput
-        }) => {
+        }): Promise<void> => {
             const updateProfessionalResult =
                 await healthcareProfessionalService.updateHealthcareProfessional(args.id, args.input)
 
             convertErrorsToGqlErrors(updateProfessionalResult)
-            return updateProfessionalResult.data
         },
+
         createSubmission: async (_parent: unknown, args: {
             input: gqlType.CreateSubmissionInput
-        }) => {
+        }): Promise<string> => {
             try {
                 const createSubmissionResult = await submissionService.createSubmission(args.input)
 
                 convertErrorsToGqlErrors(createSubmissionResult)
-                return createSubmissionResult.data
+                return createSubmissionResult.data as string
             } catch (error) {
                 return CustomErrors.missingInput('Failed to create submission.')
             }
         },
+
         updateSubmission: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateSubmissionInput
-        }) => {
+        }): Promise<void> => {
             const updatedSubmissionResult = await submissionService.updateSubmission(args.id, args.input)
 
             convertErrorsToGqlErrors(updatedSubmissionResult)
-            return updatedSubmissionResult.data
         }
     }
 }

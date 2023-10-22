@@ -156,8 +156,8 @@ function convertToDbSubmission(input: gqlTypes.CreateSubmissionInput, newId: str
 }
 
 export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
-    Promise<Result<dbSchema.Submission>> => {
-    const createSubmissionResult: Result<dbSchema.Submission> = {
+    Promise<Result<string>> => {
+    const createSubmissionResult: Result<string> = {
         hasErrors: false,
         errors: []
     }
@@ -184,7 +184,8 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
     const newSubmission = convertToDbSubmission(submissionInput, newSubmissionId)
 
     await submissionRef.set(newSubmission)
-    createSubmissionResult.data = newSubmission
+
+    createSubmissionResult.data = newSubmission.id
 
     return createSubmissionResult
 }
@@ -312,8 +313,8 @@ export const approveSubmission = async (submissionId: string): Promise<Result<vo
     }
 }
 
-const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): Result<dbSchema.Submission> => {
-    const validatedSubmissionResult: Result<dbSchema.Submission> = {
+const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): Result<string> => {
+    const validatedSubmissionResult: Result<string> = {
         hasErrors: false,
         errors: []
     }

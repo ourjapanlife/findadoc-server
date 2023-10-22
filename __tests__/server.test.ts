@@ -42,7 +42,6 @@ const queryData = {
             }
           }
           acceptedInsurance
-          isDeleted
         }
       }`,
     variables: {
@@ -94,8 +93,6 @@ describe('query healthcareProfessionalById', () => {
         expect(Object.values(gqlTypes.Locale)).toContain(healthcareProfessional.specialties[0].names[0].locale)
 
         expect(Object.values(gqlTypes.Insurance)).toContain(healthcareProfessional.acceptedInsurance[0])
-
-        expect(typeof healthcareProfessional.isDeleted === 'boolean').toBeTruthy()
 
         expect(response.errors).toBeUndefined()
     })
