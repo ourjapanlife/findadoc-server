@@ -16,7 +16,6 @@ input CreateFacilityInput {
 }
 
 input UpdateFacilityInput {
-  id: ID!
   nameEn: String
   nameJa: String
   contact: ContactInput
@@ -57,7 +56,6 @@ input CreateHealthcareProfessionalInput {
 }
 
 input UpdateHealthcareProfessionalInput {
-  id: ID!
   names: [LocaleNameInput!]
   spokenLanguages: [SpokenLanguageInput!]
   degrees: [DegreeInput!]
@@ -100,7 +98,6 @@ input CreateSubmissionInput {
 }
 
 input UpdateSubmissionInput {
-  id: ID!
   googleMapsUrl: String
   healthcareProfessionalName: String
   spokenLanguages: [SpokenLanguageInput!]

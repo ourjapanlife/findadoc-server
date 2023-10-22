@@ -363,7 +363,6 @@ export type SubmissionSearchFilters = {
 export type UpdateFacilityInput = {
   contact?: InputMaybe<ContactInput>;
   healthcareProfessionalIds?: InputMaybe<Array<RelationshipInput>>;
-  id: Scalars['ID']['input'];
   nameEn?: InputMaybe<Scalars['String']['input']>;
   nameJa?: InputMaybe<Scalars['String']['input']>;
 };
@@ -372,7 +371,6 @@ export type UpdateHealthcareProfessionalInput = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
   degrees?: InputMaybe<Array<DegreeInput>>;
   facilityIds?: InputMaybe<Array<RelationshipInput>>;
-  id: Scalars['ID']['input'];
   names?: InputMaybe<Array<LocaleNameInput>>;
   specialties?: InputMaybe<Array<SpecialtyInput>>;
   spokenLanguages?: InputMaybe<Array<SpokenLanguageInput>>;
@@ -383,7 +381,6 @@ export type UpdateSubmissionInput = {
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
   healthcareProfessionals?: InputMaybe<Array<CreateHealthcareProfessionalInput>>;
-  id: Scalars['ID']['input'];
   isApproved?: InputMaybe<Scalars['Boolean']['input']>;
   isRejected?: InputMaybe<Scalars['Boolean']['input']>;
   isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
