@@ -27,12 +27,12 @@ describe('createFacility', () => {
     })
 
     it('creates a new Facility', async () => {
-        const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
+        const createFacilityResult = await request(url).post('/').send(createFacilityQuery)
 
         //should not have errors
         expect(createFacilityResult.body.errors).toBeUndefined()
 
-        const originalInputValues = createFacilityRequest.variables.input
+        const originalInputValues = createFacilityQuery.variables.input
         const newFacilityId = createFacilityResult.body.data
 
         const getFacilityResult = await request(url).post('/').send(facilityQuery(newFacilityId))
@@ -52,14 +52,14 @@ describe('createFacility', () => {
     })
 
     it.skip('properly updates facility/healthcareprofessional associations', async () => {
-        const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
+        const createFacilityResult = await request(url).post('/').send(createFacilityQuery)
 
         //should not have errors
         expect(createFacilityResult.body.errors).toBeUndefined()
 
 
 
-        const originalInputValues = createFacilityRequest.variables.input
+        const originalInputValues = createFacilityQuery.variables.input
         const newFacilityId = createFacilityResult.body.data
 
         const getFacilityResult = await request(url).post('/').send(facilityQuery(newFacilityId))
@@ -94,7 +94,7 @@ describe('getFacilityById', () => {
 
     it('gets the Facility that matches the facility_id', async () => {
         // Create a new facility
-        const newFacilityResult = await request(url).post('/').send(createFacilityRequest)
+        const newFacilityResult = await request(url).post('/').send(createFacilityQuery)
 
         // Get the ID of the new facility
         const newFacilityId = newFacilityResult.body.data as string
@@ -107,7 +107,7 @@ describe('getFacilityById', () => {
 
         // Compare the actual data returned by getFacilityById to the new facility stored in the database
         const facility = queryResponse.body.data as gqlType.Facility
-        const originalInputValues = createFacilityRequest.variables.input
+        const originalInputValues = createFacilityQuery.variables.input
 
         expect(facility.id).toBe(newFacilityId)
         expect(facility.nameEn).toBe(originalInputValues.nameEn)
@@ -138,7 +138,7 @@ describe('updateFacility', () => {
 
     it('updates various Facility fields', async () => {
         // Create a new facility
-        const newFacilityResult = await request(url).post('/').send(createFacilityRequest) 
+        const newFacilityResult = await request(url).post('/').send(createFacilityQuery) 
 
         //should not have errors
         expect(newFacilityResult.body.errors).toBeUndefined()
@@ -157,7 +157,7 @@ describe('updateFacility', () => {
 
         // Compare the actual updated facility returned by getFacilityById to the update request we sent
         const updatedFacility = getFacilityResult.body.data as gqlType.Facility
-        const fieldsThatWereUpdated = createFacilityRequest.variables.input as gqlType.Facility
+        const fieldsThatWereUpdated = createFacilityQuery.variables.input as gqlType.Facility
 
         expect(updatedFacility.id).toBe(newFacilityId)
         expect(updatedFacility.nameEn).toBe(fieldsThatWereUpdated.nameEn)
@@ -169,7 +169,7 @@ describe('updateFacility', () => {
     })
 })
 
-const createFacilityRequest: gqlMutation<gqlType.CreateFacilityInput> = {
+const createFacilityQuery: gqlMutation<gqlType.CreateFacilityInput> = {
     query: `mutation Mutation($input: FacilityInput) {
         createFacility(input: $input) {
           contact {
