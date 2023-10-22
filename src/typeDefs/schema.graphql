@@ -210,16 +210,21 @@ input SpecialtyNameInput {
 }
 
 type SpokenLanguage {
-  iso639_3: String!
+  languageCode_iso639_3: languageCode_iso639_3!
   nameJa: String!
   nameEn: String!
   nameNative: String!
 }
 input SpokenLanguageInput {
-  iso639_3: String!
+  languageCode_iso639_3: languageCode_iso639_3!
   nameJa: String!
   nameEn: String!
   nameNative: String!
+}
+
+enum languageCode_iso639_3 {
+  eng
+  jpn
 }
 
 type Degree {

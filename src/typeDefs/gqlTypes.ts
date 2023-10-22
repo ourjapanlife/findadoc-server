@@ -318,14 +318,14 @@ export type SpecialtyNameInput = {
 
 export type SpokenLanguage = {
   __typename?: 'SpokenLanguage';
-  iso639_3: Scalars['String']['output'];
+  languageCode_iso639_3: LanguageCode_Iso639_3;
   nameEn: Scalars['String']['output'];
   nameJa: Scalars['String']['output'];
   nameNative: Scalars['String']['output'];
 };
 
 export type SpokenLanguageInput = {
-  iso639_3: Scalars['String']['input'];
+  languageCode_iso639_3: LanguageCode_Iso639_3;
   nameEn: Scalars['String']['input'];
   nameJa: Scalars['String']['input'];
   nameNative: Scalars['String']['input'];
@@ -386,6 +386,11 @@ export type UpdateSubmissionInput = {
   isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
   spokenLanguages?: InputMaybe<Array<SpokenLanguageInput>>;
 };
+
+export enum LanguageCode_Iso639_3 {
+  Eng = 'eng',
+  Jpn = 'jpn'
+}
 
 
 
@@ -497,6 +502,7 @@ export type ResolversTypes = {
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
   UpdateSubmissionInput: UpdateSubmissionInput;
+  languageCode_iso639_3: LanguageCode_Iso639_3;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -638,7 +644,7 @@ export type SpecialtyNameResolvers<ContextType = any, ParentType extends Resolve
 };
 
 export type SpokenLanguageResolvers<ContextType = any, ParentType extends ResolversParentTypes['SpokenLanguage'] = ResolversParentTypes['SpokenLanguage']> = {
-  iso639_3?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  languageCode_iso639_3?: Resolver<ResolversTypes['languageCode_iso639_3'], ParentType, ContextType>;
   nameEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   nameNative?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

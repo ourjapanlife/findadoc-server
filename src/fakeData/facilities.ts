@@ -1,29 +1,42 @@
 import * as gqlTypes from '../typeDefs/gqlTypes'
+import { faker, fakerJA } from '@faker-js/faker'
 
-export const fakeFacilities = () => {
-    const facility : gqlTypes.CreateFacilityInput = {
-        nameEn: 'Zoo',
-        nameJa: '動物園',
+export function generateRandomFacility(healthcareProfessionalIds?: string[]): gqlTypes.CreateFacilityInput {
+    const sex = faker.person.sexType()
+    const firstName = faker.person.firstName()
+    const lastName = faker.person.lastName()
+    const fullEnglishName = faker.person.fullName({ firstName, lastName, sex })
+    const email = faker.internet.email({ firstName: fullEnglishName })
+    const firstNameJa = fakerJA.person.lastName()
+    const lastNameJa = fakerJA.person.lastName()
+    const fullJapaneseName = fakerJA.person.fullName({ firstName: firstNameJa, lastName: lastNameJa, sex })
+
+    return {
+        nameEn: fullEnglishName,
+        nameJa: fullJapaneseName,
+        healthcareProfessionalIds: healthcareProfessionalIds ?? [],
         contact: {
+            googleMapsUrl: faker.internet.url(),
+            email: email,
+            phone: faker.phone.number(),
+            website: faker.internet.url(),
             address: {
-                // generate fake data from type PhysicalAddress in gqlTypes.ts file
-                addressLine1En: '1-1-1',
-                addressLine2En: 'Ueno',
-                addressLine1Ja: '上野',
-                addressLine2Ja: '1-1-1',
-                cityEn: 'Taito',
-                cityJa: '台東区',
-                prefectureEn: 'Tokyo',
-                prefectureJa: '東京都',
-                postalCode: '100-0000'            
-            },
-            email: 'zoo@test.com',
-            phone: '08000000000',
-            website: 'https://zoo.test.com',
-            googleMapsUrl: 'http://maps.google.com/maps?q=35.715581,139.773728'
-        },
-        healthcareProfessionalIds: []
+                addressLine1En: faker.location.streetAddress(),
+                addressLine2En: faker.location.secondaryAddress(),
+                addressLine1Ja: fakerJA.location.streetAddress(),
+                addressLine2Ja: fakerJA.location.secondaryAddress(),
+                cityEn: faker.location.city(),
+                cityJa: fakerJA.location.city(),
+                postalCode: faker.location.zipCode(),
+                prefectureEn: faker.location.state(),
+                prefectureJa: fakerJA.location.state()
+            }
+        }
     }
+}
 
-    return [facility]
+export function generateRandomFacilities(count: number = 5): gqlTypes.CreateFacilityInput[] {
+    return faker.helpers.multiple(generateRandomFacility, {
+        count: count
+    })
 }

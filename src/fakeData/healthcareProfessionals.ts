@@ -1,79 +1,63 @@
 import * as gqlTypes from '../typeDefs/gqlTypes'
+import { faker, fakerJA } from '@faker-js/faker'
 
-export const fakeHealthcareProfessionals = () => {
-    const doctorDoctor : gqlTypes.LocaleName = {
-        lastName: 'Doctor',
-        firstName: 'Doctor',
-        middleName: 'MD',
-        locale: gqlTypes.Locale.English
+export function generateRandomHealthcareProfessional(facilityIds?: string[])
+    : gqlTypes.CreateHealthcareProfessionalInput {
+    return {
+        facilityIds: facilityIds ?? [],
+        names: faker.helpers.multiple(generateLocaleName, { count: 2 }),
+        degrees: faker.helpers.multiple(generateDegree, { count: 1 }),
+        specialties: faker.helpers.multiple(generateSpecialty, { count: 1 }),
+        spokenLanguages: faker.helpers.multiple(generateSpokenLanguage, { count: 1 }),
+        acceptedInsurance: [faker.helpers.enumValue(gqlTypes.Insurance)]
     }
-    const medicalDegree : gqlTypes.Degree = {
-        nameJa: 'メヂカル',
-        nameEn: 'Medical',
-        abbreviation: 'MD'
-    }
+}
 
-    const japanese : gqlTypes.SpokenLanguage = {
-        iso639_3: 'ja',
-        nameJa: '日本語',
-        nameEn: 'Japanese',
-        nameNative: 'Japanese'
-    }
+export function generateRandomHealthcareProfessionals(count: number = 5): gqlTypes.CreateHealthcareProfessionalInput[] {
+    return faker.helpers.multiple(generateRandomHealthcareProfessional, {
+        count: count
+    })
+}
 
-    const neurologyEn : gqlTypes.SpecialtyName = {
-        name: 'Neurology',
-        locale: gqlTypes.Locale.English
+function generateLocaleName(): gqlTypes.LocaleNameInput {
+    return {
+        firstName: faker.person.firstName(),
+        middleName: faker.person.middleName(),
+        lastName: faker.person.lastName(),
+        locale: faker.helpers.enumValue(gqlTypes.Locale)
     }
+}
 
-    const neurology : gqlTypes.Specialty = {
-        names: [neurologyEn]
+function generateDegree(): gqlTypes.DegreeInput {
+    return {
+        nameEn: faker.person.jobTitle(),
+        nameJa: fakerJA.person.jobTitle(),
+        abbreviation: faker.person.suffix()
     }
+}
 
-    const healthcareProfessionalOne : gqlTypes.CreateHealthcareProfessionalInput = {
-        names: [doctorDoctor],
-        degrees: [medicalDegree],
-        spokenLanguages: [japanese],
-        specialties: [neurology],
-        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
-        facilityIds: []
-    }
+function generateSpecialty(): gqlTypes.SpecialtyInput {
+    const generateSpecialtyName = (): gqlTypes.SpecialtyNameInput => {
+        const locale = faker.helpers.enumValue(gqlTypes.Locale)
 
-    const name : gqlTypes.LocaleName = {
-        lastName: 'チェ',
-        firstName: 'ジェイコブ',
-        middleName: 'ベイヤード',
-        locale: gqlTypes.Locale.Japanese
-    }
-    const englishDegree : gqlTypes.Degree = {
-        nameJa: '英語',
-        nameEn: 'English',
-        abbreviation: 'En'
+        return {
+            name: locale == gqlTypes.Locale.English ? faker.person.jobDescriptor() : fakerJA.person.jobDescriptor(),
+            locale: locale
+        }
     }
 
-    const english : gqlTypes.SpokenLanguage = {
-        iso639_3: 'en-US',
-        nameJa: '英語',
-        nameEn: 'English',
-        nameNative: 'English'
+    return {
+        names: faker.helpers.multiple(generateSpecialtyName, { count: 2 })
     }
+}
 
-    const specialtyName : gqlTypes.SpecialtyName = {
-        name: 'Pandas',
-        locale: gqlTypes.Locale.English
+function generateSpokenLanguage(): gqlTypes.SpokenLanguageInput {
+    const language = faker.helpers.enumValue(gqlTypes.LanguageCode_Iso639_3)
+
+    return {
+        nameEn: language == gqlTypes.LanguageCode_Iso639_3.Eng ? 'English' : 'Japanese',
+        nameJa: language == gqlTypes.LanguageCode_Iso639_3.Eng ? '英語' : '日本語',
+        nameNative: language == gqlTypes.LanguageCode_Iso639_3.Eng ? 'English' : '日本語',
+        languageCode_iso639_3: faker.helpers.enumValue(gqlTypes.LanguageCode_Iso639_3)
     }
-
-    const pandaSpecialty : gqlTypes.Specialty = {
-        names: [specialtyName]
-    }
-
-    const healthcareProfessionalTwo : gqlTypes.CreateHealthcareProfessionalInput = {
-        names: [name],
-        degrees: [englishDegree],
-        spokenLanguages: [english],
-        specialties: [pandaSpecialty],
-        acceptedInsurance: [gqlTypes.Insurance.InternationalHealthInsurance],
-        facilityIds: []
-    }
-
-    return [healthcareProfessionalOne, healthcareProfessionalTwo]
 }

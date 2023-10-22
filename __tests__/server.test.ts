@@ -33,7 +33,7 @@ const queryData = {
             nameNative
             nameEn
             nameJa
-            iso639_3
+            languageCode_iso639_3
           }
           specialties {
             names {
@@ -88,7 +88,7 @@ describe('query healthcareProfessionalById', () => {
         expect(healthcareProfessional.spokenLanguages[0].nameNative).toBeDefined()
         expect(healthcareProfessional.spokenLanguages[0].nameEn).toBeDefined()
         expect(healthcareProfessional.spokenLanguages[0].nameJa).toBeDefined()
-        expect(healthcareProfessional.spokenLanguages[0].iso639_3).toBeDefined()
+        expect(healthcareProfessional.spokenLanguages[0].languageCode_iso639_3).toBeDefined()
 
         expect(Object.values(gqlTypes.Locale)).toContain(healthcareProfessional.specialties[0].names[0].locale)
 

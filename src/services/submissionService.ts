@@ -124,11 +124,13 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
         const shouldFilterSubmissionsBySpokenLanguages = filters.spokenLanguages && filters.spokenLanguages.length
 
         if (shouldFilterSubmissionsBySpokenLanguages) {
-            const requiredLanguages = filters.spokenLanguages?.map((lang: { iso639_3: string }) => lang.iso639_3)
+            const requiredLanguages = filters.spokenLanguages?.map(
+                (lang: { languageCode_iso639_3: string }) => lang.languageCode_iso639_3
+            )
 
             const filteredSubmissions = submissions.filter(sub =>
                 requiredLanguages?.every((reqLang: string) =>
-                    sub.spokenLanguages.some(subLang => subLang?.iso639_3 === reqLang)))
+                    sub.spokenLanguages.some(subLang => subLang?.languageCode_iso639_3 === reqLang)))
 
             return filteredSubmissions
         }
@@ -374,12 +376,12 @@ const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): R
 //         spokenLanguages: spokenLanguages
 //             .filter((lang): lang is gqlTypes.SpokenLanguage =>
 //                 lang !== null && lang !== undefined &&
-//                 typeof lang.iso639_3 === 'string' &&
+//                 typeof lang.languageCode_iso639_3 === 'string' &&
 //                 typeof lang.nameJa === 'string' &&
 //                 typeof lang.nameEn === 'string' &&
 //                 typeof lang.nameNative === 'string')
 //             .map((lang): dbSchema.SpokenLanguage => ({
-//                 iso639_3: lang.iso639_3 as string,
+//                 languageCode_iso639_3: lang.languageCode_iso639_3 as string,
 //                 nameJa: lang.nameJa as string,
 //                 nameEn: lang.nameEn as string,
 //                 nameNative: lang.nameNative as string
@@ -390,7 +392,7 @@ const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): R
 // function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage):
 //     dbSchema.SpokenLanguage {
 //     return {
-//         iso639_3: lang.iso639_3 as string,
+//         languageCode_iso639_3: lang.languageCode_iso639_3 as string,
 //         nameJa: lang.nameJa as string,
 //         nameEn: lang.nameEn as string,
 //         nameNative: lang.nameNative as string
@@ -416,12 +418,12 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLa
 
     const validatedLanguages = spokenLanguages
         .filter(lang => lang &&
-            lang.iso639_3?.trim() &&
+            lang.languageCode_iso639_3?.trim() &&
             lang.nameJa?.trim() &&
             lang.nameEn?.trim() &&
             lang.nameNative?.trim())
         .map(lang => ({
-            iso639_3: lang.iso639_3?.trim() as string,
+            languageCode_iso639_3: lang.languageCode_iso639_3,
             nameJa: lang.nameJa?.trim() as string,
             nameEn: lang.nameEn?.trim() as string,
             nameNative: lang.nameNative?.trim() as string
@@ -445,7 +447,7 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLa
 // export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlTypes.SubmissionSearchFilters = {}):
 //     dbSchema.SubmissionSearchFilters => {
 //     const mappedLanguages = filters.spokenLanguages?.map(lang => lang ? {
-//         iso639_3: lang.iso639_3 ?? '',
+//         languageCode_iso639_3: lang.languageCode_iso639_3 ?? '',
 //         nameJa: lang.nameJa ?? '',
 //         nameEn: lang.nameEn ?? '',
 //         nameNative: lang.nameNative ?? ''

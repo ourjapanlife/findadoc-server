@@ -59,7 +59,7 @@ const healthcareProfessionalMutationRequest = {
             abbreviation
           }
           spokenLanguages {
-            iso639_3
+            languageCode_iso639_3
             nameJa
             nameEn
             nameNative
@@ -105,7 +105,7 @@ const healthcareProfessionalMutationRequest = {
             ],
             spokenLanguages: [
                 {
-                    iso639_3: 'EN',
+                    languageCode_iso639_3: 'EN',
                     nameEn: 'some spoken language EN',
                     nameJa: 'some spoken language JA',
                     nameNative: 'some spoken language NATIVE'

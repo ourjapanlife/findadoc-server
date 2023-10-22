@@ -19,7 +19,7 @@ const queryData = {
           isRejected
           isUnderReview
           spokenLanguages {
-            iso639_3
+            languageCode_iso639_3
             nameEn
             nameJa
             nameNative
@@ -33,7 +33,7 @@ const queryData = {
             healthcareProfessionalName: 'a',
             spokenLanguages: [
                 {
-                    iso639_3: 'en',
+                    languageCode_iso639_3: 'en',
                     nameEn: 'English',
                     nameJa: '英語',
                     nameNative: 'English'
@@ -118,7 +118,7 @@ describe('updateSubmission', () => {
                   googleMapsUrl
                   healthcareProfessionalName
                   spokenLanguages {
-                    iso639_3
+                    languageCode_iso639_3
                     nameJa
                     nameEn
                     nameNative
@@ -136,7 +136,7 @@ describe('updateSubmission', () => {
                     healthcareProfessionalName: 'some NEW name',
                     spokenLanguages: [
                         {
-                            iso639_3: 'en',
+                            languageCode_iso639_3: 'en',
                             nameEn: 'English',
                             nameJa: 'Eigo',
                             nameNative: 'English'
@@ -212,7 +212,7 @@ describe('getSubmissionById', () => {
                   googleMapsUrl
                   healthcareProfessionalName
                   spokenLanguages {
-                    iso639_3
+                    languageCode_iso639_3
                     nameJa
                     nameEn
                     nameNative
@@ -256,7 +256,7 @@ describe('getSubmissionById', () => {
                   googleMapsUrl
                   healthcareProfessionalName
                   spokenLanguages {
-                    iso639_3
+                    languageCode_iso639_3
                     nameJa
                     nameEn
                     nameNative
@@ -332,7 +332,7 @@ describe('searchSubmissions', () => {
                   isRejected
                   isUnderReview
                   spokenLanguages {
-                    iso639_3
+                    languageCode_iso639_3
                     nameEn
                     nameJa
                     nameNative
@@ -344,7 +344,7 @@ describe('searchSubmissions', () => {
                 filters: {
                     spokenLanguages: [
                         {
-                            iso639_3: 'en',
+                            languageCode_iso639_3: 'en',
                             nameEn: 'English',
                             nameJa: '英語',
                             nameNative: 'English'
@@ -393,7 +393,7 @@ describe('searchSubmissions', () => {
                   isRejected
                   isUnderReview
                   spokenLanguages {
-                    iso639_3
+                    languageCode_iso639_3
                     nameEn
                     nameJa
                     nameNative
@@ -446,7 +446,7 @@ describe('searchSubmissions', () => {
                   isRejected
                   isUnderReview
                   spokenLanguages {
-                    iso639_3
+                    languageCode_iso639_3
                     nameEn
                     nameJa
                     nameNative
@@ -504,7 +504,7 @@ describe('searchSubmissions', () => {
                   isRejected
                   isUnderReview
                   spokenLanguages {
-                    iso639_3
+                    languageCode_iso639_3
                     nameEn
                     nameJa
                     nameNative
@@ -558,7 +558,7 @@ describe('searchSubmissions', () => {
               isRejected
               isUnderReview
               spokenLanguages {
-                iso639_3
+                languageCode_iso639_3
                 nameEn
                 nameJa
                 nameNative

@@ -1,9 +1,3 @@
-export interface gqlQuery<T> extends gqlRequest {
-    variables: {
-        input: T
-    }
-}
-
 export interface gqlMutation<T> extends gqlRequest {
     variables: {
         input: T
