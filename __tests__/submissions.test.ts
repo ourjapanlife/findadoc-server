@@ -8,10 +8,10 @@ import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 import { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing'
 import fs from 'fs'
 import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions'
-import { CreateSubmissionInput, LanguageCode_Iso639_3, Submission } from '../src/typeDefs/gqlTypes'
+import { CreateSubmissionInput, LanguageCode_Iso639_3, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes'
 import { Error, ErrorCode } from '../src/result'
 import { generateSpokenLanguage } from '../src/fakeData/healthcareProfessionals'
-import { gqlRequest } from '../utils/gqlTool'
+import { gqlMutation, gqlRequest } from '../utils/gqlTool'
 
 describe('createSubmission', () => {
     let url: string
@@ -285,7 +285,7 @@ describe('searchSubmissions', () => {
         await server?.stop()
     })
 
-    it('get submissions using the language filter', async () => {
+    it('search submissions using the language filter', async () => {
         const createSubmissionRequest = {
             query: createSubmissionQuery,
             variables: {
@@ -322,6 +322,10 @@ describe('searchSubmissions', () => {
 
         // Get the submissions query data
         const searchResult = await request(url).post('/').send(searchSubmissionsRequest)
+
+        //should not have errors
+        expect(searchResult.body.errors).toBeUndefined()
+
         const searchedSubmissions = searchResult.body.data
 
         //should have at least 1 result
@@ -341,57 +345,56 @@ describe('searchSubmissions', () => {
         expect(searchedSubmissions.spokenLanguages).toStrictEqual(originalValues.spokenLanguages)
     })
 
-    it('get submissions using the googleMapUrl filter', async () => {
-        // Create a new Submission
-        const newSubmission = await request(url).post('/').send(createSubmissionQuery)
+    it('search submissions using the googleMapUrl filter', async () => {
+        const createSubmissionRequest = {
+            query: createSubmissionQuery,
+            variables: {
+                input: {
+                    ...generateRandomCreateSubmissionInput()
+                } satisfies CreateSubmissionInput
+            }
+        } satisfies gqlRequest
 
-        // Destructure newSubmission result data
-        const createdSubmissionData = newSubmission.body.data.createSubmission
+        // Create a new Submission
+        await request(url).post('/').send(createSubmissionRequest)
+
+        const originalGoogleMapsUrl = createSubmissionRequest.variables.input.googleMapsUrl
 
         // Get googleUrl of newSubmission
-        const googleMapsUrlNewSubmission = newSubmission.body.data.createSubmission.googleMapsUrl
-
+        
         // Query to get the Submission using googleMapUrl filter
-        const submissionQuery = {
-            query: `query Query($filters: SubmissionSearchFilters) {
-                submissions(filters: $filters) {
-                  googleMapsUrl
-                  createdDate
-                  id
-                  healthcareProfessionalName
-                  isApproved
-                  isRejected
-                  isUnderReview
-                  spokenLanguages {
-                    languageCode_iso639_3
-                    nameEn
-                    nameJa
-                    nameNative
-                  }
-                  updatedDate
-                }
-              }`,
+        const searchSubmissionsRequest = {
+            query: searchSubmissionsQuery,
             variables: {
                 filters: {
-                    googleMapsUrl: googleMapsUrlNewSubmission
+                    googleMapsUrl: originalGoogleMapsUrl
                 }
             }
         }
+        
+        // Get the submissions query data
+        const searchResult = await request(url).post('/').send(searchSubmissionsRequest)
 
-        const searchResult = await request(url).post('/').send(submissionQuery)
+        //should not have errors
+        expect(searchResult.body.errors).toBeUndefined()
 
-        // Compare the data returned in the response to the createSubmission
-        const submissionResponse = searchResult.body.data.submissions[0]
+        const searchedSubmissions = searchResult.body.data
 
-        expect(submissionResponse.id).toBe(createdSubmissionData.id)
-        expect(submissionResponse.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
-        expect(submissionResponse.createdDate).toBe(createdSubmissionData.createdDate)
-        expect(submissionResponse.healthcareProfessionalName)
-            .toBe(createdSubmissionData.healthcareProfessionalName)
-        expect(submissionResponse.isApproved).toBe(createdSubmissionData.isApproved)
-        expect(submissionResponse.isRejected).toBe(createdSubmissionData.isRejected)
-        expect(submissionResponse.isUnderReview).toBe(createdSubmissionData.isUnderReview)
-        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
+        //should have at least 1 result
+        expect(searchedSubmissions).not.toBeNull()
+        expect(searchedSubmissions.length).toBe(1)
+
+        // Compare the data returned in the response to the createdSubmission
+        const originalValues = createSubmissionRequest.variables.input
+
+        expect(searchedSubmissions.googleMapsUrl).toBe(originalValues.googleMapsUrl)
+        expect(searchedSubmissions.createdDate).toBe(Date)
+        expect(searchedSubmissions.healthcareProfessionalName)
+            .toBe(originalValues.healthcareProfessionalName)
+        expect(searchedSubmissions.isApproved).toBe(false)
+        expect(searchedSubmissions.isRejected).toBe(false)
+        expect(searchedSubmissions.isUnderReview).toBe(false)
+        expect(searchedSubmissions.spokenLanguages).toStrictEqual(originalValues.spokenLanguages)
     })
 
     it('get submissions using the createDate filter', async () => {
@@ -406,24 +409,7 @@ describe('searchSubmissions', () => {
 
         // Query to get the Submission using createDate filter
         const submissionQuery = {
-            query: `query Query($filters: SubmissionSearchFilters) {
-                submissions(filters: $filters) {
-                  googleMapsUrl
-                  createdDate
-                  id
-                  healthcareProfessionalName
-                  isApproved
-                  isRejected
-                  isUnderReview
-                  spokenLanguages {
-                    languageCode_iso639_3
-                    nameEn
-                    nameJa
-                    nameNative
-                  }
-                  updatedDate
-                }
-              }`,
+            query: searchSubmissionsQuery,
             variables: {
                 filters: {
                     createdDate: newSubmissionCreateDate
@@ -519,6 +505,29 @@ describe('searchSubmissions', () => {
         expect(allSubmissionsData[0].id).toBe(createdSubmissionTwoData.id)
     })
 })
+
+function checkSearchResults(createSubmissionRequest: gqlMutation, searchResult: request.Response) {
+    //should not have errors
+    expect(searchResult.body.errors).toBeUndefined()
+
+    const searchedSubmissions = searchResult.body.data
+
+    //should have at least 1 result
+    expect(searchedSubmissions).not.toBeNull()
+    expect(searchedSubmissions.length).toBe(1)
+
+    // Compare the data returned in the response to the createdSubmission
+    const originalValues = createSubmissionRequest.variables.input
+
+    expect(searchedSubmissions.googleMapsUrl).toBe(originalValues.googleMapsUrl)
+    expect(searchedSubmissions.createdDate).toBe(Date)
+    expect(searchedSubmissions.healthcareProfessionalName)
+        .toBe(originalValues.healthcareProfessionalName)
+    expect(searchedSubmissions.isApproved).toBe(false)
+    expect(searchedSubmissions.isRejected).toBe(false)
+    expect(searchedSubmissions.isUnderReview).toBe(false)
+    expect(searchedSubmissions.spokenLanguages).toStrictEqual(originalValues.spokenLanguages)
+}
 
 const createSubmissionQuery = `mutation Mutation($input: SubmissionInput) {
         createSubmission(input: $input) {
