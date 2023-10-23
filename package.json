@@ -32,7 +32,7 @@
         "url": "https://github.com/ourjapanlife/findadoc-server/issues"
     },
     "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
-    "packageManager": "yarn@3.6.3",
+    "packageManager": "yarn@3.6.4",
     "engines": {
         "node": "20.x",
         "yarn": "^3.6.3"
