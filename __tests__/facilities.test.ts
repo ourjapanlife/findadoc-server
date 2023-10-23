@@ -7,7 +7,7 @@ import { startStandaloneServer } from '@apollo/server/standalone'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 import * as gqlType from '../src/typeDefs/gqlTypes'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool'
-import { generateRandomFacilities, generateRandomFacility } from '../src/fakeData/facilities'
+import { generateRandomCreateFacilityInputArray, generateRandomCreateFacilityInput } from '../src/fakeData/facilities'
 
 describe('createFacility', () => {
     let url: string
@@ -198,7 +198,7 @@ const createFacilityQuery: gqlMutation<gqlType.CreateFacilityInput> = {
         }
       }`,
     variables: {
-        input: generateRandomFacility() satisfies gqlType.CreateFacilityInput
+        input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
     }
 }
 
@@ -234,7 +234,7 @@ const updateFacilityMutationRequest = (facilityId: string, healthcareProfessiona
     variables: {
         id: facilityId,
         input: { 
-            ...generateRandomFacility(),
+            ...generateRandomCreateFacilityInput(),
             healthcareProfessionalIds: healthcareProfessionalIds
         } satisfies gqlType.UpdateFacilityInput
     }

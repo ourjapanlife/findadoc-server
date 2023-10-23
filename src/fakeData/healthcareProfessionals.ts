@@ -1,10 +1,12 @@
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import { faker, fakerJA } from '@faker-js/faker'
 
-export function generateRandomHealthcareProfessional(facilityIds?: string[])
+export function generateRandomCreateHealthcareProfessionalInput(
+    { facilityIds }: { facilityIds: string[] } = { facilityIds: [] }
+)
     : gqlTypes.CreateHealthcareProfessionalInput {
     return {
-        facilityIds: facilityIds ?? [],
+        facilityIds: facilityIds,
         names: faker.helpers.multiple(generateLocaleName, { count: 2 }),
         degrees: faker.helpers.multiple(generateDegree, { count: 1 }),
         specialties: faker.helpers.multiple(generateSpecialty, { count: 1 }),
@@ -13,8 +15,9 @@ export function generateRandomHealthcareProfessional(facilityIds?: string[])
     }
 }
 
-export function generateRandomHealthcareProfessionals(count: number = 5): gqlTypes.CreateHealthcareProfessionalInput[] {
-    return faker.helpers.multiple(generateRandomHealthcareProfessional, {
+export function generateRandomCreateHealthcareProfessionalInputArray({ count = 5 } = {})
+    : gqlTypes.CreateHealthcareProfessionalInput[] {
+    return faker.helpers.multiple(generateRandomCreateHealthcareProfessionalInput, {
         count: count
     })
 }
@@ -51,8 +54,13 @@ function generateSpecialty(): gqlTypes.SpecialtyInput {
     }
 }
 
-function generateSpokenLanguage(): gqlTypes.SpokenLanguageInput {
-    const language = faker.helpers.enumValue(gqlTypes.LanguageCode_Iso639_3)
+export function generateSpokenLanguage({ onlyEnglish = false, onlyJapanese = false } = {})
+    : gqlTypes.SpokenLanguageInput {
+    const language = onlyEnglish
+        ? gqlTypes.LanguageCode_Iso639_3.Eng
+        : onlyJapanese
+            ? gqlTypes.LanguageCode_Iso639_3.Jpn
+            : faker.helpers.enumValue(gqlTypes.LanguageCode_Iso639_3)
 
     return {
         nameEn: language == gqlTypes.LanguageCode_Iso639_3.Eng ? 'English' : 'Japanese',

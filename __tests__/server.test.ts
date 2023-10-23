@@ -80,11 +80,9 @@ describe('query healthcareProfessionalById', () => {
         expect(healthcareProfessional.names[0].firstName).toBeDefined()
         expect(healthcareProfessional.names[0].lastName).toBeDefined()
         expect(healthcareProfessional.names[0].middleName).toBeDefined()
-
         expect(healthcareProfessional.degrees[0].abbreviation).toBeDefined()
         expect(healthcareProfessional.degrees[0].nameJa).toBeDefined()
         expect(healthcareProfessional.degrees[0].nameEn).toBeDefined()
-
         expect(healthcareProfessional.spokenLanguages[0].nameNative).toBeDefined()
         expect(healthcareProfessional.spokenLanguages[0].nameEn).toBeDefined()
         expect(healthcareProfessional.spokenLanguages[0].nameJa).toBeDefined()

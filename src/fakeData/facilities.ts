@@ -1,7 +1,8 @@
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import { faker, fakerJA } from '@faker-js/faker'
 
-export function generateRandomFacility(healthcareProfessionalIds?: string[]): gqlTypes.CreateFacilityInput {
+export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: string[])
+: gqlTypes.CreateFacilityInput {
     const sex = faker.person.sexType()
     const firstName = faker.person.firstName()
     const lastName = faker.person.lastName()
@@ -35,8 +36,8 @@ export function generateRandomFacility(healthcareProfessionalIds?: string[]): gq
     }
 }
 
-export function generateRandomFacilities(count: number = 5): gqlTypes.CreateFacilityInput[] {
-    return faker.helpers.multiple(generateRandomFacility, {
+export function generateRandomCreateFacilityInputArray(count: number = 5): gqlTypes.CreateFacilityInput[] {
+    return faker.helpers.multiple(generateRandomCreateFacilityInput, {
         count: count
     })
 }

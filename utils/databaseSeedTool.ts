@@ -1,15 +1,15 @@
 import { createHealthcareProfessional } from '../src/services/healthcareProfessionalService'
 import { createFacility } from '../src/services/facilityService'
 
-import { generateRandomHealthcareProfessionals } from '../src/fakeData/healthcareProfessionals'
-import { generateRandomFacilities } from '../src/fakeData/facilities'
+import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/healthcareProfessionals'
+import { generateRandomCreateFacilityInputArray } from '../src/fakeData/facilities'
 
 export const seedDatabase = async () => {
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
     const args = process.argv
 
-    const healthcareProfessionals = generateRandomHealthcareProfessionals()
-    const facilities = generateRandomFacilities()
+    const healthcareProfessionals = generateRandomCreateHealthcareProfessionalInputArray()
+    const facilities = generateRandomCreateFacilityInputArray()
     
     const healthcareProfessionalIds: string[] = []
 
