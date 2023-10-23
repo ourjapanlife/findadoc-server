@@ -2,7 +2,7 @@ import { DocumentData, Query } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import * as dbSchema from '../typeDefs/dbSchema'
 import { dbInstance } from '../firebaseDb'
-import { CustomErrors, ErrorCode, Result } from '../result'
+import { ErrorCode, Result } from '../result'
 import { hasSpecialCharacters } from '../../utils/stringUtils'
 import { createFacility } from './facilityService'
 import { createHealthcareProfessional } from './healthcareProfessionalService'
@@ -17,7 +17,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
-            return validationResult
+            return validationResult as Result<gqlTypes.Submission>
         }
 
         const submissionRef = dbInstance.collection('submissions')
@@ -36,26 +36,18 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
 
         return searchResults
     } catch (error) {
-        return CustomErrors.notFound(`${error}`)
-    }
-}
+        console.log(`Error retrieving submission by id ${id}: ${error}`)
 
-function validateIdInput(id: string): Result<gqlTypes.Submission> {
-    const validationResults: Result<gqlTypes.Submission> = {
-        hasErrors: false,
-        errors: []
+        return {
+            data: {} as gqlTypes.Submission,
+            hasErrors: true,
+            errors: [{
+                field: 'getSubmissionById',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
-
-    if (id && (hasSpecialCharacters(id) || id.length > 4096)) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'id',
-            errorCode: ErrorCode.INVALID_ID,
-            httpStatus: 400
-        })
-    }
-
-    return validationResults
 }
 
 /**
@@ -65,7 +57,8 @@ function validateIdInput(id: string): Result<gqlTypes.Submission> {
  * When no parameters are provided, filters is an empty object.
  * @returns A submissions object
  */
-export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilters) {
+export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilters)
+    : Promise<Result<gqlTypes.Submission[]>> {
     try {
         //TODO: convert this to a validation method instead of a mapping method
         // const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
@@ -132,68 +125,94 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
                 requiredLanguages?.every((reqLang: string) =>
                     sub.spokenLanguages.some(subLang => subLang?.languageCode_iso639_3 === reqLang)))
 
-            return filteredSubmissions
+            return {
+                hasErrors: false,
+                data: filteredSubmissions
+            }
         }
 
-        return submissions
-    } catch (error) {
-        throw new Error(`Error retrieving submissions: ${error}`)
-    }
-}
-
-function convertToDbSubmission(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
-    return {
-        googleMapsUrl: input.googleMapsUrl as string,
-        healthcareProfessionalName: input.healthcareProfessionalName as string,
-        id: newId,
-        isUnderReview: false,
-        isApproved: false,
-        isRejected: false,
-        spokenLanguages: input.spokenLanguages?.filter(lang => lang !== null) as dbSchema.SpokenLanguage[],
-        facility: undefined,
-        healthcareProfessionals: [],
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    }
-}
-
-export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
-    Promise<Result<string>> => {
-    const createSubmissionResult: Result<string> = {
-        hasErrors: false,
-        errors: []
-    }
-
-    const validationResults = validateSubmissionInputFields(submissionInput)
-
-    if (validationResults.hasErrors) {
-        return validationResults
-    }
-
-    const spokenLanguagesResult = mapAndValidateSpokenLanguages(submissionInput.spokenLanguages)
-
-    if (spokenLanguagesResult.hasErrors) {
         return {
+            hasErrors: false,
+            data: submissions
+        }
+    } catch (error) {
+        console.log(`Error searching submissions by filters ${filters}: ${error}`)
+
+        return {
+            data: [],
             hasErrors: true,
-            errors: spokenLanguagesResult.errors
+            errors: [{
+                field: 'searchSubmissions',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
         }
     }
-
-    submissionInput.spokenLanguages = spokenLanguagesResult.data
-
-    const submissionRef = dbInstance.collection('submissions').doc()
-    const newSubmissionId = submissionRef.id
-    const newSubmission = convertToDbSubmission(submissionInput, newSubmissionId)
-
-    await submissionRef.set(newSubmission)
-
-    createSubmissionResult.data = newSubmission.id
-
-    return createSubmissionResult
 }
 
+/**
+ * Creates a submission.
+ * @param submissionInput the submission to create
+ * @returns The submission that was created.
+ */
+export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
+    Promise<Result<gqlTypes.Submission>> => {
+    try {
+        const validationResults = validateSubmissionInputFields(submissionInput)
+
+        if (validationResults.hasErrors) {
+            return validationResults as Result<gqlTypes.Submission>
+        }
+
+        const spokenLanguagesResult = mapAndValidateSpokenLanguages(submissionInput.spokenLanguages)
+
+        if (spokenLanguagesResult.hasErrors) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: spokenLanguagesResult.errors
+            }
+        }
+
+        submissionInput.spokenLanguages = spokenLanguagesResult.data
+
+        const submissionRef = dbInstance.collection('submissions').doc()
+        const newSubmissionId = submissionRef.id
+        const newSubmission = convertToDbSubmission(submissionInput, newSubmissionId)
+
+        await submissionRef.set(newSubmission)
+
+        const createdSubmission = await getSubmissionById(newSubmissionId)
+
+        return {
+            data: createdSubmission.data,
+            hasErrors: false
+        }
+    } catch (error) {
+        console.log(`Error creating submission: ${error}`)
+
+        return {
+            data: {} as gqlTypes.Submission,
+            hasErrors: true,
+            errors: [{
+                field: `${error}`,
+                errorCode: ErrorCode.SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+/**
+ * Updates a submission. 
+ * Business logic: Use this method if you want to approve a submission. 
+ *     If the isApproved field is true, then it will trigger the approve submission workflow.
+ * @param submissionId the submission to update
+ * @param fieldsToUpdate the fields to update
+ * @returns The submission that was updated.
+ */
 export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>):
-    Promise<Result<void>> => {
+    Promise<Result<gqlTypes.Submission>> => {
     try {
         //business logic: a submission can't be updated or unapproved once it's approved.
         //business logic: you can't approve and update at the same time. 
@@ -219,17 +238,20 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
 
         console.log(`DB-UPDATE: Submission ${submissionId} was updated. \n Fields updated: ${JSON.stringify(fieldsToUpdate)}`)
 
-        return {
-            hasErrors: false,
-            errors: []
-        }
-    } catch (error) {
-        console.log(`Error approving submission ${submissionId}: ${error}`)
+        const updatedSubmission = await getSubmissionById(submissionId)
 
         return {
+            data: updatedSubmission.data,
+            hasErrors: false
+        }
+    } catch (error) {
+        console.log(`Error updating submission ${submissionId}: ${error}`)
+
+        return {
+            data: {} as gqlTypes.Submission,
             hasErrors: true,
             errors: [{
-                field: 'submissionId',
+                field: 'updateSubmission',
                 errorCode: ErrorCode.SERVER_ERROR,
                 httpStatus: 500
             }]
@@ -241,10 +263,11 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
  * Approves a submission. Once approved, it creates a new facility and/or healthcare professional(s).
  * Once it's approved, it can't be unapproved.
  * @param submissionId the submission to approve
- * @returns service result any errors
+ * @returns The submission that was approved.
  */
-export const approveSubmission = async (submissionId: string): Promise<Result<void>> => {
-    const approveResult: Result<void> = {
+export const approveSubmission = async (submissionId: string): Promise<Result<gqlTypes.Submission>> => {
+    const approveResult: Result<gqlTypes.Submission> = {
+        data: {} as gqlTypes.Submission,
         hasErrors: false,
         errors: []
     }
@@ -315,8 +338,44 @@ export const approveSubmission = async (submissionId: string): Promise<Result<vo
     }
 }
 
-const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): Result<string> => {
-    const validatedSubmissionResult: Result<string> = {
+function convertToDbSubmission(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
+    return {
+        googleMapsUrl: input.googleMapsUrl as string,
+        healthcareProfessionalName: input.healthcareProfessionalName as string,
+        id: newId,
+        isUnderReview: false,
+        isApproved: false,
+        isRejected: false,
+        spokenLanguages: input.spokenLanguages?.filter(lang => lang !== null) as dbSchema.SpokenLanguage[],
+        facility: null,
+        healthcareProfessionals: [],
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
+    }
+}
+
+function validateIdInput(id: string): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
+        hasErrors: false,
+        errors: []
+    }
+
+    if (id && (hasSpecialCharacters(id) || id.length > 4096)) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'id',
+            errorCode: ErrorCode.INVALID_ID,
+            httpStatus: 400
+        })
+    }
+
+    return validationResults
+}
+
+const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): Result<unknown> => {
+    const validatedSubmissionResult: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -402,6 +461,7 @@ const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): R
 export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLanguage[] | undefined | null):
     Result<dbSchema.SpokenLanguage[]> => {
     const validatedSpokenLanguagesResults: Result<dbSchema.SpokenLanguage[]> = {
+        data: [],
         hasErrors: false,
         errors: []
     }
@@ -443,41 +503,6 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLa
     validatedSpokenLanguagesResults.data = validatedLanguages
     return validatedSpokenLanguagesResults
 }
-
-// export const mapGqlSearchFiltersToDbSearchFilters = (filters: gqlTypes.SubmissionSearchFilters = {}):
-//     dbSchema.SubmissionSearchFilters => {
-//     const mappedLanguages = filters.spokenLanguages?.map(lang => lang ? {
-//         languageCode_iso639_3: lang.languageCode_iso639_3 ?? '',
-//         nameJa: lang.nameJa ?? '',
-//         nameEn: lang.nameEn ?? '',
-//         nameNative: lang.nameNative ?? ''
-//     } : undefined)
-
-//     const filteredLanguages = (mappedLanguages ?? [])
-//         .filter(lang => lang !== undefined) as dbSchema.SpokenLanguage[]
-
-//     const mappedOrderBy = filters.orderBy ? filters.orderBy
-//         .filter((o): o is gqlTypes.OrderBy => Boolean(o && o.fieldToOrder && o.orderDirection))
-//         .map(order => ({
-//             fieldToOrder: order.fieldToOrder as string,
-//             orderDirection: order.orderDirection as dbSchema.OrderDirection
-//         })) : undefined
-
-//     return {
-//         ...filters,
-//         googleMapsUrl: filters.googleMapsUrl === null ? undefined : filters.googleMapsUrl,
-//         healthcareProfessionalName: filters.healthcareProfessionalName === null ? undefined :
-//             filters.healthcareProfessionalName,
-//         spokenLanguages: filteredLanguages,
-//         isUnderReview: filters.isUnderReview ?? undefined,
-//         isApproved: filters.isApproved ?? undefined,
-//         isRejected: filters.isRejected ?? undefined,
-//         orderBy: mappedOrderBy,
-//         limit: filters.limit === null ? undefined : filters.limit,
-//         createdDate: filters.createdDate ?? undefined,
-//         updatedDate: filters.updatedDate ?? undefined
-//     }
-// }
 
 const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submission => {
     const gqlEntity = {

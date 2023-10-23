@@ -10,32 +10,49 @@ import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite 
  * @param id A string that matches the id of the Firestore Document for the Facility.
  * @returns A Facility object.
  */
-export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility | null>> => {
-    const validationResult = validateIdInput(id)
+export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility>> => {
+    try {
+        const validationResult = validateIdInput(id)
 
-    if (validationResult.hasErrors) {
-        return validationResult
-    }
+        if (validationResult.hasErrors) {
+            return validationResult as Result<gqlTypes.Facility>
+        }
 
-    const facilityRef = dbInstance.collection('facilities')
-    const snapshot = await facilityRef.where('id', '==', id).get()
+        const facilityRef = dbInstance.collection('facilities')
+        const snapshot = await facilityRef.where('id', '==', id).get()
 
-    if (snapshot.docs.length < 1) {
+        if (snapshot.docs.length < 1) {
+            return {
+                data: {} as gqlTypes.Facility,
+                hasErrors: true,
+                errors: [{
+                    field: 'id',
+                    errorCode: ErrorCode.NOT_FOUND,
+                    httpStatus: 404
+                }]
+            }
+        }
+
+        const dbFacility = snapshot.docs[0].data() as dbSchema.Facility
+        const convertedEntity = mapDbEntityTogqlEntity(dbFacility)
+
         return {
-            data: null,
+            data: convertedEntity,
             hasErrors: false
         }
+    } catch (error) {
+        console.log(`Error retrieving facility by id: ${error}`)
+
+        return {
+            data: {} as gqlTypes.Facility,
+            hasErrors: true,
+            errors: [{
+                field: 'getFacilityById',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
-
-    const dbFacility = snapshot.docs[0].data() as dbSchema.Facility
-    const convertedEntity = mapDbEntityTogqlEntity(dbFacility)
-
-    const searchResults = {
-        data: convertedEntity,
-        hasErrors: false
-    }
-
-    return searchResults
 }
 
 /**
@@ -50,10 +67,10 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
         const validationResult = validateFacilitiesSearchInput(filters)
 
         if (validationResult.hasErrors) {
-            return validationResult
+            return validationResult as Result<gqlTypes.Facility[]>
         }
 
-        let searchRef : Query<DocumentData> = dbInstance.collection('facilities')
+        let searchRef: Query<DocumentData> = dbInstance.collection('facilities')
 
         if (filters.nameEn) {
             searchRef = searchRef.where('nameEn', '==', filters.nameEn)
@@ -90,16 +107,15 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
         const gqlFacilities = dbFacilities.map(dbFacility =>
             mapDbEntityTogqlEntity(dbFacility.data() as dbSchema.Facility))
 
-        const searchResults = {
+        return {
             data: gqlFacilities,
             hasErrors: false
         }
-
-        return searchResults
     } catch (error) {
-        console.log(`Error retrieving facilities: ${error}`)
+        console.log(`Error retrieving facilities by filters ${JSON.stringify(filters)}: ${error}`)
 
         return {
+            data: [],
             hasErrors: true,
             errors: [{
                 field: 'searchFacilities',
@@ -117,31 +133,43 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
  * @param facilityInput 
  * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was created.
  */
-export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput): Promise<Result<string>> {
-    const validationResult = validateCreateFacilityInput(facilityInput)
+export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput): Promise<Result<gqlTypes.Facility>> {
+    try {
+        const validationResult = validateCreateFacilityInput(facilityInput)
 
-    if (validationResult.hasErrors) {
-        return validationResult
+        if (validationResult.hasErrors) {
+            return validationResult as Result<gqlTypes.Facility>
+        }
+
+        const facilityRef = dbInstance.collection('facilities').doc()
+        const newFacilityId = facilityRef.id
+        const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
+
+        await facilityRef.set(newDbFacility)
+
+        console.log(`DB-CREATE: CREATE facility ${newFacilityId}. Entity: ${JSON.stringify(newDbFacility)}`)
+
+        //TODO: Add new facilityid to associated healthcare professionals. 
+
+        const createdFacility = await getFacilityById(newFacilityId)
+
+        return {
+            data: createdFacility.data,
+            hasErrors: false
+        }
+    } catch (error) {
+        console.log(`Error creating facility: ${error}`)
+
+        return {
+            data: {} as gqlTypes.Facility,
+            hasErrors: true,
+            errors: [{
+                field: 'createFacility',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
-
-    const createFacilityResult: Result<string> = {
-        hasErrors: false,
-        errors: []
-    }
-
-    const facilityRef = dbInstance.collection('facilities').doc()
-    const newFacilityId = facilityRef.id
-    const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
-
-    await facilityRef.set(newDbFacility)
-
-    console.log(`DB-CREATE: CREATE facility ${newFacilityId}. Entity: ${JSON.stringify(newDbFacility)}`)
-
-    //TODO: Add new facilityid to associated healthcare professionals. 
-
-    createFacilityResult.data = newFacilityId
-
-    return createFacilityResult
 }
 
 /**
@@ -155,17 +183,12 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
  * @returns The updated Facility.
  */
 export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<gqlTypes.UpdateFacilityInput>):
-    Promise<Result<void>> => {
+    Promise<Result<gqlTypes.Facility>> => {
     try {
         const validationResult = validateUpdateFacilityInput(fieldsToUpdate)
 
         if (validationResult.hasErrors) {
-            return validationResult as Result<void>
-        }
-
-        const updateFacilityResult: Result<void> = {
-            hasErrors: false,
-            errors: []
+            return validationResult as Result<gqlTypes.Facility>
         }
 
         const facilityRef = dbInstance.collection('facilities').doc(facilityId)
@@ -206,9 +229,24 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
 
         console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(updatedDbFacility)}`)
 
-        return updateFacilityResult
+        const updatedFacility = await getFacilityById(facilityId)
+
+        return {
+            data: updatedFacility.data,
+            hasErrors: false
+        }
     } catch (error) {
-        throw new Error(`Error updating facility: ${error}`)
+        console.log(`Error updating facility ${facilityId}: ${error}`)
+
+        return {
+            data: {} as gqlTypes.Facility,
+            hasErrors: true,
+            errors: [{
+                field: 'updateFacility',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
 }
 
@@ -247,8 +285,9 @@ const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Facility): gqlTypes.Facility 
     return gqlEntity
 }
 
-function validateIdInput(id: string): Result<gqlTypes.Facility> {
-    const validationResults: Result<gqlTypes.Facility> = {
+function validateIdInput(id: string): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -265,8 +304,9 @@ function validateIdInput(id: string): Result<gqlTypes.Facility> {
     return validationResults
 }
 
-function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilters): Result<gqlTypes.Facility[]> {
-    const validationResults: Result<gqlTypes.Facility[]> = {
+function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilters): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: [],
         hasErrors: false,
         errors: []
     }
@@ -310,8 +350,9 @@ function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilte
     return validationResults
 }
 
-function validateUpdateFacilityInput(input: Partial<gqlTypes.UpdateFacilityInput>): Result<string> {
-    const validationResults: Result<string> = {
+function validateUpdateFacilityInput(input: Partial<gqlTypes.UpdateFacilityInput>): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -346,8 +387,9 @@ function validateUpdateFacilityInput(input: Partial<gqlTypes.UpdateFacilityInput
     return validationResults
 }
 
-function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput): Result<string> {
-    const validationResults: Result<string> = {
+function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -400,8 +442,9 @@ function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput): Resul
     return validationResults
 }
 
-function validateContactInput(contactInput: gqlTypes.Contact): Result<boolean> {
-    const validationResults: Result<boolean> = {
+function validateContactInput(contactInput: gqlTypes.Contact): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -449,8 +492,9 @@ function validateContactInput(contactInput: gqlTypes.Contact): Result<boolean> {
     return validationResults
 }
 
-function validateAddressInput(input: gqlTypes.PhysicalAddress): Result<string> {
-    const validationResults: Result<string> = {
+function validateAddressInput(input: gqlTypes.PhysicalAddress): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }

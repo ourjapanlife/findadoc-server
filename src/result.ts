@@ -1,7 +1,5 @@
-import { GraphQLError } from 'graphql'
-
 export type Result<T> = {
-    data?: T,
+    data: T,
     hasErrors: boolean,
     errors?: Error[]
 }
@@ -29,27 +27,4 @@ export enum ErrorCode {
     CREATEPROFFESIONAL_FACILITYIDS_REQUIRED = 'CREATEPROFFESIONAL_FACILITYIDS_REQUIRED',
     INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
     MIN_ONE_FACILITYID_REQUIRED = 'MIN_ONE_FACILITYID_REQUIRED'
-}
-
-export const CustomErrors = {
-    notFound: (message: string) => {
-        throw new GraphQLError(message, {
-            extensions: {
-                code: 'NOT_FOUND',
-                http: {
-                    status: 404
-                }
-            }
-        })
-    },
-    missingInput: (message: string) => {
-        throw new GraphQLError(message, {
-            extensions: {
-                code: 'MISSING_INPUT',
-                http: {
-                    status: 400
-                }
-            }
-        })
-    }
 }

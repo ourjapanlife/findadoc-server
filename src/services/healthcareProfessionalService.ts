@@ -4,8 +4,20 @@ import * as dbSchema from '../typeDefs/dbSchema'
 import { ErrorCode, Result } from '../result'
 import { dbInstance } from '../firebaseDb'
 
-export async function getHealthcareProfessionalById(id: string) {
+export async function getHealthcareProfessionalById(id: string): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
+        if (!id || !id.trim()) {
+            return {
+                data: {} as gqlTypes.HealthcareProfessional,
+                hasErrors: true,
+                errors: [{
+                    field: 'id',
+                    errorCode: ErrorCode.REQUIRED,
+                    httpStatus: 400
+                }]
+            }
+        }
+
         const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals')
         const whereCondition = '=' as firebase.WhereFilterOp
         const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
@@ -16,9 +28,22 @@ export async function getHealthcareProfessionalById(id: string) {
 
         const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
 
-        return convertedEntity
+        return {
+            data: convertedEntity,
+            hasErrors: false
+        }
     } catch (error) {
-        throw new Error(`Error retrieving healthcare professional ${error}`)
+        console.log(`Error retrieving healthcareProfessional by id ${id}: ${error}`)
+
+        return {
+            data: {} as gqlTypes.HealthcareProfessional,
+            hasErrors: true,
+            errors: [{
+                field: 'getHealthcareProfessionalById',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
 }
 
@@ -28,17 +53,17 @@ export async function getHealthcareProfessionalById(id: string) {
  * - business logic: a healthcare professional must be associated with at least one facility (otherwise no one can find them)
  * @param input the new HealthcareProfessional object
  * @param healthcareProfessionalRef optional: if you have an open firebase transaction, you can pass it here
- * @returns the id of the newly created HealthcareProfessional. (if you need the full object, query it by id)
+ * @returns the newly created HealthcareProfessional so you don't have to query it after
  */
 export async function createHealthcareProfessional(
     input: gqlTypes.CreateHealthcareProfessionalInput,
     healthcareProfessionalRef?: FirebaseFirestore.DocumentReference<firebase.DocumentData>
-): Promise<Result<string>> {
+): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
         const validationResult = validateCreateProfessionalInput(input)
 
         if (validationResult.hasErrors) {
-            return validationResult
+            return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
         if (!healthcareProfessionalRef) {
@@ -63,12 +88,24 @@ export async function createHealthcareProfessional(
 
         //TODO: add healthcare professional id to associated facility
 
+        const createdHealthcareProfessional = await getHealthcareProfessionalById(newHealthcareProfessional.id)
+
         return {
-            data: newHealthcareProfessional.id,
+            data: createdHealthcareProfessional.data,
             hasErrors: false
         }
     } catch (error) {
-        throw new Error(`Error creating healthcare professional: ${error}`)
+        console.log(`Error creating healthcare professional: ${error}`)
+
+        return {
+            data: {} as gqlTypes.HealthcareProfessional,
+            hasErrors: true,
+            errors: [{
+                field: 'createHealthcareProfessional',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
 }
 
@@ -85,17 +122,12 @@ export async function createHealthcareProfessional(
 export const updateHealthcareProfessional = async (
     id: string,
     fieldsToUpdate: Partial<gqlTypes.UpdateHealthcareProfessionalInput>
-): Promise<Result<void>> => {
+): Promise<Result<gqlTypes.HealthcareProfessional>> => {
     try {
         const validationResult = validateUpdateProfessionalInput(fieldsToUpdate)
 
         if (validationResult.hasErrors) {
-            return validationResult as Result<void>
-        }
-
-        const updatedProfessionalResult: Result<void> = {
-            hasErrors: false,
-            errors: []
+            return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
         const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
@@ -112,9 +144,24 @@ export const updateHealthcareProfessional = async (
 
         console.log(`DB-UPDATE: Updated healthcare professional ${professionalRef.id}. Entity: ${JSON.stringify(updatedDbProfessional)}`)
 
-        return updatedProfessionalResult
+        const updatedProfessional = await getHealthcareProfessionalById(professionalRef.id)
+
+        return {
+            data: updatedProfessional.data,
+            hasErrors: false
+        }
     } catch (error) {
-        throw new Error(`Error updating healthcare professional: ${error}`)
+        console.log(`Error updating healthcareProfessional ${id}: ${error}`)
+
+        return {
+            data: {} as gqlTypes.HealthcareProfessional,
+            hasErrors: true,
+            errors: [{
+                field: 'updateHealthcareProfessional',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
 }
 
@@ -202,8 +249,10 @@ function mapDbEntityTogqlEntity(dbEntity: firebase.DocumentData) {
     return gqlEntity
 }
 
-function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcareProfessionalInput>): Result<string> {
-    const validationResults: Result<string> = {
+function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcareProfessionalInput>)
+    : Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -227,8 +276,10 @@ function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcar
     return validationResults
 }
 
-function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfessionalInput): Result<string> {
-    const validationResults: Result<string> = {
+function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfessionalInput)
+    : Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -254,7 +305,7 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
 
 function validateDegrees(
     degrees: gqlTypes.InputMaybe<gqlTypes.Degree[]> | undefined,
-    validationResults: Result<string>
+    validationResults: Result<unknown>
 ): void {
     if (!degrees) {
         validationResults.hasErrors = true
@@ -306,7 +357,7 @@ function validateDegrees(
     //TODO validate each degree
 }
 
-function validateNames(names: gqlTypes.LocaleName[] | undefined | null, validationResults: Result<string>): void {
+function validateNames(names: gqlTypes.LocaleName[] | undefined | null, validationResults: Result<unknown>): void {
     if (!names) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
@@ -330,7 +381,7 @@ function validateNames(names: gqlTypes.LocaleName[] | undefined | null, validati
 
 function validateSpecialties(
     specialties: gqlTypes.Specialty[] | undefined | null,
-    validationResults: Result<string>
+    validationResults: Result<unknown>
 ): void {
     if (!specialties) {
         validationResults.hasErrors = true
@@ -355,7 +406,7 @@ function validateSpecialties(
 
 function validateInsurance(
     insurance: gqlTypes.Insurance[] | undefined | null,
-    validationResults: Result<string>
+    validationResults: Result<unknown>
 ): void {
     if (!insurance) {
         validationResults.hasErrors = true
@@ -380,7 +431,7 @@ function validateInsurance(
 
 function validateSpokenLanguages(
     spokenLanguages: gqlTypes.SpokenLanguage[] | undefined | null,
-    validationResults: Result<string>
+    validationResults: Result<unknown>
 ): void {
     if (!spokenLanguages) {
         validationResults.hasErrors = true

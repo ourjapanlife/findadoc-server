@@ -8,20 +8,31 @@ export const seedDatabase = async () => {
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
     const args = process.argv
 
-    const healthcareProfessionals = generateRandomCreateHealthcareProfessionalInputArray()
     const facilities = generateRandomCreateFacilityInputArray()
-    
-    const healthcareProfessionalIds: string[] = []
+    const healthcareProfessionals = generateRandomCreateHealthcareProfessionalInputArray()
 
-    for await (const hp of healthcareProfessionals) {
-        const createResult = await createHealthcareProfessional(hp)
-
-        healthcareProfessionalIds.push(createResult.data as string)
-    }
-    
-    facilities[0].healthcareProfessionalIds = healthcareProfessionalIds
+    const facilityIds: string[] = []
 
     for await (const facility of facilities) {
-        await createFacility(facility)
+        const createdFacilityResult = await createFacility(facility)
+
+        //we should fail here if we have errors
+        if (createdFacilityResult.hasErrors) {
+            throw new Error(`Error seeding database ${JSON.stringify(createdFacilityResult.errors)}`)
+        }
+
+        facilityIds.push(createdFacilityResult.data.id)
+    }
+
+    for await (const hp of healthcareProfessionals) {
+        //build the association 
+        hp.facilityIds = facilityIds
+
+        const createProfessionalResult = await createHealthcareProfessional(hp)
+
+        //we should fail here if we have errors
+        if (createProfessionalResult.hasErrors) {
+            throw new Error(`Error seeding database ${JSON.stringify(createProfessionalResult.errors)}`)
+        }
     }
 }

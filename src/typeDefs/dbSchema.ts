@@ -23,7 +23,7 @@ export type HealthcareProfessional =
     }
 
 export type Submission = Omit<gqlType.Submission, 'facility' | 'healthcareProfessionals'> & {
-    facility: Facility | undefined
+    facility: Facility | null
     healthcareProfessionals: HealthcareProfessional[]
 }
 

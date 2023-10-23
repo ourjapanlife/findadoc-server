@@ -2,7 +2,7 @@ import * as gqlTypes from '../typeDefs/gqlTypes'
 import { faker, fakerJA } from '@faker-js/faker'
 
 export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: string[])
-: gqlTypes.CreateFacilityInput {
+    : gqlTypes.CreateFacilityInput {
     const sex = faker.person.sexType()
     const firstName = faker.person.firstName()
     const lastName = faker.person.lastName()
@@ -19,7 +19,7 @@ export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: st
         contact: {
             googleMapsUrl: faker.internet.url(),
             email: email,
-            phone: faker.phone.number(),
+            phone: faker.phone.number().replace(/-/g, ''),
             website: faker.internet.url(),
             address: {
                 addressLine1En: faker.location.streetAddress(),
