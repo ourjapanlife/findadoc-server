@@ -6,115 +6,13 @@ import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 import { Error, ErrorCode } from '../src/result'
+import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/healthcareProfessionals'
+import { gqlMutation, gqlRequest } from '../utils/gqlTool'
+import { CreateFacilityInput, CreateHealthcareProfessionalInput, Facility, HealthcareProfessional } from '../src/typeDefs/gqlTypes'
+import { generateRandomCreateFacilityInput } from '../src/fakeData/facilities'
+import { createFacilityMutation } from './facilities.test'
 
 const facilityIds = [] as string[]
-const healthcareProfessionalIds = [] as string[]
-
-const facilityMutationRequest = {
-    query: `mutation CreateFacility($input: FacilityInput) {
-        CreateFacilityInput(input: $input) {
-          id
-        }
-      }`,
-    variables: {
-        input: {
-            contact: {
-                googleMapsUrl: null,
-                email: null,
-                phone: null,
-                website: null,
-                address: {
-                    addressLine1En: null,
-                    addressLine1Ja: null,
-                    addressLine2En: null,
-                    addressLine2Ja: null,
-                    cityEn: null,
-                    postalCode: null,
-                    cityJa: null,
-                    prefectureEn: null,
-                    prefectureJa: null
-                }
-            },
-            healthcareProfessionalIds: healthcareProfessionalIds,
-            nameEn: null,
-            nameJa: null
-        }
-    }
-
-}
-
-const healthcareProfessionalMutationRequest = {
-    query: `mutation Mutation($input: HealthcareProfessionalInput) {
-        createHealthcareProfessional(input: $input) {
-          id
-          names {
-            lastName
-            firstName
-            middleName
-            locale
-          }
-          degrees {
-            nameJa
-            nameEn
-            abbreviation
-          }
-          spokenLanguages {
-            languageCode_iso639_3
-            nameJa
-            nameEn
-            nameNative
-          }
-          specialties {
-            names {
-              name
-              locale
-            }
-          }
-          acceptedInsurance
-          createdDate
-          updatedDate
-        }
-      }`,
-    variables: {
-        input: {
-            acceptedInsurance: ['INSURANCE_NOT_ACCEPTED'],
-            degrees: [
-                {
-                    abbreviation: 'DG',
-                    nameEn: 'some degree EN',
-                    nameJa: 'some degree JA'
-                }
-            ],
-            names: [
-                {
-                    firstName: 'some first name',
-                    lastName: 'some last name',
-                    locale: 'ENGLISH',
-                    middleName: 'some middle name'
-                }
-            ],
-            specialties: [
-                {
-                    names: [
-                        {
-                            locale: 'ENGLISH',
-                            name: 'some specialty name'
-                        }
-                    ]
-                }
-            ],
-            spokenLanguages: [
-                {
-                    languageCode_iso639_3: 'EN',
-                    nameEn: 'some spoken language EN',
-                    nameJa: 'some spoken language JA',
-                    nameNative: 'some spoken language NATIVE'
-                }
-            ],
-            facilityIds: facilityIds
-        }
-    }
-}
 
 describe('createHealthcareProfessional', () => {
     let url: string
@@ -129,9 +27,20 @@ describe('createHealthcareProfessional', () => {
         await initiatilizeFirebaseInstance()
 
         // Create a new Facility to add HealthProfessionals to
-        const facility = await request(url).post('/').send(facilityMutationRequest)
+        const createFacilityRequest = {
+            query: createFacilityMutation,
+            variables: {
+                input: generateRandomCreateFacilityInput()
+            }
+        } as gqlMutation<CreateFacilityInput>
 
-        const facilityId = await facility.body.data.createFacilityWithHealthcareProfessional.id
+        const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
+
+        //should not have errors
+        expect(createFacilityResult.body.errors).toBeUndefined()
+
+        const facility = await createFacilityResult.body.data.createFacility as Facility
+        const facilityId = facility.id
 
         facilityIds.push(facilityId)
     })
@@ -141,38 +50,132 @@ describe('createHealthcareProfessional', () => {
     })
 
     it('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
-        const response = await request(url).post('/').send(healthcareProfessionalMutationRequest)
+        const createHealthcareProfessionalMutationRequest = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: generateRandomCreateHealthcareProfessionalInput({ facilityIds })
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createProfessionalResult = await request(url).post('/').send(createHealthcareProfessionalMutationRequest)
 
         //should not have errors
-        expect(response.body.errors).toBeUndefined()
+        expect(createProfessionalResult.body.errors).toBeUndefined()
 
-        const inputData = healthcareProfessionalMutationRequest.variables.input
-        const newHealthcareProfessionalData = response.body.data.createHealthcareProfessional
+        const createdHealthcareProfessional =
+            createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
 
-        expect(newHealthcareProfessionalData.id).toBeDefined()
-        expect(newHealthcareProfessionalData.names).toEqual(inputData.names)
-        expect(newHealthcareProfessionalData.degrees).toEqual(inputData.degrees)
-        expect(newHealthcareProfessionalData.spokenLanguages).toEqual(inputData.spokenLanguages)
-        expect(newHealthcareProfessionalData.acceptedInsurance).toEqual(inputData.acceptedInsurance)
-        expect(newHealthcareProfessionalData.createdDate).toBeDefined()
-        expect(newHealthcareProfessionalData.updatedDate).toBeDefined()
+        const getHealthcareProfessionalByIdRequest = {
+            query: getHealthcareProfessionalByIdQuery,
+            variables: {
+                id: createdHealthcareProfessional.id
+            }
+        } as gqlRequest
+
+        const searchResult = await request(url).post('/').send(getHealthcareProfessionalByIdRequest)
+
+        //should not have errors
+        expect(searchResult.body.errors).toBeUndefined()
+
+        const searchedProfessional = searchResult.body.data.healthcareProfessional as HealthcareProfessional
+        const originalValues = createHealthcareProfessionalMutationRequest.variables.input
+
+        //validate the created HealthcareProfessional has the same values as the original
+        expect(searchedProfessional).toBeDefined()
+        expect(searchedProfessional.id).toBeDefined()
+        expect(searchedProfessional.names).toEqual(originalValues.names)
+        expect(searchedProfessional.degrees).toEqual(originalValues.degrees)
+        expect(searchedProfessional.spokenLanguages).toEqual(originalValues.spokenLanguages)
+        expect(searchedProfessional.acceptedInsurance).toEqual(originalValues.acceptedInsurance)
+        expect(searchedProfessional.createdDate).toBeDefined()
+        expect(searchedProfessional.updatedDate).toBeDefined()
     })
 
     it('failing: throws an error if the list of facilityIds is empty', async () => {
-        //clear facilityIds so the empty list will throw a validation error
-        facilityIds.pop()
+        //send an empty facilityIds array so the empty list will throw a validation error
+        const emptyFacilityIds = [] as string[]
 
-        const response = await request(url).post('/').send(healthcareProfessionalMutationRequest)
+        const createHealthcareProfessionalRequest = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: generateRandomCreateHealthcareProfessionalInput({ facilityIds: emptyFacilityIds })
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        expect(response.body.errors).toBeDefined()
-        expect(response.body.errors[0].extensions.errors[0]).toBeDefined()
-        expect(response.body.errors[0].extensions.errors.length).toEqual(1)
+        const createProfessionalResult = await request(url).post('/').send(createHealthcareProfessionalRequest)
 
-        const error = response.body.errors[0].extensions.errors[0] as Error
+        expect(createProfessionalResult.body.errors).toBeDefined()
+        expect(createProfessionalResult.body.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body.errors[0].extensions.errors.length).toEqual(1)
 
-        expect(error.field).toBe('facilityId')
+        const error = createProfessionalResult.body.errors[0].extensions.errors[0] as Error
+
+        expect(error.field).toBe('facilityIds')
         expect(error.errorCode).toBe(ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED)
         expect(error.httpStatus).toBe(400)
     })
 })
 
+const createHealthcareProfessionalMutation = `mutation test_createHealthcareProfessional($input: CreateHealthcareProfessionalInput!) {
+    createHealthcareProfessional(input: $input) {
+        id
+        names {
+            lastName
+            firstName
+            middleName
+            locale
+        }
+        degrees {
+            nameJa
+            nameEn
+            abbreviation
+        }
+        spokenLanguages {
+            languageCode_iso639_3
+            nameJa
+            nameEn
+            nameNative
+        }
+        specialties {
+            names {
+                name
+                locale
+            }
+        }
+        acceptedInsurance
+        createdDate
+        updatedDate
+    }
+}`
+
+const getHealthcareProfessionalByIdQuery = `query test_getHealthcareProfessionalById($id: ID!) {
+    healthcareProfessional(id: $id) {
+        id
+        names {
+            lastName
+            firstName
+            middleName
+            locale
+        }
+        degrees {
+            nameJa
+            nameEn
+            abbreviation
+        }
+        spokenLanguages {
+            languageCode_iso639_3
+            nameJa
+            nameEn
+            nameNative
+        }
+        specialties {
+            names {
+                name
+                locale
+            }
+        }
+        acceptedInsurance
+        createdDate
+        updatedDate
+    }
+}`

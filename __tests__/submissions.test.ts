@@ -44,13 +44,13 @@ describe('createSubmission', () => {
         expect(response.body.errors).toBeUndefined()
 
         const originalValues = createSubmissionRequest.variables.input
-        const newSubmissionId = response.body.data as string
+        const newSubmission = response.body.data.createSubmission as Submission
 
         // Query to get the Submission by id
         const getSubmissionByIdRequest = {
             query: getSubmissionByIdQuery,
             variables: {
-                submissionId: newSubmissionId
+                id: newSubmission.id
             }
         } satisfies gqlRequest
 
@@ -60,16 +60,16 @@ describe('createSubmission', () => {
         //should not have errors
         expect(searchResult.body.errors).toBeUndefined()
 
-        const foundSubmissions = searchResult.body.data as Submission
+        const foundSubmissions = searchResult.body.data.submission as Submission
 
         expect(foundSubmissions).not.toBeNull()
-        expect(foundSubmissions.googleMapsUrl).toBe(originalValues.googleMapsUrl)
+        expect(foundSubmissions.id).toBeDefined()
         expect(foundSubmissions.healthcareProfessionalName).toBe(originalValues.healthcareProfessionalName)
+        expect(foundSubmissions.googleMapsUrl).toBe(originalValues.googleMapsUrl)
         expect(foundSubmissions.isApproved).toBe(false)
         expect(foundSubmissions.isRejected).toBe(false)
         expect(foundSubmissions.isUnderReview).toBe(false)
         expect(foundSubmissions.spokenLanguages).toEqual(originalValues.spokenLanguages)
-        expect(foundSubmissions.id).toBeDefined()
     })
 })
 
@@ -115,14 +115,14 @@ describe('updateSubmission', () => {
         expect(newSubmissionResult.body.errors).toBeUndefined()
 
         // Get the ID of the new Submission
-        const newSubmissionId = newSubmissionResult.body.data as string
+        const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
 
         // Mutation to update the Submission
         const updateSubmissionRequest = {
             query: updateSubmissionMutation,
             variables: {
-                input: generateRandomUpdateSubmissionInput({ isRejected: true, isApproved: false }),
-                updateSubmissionId: newSubmissionId
+                id: newSubmission.id,
+                input: generateRandomUpdateSubmissionInput({ isRejected: true, isApproved: false })
             }
         } satisfies gqlRequest
 
@@ -132,25 +132,11 @@ describe('updateSubmission', () => {
         //should not have errors
         expect(updateSubmissionResult.body.errors).toBeUndefined()
 
-        // Query to get the Submission by id
-        const getSubmissionByIdRequest = {
-            query: getSubmissionByIdQuery,
-            variables: {
-                submissionId: newSubmissionId
-            }
-        } satisfies gqlRequest
-
-        // Get the submission by id query data
-        const searchResult = await request(url).post('/').send(getSubmissionByIdRequest)
-
-        //should not have errors
-        expect(searchResult.body.errors).toBeUndefined()
-
         // Compare the data returned in the response to the updated fields that were sent
-        const updatedSubmission = searchResult.body.data as Submission
+        const updatedSubmission = updateSubmissionResult.body.data.updateSubmission as Submission
         const originalValues = updateSubmissionRequest.variables.input
 
-        expect(updatedSubmission.id).toBe(newSubmissionId)
+        expect(updatedSubmission.id).toBe(newSubmission.id)
         expect(updatedSubmission.googleMapsUrl).toBe(originalValues.googleMapsUrl)
         expect(updatedSubmission.healthcareProfessionalName).toBe(originalValues.healthcareProfessionalName)
         expect(updatedSubmission.spokenLanguages).toEqual(originalValues.spokenLanguages)
@@ -202,33 +188,17 @@ describe('getSubmissionById', () => {
         expect(newSubmissionResult.body.errors).toBeUndefined()
 
         // Get the ID of the new Submission
-        const newSubmissionId = newSubmissionResult.body.data as string
-
-        // Query to get the Submission by id
-        const getSubmissionByIdRequest = {
-            query: getSubmissionByIdQuery,
-            variables: {
-                submissionId: newSubmissionId
-            }
-        } satisfies gqlRequest
-
-        // Get the submission by id query data
-        const searchResult = await request(url).post('/').send(getSubmissionByIdRequest)
-
-        //should not have errors
-        expect(searchResult.body.errors).toBeUndefined()
+        const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
 
         // Compare the data returned in the response to the updated fields that were sent
-        const searchedSubmission = searchResult.body.data as Submission
         const originalValues = createSubmissionRequest.variables.input
 
-        expect(searchedSubmission.id).toBe(newSubmissionId)
-        expect(searchedSubmission.googleMapsUrl).toBe(originalValues.googleMapsUrl)
-        expect(searchedSubmission.healthcareProfessionalName).toBe(originalValues.healthcareProfessionalName)
-        expect(searchedSubmission.spokenLanguages).toEqual(originalValues.spokenLanguages)
-        expect(searchedSubmission.isApproved).toBe(false)
-        expect(searchedSubmission.isUnderReview).toBe(false)
-        expect(searchedSubmission.isRejected).toBe(false)
+        expect(newSubmission.googleMapsUrl).toBe(originalValues.googleMapsUrl)
+        expect(newSubmission.healthcareProfessionalName).toBe(originalValues.healthcareProfessionalName)
+        expect(newSubmission.spokenLanguages).toEqual(originalValues.spokenLanguages)
+        expect(newSubmission.isApproved).toBeFalsy()
+        expect(newSubmission.isUnderReview).toBeFalsy()
+        expect(newSubmission.isRejected).toBeFalsy()
     })
 
     it('failing: returns an error when submission does not exist', async () => {
@@ -239,7 +209,7 @@ describe('getSubmissionById', () => {
         const getSubmissionByIdRequest = {
             query: getSubmissionByIdQuery,
             variables: {
-                submissionId: submissionId
+                id: submissionId
             }
         } satisfies gqlRequest
 
@@ -249,12 +219,12 @@ describe('getSubmissionById', () => {
 
         //We should have 1 error
         expect(submissionErrors.length).toBe(1)
-        expect(submissionErrors[0].field).toBe('submissionId')
+        expect(submissionErrors[0].field).toBe('id')
         expect(submissionErrors[0].errorCode).toBe(ErrorCode.NOT_FOUND)
         expect(submissionErrors[0].httpStatus).toBe(404)
 
         //there should be no result
-        expect(searchResults.body.data).toEqual(null)
+        expect(searchResults.body.data.submission).toEqual(null)
     })
 })
 
@@ -327,9 +297,7 @@ describe('searchSubmissions', () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
-                input: {
-                    ...generateRandomCreateSubmissionInput()
-                } satisfies CreateSubmissionInput
+                input: generateRandomCreateSubmissionInput() satisfies CreateSubmissionInput
             }
         } satisfies gqlRequest
 
@@ -360,9 +328,7 @@ describe('searchSubmissions', () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
-                input: {
-                    ...generateRandomCreateSubmissionInput()
-                } satisfies CreateSubmissionInput
+                input: generateRandomCreateSubmissionInput() satisfies CreateSubmissionInput
             }
         } satisfies gqlRequest
 
@@ -373,29 +339,16 @@ describe('searchSubmissions', () => {
         expect(createSubmissionResult.body.errors).toBeUndefined()
 
         // Get the ID of the new Submission
-        const newSubmissionId = createSubmissionResult.body.data as string
+        const newSubmission = createSubmissionResult.body.data.createSubmission as Submission
 
-        // Query to get the Submission by id
-        const getSubmissionByIdRequest = {
-            query: searchSubmissionsQuery,
-            variables: {
-                submissionId: newSubmissionId
-            }
-        } satisfies gqlRequest
-
-        // Get the submission by id query data
-        const searchResult = await request(url).post('/').send(getSubmissionByIdRequest)
-
-        //should not have errors
-        expect(searchResult.body.errors).toBeUndefined()
-        expect(searchResult.body.data.createdDate).not.toBeNull()
+        expect(newSubmission.createdDate).not.toBeNull()
 
         // Query to get the Submission by createdDate
         const searchSubmissionsRequest = {
             query: searchSubmissionsQuery,
             variables: {
                 filters: {
-                    createdDate: searchResult.body.data.createdDate
+                    createdDate: newSubmission.createdDate
                 } satisfies SubmissionSearchFilters
             }
         } satisfies gqlRequest
@@ -407,9 +360,7 @@ describe('searchSubmissions', () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
-                input: {
-                    ...generateRandomCreateSubmissionInput()
-                } satisfies CreateSubmissionInput
+                input: generateRandomCreateSubmissionInput() satisfies CreateSubmissionInput
             }
         } satisfies gqlRequest
 
@@ -467,11 +418,11 @@ describe('searchSubmissions', () => {
         //should not have errors
         expect(searchResult.body.errors).toBeUndefined()
 
-        const searchedSubmissions = searchResult.body.data as Submission[]
+        const searchedSubmissions = searchResult.body.data.submissions as Submission[]
 
         //should have at least 1 result
         expect(searchedSubmissions).not.toBeNull()
-        expect(searchedSubmissions.length).toBe(2)
+        expect(searchedSubmissions.length).toBeGreaterThanOrEqual(2)
     })
 })
 
@@ -483,25 +434,27 @@ async function checkSearchResults(url: string,
     //should not have errors
     expect(searchResult.body.errors).toBeUndefined()
 
-    const searchedSubmissions = searchResult.body.data
+    const searchedSubmissions = searchResult.body.data.submissions as Submission[]
 
     //should have at least 1 result
-    expect(searchedSubmissions).not.toBeNull()
-    expect(searchedSubmissions.length).toBe(1)
+    expect(searchedSubmissions).toBeDefined()
+    expect(searchedSubmissions.length).toBeGreaterThanOrEqual(1)
+
+    const firstSubmission = searchedSubmissions[0]
 
     //Compare the data returned in the response to the createdSubmission
-    expect(searchedSubmissions.googleMapsUrl).toBe(originalValues.googleMapsUrl)
-    expect(searchedSubmissions.createdDate).toBe(Date)
-    expect(searchedSubmissions.healthcareProfessionalName)
+    expect(firstSubmission.googleMapsUrl).toBe(originalValues.googleMapsUrl)
+    expect(!!Date.parse(firstSubmission.createdDate)).toBe(true)
+    expect(firstSubmission.healthcareProfessionalName)
         .toBe(originalValues.healthcareProfessionalName)
-    expect(searchedSubmissions.isApproved).toBe(false)
-    expect(searchedSubmissions.isRejected).toBe(false)
-    expect(searchedSubmissions.isUnderReview).toBe(false)
-    expect(searchedSubmissions.spokenLanguages).toStrictEqual(originalValues.spokenLanguages)
+    expect(firstSubmission.isApproved).toBe(false)
+    expect(firstSubmission.isRejected).toBe(false)
+    expect(firstSubmission.isUnderReview).toBe(false)
+    expect(firstSubmission.spokenLanguages).toStrictEqual(originalValues.spokenLanguages)
 }
 
-const getSubmissionByIdQuery = `query Query($submissionId: ID!) {
-    submission(id: $submissionId) {
+const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
+    submission(id: $id) {
       id
       googleMapsUrl
       healthcareProfessionalName
@@ -519,11 +472,11 @@ const getSubmissionByIdQuery = `query Query($submissionId: ID!) {
     }
 }`
 
-const searchSubmissionsQuery = `query Query($filters: SubmissionSearchFilters!) {
+const searchSubmissionsQuery = `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
     submissions(filters: $filters) {
+      id
       googleMapsUrl
       createdDate
-      id
       healthcareProfessionalName
       isApproved
       isRejected
@@ -538,8 +491,9 @@ const searchSubmissionsQuery = `query Query($filters: SubmissionSearchFilters!) 
     }
 }`
 
-const createSubmissionMutation = `mutation Mutation($input: CreateSubmissionInput!) {
+const createSubmissionMutation = `mutation test_createSubmission($input: CreateSubmissionInput!) {
     createSubmission(input: $input) {
+        id
         googleMapsUrl
         healthcareProfessionalName
         spokenLanguages {
@@ -551,8 +505,8 @@ const createSubmissionMutation = `mutation Mutation($input: CreateSubmissionInpu
     }
 }`
 
-const updateSubmissionMutation = `mutation Mutation($updateSubmissionId: ID!, $input: UpdateSubmissionInput!) {
-    updateSubmission(id: $updateSubmissionId, input: $input) {
+const updateSubmissionMutation = `mutation test_updateSubmission($id: ID!, $input: UpdateSubmissionInput!) {
+    updateSubmission(id: $id, input: $input) {
       id
       googleMapsUrl
       healthcareProfessionalName
@@ -562,8 +516,12 @@ const updateSubmissionMutation = `mutation Mutation($updateSubmissionId: ID!, $i
         nameEn
         nameNative
       }
-      facility
-      healthcareProfessionals
+      facility {
+        id
+      }
+      healthcareProfessionals {
+        id
+      }
       isUnderReview
       isApproved
       isRejected

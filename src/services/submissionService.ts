@@ -24,7 +24,15 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
         const snapshot = await submissionRef.where('id', '==', id).get()
 
         if (snapshot.docs.length < 1) {
-            throw new Error('Submission was not found.')
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{
+                    field: 'id',
+                    errorCode: ErrorCode.NOT_FOUND,
+                    httpStatus: 404
+                }]
+            }
         }
 
         const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data() as dbSchema.Submission)
@@ -73,15 +81,15 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
             subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
         }
 
-        if (typeof filters.isUnderReview !== 'undefined') {
+        if (filters.isUnderReview !== undefined) {
             subRef = subRef.where('isUnderReview', '==', filters.isUnderReview)
         }
 
-        if (typeof filters.isApproved !== 'undefined') {
+        if (filters.isApproved !== undefined) {
             subRef = subRef.where('isApproved', '==', filters.isApproved)
         }
 
-        if (typeof filters.isRejected !== 'undefined') {
+        if (filters.isRejected !== undefined) {
             subRef = subRef.where('isRejected', '==', filters.isRejected)
         }
 
@@ -183,6 +191,10 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
         await submissionRef.set(newSubmission)
 
         const createdSubmission = await getSubmissionById(newSubmissionId)
+
+        if (createdSubmission.hasErrors || !createdSubmission.data) {
+            throw new Error(`Error creating submission: ${JSON.stringify(createdSubmission.errors)}`)
+        }
 
         return {
             data: createdSubmission.data,
@@ -340,13 +352,13 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
 
 function convertToDbSubmission(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
     return {
+        id: newId,
         googleMapsUrl: input.googleMapsUrl as string,
         healthcareProfessionalName: input.healthcareProfessionalName as string,
-        id: newId,
+        spokenLanguages: input.spokenLanguages?.filter(lang => lang !== null) as dbSchema.SpokenLanguage[],
         isUnderReview: false,
         isApproved: false,
         isRejected: false,
-        spokenLanguages: input.spokenLanguages?.filter(lang => lang !== null) as dbSchema.SpokenLanguage[],
         facility: null,
         healthcareProfessionals: [],
         createdDate: new Date().toISOString(),

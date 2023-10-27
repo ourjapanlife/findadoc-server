@@ -1,4 +1,4 @@
-import { ApolloServer } from '@apollo/server'
+import { ApolloServer, BaseContext, GraphQLRequestContext } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import loadSchema from './schema'
 import resolvers from './resolvers'
@@ -18,11 +18,17 @@ export const createApolloServer = async () => {
         introspection: true,
         plugins: [
             //enables the apollo sanbox as the landing page
-            ApolloServerPluginLandingPageLocalDefault()
+            ApolloServerPluginLandingPageLocalDefault(),
+            {
+                async requestDidStart(requestContext: GraphQLRequestContext<BaseContext>) {
+                    console.log(`Apollo Request received:\n Query: ' + ${requestContext.request.query} \nVariables: ${JSON.stringify(requestContext.request.variables)}`)
+                }
+            }
         ],
+
         // Allows you to choose what error info is visable for client side
         formatError: gqlError => {
-            console.log('gqlError', gqlError)
+            console.log('gqlError', JSON.stringify(gqlError))
 
             //these are the errors that are thrown in the resolvers using the Result.errors object
             if (gqlError.extensions?.errors) {

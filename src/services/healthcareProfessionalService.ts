@@ -262,7 +262,7 @@ function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcar
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'facilityIds',
-            errorCode: ErrorCode.MIN_ONE_FACILITYID_REQUIRED,
+            errorCode: ErrorCode.UPDATEPROFFESIONAL_FACILITYIDS_REQUIRED,
             httpStatus: 400
         })
     }
@@ -289,7 +289,7 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'facilityIds',
-            errorCode: ErrorCode.MIN_ONE_FACILITYID_REQUIRED,
+            errorCode: ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED,
             httpStatus: 400
         })
     }

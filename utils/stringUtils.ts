@@ -8,9 +8,9 @@ export function isValidEmail(email: string) {
 }
 
 export function isValidPhoneNumber(phoneNumber: string) {
-    return /^[+]?[\s./0-9]*[(]?[0-9]{1,4}[)]?[-\s./0-9]{8,14}$/g.test(phoneNumber)
+    return /^[+]?[0-9]{0,3}[\s./]?[(]?[0-9]{1,4}[)]?[-\s./0-9x]{8,18}$/g.test(phoneNumber)
 }
 
 export function isValidWebsite(website: string) {
-    return /^((https?|ftp|smtp):\/\/)?(www.)?[a-z0-9]+\.[a-z]+(\/[a-zA-Z0-9-_#]+\/?)*$/g.test(website)
+    return /^((https?|ftp|smtp):\/\/)?(www.)?[a-z0-9-]+\.[a-zA-Z0-9-_#/]+$/g.test(website)
 }
