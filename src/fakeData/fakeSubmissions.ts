@@ -1,7 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes'
 import { faker } from '@faker-js/faker'
-import { generateRandomCreateHealthcareProfessionalInputArray, generateSpokenLanguage } from './healthcareProfessionals'
-import { generateRandomCreateFacilityInput } from './facilities'
+import { generateRandomCreateHealthcareProfessionalInputArray, generateSpokenLanguage } from './fakeHealthcareProfessionals'
+import { generateRandomCreateFacilityInput } from './fakeFacilities'
 
 export function generateRandomCreateSubmissionInput(): gqlTypes.CreateSubmissionInput {
     return {

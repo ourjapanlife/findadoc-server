@@ -82,13 +82,31 @@ type Submission {
   googleMapsUrl: String!
   healthcareProfessionalName: String!
   spokenLanguages: [SpokenLanguage!]!
-  facility: Facility
-  healthcareProfessionals: [HealthcareProfessional!]
+  facility: FacilitySubmission
+  healthcareProfessionals: [HealthcareProfessionalSubmission!]
   isUnderReview: Boolean!
   isApproved: Boolean!
   isRejected: Boolean!
   createdDate: String!
   updatedDate: String!
+}
+
+type FacilitySubmission {
+  id: ID
+  nameEn: String
+  nameJa: String
+  contact: Contact
+  healthcareProfessionalIds: [ID!]!
+}
+
+type HealthcareProfessionalSubmission {
+  id: ID
+  names: [LocaleName!]!
+  spokenLanguages: [SpokenLanguage!]!
+  degrees: [Degree!]
+  specialties: [Specialty!]
+  acceptedInsurance: [Insurance!]
+  facilityIds: [ID!]!
 }
 
 input CreateSubmissionInput {

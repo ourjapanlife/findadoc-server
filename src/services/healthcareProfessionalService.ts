@@ -111,7 +111,7 @@ export async function createHealthcareProfessional(
 
 /**
  * Updates a Healthcare Professional in the database based on the id. 
- * - It will only update the fields that are provided and are not null.
+ * - It will only update the fields that are provided and are not undefined.
  * - If you want to create a new HealthcareProfessional, you need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
  * - If you want to link an existing HealthcareProfessional to a Facility, add the healthcareprofessionalId to the `healthcareProfessionalIds` array. 
      Use the action to add or remove the association. If an id isn't in the list, no change will occur. 
@@ -357,7 +357,7 @@ function validateDegrees(
     //TODO validate each degree
 }
 
-function validateNames(names: gqlTypes.LocaleName[] | undefined | null, validationResults: Result<unknown>): void {
+function validateNames(names: gqlTypes.LocaleNameInput[] | undefined | null, validationResults: Result<unknown>): void {
     if (!names) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
@@ -380,7 +380,7 @@ function validateNames(names: gqlTypes.LocaleName[] | undefined | null, validati
 }
 
 function validateSpecialties(
-    specialties: gqlTypes.Specialty[] | undefined | null,
+    specialties: gqlTypes.SpecialtyInput[] | undefined | null,
     validationResults: Result<unknown>
 ): void {
     if (!specialties) {
@@ -430,7 +430,7 @@ function validateInsurance(
 }
 
 function validateSpokenLanguages(
-    spokenLanguages: gqlTypes.SpokenLanguage[] | undefined | null,
+    spokenLanguages: gqlTypes.SpokenLanguageInput[] | undefined | null,
     validationResults: Result<unknown>
 ): void {
     if (!spokenLanguages) {

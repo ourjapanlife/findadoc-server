@@ -23,8 +23,8 @@ export type HealthcareProfessional =
     }
 
 export type Submission = Omit<gqlType.Submission, 'facility' | 'healthcareProfessionals'> & {
-    facility: Facility | null
-    healthcareProfessionals: HealthcareProfessional[]
+    facility: gqlType.FacilitySubmission | null
+    healthcareProfessionals: gqlType.HealthcareProfessionalSubmission[]
 }
 
 export type Contact = gqlType.Contact

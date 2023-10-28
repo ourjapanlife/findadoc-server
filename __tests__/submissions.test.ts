@@ -7,10 +7,10 @@ import { startStandaloneServer } from '@apollo/server/standalone'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 import { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing'
 import fs from 'fs'
-import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions'
+import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions'
 import { CreateSubmissionInput, LanguageCode_Iso639_3, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes'
 import { Error, ErrorCode } from '../src/result'
-import { generateSpokenLanguage } from '../src/fakeData/healthcareProfessionals'
+import { generateSpokenLanguage } from '../src/fakeData/fakeHealthcareProfessionals'
 import { gqlRequest } from '../utils/gqlTool'
 
 describe('createSubmission', () => {
@@ -41,7 +41,7 @@ describe('createSubmission', () => {
         const response = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(response.body.errors).toBeUndefined()
+        expect(response.body.extensions?.errors).toBeUndefined()
 
         const originalValues = createSubmissionRequest.variables.input
         const newSubmission = response.body.data.createSubmission as Submission
@@ -58,11 +58,11 @@ describe('createSubmission', () => {
         const searchResult = await request(url).post('/').send(getSubmissionByIdRequest)
 
         //should not have errors
-        expect(searchResult.body.errors).toBeUndefined()
+        expect(searchResult.body.extensions?.errors).toBeUndefined()
 
         const foundSubmissions = searchResult.body.data.submission as Submission
 
-        expect(foundSubmissions).not.toBeNull()
+        expect(foundSubmissions).toBeDefined()
         expect(foundSubmissions.id).toBeDefined()
         expect(foundSubmissions.healthcareProfessionalName).toBe(originalValues.healthcareProfessionalName)
         expect(foundSubmissions.googleMapsUrl).toBe(originalValues.googleMapsUrl)
@@ -112,7 +112,7 @@ describe('updateSubmission', () => {
         const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(newSubmissionResult.body.errors).toBeUndefined()
+        expect(newSubmissionResult.body.extensions?.errors).toBeUndefined()
 
         // Get the ID of the new Submission
         const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
@@ -130,7 +130,7 @@ describe('updateSubmission', () => {
         const updateSubmissionResult = await request(url).post('/').send(updateSubmissionRequest)
 
         //should not have errors
-        expect(updateSubmissionResult.body.errors).toBeUndefined()
+        expect(updateSubmissionResult.body.extensions?.errors).toBeUndefined()
 
         // Compare the data returned in the response to the updated fields that were sent
         const updatedSubmission = updateSubmissionResult.body.data.updateSubmission as Submission
@@ -185,7 +185,7 @@ describe('getSubmissionById', () => {
         const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(newSubmissionResult.body.errors).toBeUndefined()
+        expect(newSubmissionResult.body.extensions?.errors).toBeUndefined()
 
         // Get the ID of the new Submission
         const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
@@ -214,9 +214,13 @@ describe('getSubmissionById', () => {
         } satisfies gqlRequest
 
         // Get the submission by id
-        const searchResults = await request(url).post('/').send(getSubmissionByIdRequest)
-        const submissionErrors = searchResults.body.errors as Error[]
-
+        const getByIdResults = await request(url).post('/').send(getSubmissionByIdRequest)
+ 
+        expect(getByIdResults).toBe(1)
+        expect(getByIdResults.body.errors.extensions.errors).toBeDefined()
+ 
+        const submissionErrors = getByIdResults.body.extensions.errors as Error[]
+        
         //We should have 1 error
         expect(submissionErrors.length).toBe(1)
         expect(submissionErrors[0].field).toBe('id')
@@ -224,7 +228,7 @@ describe('getSubmissionById', () => {
         expect(submissionErrors[0].httpStatus).toBe(404)
 
         //there should be no result
-        expect(searchResults.body.data.submission).toEqual(null)
+        expect(getByIdResults.body.data.submission).toBeUndefined()
     })
 })
 
@@ -271,7 +275,7 @@ describe('searchSubmissions', () => {
         const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(newSubmissionResult.body.errors).toBeUndefined()
+        expect(newSubmissionResult.body.extensions?.errors).toBeUndefined()
 
         // Query to get the Submission using language filter
         const searchSubmissionsRequest = {
@@ -305,7 +309,7 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.errors).toBeUndefined()
+        expect(createSubmissionResult.body.extensions?.errors).toBeUndefined()
 
         const originalGoogleMapsUrl = createSubmissionRequest.variables.input.googleMapsUrl
 
@@ -324,7 +328,7 @@ describe('searchSubmissions', () => {
         checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('get submissions using the createDate filter', async () => {
+    it('get submissions using the createdDate filter', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -336,12 +340,14 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.errors).toBeUndefined()
-
+        expect(createSubmissionResult.body.extensions?.errors).toBeUndefined()
+        
         // Get the ID of the new Submission
         const newSubmission = createSubmissionResult.body.data.createSubmission as Submission
+        
+        const isValidDate = newSubmission.createdDate && !!Date.parse(newSubmission.createdDate)
 
-        expect(newSubmission.createdDate).not.toBeNull()
+        expect(isValidDate).toBe(true)
 
         // Query to get the Submission by createdDate
         const searchSubmissionsRequest = {
@@ -368,7 +374,7 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.errors).toBeUndefined()
+        expect(createSubmissionResult.body.extensions?.errors).toBeUndefined()
 
         // Query to get the Submission using 3 filters
         const searchSubmissionsRequest = {
@@ -399,10 +405,12 @@ describe('searchSubmissions', () => {
         // Create a new Submission
         const createSubmissionResult1 = await request(url).post('/').send(createSubmissionRequest)
         const createSubmissionResult2 = await request(url).post('/').send(createSubmissionRequest)
+        const createdSubmission1 = createSubmissionResult1.body.data.createSubmission as Submission
+        const createdSubmission2 = createSubmissionResult2.body.data.createSubmission as Submission
 
         //should not have errors
-        expect(createSubmissionResult1.body.errors).toBeUndefined()
-        expect(createSubmissionResult2.body.errors).toBeUndefined()
+        expect(createSubmissionResult1.body.extensions?.errors).toBeUndefined()
+        expect(createSubmissionResult2.body.extensions?.errors).toBeUndefined()
 
         // Query to get all (both) submissions
         const searchSubmissionsRequest = {
@@ -410,19 +418,26 @@ describe('searchSubmissions', () => {
             variables: {
                 filters: {} satisfies SubmissionSearchFilters
             }
-        }
+        } as gqlRequest
 
         //Get the submissions query data
         const searchResult = await request(url).post('/').send(searchSubmissionsRequest)
 
         //should not have errors
-        expect(searchResult.body.errors).toBeUndefined()
+        expect(searchResult.body.extensions?.errors).toBeUndefined()
 
         const searchedSubmissions = searchResult.body.data.submissions as Submission[]
 
-        //should have at least 1 result
-        expect(searchedSubmissions).not.toBeNull()
+        //should not be empty
+        expect(searchedSubmissions).toBeDefined()
         expect(searchedSubmissions.length).toBeGreaterThanOrEqual(2)
+
+        const foundFirstSubmission = searchedSubmissions.find(submission => submission.id === createdSubmission1.id)
+        const foundSecondSubmission = searchedSubmissions.find(submission => submission.id === createdSubmission2.id)
+
+        // we should find both submissions
+        expect(foundFirstSubmission).toBeTruthy()
+        expect(foundSecondSubmission).toBeTruthy()
     })
 })
 
@@ -432,9 +447,11 @@ async function checkSearchResults(url: string,
     const searchResult = await request(url).post('/').send(searchSubmissionsRequest)
 
     //should not have errors
-    expect(searchResult.body.errors).toBeUndefined()
+    expect(searchResult.body.extensions?.errors).toBeUndefined()
 
     const searchedSubmissions = searchResult.body.data.submissions as Submission[]
+
+    expect(searchedSubmissions).toBe(1)
 
     //should have at least 1 result
     expect(searchedSubmissions).toBeDefined()
@@ -474,20 +491,20 @@ const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
 
 const searchSubmissionsQuery = `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
     submissions(filters: $filters) {
-      id
-      googleMapsUrl
-      createdDate
-      healthcareProfessionalName
-      isApproved
-      isRejected
-      isUnderReview
-      spokenLanguages {
-        languageCode_iso639_3
-        nameEn
-        nameJa
-        nameNative
-      }
-      updatedDate
+        id
+        googleMapsUrl
+        healthcareProfessionalName
+        isApproved
+        isRejected
+        isUnderReview
+        spokenLanguages {
+            languageCode_iso639_3
+            nameEn
+            nameJa
+            nameNative
+            }
+        createdDate
+        updatedDate
     }
 }`
 
@@ -502,6 +519,11 @@ const createSubmissionMutation = `mutation test_createSubmission($input: CreateS
             nameJa
             nameNative
         }
+        isApproved
+        isRejected
+        isUnderReview
+        createdDate
+        updatedDate
     }
 }`
 

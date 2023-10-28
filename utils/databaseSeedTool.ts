@@ -1,8 +1,8 @@
 import { createHealthcareProfessional } from '../src/services/healthcareProfessionalService'
 import { createFacility } from '../src/services/facilityService'
 
-import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/healthcareProfessionals'
-import { generateRandomCreateFacilityInputArray } from '../src/fakeData/facilities'
+import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/fakeHealthcareProfessionals'
+import { generateRandomCreateFacilityInputArray } from '../src/fakeData/fakeFacilities'
 
 export const seedDatabase = async () => {
     //eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -6,10 +6,10 @@ import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 import { Error, ErrorCode } from '../src/result'
-import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/healthcareProfessionals'
+import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool'
 import { CreateFacilityInput, CreateHealthcareProfessionalInput, Facility, HealthcareProfessional } from '../src/typeDefs/gqlTypes'
-import { generateRandomCreateFacilityInput } from '../src/fakeData/facilities'
+import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities'
 import { createFacilityMutation } from './facilities.test'
 
 const facilityIds = [] as string[]
@@ -37,7 +37,7 @@ describe('createHealthcareProfessional', () => {
         const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(createFacilityResult.body.errors).toBeUndefined()
+        expect(createFacilityResult.body.extensions?.errors).toBeUndefined()
 
         const facility = await createFacilityResult.body.data.createFacility as Facility
         const facilityId = facility.id
@@ -60,7 +60,7 @@ describe('createHealthcareProfessional', () => {
         const createProfessionalResult = await request(url).post('/').send(createHealthcareProfessionalMutationRequest)
 
         //should not have errors
-        expect(createProfessionalResult.body.errors).toBeUndefined()
+        expect(createProfessionalResult.body.extensions?.errors).toBeUndefined()
 
         const createdHealthcareProfessional =
             createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
@@ -75,7 +75,7 @@ describe('createHealthcareProfessional', () => {
         const searchResult = await request(url).post('/').send(getHealthcareProfessionalByIdRequest)
 
         //should not have errors
-        expect(searchResult.body.errors).toBeUndefined()
+        expect(searchResult.body.extensions?.errors).toBeUndefined()
 
         const searchedProfessional = searchResult.body.data.healthcareProfessional as HealthcareProfessional
         const originalValues = createHealthcareProfessionalMutationRequest.variables.input
@@ -103,12 +103,16 @@ describe('createHealthcareProfessional', () => {
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
         const createProfessionalResult = await request(url).post('/').send(createHealthcareProfessionalRequest)
+        const createdProfessional
+            = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
 
-        expect(createProfessionalResult.body.errors).toBeDefined()
-        expect(createProfessionalResult.body.errors[0].extensions.errors[0]).toBeDefined()
-        expect(createProfessionalResult.body.errors[0].extensions.errors.length).toEqual(1)
+        expect(createdProfessional).toBeFalsy()
+        expect(createProfessionalResult.body).toBe(1)
+        expect(createProfessionalResult.body.extensions?.errors).toBeDefined()
+        expect(createProfessionalResult.body.extensions?.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body.extensions?.errors[0].extensions.errors.length).toEqual(1)
 
-        const error = createProfessionalResult.body.errors[0].extensions.errors[0] as Error
+        const error = createProfessionalResult.body.extensions?.errors[0].extensions.errors[0] as Error
 
         expect(error.field).toBe('facilityIds')
         expect(error.errorCode).toBe(ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED)

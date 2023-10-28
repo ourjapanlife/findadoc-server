@@ -174,7 +174,7 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
 
 /**
  * Updates a Facility in the database with the params in the database based on the id. 
- * - It will only update the fields that are provided and are not null.
+ * - It will only update the fields that are provided and are not undefined.
  * - If you want to create a new HealthcareProfessional, you need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
  * - If you want to link an existing HealthcareProfessional to a Facility, add the healthcareprofessionalId to the `healthcareProfessionalIds` array. 
      Use the action to add or remove the association. If an id isn't in the list, no change will occur. 

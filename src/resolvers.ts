@@ -7,13 +7,6 @@ import { Result } from './result'
 
 const resolvers = {
     Query: {
-        facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters })
-        : Promise<gqlType.Facility[]> => {
-            const queryResults = await facilityService.searchFacilities(args.filters)
-
-            convertErrorsToGqlErrors(queryResults)
-            return queryResults.data
-        },
         facility: async (_parent: gqlType.Facility, args: { id: string; })
         : Promise<gqlType.Facility> => {
             const queryResults = await facilityService.getFacilityById(args.id)
@@ -21,31 +14,40 @@ const resolvers = {
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
+        facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters })
+        : Promise<gqlType.Facility[]> => {
+            const queryResults = await facilityService.searchFacilities(args.filters)
+
+            convertErrorsToGqlErrors(queryResults)
+            return queryResults.data
+        },
+        healthcareProfessional: async (_parent: unknown, args: { id: string; })
+        : Promise<gqlType.HealthcareProfessional> => {
+            const matchingHealthcareProfessionalResult =
+            await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
+            
+            convertErrorsToGqlErrors(matchingHealthcareProfessionalResult)
+            return matchingHealthcareProfessionalResult.data
+        },
         // healthcareProfessionals: async () => {
         //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
         
         //     convertErrorsToGqlErrors(queryResults)
         //     return matchingProfessionals
         // },
-        healthcareProfessional: async (_parent: unknown, args: { id: string; })
-            : Promise<gqlType.HealthcareProfessional> => {
-            const matchingHealthcareProfessional =
-                await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
+        submission: async (_parent: unknown, args: { id: string })
+        : Promise<gqlType.Submission | undefined> => {
+            const matchingSubmissionResult = await submissionService.getSubmissionById(args.id)
 
-            convertErrorsToGqlErrors(matchingHealthcareProfessional)
-            return matchingHealthcareProfessional.data
+            convertErrorsToGqlErrors(matchingSubmissionResult)
+            return matchingSubmissionResult.data
         },
         submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters })
         : Promise<gqlType.Submission[]> => {
-            const matchingSubmissions = await submissionService.searchSubmissions(args.filters)
+            const matchingSubmissionsResult = await submissionService.searchSubmissions(args.filters)
 
-            convertErrorsToGqlErrors(matchingSubmissions)
-            return matchingSubmissions.data
-        },
-        submission: async (_parent: unknown, args: { id: string }) => {
-            const matchingSubmission = await submissionService.getSubmissionById(args.id)
-
-            return matchingSubmission.data
+            convertErrorsToGqlErrors(matchingSubmissionsResult)
+            return matchingSubmissionsResult.data
         }
     },
     Mutation: {

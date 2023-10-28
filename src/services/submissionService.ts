@@ -12,7 +12,7 @@ import { createHealthcareProfessional } from './healthcareProfessionalService'
  * @param id A string that matches the id of the Firestore Document for the Submission.
  * @returns A Submission object.
  */
-export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Submission>> => {
+export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Submission | undefined>> => {
     try {
         const validationResult = validateIdInput(id)
 
@@ -25,7 +25,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
 
         if (snapshot.docs.length < 1) {
             return {
-                data: {} as gqlTypes.Submission,
+                data: undefined,
                 hasErrors: true,
                 errors: [{
                     field: 'id',
@@ -47,7 +47,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
         console.log(`Error retrieving submission by id ${id}: ${error}`)
 
         return {
-            data: {} as gqlTypes.Submission,
+            data: undefined,
             hasErrors: true,
             errors: [{
                 field: 'getSubmissionById',
@@ -252,6 +252,10 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
 
         const updatedSubmission = await getSubmissionById(submissionId)
 
+        if (updatedSubmission.hasErrors || !updatedSubmission.data) {
+            throw new Error(`Error creating submission: ${JSON.stringify(updatedSubmission.errors)}`)
+        }
+
         return {
             data: updatedSubmission.data,
             hasErrors: false
@@ -320,7 +324,9 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
 
         //try creating healthcare professional(s)
         for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
-            const createHealthcareProfessionalResult = await createHealthcareProfessional(healthcareProfessional)
+            const healthcareProfessionalInput
+                = healthcareProfessional satisfies gqlTypes.CreateHealthcareProfessionalInput
+            const createHealthcareProfessionalResult = await createHealthcareProfessional(healthcareProfessionalInput)
 
             if (createHealthcareProfessionalResult.hasErrors) {
                 approveResult.errors?.concat(createHealthcareProfessionalResult.errors!)
@@ -529,7 +535,7 @@ const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submiss
         isRejected: dbEntity.isRejected,
         createdDate: dbEntity.createdDate,
         updatedDate: dbEntity.updatedDate
-    }
+    } satisfies gqlTypes.Submission
 
     return gqlEntity
 }
