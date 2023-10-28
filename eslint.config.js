@@ -2,71 +2,93 @@ import globals from 'globals'
 import ts from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import * as graphqlESLint from '@graphql-eslint/eslint-plugin'
-import jsonPlugin from 'eslint-plugin-json'
 import eslintJsPlugin from '@eslint/js'
 
 const gqlSchemaPath = './src/typeDefs/schema.graphql'
 
 export default [
     // GraphQL Linter for Operations and Fragments within code files
+    // {
+    //     files: [
+    //         '__tests__/*.ts',
+    //         'src/*.ts'
+    //     ],
+    //     // Setup processor for operations/fragments definitions on code-files
+    //     processor: graphqlESLint.processors.graphql,
+    //     languageOptions: {
+    //         parser: graphqlESLint,
+    //         parserOptions: {
+    //             globals: {
+    //                 schema: gqlSchemaPath
+    //             }
+    //         }
+    //     },
+    //     plugins: {
+    //         '@graphql-eslint': graphqlESLint
+    //     },
+    //     rules: {
+    //         '@graphql-eslint/no-anonymous-operations': 'error',
+    //         '@graphql-eslint/no-duplicate-fields': 'error',
+    //         '@graphql-eslint/no-unreachable-types': 'error'
+    //     },
+    //     ...graphqlESLint.flatConfigs['operations-recommended'].rules
+    // },
+    // GraphQL Linter for Schema files
     {
+        // Setup GraphQL Parser
+        // files: ['src/**/*.{graphql,gql}'],
         files: [
             '__tests__/*.ts',
             'src/*.ts'
         ],
-        // Setup processor for operations/fragments definitions on code-files
-        processor: graphqlESLint.processors.graphql,
+        plugins: {
+            '@graphql-eslint': graphqlESLint
+        },
         languageOptions: {
             parser: graphqlESLint,
             parserOptions: {
                 schema: gqlSchemaPath
             }
-        },
-        plugins: {
-            '@graphql-eslint': graphqlESLint
         },
         rules: {
-            '@graphql-eslint/no-anonymous-operations': 'error',
-            '@graphql-eslint/no-duplicate-fields': 'error',
-            '@graphql-eslint/no-unreachable-types': 'error'
-        },
-        ...graphqlESLint.flatConfigs['operations-recommended']
-    },
-    // GraphQL Linter for Schema files
-    {
-        // Setup GraphQL Parser
-        files: ['src/**/*.{graphql,gql}'],
-        plugins: {
-            '@graphql-eslint': graphqlESLint
-        },
-        languageOptions: {
-            parser: graphqlESLint,
-            parserOptions: {
-                schema: gqlSchemaPath
-            }
-        },
-        ...graphqlESLint.flatConfigs['schema-recommended']
+            // ...graphqlESLint.flatConfigs['schema-recommended'].rules,
+            // '@graphql-eslint/no-hashtag-description': 'off'
+            // '@graphql-eslint/no-anonymous-operations': 'error',
+            // '@graphql-eslint/no-duplicate-fields': 'error',
+            // '@graphql-eslint/no-unreachable-types': 'error'
+        }
     },
     // JSON Linter
-    {
-        ...jsonPlugin.configs.recommended,
-        files: [
-            '*.json'
-        ],
-        plugins: {
-            jsonPlugin: jsonPlugin
-        }
-        // rules: {
-        //     'json/*': [
-        //         'error',
-        //         {
-        //             allowComments: true,
-        //             allowTrailingCommas: true,
-        //             allowTemplateLiterals: true
-        //         }
-        //     ]
-        // }
-    },
+    // {
+    //     files: [
+    //         '*.json',
+    //         '*.json5'
+    //     ],
+    //     languageOptions: {
+    //         parser: jsonPlugin,
+    //         parserOptions: {
+    //             jsonSyntax: 'JSON'
+    //         }
+    //     },
+    //     plugins: {
+    //         json: jsonPlugin
+    //     },
+    //     rules: {
+    //         'json/no-dupe-keys': 'error',
+    //         'json/quotes': ['error', 'double', { avoidEscape: false }],
+    //         'json/quote-props': ['error', 'always', {}]
+    //         // ...jsonPlugin.configs['recommended-with-json'].rules,
+    //         // 'json/*': [
+    //         //     'error',
+    //         //     {
+    //         //         allowComments: true,
+    //         //         allowTrailingCommas: false,
+    //         //         allowTemplateLiterals: true,
+    //         //         duplicateKey: false
+    //         //     }
+    //         // ]
+    //     }
+    // },
     // Typescript and JS Linter combined (for all the main code files)
     {
         languageOptions: {

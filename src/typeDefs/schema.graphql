@@ -1,6 +1,5 @@
 # The base types are what is stored in the database, returned from queries, and after mutations are executed
 # The input types are what is used to create and update the base types
-
 type Facility {
   id: ID!
   nameEn: String!
@@ -115,7 +114,7 @@ type HealthcareProfessionalSubmission {
 }
 
 # For creating a submission. This has different fields than the Submission type
-input CreateSubmissionInput { dfasdfasdfasd
+input CreateSubmissionInput { dfasdfasdfasdjsadlfkajsdflkjsadhfalskjdfhasdlkfjahsdlkfajshdfalkjsdhfaslkdfjahsdlfkajshdflaksjdhf
   googleMapsUrl: String
   healthcareProfessionalName: String
   spokenLanguages: [Locale!]
@@ -259,7 +258,7 @@ enum OrderDirection {
   desc
 }
 
-######## -- Queries -- ############
+# ======== Queries =========
 
 type Query {
   facility(id: ID!): Facility
@@ -270,7 +269,7 @@ type Query {
   submissions(filters: SubmissionSearchFilters!): [Submission]
 }
 
-######## -- Mutations -- ############
+#======== Mutations ========
 
 type Mutation {
   createHealthcareProfessional(input: CreateHealthcareProfessionalInput!) : HealthcareProfessional
