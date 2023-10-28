@@ -1,11 +1,11 @@
 import { DocumentData, Query } from 'firebase-admin/firestore'
-import * as gqlTypes from '../typeDefs/gqlTypes'
-import * as dbSchema from '../typeDefs/dbSchema'
-import { dbInstance } from '../firebaseDb'
-import { ErrorCode, Result } from '../result'
-import { hasSpecialCharacters } from '../../utils/stringUtils'
-import { createFacility } from './facilityService'
-import { createHealthcareProfessional } from './healthcareProfessionalService'
+import * as gqlTypes from '../typeDefs/gqlTypes.js'
+import * as dbSchema from '../typeDefs/dbSchema.js'
+import { dbInstance } from '../firebaseDb.js'
+import { ErrorCode, Result } from '../result.js'
+import { hasSpecialCharacters } from '../../utils/stringUtils.js'
+import { createFacility } from './facilityService.js'
+import { createHealthcareProfessional } from './healthcareProfessionalService.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -125,13 +125,11 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
         const shouldFilterSubmissionsBySpokenLanguages = filters.spokenLanguages && filters.spokenLanguages.length
 
         if (shouldFilterSubmissionsBySpokenLanguages) {
-            const requiredLanguages = filters.spokenLanguages?.map(
-                (lang: { languageCode_iso639_3: string }) => lang.languageCode_iso639_3
-            )
+            const requiredLanguages = filters.spokenLanguages
 
             const filteredSubmissions = submissions.filter(sub =>
                 requiredLanguages?.every((reqLang: string) =>
-                    sub.spokenLanguages.some(subLang => subLang?.languageCode_iso639_3 === reqLang)))
+                    sub.spokenLanguages.some(subLang => subLang === reqLang)))
 
             return {
                 hasErrors: false,
@@ -172,7 +170,7 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
             return validationResults as Result<gqlTypes.Submission>
         }
 
-        const spokenLanguagesResult = mapAndValidateSpokenLanguages(submissionInput.spokenLanguages)
+        const spokenLanguagesResult = validateSpokenLanguages(submissionInput.spokenLanguages)
 
         if (spokenLanguagesResult.hasErrors) {
             return {
@@ -181,8 +179,6 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
                 errors: spokenLanguagesResult.errors
             }
         }
-
-        submissionInput.spokenLanguages = spokenLanguagesResult.data
 
         const submissionRef = dbInstance.collection('submissions').doc()
         const newSubmissionId = submissionRef.id
@@ -361,7 +357,7 @@ function convertToDbSubmission(input: gqlTypes.CreateSubmissionInput, newId: str
         id: newId,
         googleMapsUrl: input.googleMapsUrl as string,
         healthcareProfessionalName: input.healthcareProfessionalName as string,
-        spokenLanguages: input.spokenLanguages?.filter(lang => lang !== null) as dbSchema.SpokenLanguage[],
+        spokenLanguages: input.spokenLanguages as gqlTypes.Locale[],
         isUnderReview: false,
         isApproved: false,
         isRejected: false,
@@ -437,48 +433,8 @@ const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): R
     return validatedSubmissionResult
 }
 
-// export function convertGqlSubmissionUpdateToDbSubmissionUpdate(submission: Partial<gqlTypes.Submission>):
-//     Partial<dbSchema.Submission> {
-//     const { spokenLanguages, ...remainingSubmissionFields } = submission
-
-//     if (!spokenLanguages) {
-//         return {
-//             facility: remainingSubmissionFields.facility ? remainingSubmissionFields.facility : undefined,
-//             ...remainingSubmissionFields
-//         }
-//     }
-
-//     return {
-//         ...remainingSubmissionFields,
-//         spokenLanguages: spokenLanguages
-//             .filter((lang): lang is gqlTypes.SpokenLanguage =>
-//                 lang !== null && lang !== undefined &&
-//                 typeof lang.languageCode_iso639_3 === 'string' &&
-//                 typeof lang.nameJa === 'string' &&
-//                 typeof lang.nameEn === 'string' &&
-//                 typeof lang.nameNative === 'string')
-//             .map((lang): dbSchema.SpokenLanguage => ({
-//                 languageCode_iso639_3: lang.languageCode_iso639_3 as string,
-//                 nameJa: lang.nameJa as string,
-//                 nameEn: lang.nameEn as string,
-//                 nameNative: lang.nameNative as string
-//             }))
-//     }
-// }
-
-// function gqlSpokenLanguageToDbSpokenLanguage(lang: gqlTypes.SpokenLanguage):
-//     dbSchema.SpokenLanguage {
-//     return {
-//         languageCode_iso639_3: lang.languageCode_iso639_3 as string,
-//         nameJa: lang.nameJa as string,
-//         nameEn: lang.nameEn as string,
-//         nameNative: lang.nameNative as string
-//     }
-// }
-
-export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLanguage[] | undefined | null):
-    Result<dbSchema.SpokenLanguage[]> => {
-    const validatedSpokenLanguagesResults: Result<dbSchema.SpokenLanguage[]> = {
+export const validateSpokenLanguages = (spokenLanguages: gqlTypes.Locale[] | undefined | null): Result<unknown> => {
+    const validatedSpokenLanguagesResults: Result<unknown> = {
         data: [],
         hasErrors: false,
         errors: []
@@ -494,31 +450,17 @@ export const mapAndValidateSpokenLanguages = (spokenLanguages: gqlTypes.SpokenLa
         return validatedSpokenLanguagesResults
     }
 
-    const validatedLanguages = spokenLanguages
-        .filter(lang => lang &&
-            lang.languageCode_iso639_3?.trim() &&
-            lang.nameJa?.trim() &&
-            lang.nameEn?.trim() &&
-            lang.nameNative?.trim())
-        .map(lang => ({
-            languageCode_iso639_3: lang.languageCode_iso639_3,
-            nameJa: lang.nameJa?.trim() as string,
-            nameEn: lang.nameEn?.trim() as string,
-            nameNative: lang.nameNative?.trim() as string
-        }))
-
-    if (validatedLanguages.length < 1) {
+    if (spokenLanguages.length < 1) {
         validatedSpokenLanguagesResults.hasErrors = true
         validatedSpokenLanguagesResults.errors?.push({
             field: 'spokenLanguages',
-            errorCode: ErrorCode.MISSING_INPUT,
+            errorCode: ErrorCode.MIN_LIMIT,
             httpStatus: 400
         })
 
         return validatedSpokenLanguagesResults
     }
 
-    validatedSpokenLanguagesResults.data = validatedLanguages
     return validatedSpokenLanguagesResults
 }
 

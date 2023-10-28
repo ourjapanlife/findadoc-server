@@ -1,9 +1,9 @@
 import { DocumentData, Query } from 'firebase-admin/firestore'
-import * as gqlTypes from '../typeDefs/gqlTypes'
-import * as dbSchema from '../typeDefs/dbSchema'
-import { ErrorCode, Result } from '../result'
-import { dbInstance } from '../firebaseDb'
-import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils'
+import * as gqlTypes from '../typeDefs/gqlTypes.js'
+import * as dbSchema from '../typeDefs/dbSchema.js'
+import { ErrorCode, Result } from '../result.js'
+import { dbInstance } from '../firebaseDb.js'
+import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
 
 /**
  * Gets the Facility from the database that matches on the id.

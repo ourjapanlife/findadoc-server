@@ -1,13 +1,13 @@
-import * as gqlTypes from '../typeDefs/gqlTypes'
+import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { faker } from '@faker-js/faker'
-import { generateRandomCreateHealthcareProfessionalInputArray, generateSpokenLanguage } from './fakeHealthcareProfessionals'
-import { generateRandomCreateFacilityInput } from './fakeFacilities'
+import { generateRandomCreateHealthcareProfessionalInputArray, generateSpokenLanguages } from './fakeHealthcareProfessionals.js'
+import { generateRandomCreateFacilityInput } from './fakeFacilities.js'
 
 export function generateRandomCreateSubmissionInput(): gqlTypes.CreateSubmissionInput {
     return {
         googleMapsUrl: faker.internet.url(),
         healthcareProfessionalName: faker.person.fullName(),
-        spokenLanguages: faker.helpers.multiple(generateSpokenLanguage, { count: 2 })
+        spokenLanguages: generateSpokenLanguages({ count: 2 })
     }
 }
 
@@ -24,7 +24,7 @@ export function generateRandomUpdateSubmissionInput(
     return {
         googleMapsUrl: faker.internet.url(),
         healthcareProfessionalName: faker.person.fullName(),
-        spokenLanguages: faker.helpers.multiple(generateSpokenLanguage, { count: 2 }),
+        spokenLanguages: generateSpokenLanguages({ count: 2 }),
         facility: generateRandomCreateFacilityInput(),
         healthcareProfessionals: generateRandomCreateHealthcareProfessionalInputArray(),
         isApproved: isApproved,

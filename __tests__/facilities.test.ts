@@ -1,13 +1,13 @@
-import { expect } from '@jest/globals'
-import resolvers from '../src/resolvers'
-import loadSchema from '../src/schema'
 import request from 'supertest'
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
-import * as gqlType from '../src/typeDefs/gqlTypes'
-import { gqlMutation, gqlRequest } from '../utils/gqlTool'
-import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities'
+import { expect } from '@jest/globals'
+import resolvers from '../src/resolvers.js'
+import loadSchema from '../src/schema.js'
+import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
+import * as gqlType from '../src/typeDefs/gqlTypes.js'
+import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
+import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
 
 describe('createFacility', () => {
     let url: string

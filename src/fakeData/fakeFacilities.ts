@@ -1,4 +1,4 @@
-import * as gqlTypes from '../typeDefs/gqlTypes'
+import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { faker, fakerJA } from '@faker-js/faker'
 
 export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: string[])

@@ -1,4 +1,4 @@
-import * as gqlType from './gqlTypes'
+import * as gqlType from './gqlTypes.js'
 
 //While it seems most of these types are identical to the gql types, they are not always identical.
 //For example, some fields need to be hidden or obfuscated in the public gql types. (like a password field)

@@ -1,8 +1,8 @@
 import admin from 'firebase-admin'
 import { initializeApp, cert, applicationDefault } from 'firebase-admin/app'
-import { envVariables } from '../utils/environmentVariables'
-import { seedDatabase } from '../utils/databaseSeedTool'
 import { Firestore } from 'firebase-admin/firestore'
+import { envVariables } from '../utils/environmentVariables.js'
+import { seedDatabase } from '../utils/databaseSeedTool.js'
 
 const isTestingEnvironment = envVariables.isTestingEnvironment()
 const isProduction = envVariables.isProduction()

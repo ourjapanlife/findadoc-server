@@ -1,17 +1,17 @@
 import { expect } from '@jest/globals'
-import resolvers from '../src/resolvers'
-import loadSchema from '../src/schema'
 import request from 'supertest'
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 import { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing'
 import fs from 'fs'
-import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions'
-import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes'
-import { Error, ErrorCode } from '../src/result'
-import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals'
-import { gqlRequest } from '../utils/gqlTool'
+import resolvers from '../src/resolvers.js'
+import loadSchema from '../src/schema.js'
+import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
+import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions.js'
+import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
+import { Error, ErrorCode } from '../src/result.js'
+import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
+import { gqlRequest } from '../utils/gqlTool.js'
 
 describe('createSubmission', () => {
     let url: string
@@ -477,9 +477,9 @@ const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
     }
 }`
 
-const searchSubmissionsQuery = `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
-    submissions(filters: $filters) {
-        id
+const searchSubmissionsQuery = /* GraphQL */ `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
+    submissionszzzzzzz(filters: $filters) {
+        idzzzzzzzz
         googleMapsUrl
         healthcareProfessionalName
         isApproved

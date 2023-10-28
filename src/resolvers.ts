@@ -1,9 +1,9 @@
 import { GraphQLError } from 'graphql'
-import * as facilityService from './services/facilityService'
-import * as healthcareProfessionalService from './services/healthcareProfessionalService'
-import * as gqlType from './typeDefs/gqlTypes'
-import * as submissionService from './services/submissionService'
-import { Result } from './result'
+import * as facilityService from './services/facilityService.js'
+import * as healthcareProfessionalService from './services/healthcareProfessionalService.js'
+import * as gqlType from './typeDefs/gqlTypes.js'
+import * as submissionService from './services/submissionService.js'
+import { Result } from './result.js'
 
 const resolvers = {
     Query: {

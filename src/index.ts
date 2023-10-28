@@ -1,10 +1,10 @@
 import { ApolloServer, BaseContext, GraphQLRequestContext } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
-import loadSchema from './schema'
-import resolvers from './resolvers'
-import { initiatilizeFirebaseInstance } from './firebaseDb'
-import { envVariables } from '../utils/environmentVariables'
-import { Error } from './result'
+import loadSchema from './schema.js'
+import resolvers from './resolvers.js'
+import { initiatilizeFirebaseInstance } from './firebaseDb.js'
+import { envVariables } from '../utils/environmentVariables.js'
+import { Error } from './result.js'
 
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
 

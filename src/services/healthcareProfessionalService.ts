@@ -1,8 +1,8 @@
 import * as firebase from 'firebase-admin/firestore'
-import * as gqlTypes from '../typeDefs/gqlTypes'
-import * as dbSchema from '../typeDefs/dbSchema'
-import { ErrorCode, Result } from '../result'
-import { dbInstance } from '../firebaseDb'
+import * as gqlTypes from '../typeDefs/gqlTypes.js'
+import * as dbSchema from '../typeDefs/dbSchema.js'
+import { ErrorCode, Result } from '../result.js'
+import { dbInstance } from '../firebaseDb.js'
 
 export async function getHealthcareProfessionalById(id: string): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {

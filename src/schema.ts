@@ -1,5 +1,4 @@
 import { gql } from 'graphql-tag'
-
 import fs from 'fs'
 import { DocumentNode } from 'graphql'
 import path from 'path'
