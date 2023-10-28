@@ -36,8 +36,8 @@ input FacilitySearchFilters {
 
 type HealthcareProfessional {
   id: ID!
-  names: [LocaleName!]!
-  spokenLanguages: [SpokenLanguage!]!
+  names: [LocalizedName!]!
+  spokenLanguages: [Locale!]!
   degrees: [Degree!]!
   specialties: [Specialty!]!
   acceptedInsurance: [Insurance!]!
@@ -47,8 +47,8 @@ type HealthcareProfessional {
 }
 
 input CreateHealthcareProfessionalInput {
-  names: [LocaleNameInput!]!
-  spokenLanguages: [SpokenLanguageInput!]
+  names: [LocalizedNameInput!]!
+  spokenLanguages: [Locale!]
   degrees: [DegreeInput!]
   specialties: [SpecialtyInput!]
   acceptedInsurance: [Insurance!]
@@ -56,8 +56,8 @@ input CreateHealthcareProfessionalInput {
 }
 
 input UpdateHealthcareProfessionalInput {
-  names: [LocaleNameInput!]
-  spokenLanguages: [SpokenLanguageInput!]
+  names: [LocalizedNameInput!]
+  spokenLanguages: [Locale!]
   degrees: [DegreeInput!]
   specialties: [SpecialtyInput!]
   acceptedInsurance: [Insurance!]
@@ -65,8 +65,8 @@ input UpdateHealthcareProfessionalInput {
 }
 
 input HealthcareProfessionalSearchFilters {
-  names: [LocaleNameInput!]
-  spokenLanguages: [SpokenLanguageInput!]
+  names: [LocalizedName!]
+  spokenLanguages: [Locale!]
   degrees: [DegreeInput!]
   specialties: [SpecialtyInput!]
   acceptedInsurance: [Insurance!]
@@ -81,7 +81,7 @@ type Submission {
   id: ID!
   googleMapsUrl: String!
   healthcareProfessionalName: String!
-  spokenLanguages: [SpokenLanguage!]!
+  spokenLanguages: [Locale!]!
   facility: FacilitySubmission
   healthcareProfessionals: [HealthcareProfessionalSubmission!]
   isUnderReview: Boolean!
@@ -101,24 +101,24 @@ type FacilitySubmission {
 
 type HealthcareProfessionalSubmission {
   id: ID
-  names: [LocaleName!]!
-  spokenLanguages: [SpokenLanguage!]!
+  names: [LocalizedName!]!
+  spokenLanguages: [Locale!]!
   degrees: [Degree!]
   specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   facilityIds: [ID!]!
 }
 
-input CreateSubmissionInput {
+input CreateSubmissionInput { dfasdfasdfasd
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput!]
+  spokenLanguages: [Locale!]
 }
 
 input UpdateSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput!]
+  spokenLanguages: [Locale!]
   facility: CreateFacilityInput
   healthcareProfessionals: [CreateHealthcareProfessionalInput!]
   isUnderReview: Boolean
@@ -129,7 +129,7 @@ input UpdateSubmissionInput {
 input SubmissionSearchFilters {
   googleMapsUrl: String
   healthcareProfessionalName: String
-  spokenLanguages: [SpokenLanguageInput!]
+  spokenLanguages: [Locale!]
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
@@ -153,6 +153,24 @@ enum RelationshipAction {
   CREATE
   UPDATE
   DELETE
+}
+
+enum Locale {
+  en_US
+  ja_JP
+}
+
+type LocalizedName {
+  firstName: String!
+  middleName: String
+  lastName: String!
+  locale: Locale! 
+}
+input LocalizedNameInput {
+  firstName: String!
+  middleName: String
+  lastName: String!
+  locale: Locale!
 }
 
 type Contact {
@@ -193,24 +211,6 @@ input PhysicalAddressInput {
   addressLine2Ja: String!
 }
 
-type LocaleName {
-  lastName: String!
-  firstName: String!
-  middleName: String!
-  locale: Locale! 
-}
-input LocaleNameInput {
-  lastName: String!
-  firstName: String!
-  middleName: String!
-  locale: Locale! 
-}
-
-enum Locale {
-  ENGLISH
-  JAPANESE
-}
-
 type Specialty {
   names: [SpecialtyName!]!
 }
@@ -225,24 +225,6 @@ type SpecialtyName {
 input SpecialtyNameInput {
   name: String!
   locale: Locale!
-}
-
-type SpokenLanguage {
-  languageCode_iso639_3: languageCode_iso639_3!
-  nameJa: String!
-  nameEn: String!
-  nameNative: String!
-}
-input SpokenLanguageInput {
-  languageCode_iso639_3: languageCode_iso639_3!
-  nameJa: String!
-  nameEn: String!
-  nameNative: String!
-}
-
-enum languageCode_iso639_3 {
-  eng
-  jpn
 }
 
 type Degree {

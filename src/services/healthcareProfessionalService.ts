@@ -74,9 +74,9 @@ export async function createHealthcareProfessional(
             id: healthcareProfessionalRef.id,
             acceptedInsurance: input.acceptedInsurance as gqlTypes.Insurance[],
             degrees: input.degrees as dbSchema.Degree[],
-            names: input.names as dbSchema.LocaleName[],
+            names: input.names as dbSchema.LocalizedName[],
             specialties: input.specialties as dbSchema.Specialty[],
-            spokenLanguages: input.spokenLanguages as dbSchema.SpokenLanguage[],
+            spokenLanguages: input.spokenLanguages as gqlTypes.Locale[],
             facilityIds: input.facilityIds ?? [] as string[],
             createdDate: new Date().toISOString(),
             updatedDate: new Date().toISOString()
@@ -357,7 +357,10 @@ function validateDegrees(
     //TODO validate each degree
 }
 
-function validateNames(names: gqlTypes.LocaleNameInput[] | undefined | null, validationResults: Result<unknown>): void {
+function validateNames(
+    names: gqlTypes.LocalizedNameInput[] | undefined | null,
+    validationResults: Result<unknown>
+): void {
     if (!names) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
@@ -430,10 +433,10 @@ function validateInsurance(
 }
 
 function validateSpokenLanguages(
-    spokenLanguages: gqlTypes.SpokenLanguageInput[] | undefined | null,
+    spokenLanguages: gqlTypes.Locale[] | undefined | null,
     validationResults: Result<unknown>
 ): void {
-    if (!spokenLanguages) {
+    if (!spokenLanguages || spokenLanguages.length < 1) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'spokenLanguages',
@@ -442,7 +445,7 @@ function validateSpokenLanguages(
         })
     }
 
-    if (spokenLanguages && spokenLanguages.length > 16) {
+    if (spokenLanguages && spokenLanguages.length > 32) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'spokenLanguages',

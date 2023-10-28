@@ -134,18 +134,13 @@ const createHealthcareProfessionalMutation = `mutation test_createHealthcareProf
             nameEn
             abbreviation
         }
-        spokenLanguages {
-            languageCode_iso639_3
-            nameJa
-            nameEn
-            nameNative
-        }
         specialties {
             names {
                 name
                 locale
             }
         }
+        spokenLanguages
         acceptedInsurance
         createdDate
         updatedDate
@@ -166,18 +161,13 @@ const getHealthcareProfessionalByIdQuery = `query test_getHealthcareProfessional
             nameEn
             abbreviation
         }
-        spokenLanguages {
-            languageCode_iso639_3
-            nameJa
-            nameEn
-            nameNative
-        }
         specialties {
             names {
                 name
                 locale
             }
         }
+        spokenLanguages
         acceptedInsurance
         createdDate
         updatedDate

@@ -37,6 +37,22 @@ module.exports = {
                     './tsconfig.json'
                 ]
             }
+        },
+        {
+            files: ['*.js', '*.ts'],
+            processor: '@graphql-eslint/graphql'
+        },
+        {
+            files: ['*.graphql'],
+            // parser: '@graphql-eslint/eslint-plugin',
+            // plugins: ['@graphql-eslint'],
+            extends: ['plugin:@graphql-eslint/schema-recommended'],
+            rules: {
+                '@graphql-eslint/no-unreachable-types': 'error'
+            },
+            parserOptions: {
+                schema: './typeDefs/schema.graphql'
+            }
         }
     ],
     ignorePatterns: [

@@ -43,6 +43,7 @@
         "@graphql-codegen/cli": "^5.0.0",
         "@graphql-codegen/typescript": "^4.0.1",
         "@graphql-codegen/typescript-resolvers": "^4.0.1",
+        "@graphql-eslint/eslint-plugin": "^3.20.1",
         "@jest/globals": "^29.6.2",
         "@types/jest": "^29.5.4",
         "@types/node": "^20.5.9",

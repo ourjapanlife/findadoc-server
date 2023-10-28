@@ -13,11 +13,10 @@ export type Facility = Omit<gqlType.Facility, 'contact'> & {
 
 export type HealthcareProfessional =
     Omit<gqlType.HealthcareProfessional,
-        'names' | 'specialties' | 'spokenLanguages' | 'degrees' | 'acceptedInsurance'>
+        'names' | 'specialties' | 'degrees' | 'acceptedInsurance'>
     & {
-        names: LocaleName[]
+        names: LocalizedName[]
         specialties: Specialty[]
-        spokenLanguages: SpokenLanguage[]
         degrees: Degree[]
         acceptedInsurance: Insurance[]
     }
@@ -28,9 +27,8 @@ export type Submission = Omit<gqlType.Submission, 'facility' | 'healthcareProfes
 }
 
 export type Contact = gqlType.Contact
-export type LocaleName = gqlType.LocaleName
+export type LocalizedName = gqlType.LocalizedName
 export type Specialty = gqlType.Specialty
 export type SpecialtyName = gqlType.SpecialtyName
-export type SpokenLanguage = gqlType.SpokenLanguage
 export type Degree = gqlType.Degree
 export type Insurance = gqlType.Insurance

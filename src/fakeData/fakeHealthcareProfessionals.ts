@@ -7,10 +7,10 @@ export function generateRandomCreateHealthcareProfessionalInput(
     : gqlTypes.CreateHealthcareProfessionalInput {
     return {
         facilityIds: facilityIds,
-        names: faker.helpers.multiple(generateLocaleName, { count: 2 }),
-        degrees: faker.helpers.multiple(generateDegree, { count: 1 }),
+        names: faker.helpers.multiple(generateLocalizedNameInput, { count: 2 }),
+        degrees: faker.helpers.multiple(generateDegreeInput, { count: 1 }),
         specialties: faker.helpers.multiple(generateSpecialty, { count: 1 }),
-        spokenLanguages: faker.helpers.multiple(generateSpokenLanguage, { count: 1 }),
+        spokenLanguages: generateSpokenLanguages(),
         acceptedInsurance: [faker.helpers.enumValue(gqlTypes.Insurance)]
     }
 }
@@ -22,7 +22,7 @@ export function generateRandomCreateHealthcareProfessionalInputArray({ count = 5
     })
 }
 
-function generateLocaleName(): gqlTypes.LocaleNameInput {
+function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
     return {
         firstName: faker.person.firstName(),
         middleName: faker.person.middleName(),
@@ -31,7 +31,7 @@ function generateLocaleName(): gqlTypes.LocaleNameInput {
     }
 }
 
-function generateDegree(): gqlTypes.DegreeInput {
+function generateDegreeInput(): gqlTypes.DegreeInput {
     return {
         nameEn: faker.person.jobTitle(),
         nameJa: fakerJA.person.jobTitle(),
@@ -44,7 +44,7 @@ function generateSpecialty(): gqlTypes.SpecialtyInput {
         const locale = faker.helpers.enumValue(gqlTypes.Locale)
 
         return {
-            name: locale == gqlTypes.Locale.English ? faker.person.jobDescriptor() : fakerJA.person.jobDescriptor(),
+            name: locale == gqlTypes.Locale.EnUs ? faker.person.jobDescriptor() : fakerJA.person.jobDescriptor(),
             locale: locale
         }
     }
@@ -54,18 +54,15 @@ function generateSpecialty(): gqlTypes.SpecialtyInput {
     }
 }
 
-export function generateSpokenLanguage({ onlyEnglish = false, onlyJapanese = false } = {})
-    : gqlTypes.SpokenLanguageInput {
-    const language = onlyEnglish
-        ? gqlTypes.LanguageCode_Iso639_3.Eng
-        : onlyJapanese
-            ? gqlTypes.LanguageCode_Iso639_3.Jpn
-            : faker.helpers.enumValue(gqlTypes.LanguageCode_Iso639_3)
-
-    return {
-        nameEn: language == gqlTypes.LanguageCode_Iso639_3.Eng ? 'English' : 'Japanese',
-        nameJa: language == gqlTypes.LanguageCode_Iso639_3.Eng ? '英語' : '日本語',
-        nameNative: language == gqlTypes.LanguageCode_Iso639_3.Eng ? 'English' : '日本語',
-        languageCode_iso639_3: faker.helpers.enumValue(gqlTypes.LanguageCode_Iso639_3)
-    }
+export function generateSpokenLanguages({ count = 0, onlyEnglish = false } = {}): gqlTypes.Locale[] {
+    return onlyEnglish
+        ? [gqlTypes.Locale.EnUs]
+        : faker.helpers.multiple(
+            () => faker.helpers.enumValue(gqlTypes.Locale),
+            {
+                count: count
+                    ? count
+                    : faker.number.int({ min: 1, max: 2 })
+            }
+        )
 }

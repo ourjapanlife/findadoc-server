@@ -44,15 +44,15 @@ export type CreateHealthcareProfessionalInput = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
   degrees?: InputMaybe<Array<DegreeInput>>;
   facilityIds: Array<Scalars['ID']['input']>;
-  names: Array<LocaleNameInput>;
+  names: Array<LocalizedNameInput>;
   specialties?: InputMaybe<Array<SpecialtyInput>>;
-  spokenLanguages?: InputMaybe<Array<SpokenLanguageInput>>;
+  spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
 export type CreateSubmissionInput = {
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
-  spokenLanguages?: InputMaybe<Array<SpokenLanguageInput>>;
+  spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
 export type Degree = {
@@ -107,9 +107,9 @@ export type HealthcareProfessional = {
   degrees: Array<Degree>;
   facilityIds: Array<Scalars['ID']['output']>;
   id: Scalars['ID']['output'];
-  names: Array<LocaleName>;
+  names: Array<LocalizedName>;
   specialties: Array<Specialty>;
-  spokenLanguages: Array<SpokenLanguage>;
+  spokenLanguages: Array<Locale>;
   updatedDate: Scalars['String']['output'];
 };
 
@@ -118,11 +118,11 @@ export type HealthcareProfessionalSearchFilters = {
   createdDate?: InputMaybe<Scalars['String']['input']>;
   degrees?: InputMaybe<Array<DegreeInput>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
-  names?: InputMaybe<Array<LocaleNameInput>>;
+  names?: InputMaybe<Array<LocalizedName>>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<OrderBy>>;
   specialties?: InputMaybe<Array<SpecialtyInput>>;
-  spokenLanguages?: InputMaybe<Array<SpokenLanguageInput>>;
+  spokenLanguages?: InputMaybe<Array<Locale>>;
   updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -132,9 +132,9 @@ export type HealthcareProfessionalSubmission = {
   degrees?: Maybe<Array<Degree>>;
   facilityIds: Array<Scalars['ID']['output']>;
   id?: Maybe<Scalars['ID']['output']>;
-  names: Array<LocaleName>;
+  names: Array<LocalizedName>;
   specialties?: Maybe<Array<Specialty>>;
-  spokenLanguages: Array<SpokenLanguage>;
+  spokenLanguages: Array<Locale>;
 };
 
 export enum Insurance {
@@ -144,23 +144,23 @@ export enum Insurance {
 }
 
 export enum Locale {
-  English = 'ENGLISH',
-  Japanese = 'JAPANESE'
+  EnUs = 'en_US',
+  JaJp = 'ja_JP'
 }
 
-export type LocaleName = {
-  __typename?: 'LocaleName';
+export type LocalizedName = {
+  __typename?: 'LocalizedName';
   firstName: Scalars['String']['output'];
   lastName: Scalars['String']['output'];
   locale: Locale;
-  middleName: Scalars['String']['output'];
+  middleName?: Maybe<Scalars['String']['output']>;
 };
 
-export type LocaleNameInput = {
+export type LocalizedNameInput = {
   firstName: Scalars['String']['input'];
   lastName: Scalars['String']['input'];
   locale: Locale;
-  middleName: Scalars['String']['input'];
+  middleName?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Mutation = {
@@ -336,21 +336,6 @@ export type SpecialtyNameInput = {
   name: Scalars['String']['input'];
 };
 
-export type SpokenLanguage = {
-  __typename?: 'SpokenLanguage';
-  languageCode_iso639_3: LanguageCode_Iso639_3;
-  nameEn: Scalars['String']['output'];
-  nameJa: Scalars['String']['output'];
-  nameNative: Scalars['String']['output'];
-};
-
-export type SpokenLanguageInput = {
-  languageCode_iso639_3: LanguageCode_Iso639_3;
-  nameEn: Scalars['String']['input'];
-  nameJa: Scalars['String']['input'];
-  nameNative: Scalars['String']['input'];
-};
-
 export type Submission = {
   __typename?: 'Submission';
   createdDate: Scalars['String']['output'];
@@ -362,7 +347,7 @@ export type Submission = {
   isApproved: Scalars['Boolean']['output'];
   isRejected: Scalars['Boolean']['output'];
   isUnderReview: Scalars['Boolean']['output'];
-  spokenLanguages: Array<SpokenLanguage>;
+  spokenLanguages: Array<Locale>;
   updatedDate: Scalars['String']['output'];
 };
 
@@ -376,7 +361,7 @@ export type SubmissionSearchFilters = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<OrderBy>>;
-  spokenLanguages?: InputMaybe<Array<SpokenLanguageInput>>;
+  spokenLanguages?: InputMaybe<Array<Locale>>;
   updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -391,9 +376,9 @@ export type UpdateHealthcareProfessionalInput = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
   degrees?: InputMaybe<Array<DegreeInput>>;
   facilityIds?: InputMaybe<Array<RelationshipInput>>;
-  names?: InputMaybe<Array<LocaleNameInput>>;
+  names?: InputMaybe<Array<LocalizedNameInput>>;
   specialties?: InputMaybe<Array<SpecialtyInput>>;
-  spokenLanguages?: InputMaybe<Array<SpokenLanguageInput>>;
+  spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
 export type UpdateSubmissionInput = {
@@ -404,13 +389,8 @@ export type UpdateSubmissionInput = {
   isApproved?: InputMaybe<Scalars['Boolean']['input']>;
   isRejected?: InputMaybe<Scalars['Boolean']['input']>;
   isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
-  spokenLanguages?: InputMaybe<Array<SpokenLanguageInput>>;
+  spokenLanguages?: InputMaybe<Array<Locale>>;
 };
-
-export enum LanguageCode_Iso639_3 {
-  Eng = 'eng',
-  Jpn = 'jpn'
-}
 
 
 
@@ -501,8 +481,8 @@ export type ResolversTypes = {
   Insurance: Insurance;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Locale: Locale;
-  LocaleName: ResolverTypeWrapper<LocaleName>;
-  LocaleNameInput: LocaleNameInput;
+  LocalizedName: ResolverTypeWrapper<LocalizedName>;
+  LocalizedNameInput: LocalizedNameInput;
   Mutation: ResolverTypeWrapper<{}>;
   OrderBy: OrderBy;
   OrderDirection: OrderDirection;
@@ -516,15 +496,12 @@ export type ResolversTypes = {
   SpecialtyInput: SpecialtyInput;
   SpecialtyName: ResolverTypeWrapper<SpecialtyName>;
   SpecialtyNameInput: SpecialtyNameInput;
-  SpokenLanguage: ResolverTypeWrapper<SpokenLanguage>;
-  SpokenLanguageInput: SpokenLanguageInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
   SubmissionSearchFilters: SubmissionSearchFilters;
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
   UpdateSubmissionInput: UpdateSubmissionInput;
-  languageCode_iso639_3: LanguageCode_Iso639_3;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -545,8 +522,8 @@ export type ResolversParentTypes = {
   HealthcareProfessionalSubmission: HealthcareProfessionalSubmission;
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
-  LocaleName: LocaleName;
-  LocaleNameInput: LocaleNameInput;
+  LocalizedName: LocalizedName;
+  LocalizedNameInput: LocalizedNameInput;
   Mutation: {};
   OrderBy: OrderBy;
   PhysicalAddress: PhysicalAddress;
@@ -558,8 +535,6 @@ export type ResolversParentTypes = {
   SpecialtyInput: SpecialtyInput;
   SpecialtyName: SpecialtyName;
   SpecialtyNameInput: SpecialtyNameInput;
-  SpokenLanguage: SpokenLanguage;
-  SpokenLanguageInput: SpokenLanguageInput;
   String: Scalars['String']['output'];
   Submission: Submission;
   SubmissionSearchFilters: SubmissionSearchFilters;
@@ -610,9 +585,9 @@ export type HealthcareProfessionalResolvers<ContextType = any, ParentType extend
   degrees?: Resolver<Array<ResolversTypes['Degree']>, ParentType, ContextType>;
   facilityIds?: Resolver<Array<ResolversTypes['ID']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  names?: Resolver<Array<ResolversTypes['LocaleName']>, ParentType, ContextType>;
+  names?: Resolver<Array<ResolversTypes['LocalizedName']>, ParentType, ContextType>;
   specialties?: Resolver<Array<ResolversTypes['Specialty']>, ParentType, ContextType>;
-  spokenLanguages?: Resolver<Array<ResolversTypes['SpokenLanguage']>, ParentType, ContextType>;
+  spokenLanguages?: Resolver<Array<ResolversTypes['Locale']>, ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -622,17 +597,17 @@ export type HealthcareProfessionalSubmissionResolvers<ContextType = any, ParentT
   degrees?: Resolver<Maybe<Array<ResolversTypes['Degree']>>, ParentType, ContextType>;
   facilityIds?: Resolver<Array<ResolversTypes['ID']>, ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  names?: Resolver<Array<ResolversTypes['LocaleName']>, ParentType, ContextType>;
+  names?: Resolver<Array<ResolversTypes['LocalizedName']>, ParentType, ContextType>;
   specialties?: Resolver<Maybe<Array<ResolversTypes['Specialty']>>, ParentType, ContextType>;
-  spokenLanguages?: Resolver<Array<ResolversTypes['SpokenLanguage']>, ParentType, ContextType>;
+  spokenLanguages?: Resolver<Array<ResolversTypes['Locale']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type LocaleNameResolvers<ContextType = any, ParentType extends ResolversParentTypes['LocaleName'] = ResolversParentTypes['LocaleName']> = {
+export type LocalizedNameResolvers<ContextType = any, ParentType extends ResolversParentTypes['LocalizedName'] = ResolversParentTypes['LocalizedName']> = {
   firstName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   lastName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   locale?: Resolver<ResolversTypes['Locale'], ParentType, ContextType>;
-  middleName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  middleName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -687,14 +662,6 @@ export type SpecialtyNameResolvers<ContextType = any, ParentType extends Resolve
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type SpokenLanguageResolvers<ContextType = any, ParentType extends ResolversParentTypes['SpokenLanguage'] = ResolversParentTypes['SpokenLanguage']> = {
-  languageCode_iso639_3?: Resolver<ResolversTypes['languageCode_iso639_3'], ParentType, ContextType>;
-  nameEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  nameNative?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
 export type SubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Submission'] = ResolversParentTypes['Submission']> = {
   createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   facility?: Resolver<Maybe<ResolversTypes['FacilitySubmission']>, ParentType, ContextType>;
@@ -705,7 +672,7 @@ export type SubmissionResolvers<ContextType = any, ParentType extends ResolversP
   isApproved?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isRejected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isUnderReview?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  spokenLanguages?: Resolver<Array<ResolversTypes['SpokenLanguage']>, ParentType, ContextType>;
+  spokenLanguages?: Resolver<Array<ResolversTypes['Locale']>, ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -717,14 +684,13 @@ export type Resolvers<ContextType = any> = {
   FacilitySubmission?: FacilitySubmissionResolvers<ContextType>;
   HealthcareProfessional?: HealthcareProfessionalResolvers<ContextType>;
   HealthcareProfessionalSubmission?: HealthcareProfessionalSubmissionResolvers<ContextType>;
-  LocaleName?: LocaleNameResolvers<ContextType>;
+  LocalizedName?: LocalizedNameResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   PhysicalAddress?: PhysicalAddressResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Relationship?: RelationshipResolvers<ContextType>;
   Specialty?: SpecialtyResolvers<ContextType>;
   SpecialtyName?: SpecialtyNameResolvers<ContextType>;
-  SpokenLanguage?: SpokenLanguageResolvers<ContextType>;
   Submission?: SubmissionResolvers<ContextType>;
 };
 

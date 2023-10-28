@@ -7,10 +7,10 @@ import { startStandaloneServer } from '@apollo/server/standalone'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
 import { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing'
 import fs from 'fs'
-import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions'
-import { CreateSubmissionInput, LanguageCode_Iso639_3, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes'
+import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions'
+import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes'
 import { Error, ErrorCode } from '../src/result'
-import { generateSpokenLanguage } from '../src/fakeData/fakeHealthcareProfessionals'
+import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals'
 import { gqlRequest } from '../utils/gqlTool'
 
 describe('createSubmission', () => {
@@ -266,7 +266,7 @@ describe('searchSubmissions', () => {
                 input: {
                     ...generateRandomCreateSubmissionInput(),
                     //we want to guarantee english is a spoken language
-                    spokenLanguages: [generateSpokenLanguage({ onlyEnglish: true })]
+                    spokenLanguages: generateSpokenLanguages({ onlyEnglish: true, count: 1 })
                 } satisfies CreateSubmissionInput
             }
         } satisfies gqlRequest
@@ -282,14 +282,7 @@ describe('searchSubmissions', () => {
             query: searchSubmissionsQuery,
             variables: {
                 filters: {
-                    spokenLanguages: [
-                        {
-                            languageCode_iso639_3: LanguageCode_Iso639_3.Eng,
-                            nameEn: 'English',
-                            nameJa: '英語',
-                            nameNative: 'English'
-                        }
-                    ]
+                    spokenLanguages: createSubmissionRequest.variables.input.spokenLanguages
                 }
             }
         } satisfies gqlRequest
@@ -475,12 +468,7 @@ const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
       id
       googleMapsUrl
       healthcareProfessionalName
-      spokenLanguages {
-        languageCode_iso639_3
-        nameJa
-        nameEn
-        nameNative
-      }
+      spokenLanguages
       isUnderReview
       isApproved
       isRejected
@@ -497,12 +485,7 @@ const searchSubmissionsQuery = `query test_searchSubmissions($filters: Submissio
         isApproved
         isRejected
         isUnderReview
-        spokenLanguages {
-            languageCode_iso639_3
-            nameEn
-            nameJa
-            nameNative
-            }
+        spokenLanguages
         createdDate
         updatedDate
     }
@@ -513,12 +496,7 @@ const createSubmissionMutation = `mutation test_createSubmission($input: CreateS
         id
         googleMapsUrl
         healthcareProfessionalName
-        spokenLanguages {
-            languageCode_iso639_3
-            nameEn
-            nameJa
-            nameNative
-        }
+        spokenLanguages
         isApproved
         isRejected
         isUnderReview
@@ -529,25 +507,20 @@ const createSubmissionMutation = `mutation test_createSubmission($input: CreateS
 
 const updateSubmissionMutation = `mutation test_updateSubmission($id: ID!, $input: UpdateSubmissionInput!) {
     updateSubmission(id: $id, input: $input) {
-      id
-      googleMapsUrl
-      healthcareProfessionalName
-      spokenLanguages {
-        languageCode_iso639_3
-        nameJa
-        nameEn
-        nameNative
-      }
-      facility {
         id
-      }
-      healthcareProfessionals {
-        id
-      }
-      isUnderReview
-      isApproved
-      isRejected
-      createdDate
-      updatedDate
+        googleMapsUrl
+        healthcareProfessionalName
+        spokenLanguages
+        facility {
+            id
+        }
+        healthcareProfessionals {
+            id
+        }
+        isUnderReview
+        isApproved
+        isRejected
+        createdDate
+        updatedDate
     }
 }`
