@@ -216,7 +216,6 @@ describe('getSubmissionById', () => {
         // Get the submission by id
         const getByIdResults = await request(url).post('/').send(getSubmissionByIdRequest)
  
-        expect(getByIdResults).toBe(1)
         expect(getByIdResults.body.errors.extensions.errors).toBeDefined()
  
         const submissionErrors = getByIdResults.body.extensions.errors as Error[]
