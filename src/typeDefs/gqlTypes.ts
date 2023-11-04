@@ -118,7 +118,7 @@ export type HealthcareProfessionalSearchFilters = {
   createdDate?: InputMaybe<Scalars['String']['input']>;
   degrees?: InputMaybe<Array<DegreeInput>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
-  names?: InputMaybe<Array<LocalizedName>>;
+  names?: InputMaybe<Array<LocalizedNameInput>>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<OrderBy>>;
   specialties?: InputMaybe<Array<SpecialtyInput>>;
@@ -300,9 +300,8 @@ export type QuerySubmissionsArgs = {
 };
 
 export type Relationship = {
-  __typename?: 'Relationship';
   action: RelationshipAction;
-  otherEntityId: Scalars['ID']['output'];
+  otherEntityId: Scalars['ID']['input'];
 };
 
 export enum RelationshipAction {
@@ -310,11 +309,6 @@ export enum RelationshipAction {
   Delete = 'DELETE',
   Update = 'UPDATE'
 }
-
-export type RelationshipInput = {
-  action: RelationshipAction;
-  otherEntityId: Scalars['ID']['input'];
-};
 
 export type Specialty = {
   __typename?: 'Specialty';
@@ -367,7 +361,7 @@ export type SubmissionSearchFilters = {
 
 export type UpdateFacilityInput = {
   contact?: InputMaybe<ContactInput>;
-  healthcareProfessionalIds?: InputMaybe<Array<RelationshipInput>>;
+  healthcareProfessionalIds?: InputMaybe<Array<Relationship>>;
   nameEn?: InputMaybe<Scalars['String']['input']>;
   nameJa?: InputMaybe<Scalars['String']['input']>;
 };
@@ -375,7 +369,7 @@ export type UpdateFacilityInput = {
 export type UpdateHealthcareProfessionalInput = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
   degrees?: InputMaybe<Array<DegreeInput>>;
-  facilityIds?: InputMaybe<Array<RelationshipInput>>;
+  facilityIds?: InputMaybe<Array<Relationship>>;
   names?: InputMaybe<Array<LocalizedNameInput>>;
   specialties?: InputMaybe<Array<SpecialtyInput>>;
   spokenLanguages?: InputMaybe<Array<Locale>>;
@@ -489,9 +483,8 @@ export type ResolversTypes = {
   PhysicalAddress: ResolverTypeWrapper<PhysicalAddress>;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: ResolverTypeWrapper<{}>;
-  Relationship: ResolverTypeWrapper<Relationship>;
+  Relationship: Relationship;
   RelationshipAction: RelationshipAction;
-  RelationshipInput: RelationshipInput;
   Specialty: ResolverTypeWrapper<Specialty>;
   SpecialtyInput: SpecialtyInput;
   SpecialtyName: ResolverTypeWrapper<SpecialtyName>;
@@ -530,7 +523,6 @@ export type ResolversParentTypes = {
   PhysicalAddressInput: PhysicalAddressInput;
   Query: {};
   Relationship: Relationship;
-  RelationshipInput: RelationshipInput;
   Specialty: Specialty;
   SpecialtyInput: SpecialtyInput;
   SpecialtyName: SpecialtyName;
@@ -645,12 +637,6 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   submissions?: Resolver<Maybe<Array<Maybe<ResolversTypes['Submission']>>>, ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
 };
 
-export type RelationshipResolvers<ContextType = any, ParentType extends ResolversParentTypes['Relationship'] = ResolversParentTypes['Relationship']> = {
-  action?: Resolver<ResolversTypes['RelationshipAction'], ParentType, ContextType>;
-  otherEntityId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
 export type SpecialtyResolvers<ContextType = any, ParentType extends ResolversParentTypes['Specialty'] = ResolversParentTypes['Specialty']> = {
   names?: Resolver<Array<ResolversTypes['SpecialtyName']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -688,7 +674,6 @@ export type Resolvers<ContextType = any> = {
   Mutation?: MutationResolvers<ContextType>;
   PhysicalAddress?: PhysicalAddressResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
-  Relationship?: RelationshipResolvers<ContextType>;
   Specialty?: SpecialtyResolvers<ContextType>;
   SpecialtyName?: SpecialtyNameResolvers<ContextType>;
   Submission?: SubmissionResolvers<ContextType>;

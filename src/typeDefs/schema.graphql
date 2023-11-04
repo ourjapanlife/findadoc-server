@@ -21,7 +21,7 @@ input UpdateFacilityInput {
   nameEn: String
   nameJa: String
   contact: ContactInput
-  healthcareProfessionalIds: [RelationshipInput!]
+  healthcareProfessionalIds: [Relationship!]
 }
 
 # You can search for facilities using any of combination these fields (AND operators)
@@ -64,12 +64,12 @@ input UpdateHealthcareProfessionalInput {
   degrees: [DegreeInput!]
   specialties: [SpecialtyInput!]
   acceptedInsurance: [Insurance!]
-  facilityIds: [RelationshipInput!]
+  facilityIds: [Relationship!]
 }
 
 # You can search for healthcare professional using any of combination these fields (AND operators)
 input HealthcareProfessionalSearchFilters {
-  names: [LocalizedName!]
+  names: [LocalizedNameInput!]
   spokenLanguages: [Locale!]
   degrees: [DegreeInput!]
   specialties: [SpecialtyInput!]
@@ -114,7 +114,7 @@ type HealthcareProfessionalSubmission {
 }
 
 # For creating a submission. This has different fields than the Submission type
-input CreateSubmissionInput { dfasdfasdfasdjsadlfkajsdflkjsadhfalskjdfhasdlkfjahsdlkfajshdfalkjsdhfaslkdfjahsdlfkajshdflaksjdhf
+input CreateSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
   spokenLanguages: [Locale!]
