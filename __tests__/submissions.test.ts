@@ -1,4 +1,4 @@
-import { expect } from '@jest/globals'
+import { expect, describe, beforeEach, beforeAll, afterAll, it } from 'vitest'
 import request from 'supertest'
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'

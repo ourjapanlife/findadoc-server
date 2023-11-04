@@ -1,7 +1,7 @@
 import request from 'supertest'
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
-import { expect } from '@jest/globals'
+import { expect, describe, beforeAll, afterAll, it } from 'vitest'
 import resolvers from '../src/resolvers.js'
 import loadSchema from '../src/schema.js'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
