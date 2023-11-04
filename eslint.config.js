@@ -47,7 +47,7 @@ export default [
         languageOptions: {
             parser: graphqlESLint,
             parserOptions: {
-                schema: gqlSchemaPath
+                schema: gqlSchemaPath                
             }
         },
         rules: {
@@ -117,9 +117,12 @@ export default [
             ...ts.configs['eslint-recommended'].rules,
             ...ts.configs.recommended.rules,
             '@typescript-eslint/no-shadow': 'error',
-
+            '@typescript-eslint/no-unused-vars': 'error',
+            
             // JS specific rules
             ...eslintJsPlugin.configs.recommended.rules,
+            // HACK: this eslint core rule is turned off so that the typescript-eslint version can be used instead
+            'no-unused-vars': 'off',
             'block-scoped-var': 'error',
             complexity: ['error', { max: 40 }],
             'consistent-return': 'error',

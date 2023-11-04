@@ -13,7 +13,7 @@ export let dbInstance: Firestore
 const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     try {
         const ref = newDbInstance.collection('facilities')
-        //eslint-disable-next-line @typescript-eslint/no-unused-vars
+        //eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
         const dbResult = await ref.limit(1).get()
 
         console.log('🔥 Firestore connection established 🔥')

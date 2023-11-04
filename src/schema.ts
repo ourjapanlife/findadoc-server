@@ -3,6 +3,12 @@ import fs from 'fs'
 import { DocumentNode } from 'graphql'
 import path from 'path'
 
+import { dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+// eslint-disable-next-line no-underscore-dangle
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
 export default function loadSchema(): DocumentNode {
     try {
         const typeString = fs.readFileSync(
