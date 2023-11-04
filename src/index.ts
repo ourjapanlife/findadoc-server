@@ -21,7 +21,12 @@ export const createApolloServer = async () => {
             ApolloServerPluginLandingPageLocalDefault(),
             {
                 async requestDidStart(requestContext: GraphQLRequestContext<BaseContext>) {
-                    console.log(`Apollo Request received:\n Query: ' + ${requestContext.request.query} \nVariables: ${JSON.stringify(requestContext.request.variables)}`)
+                    //we want to skip logging requests from the apollo query explorer internal introspection query
+                    const isApolloIntrospectionQuery = requestContext.request.query?.includes('IntrospectionQuery')
+                    
+                    if (!isApolloIntrospectionQuery) {
+                        console.log(`Apollo Request received:\n Query: ' + ${requestContext.request.query} \nVariables: ${JSON.stringify(requestContext.request.variables)}`)
+                    }
                 }
             }
         ],
