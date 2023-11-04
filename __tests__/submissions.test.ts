@@ -41,7 +41,7 @@ describe('createSubmission', () => {
         const response = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(response.body.extensions?.errors).toBeUndefined()
+        expect(response.body.errors).toBeUndefined()
 
         const originalValues = createSubmissionRequest.variables.input
         const newSubmission = response.body.data.createSubmission as Submission
@@ -58,7 +58,7 @@ describe('createSubmission', () => {
         const searchResult = await request(url).post('/').send(getSubmissionByIdRequest)
 
         //should not have errors
-        expect(searchResult.body.extensions?.errors).toBeUndefined()
+        expect(searchResult.body?.errors).toBeUndefined()
 
         const foundSubmissions = searchResult.body.data.submission as Submission
 
@@ -90,6 +90,7 @@ describe('updateSubmission', () => {
                 rules: fs.readFileSync('./firestore.rules', 'utf8')
             }
         })
+        await initiatilizeFirebaseInstance()
     })
 
     beforeEach(async () => {
@@ -112,7 +113,7 @@ describe('updateSubmission', () => {
         const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(newSubmissionResult.body.extensions?.errors).toBeUndefined()
+        expect(newSubmissionResult.body.errors).toBeUndefined()
 
         // Get the ID of the new Submission
         const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
@@ -130,7 +131,7 @@ describe('updateSubmission', () => {
         const updateSubmissionResult = await request(url).post('/').send(updateSubmissionRequest)
 
         //should not have errors
-        expect(updateSubmissionResult.body.extensions?.errors).toBeUndefined()
+        expect(updateSubmissionResult.body?.errors).toBeUndefined()
 
         // Compare the data returned in the response to the updated fields that were sent
         const updatedSubmission = updateSubmissionResult.body.data.updateSubmission as Submission
@@ -163,6 +164,7 @@ describe('getSubmissionById', () => {
                 rules: fs.readFileSync('./firestore.rules', 'utf8')
             }
         })
+        await initiatilizeFirebaseInstance()
     })
 
     beforeEach(async () => {
@@ -185,7 +187,7 @@ describe('getSubmissionById', () => {
         const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(newSubmissionResult.body.extensions?.errors).toBeUndefined()
+        expect(newSubmissionResult.body.errors).toBeUndefined()
 
         // Get the ID of the new Submission
         const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
@@ -215,11 +217,14 @@ describe('getSubmissionById', () => {
 
         // Get the submission by id
         const getByIdResults = await request(url).post('/').send(getSubmissionByIdRequest)
- 
-        expect(getByIdResults.body.errors.extensions.errors).toBeDefined()
- 
-        const submissionErrors = getByIdResults.body.extensions.errors as Error[]
-        
+
+        const gqlErrors = getByIdResults.body.errors
+
+        expect(gqlErrors).toBeDefined()
+        expect(gqlErrors.length).toBe(1)
+
+        const submissionErrors = gqlErrors[0].extensions.errors as Error[]
+
         //We should have 1 error
         expect(submissionErrors.length).toBe(1)
         expect(submissionErrors[0].field).toBe('id')
@@ -227,7 +232,7 @@ describe('getSubmissionById', () => {
         expect(submissionErrors[0].httpStatus).toBe(404)
 
         //there should be no result
-        expect(getByIdResults.body.data.submission).toBeUndefined()
+        expect(getByIdResults.body.data.submission).toBeFalsy()
     })
 })
 
@@ -248,6 +253,7 @@ describe('searchSubmissions', () => {
                 rules: fs.readFileSync('./firestore.rules', 'utf8')
             }
         })
+        await initiatilizeFirebaseInstance()
     })
 
     beforeEach(async () => {
@@ -274,7 +280,7 @@ describe('searchSubmissions', () => {
         const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(newSubmissionResult.body.extensions?.errors).toBeUndefined()
+        expect(newSubmissionResult.body?.errors).toBeUndefined()
 
         // Query to get the Submission using language filter
         const searchSubmissionsRequest = {
@@ -289,7 +295,7 @@ describe('searchSubmissions', () => {
         checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('search submissions using the googleMapUrl filter', async () => {
+    it('search submissions using the googleMapsUrl filter', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -301,7 +307,7 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.extensions?.errors).toBeUndefined()
+        expect(createSubmissionResult.body.errors).toBeUndefined()
 
         const originalGoogleMapsUrl = createSubmissionRequest.variables.input.googleMapsUrl
 
@@ -332,11 +338,11 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.extensions?.errors).toBeUndefined()
-        
+        expect(createSubmissionResult.body.errors).toBeUndefined()
+
         // Get the ID of the new Submission
         const newSubmission = createSubmissionResult.body.data.createSubmission as Submission
-        
+
         const isValidDate = newSubmission.createdDate && !!Date.parse(newSubmission.createdDate)
 
         expect(isValidDate).toBe(true)
@@ -366,7 +372,7 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.extensions?.errors).toBeUndefined()
+        expect(createSubmissionResult.body.errors).toBeUndefined()
 
         // Query to get the Submission using 3 filters
         const searchSubmissionsRequest = {
@@ -401,8 +407,8 @@ describe('searchSubmissions', () => {
         const createdSubmission2 = createSubmissionResult2.body.data.createSubmission as Submission
 
         //should not have errors
-        expect(createSubmissionResult1.body.extensions?.errors).toBeUndefined()
-        expect(createSubmissionResult2.body.extensions?.errors).toBeUndefined()
+        expect(createSubmissionResult1.body.errors).toBeUndefined()
+        expect(createSubmissionResult2.body.errors).toBeUndefined()
 
         // Query to get all (both) submissions
         const searchSubmissionsRequest = {
@@ -416,7 +422,7 @@ describe('searchSubmissions', () => {
         const searchResult = await request(url).post('/').send(searchSubmissionsRequest)
 
         //should not have errors
-        expect(searchResult.body.extensions?.errors).toBeUndefined()
+        expect(searchResult.body.errors).toBeUndefined()
 
         const searchedSubmissions = searchResult.body.data.submissions as Submission[]
 
@@ -439,11 +445,10 @@ async function checkSearchResults(url: string,
     const searchResult = await request(url).post('/').send(searchSubmissionsRequest)
 
     //should not have errors
-    expect(searchResult.body.extensions?.errors).toBeUndefined()
+    expect(searchResult.body.errors).toSatisfy((errors: Array<unknown> | undefined) =>
+        errors == undefined || errors.length <= 0)
 
     const searchedSubmissions = searchResult.body.data.submissions as Submission[]
-
-    expect(searchedSubmissions).toBe(1)
 
     //should have at least 1 result
     expect(searchedSubmissions).toBeDefined()
@@ -477,8 +482,8 @@ const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
 }`
 
 const searchSubmissionsQuery = /* GraphQL */ `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
-    submissionszzzzzzz(filters: $filters) {
-        idzzzzzzzz
+    submissions(filters: $filters) {
+        id
         googleMapsUrl
         healthcareProfessionalName
         isApproved

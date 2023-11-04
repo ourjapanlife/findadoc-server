@@ -96,8 +96,7 @@ export default [
             // sourceType: 'module',
             globals: {
                 ...globals.node,
-                ...globals.es6,
-                ...globals.jest
+                ...globals.es6
             }
         },
         plugins: {

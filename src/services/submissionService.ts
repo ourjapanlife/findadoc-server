@@ -21,9 +21,10 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
         }
 
         const submissionRef = dbInstance.collection('submissions')
-        const snapshot = await submissionRef.where('id', '==', id).get()
+        
+        const snapshot = await submissionRef.doc(id).get()
 
-        if (snapshot.docs.length < 1) {
+        if (!snapshot.exists) {
             return {
                 data: undefined,
                 hasErrors: true,
@@ -34,8 +35,9 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
                 }]
             }
         }
-
-        const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data() as dbSchema.Submission)
+        
+        const dbEntity = snapshot.data() as dbSchema.Submission
+        const convertedEntity = mapDbEntityTogqlEntity(dbEntity)
 
         const searchResults = {
             data: convertedEntity,
@@ -81,6 +83,10 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
             subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
         }
 
+        if(filters.spokenLanguages && filters.spokenLanguages.length > 0) {
+            subRef = subRef.where('spokenLanguages', 'array-contains-any', filters.spokenLanguages)
+        }
+
         if (filters.isUnderReview !== undefined) {
             subRef = subRef.where('isUnderReview', '==', filters.isUnderReview)
         }
@@ -91,6 +97,14 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
 
         if (filters.isRejected !== undefined) {
             subRef = subRef.where('isRejected', '==', filters.isRejected)
+        }
+
+        if (filters.createdDate) {
+            subRef = subRef.where('createdDate', '==', filters.createdDate)
+        }
+
+        if (filters.updatedDate) {
+            subRef = subRef.where('updatedDate', '==', filters.updatedDate)
         }
 
         if (filters.orderBy && Array.isArray(filters.orderBy)) {
@@ -107,14 +121,6 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
         //default is 20
         subRef = subRef.limit(filters.limit ?? 20)
 
-        if (filters.createdDate) {
-            subRef = subRef.where('createdDate', '==', filters.createdDate)
-        }
-
-        if (filters.updatedDate) {
-            subRef = subRef.where('updatedDate', '==', filters.updatedDate)
-        }
-
         const snapshot = await subRef.get()
 
         const submissions = snapshot.docs.map(doc => mapDbEntityTogqlEntity({
@@ -122,20 +128,7 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
             id: doc.id
         } satisfies dbSchema.Submission))
 
-        const shouldFilterSubmissionsBySpokenLanguages = filters.spokenLanguages && filters.spokenLanguages.length
-
-        if (shouldFilterSubmissionsBySpokenLanguages) {
-            const requiredLanguages = filters.spokenLanguages
-
-            const filteredSubmissions = submissions.filter(sub =>
-                requiredLanguages?.every((reqLang: string) =>
-                    sub.spokenLanguages.some(subLang => subLang === reqLang)))
-
-            return {
-                hasErrors: false,
-                data: filteredSubmissions
-            }
-        }
+        console.log(`DB-SEARCH: ${JSON.stringify(submissions)} submissions were found. the original query ${JSON.stringify(filters)}`)
 
         return {
             hasErrors: false,
@@ -164,14 +157,15 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
 export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
     Promise<Result<gqlTypes.Submission>> => {
     try {
+        
         const validationResults = validateSubmissionInputFields(submissionInput)
-
+        
         if (validationResults.hasErrors) {
             return validationResults as Result<gqlTypes.Submission>
         }
-
+        
         const spokenLanguagesResult = validateSpokenLanguages(submissionInput.spokenLanguages)
-
+        
         if (spokenLanguagesResult.hasErrors) {
             return {
                 data: {} as gqlTypes.Submission,
@@ -179,12 +173,13 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
                 errors: spokenLanguagesResult.errors
             }
         }
-
+        
         const submissionRef = dbInstance.collection('submissions').doc()
         const newSubmissionId = submissionRef.id
         const newSubmission = convertToDbSubmission(submissionInput, newSubmissionId)
 
         await submissionRef.set(newSubmission)
+
 
         const createdSubmission = await getSubmissionById(newSubmissionId)
 

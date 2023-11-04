@@ -37,7 +37,7 @@ describe('createFacility', () => {
         const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(createFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(createFacilityResult.body.errors).toBeUndefined()
 
         const originalInputValues = createFacilityRequest.variables.input
         const newFacility = createFacilityResult.body.data.createFacility as gqlType.Facility
@@ -53,7 +53,7 @@ describe('createFacility', () => {
         const getFacilityResult = await request(url).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
-        expect(getFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(getFacilityResult.body.errors).toBeUndefined()
 
         const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
 
@@ -76,7 +76,7 @@ describe('createFacility', () => {
         const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(createFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(createFacilityResult.body?.errors).toBeUndefined()
 
         const originalInputValues = createFacilityRequest.variables.input
         const newFacility = createFacilityResult.body.data.createFacility as gqlType.Facility
@@ -92,7 +92,7 @@ describe('createFacility', () => {
         const getFacilityResult = await request(url).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
-        expect(getFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(getFacilityResult.body.errors).toBeUndefined()
 
         const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
 
@@ -130,7 +130,7 @@ describe('getFacilityById', () => {
         const newFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(newFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(newFacilityResult.body?.errors).toBeUndefined()
 
         // Get the ID of the new facility
         const newFacility = newFacilityResult.body.data.createFacility as gqlType.Facility
@@ -146,7 +146,7 @@ describe('getFacilityById', () => {
         const getFacilityResult = await request(url).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
-        expect(getFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(getFacilityResult.body?.errors).toBeUndefined()
 
         // Compare the actual data returned by getFacilityById to the new facility stored in the database
         const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
@@ -189,7 +189,7 @@ describe('updateFacility', () => {
         const newFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(newFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(newFacilityResult.body?.errors).toBeUndefined()
 
         // Get the ID of the new facility
         const newFacility = newFacilityResult.body.data.createFacility as gqlType.Facility
@@ -209,7 +209,7 @@ describe('updateFacility', () => {
         const updateFacilityResult = await request(url).post('/').send(updateFacilityMutationRequest)
 
         //should not have errors
-        expect(updateFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(updateFacilityResult.body?.errors).toBeUndefined()
 
         const getFacilityByIdRequest = {
             query: getFacilityByIdQuery,

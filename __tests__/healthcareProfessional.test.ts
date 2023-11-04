@@ -37,7 +37,7 @@ describe('createHealthcareProfessional', () => {
         const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(createFacilityResult.body.extensions?.errors).toBeUndefined()
+        expect(createFacilityResult.body?.errors).toBeUndefined()
 
         const facility = await createFacilityResult.body.data.createFacility as Facility
         const facilityId = facility.id
@@ -60,7 +60,7 @@ describe('createHealthcareProfessional', () => {
         const createProfessionalResult = await request(url).post('/').send(createHealthcareProfessionalMutationRequest)
 
         //should not have errors
-        expect(createProfessionalResult.body.extensions?.errors).toBeUndefined()
+        expect(createProfessionalResult.body?.errors).toBeUndefined()
 
         const createdHealthcareProfessional =
             createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
@@ -75,7 +75,7 @@ describe('createHealthcareProfessional', () => {
         const searchResult = await request(url).post('/').send(getHealthcareProfessionalByIdRequest)
 
         //should not have errors
-        expect(searchResult.body.extensions?.errors).toBeUndefined()
+        expect(searchResult.body?.errors).toBeUndefined()
 
         const searchedProfessional = searchResult.body.data.healthcareProfessional as HealthcareProfessional
         const originalValues = createHealthcareProfessionalMutationRequest.variables.input
@@ -107,12 +107,11 @@ describe('createHealthcareProfessional', () => {
             = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
-        expect(createProfessionalResult.body).toBe(1)
-        expect(createProfessionalResult.body.extensions?.errors).toBeDefined()
-        expect(createProfessionalResult.body.extensions?.errors[0].extensions.errors[0]).toBeDefined()
-        expect(createProfessionalResult.body.extensions?.errors[0].extensions.errors.length).toEqual(1)
+        expect(createProfessionalResult.body?.errors).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toEqual(1)
 
-        const error = createProfessionalResult.body.extensions?.errors[0].extensions.errors[0] as Error
+        const error = createProfessionalResult.body?.errors[0].extensions.errors[0] as Error
 
         expect(error.field).toBe('facilityIds')
         expect(error.errorCode).toBe(ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED)
