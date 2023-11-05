@@ -53,7 +53,12 @@ describe('createFacility', () => {
         const getFacilityResult = await request(url).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
-        expect(getFacilityResult.body.errors).toBeUndefined()
+        const errors = createFacilityResult.body?.errors
+        
+        if (errors) {
+            console.log(createFacilityResult.body.errors)
+        }
+        expect(errors).toBeUndefined()
 
         const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
 
@@ -76,7 +81,12 @@ describe('createFacility', () => {
         const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(createFacilityResult.body?.errors).toBeUndefined()
+        const errors = createFacilityResult.body?.errors
+        
+        if (errors) {
+            console.log(createFacilityResult.body.errors)
+        }
+        expect(errors).toBeUndefined()
 
         const originalInputValues = createFacilityRequest.variables.input
         const newFacility = createFacilityResult.body.data.createFacility as gqlType.Facility
@@ -130,7 +140,12 @@ describe('getFacilityById', () => {
         const newFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(newFacilityResult.body?.errors).toBeUndefined()
+        const errors = newFacilityResult.body?.errors
+        
+        if (errors) {
+            console.log(newFacilityResult.body.errors)
+        }
+        expect(errors).toBeUndefined()
 
         // Get the ID of the new facility
         const newFacility = newFacilityResult.body.data.createFacility as gqlType.Facility
@@ -189,7 +204,12 @@ describe('updateFacility', () => {
         const newFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(newFacilityResult.body?.errors).toBeUndefined()
+        const errors = newFacilityResult.body?.errors
+
+        if (errors) {
+            console.log(newFacilityResult.body.errors)
+        }
+        expect(errors).toBeUndefined()
 
         // Get the ID of the new facility
         const newFacility = newFacilityResult.body.data.createFacility as gqlType.Facility

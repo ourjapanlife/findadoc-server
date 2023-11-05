@@ -22,9 +22,9 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
 
         const submissionRef = dbInstance.collection('submissions')
         
-        const snapshot = await submissionRef.doc(id).get()
+        const dbDocument = await submissionRef.doc(id).get()
 
-        if (!snapshot.exists) {
+        if (!dbDocument.exists) {
             return {
                 data: undefined,
                 hasErrors: true,
@@ -36,7 +36,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
             }
         }
         
-        const dbEntity = snapshot.data() as dbSchema.Submission
+        const dbEntity = dbDocument.data() as dbSchema.Submission
         const convertedEntity = mapDbEntityTogqlEntity(dbEntity)
 
         const searchResults = {
@@ -121,14 +121,9 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
         //default is 20
         subRef = subRef.limit(filters.limit ?? 20)
 
-        const snapshot = await subRef.get()
+        const dbDocument = await subRef.get()
 
-        const submissions = snapshot.docs.map(doc => mapDbEntityTogqlEntity({
-            ...doc.data() as dbSchema.Submission,
-            id: doc.id
-        } satisfies dbSchema.Submission))
-
-        console.log(`DB-SEARCH: ${JSON.stringify(submissions)} submissions were found. the original query ${JSON.stringify(filters)}`)
+        const submissions = dbDocument.docs.map(doc => mapDbEntityTogqlEntity(doc.data() as dbSchema.Submission))
 
         return {
             hasErrors: false,
@@ -176,13 +171,13 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
         
         const submissionRef = dbInstance.collection('submissions').doc()
         const newSubmissionId = submissionRef.id
-        const newSubmission = convertToDbSubmission(submissionInput, newSubmissionId)
-
+        const newSubmission = mapGqlEntityToDbEntity(submissionInput, newSubmissionId)
+        
         await submissionRef.set(newSubmission)
-
 
         const createdSubmission = await getSubmissionById(newSubmissionId)
 
+        // if we didn't get it back or have errors, this is an actual error.
         if (createdSubmission.hasErrors || !createdSubmission.data) {
             throw new Error(`Error creating submission: ${JSON.stringify(createdSubmission.errors)}`)
         }
@@ -226,8 +221,8 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
         }
 
         const submissionRef = dbInstance.collection('submissions').doc(submissionId)
-        const snapshot = await submissionRef.get()
-        const submissionToUpdate = snapshot.data() as dbSchema.Submission
+        const dbDocument = await submissionRef.get()
+        const submissionToUpdate = dbDocument.data() as dbSchema.Submission
 
         const updatedSubmissionValues: Partial<dbSchema.Submission> = {
             //TODO: guarantee the fields in updatesubmissioninput match submission so this doesn't break. maybe a test?
@@ -281,8 +276,8 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
 
     try {
         const submissionRef = dbInstance.collection('submissions').doc(submissionId)
-        const snapshot = await submissionRef.get()
-        const currentSubmission = snapshot.data() as dbSchema.Submission
+        const dbDocument = await submissionRef.get()
+        const currentSubmission = dbDocument.data() as dbSchema.Submission
 
         if (!currentSubmission) {
             approveResult.errors?.push({
@@ -347,7 +342,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
     }
 }
 
-function convertToDbSubmission(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
+function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
     return {
         id: newId,
         googleMapsUrl: input.googleMapsUrl as string,

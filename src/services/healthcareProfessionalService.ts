@@ -19,14 +19,14 @@ export async function getHealthcareProfessionalById(id: string): Promise<Result<
         }
 
         const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals')
-        const whereCondition = '=' as firebase.WhereFilterOp
-        const snapshot = await healthcareProfessionalRef.where('id', whereCondition, id).get()
+        const dbDocument = await healthcareProfessionalRef.doc(id).get()
 
-        if (snapshot.docs.length < 1) {
+        if (!dbDocument.exists) {
             throw new Error('No healthcare Professional found with this id')
         }
 
-        const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
+        const dbEntity = dbDocument.data() as dbSchema.HealthcareProfessional
+        const convertedEntity = mapDbEntityTogqlEntity(dbEntity)
 
         return {
             data: convertedEntity,
@@ -56,8 +56,7 @@ export async function getHealthcareProfessionalById(id: string): Promise<Result<
  * @returns the newly created HealthcareProfessional so you don't have to query it after
  */
 export async function createHealthcareProfessional(
-    input: gqlTypes.CreateHealthcareProfessionalInput,
-    healthcareProfessionalRef?: FirebaseFirestore.DocumentReference<firebase.DocumentData>
+    input: gqlTypes.CreateHealthcareProfessionalInput
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
         const validationResult = validateCreateProfessionalInput(input)
@@ -66,32 +65,25 @@ export async function createHealthcareProfessional(
             return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
-        if (!healthcareProfessionalRef) {
-            healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
-        }
-
-        const newHealthcareProfessional = {
-            id: healthcareProfessionalRef.id,
-            acceptedInsurance: input.acceptedInsurance as gqlTypes.Insurance[],
-            degrees: input.degrees as dbSchema.Degree[],
-            names: input.names as dbSchema.LocalizedName[],
-            specialties: input.specialties as dbSchema.Specialty[],
-            spokenLanguages: input.spokenLanguages as gqlTypes.Locale[],
-            facilityIds: input.facilityIds ?? [] as string[],
-            createdDate: new Date().toISOString(),
-            updatedDate: new Date().toISOString()
-        } satisfies dbSchema.HealthcareProfessional
+        const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
+        const newHealthcareProfessionalId = healthcareProfessionalRef.id
+        const newHealthcareProfessional = mapGqlEntityToDbEntity(newHealthcareProfessionalId, input)
 
         await healthcareProfessionalRef.set(newHealthcareProfessional)
 
-        console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessional.id}. Entity: ${JSON.stringify(newHealthcareProfessional)}`)
+        console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}. Entity: ${JSON.stringify(newHealthcareProfessional)}`)
 
         //TODO: add healthcare professional id to associated facility
 
-        const createdHealthcareProfessional = await getHealthcareProfessionalById(newHealthcareProfessional.id)
+        const createdHealthcareProfessionalResult = await getHealthcareProfessionalById(newHealthcareProfessionalId)
+
+        // if we didn't get it back or have errors, this is an actual error.
+        if (createdHealthcareProfessionalResult.hasErrors || !createdHealthcareProfessionalResult.data) {
+            throw new Error(`Error creating healthcare professional: ${JSON.stringify(createdHealthcareProfessionalResult.errors)}`)
+        }
 
         return {
-            data: createdHealthcareProfessional.data,
+            data: createdHealthcareProfessionalResult.data,
             hasErrors: false
         }
     } catch (error) {
@@ -131,8 +123,8 @@ export const updateHealthcareProfessional = async (
         }
 
         const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
-        const snapshot = await professionalRef.get()
-        const dbProfessionalToUpdate = snapshot.data() as dbSchema.HealthcareProfessional
+        const dbDocument = await professionalRef.get()
+        const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
         const updatedDbProfessional: dbSchema.HealthcareProfessional = {
             ...dbProfessionalToUpdate,
             updatedDate: new Date().toISOString()
@@ -144,10 +136,15 @@ export const updateHealthcareProfessional = async (
 
         console.log(`DB-UPDATE: Updated healthcare professional ${professionalRef.id}. Entity: ${JSON.stringify(updatedDbProfessional)}`)
 
-        const updatedProfessional = await getHealthcareProfessionalById(professionalRef.id)
+        const updatedProfessionalResult = await getHealthcareProfessionalById(professionalRef.id)
+
+        // if we didn't get it back or have errors, this is an actual error.
+        if (updatedProfessionalResult.hasErrors || !updatedProfessionalResult.data) {
+            throw new Error(`Error updating healthcare professional: ${JSON.stringify(updatedProfessionalResult.errors)}`)
+        }
 
         return {
-            data: updatedProfessional.data,
+            data: updatedProfessionalResult.data,
             hasErrors: false
         }
     } catch (error) {
@@ -163,6 +160,22 @@ export const updateHealthcareProfessional = async (
             }]
         }
     }
+}
+
+function mapGqlEntityToDbEntity(newHealthcareProfessionalId: string, input: gqlTypes.CreateHealthcareProfessionalInput) {
+    return {
+        id: newHealthcareProfessionalId,
+        acceptedInsurance: input.acceptedInsurance as gqlTypes.Insurance[],
+        degrees: input.degrees as dbSchema.Degree[],
+        names: input.names as dbSchema.LocalizedName[],
+        specialties: input.specialties as dbSchema.Specialty[],
+        spokenLanguages: input.spokenLanguages as gqlTypes.Locale[],
+        facilityIds: input.facilityIds ?? [] as string[],
+        //business rule: createdDate cannot be set by the user.
+        createdDate: new Date().toISOString(),
+        //business rule: updatedDate is updated on every change.
+        updatedDate: new Date().toISOString()
+    } satisfies dbSchema.HealthcareProfessional
 }
 
 //TODO solve this later

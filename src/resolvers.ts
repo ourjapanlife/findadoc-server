@@ -114,6 +114,8 @@ const resolvers = {
 
 function convertErrorsToGqlErrors(resultObject: Result<unknown>): void {
     if (resultObject.hasErrors) {
+        console.log(`Errors sent back: ${JSON.stringify(resultObject.errors)}`)
+
         throw new GraphQLError('Validation Failed', {
             extensions: {
                 code: 'BAD_USER_INPUT',

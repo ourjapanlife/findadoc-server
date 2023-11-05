@@ -292,7 +292,7 @@ describe('searchSubmissions', () => {
             }
         } satisfies gqlRequest
 
-        checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
+        await checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
     it('search submissions using the googleMapsUrl filter', async () => {
@@ -323,7 +323,7 @@ describe('searchSubmissions', () => {
             }
         }
 
-        checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
+        await checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
     it('get submissions using the createdDate filter', async () => {
@@ -357,7 +357,7 @@ describe('searchSubmissions', () => {
             }
         } satisfies gqlRequest
 
-        checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
+        await checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
     it('get submissions using multiple filters combining healthcareProfessionalName, spokenLanguages, and isUnderReview', async () => {
@@ -386,7 +386,7 @@ describe('searchSubmissions', () => {
             }
         } satisfies gqlRequest
 
-        checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
+        await checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
     it('get all the submissions without filters', async () => {

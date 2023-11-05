@@ -19,9 +19,9 @@ export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facil
         }
 
         const facilityRef = dbInstance.collection('facilities')
-        const snapshot = await facilityRef.where('id', '==', id).get()
+        const dbDocument = await facilityRef.doc(id).get()
 
-        if (snapshot.docs.length < 1) {
+        if (!dbDocument.exists) {
             return {
                 data: {} as gqlTypes.Facility,
                 hasErrors: true,
@@ -33,7 +33,7 @@ export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facil
             }
         }
 
-        const dbFacility = snapshot.docs[0].data() as dbSchema.Facility
+        const dbFacility = dbDocument.data() as dbSchema.Facility
         const convertedEntity = mapDbEntityTogqlEntity(dbFacility)
 
         return {
@@ -102,8 +102,8 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
         searchRef = searchRef.limit(filters.limit || 20)
         searchRef = searchRef.offset(filters.offset || 0)
 
-        const snapshot = await searchRef.get()
-        const dbFacilities = snapshot.docs
+        const dbDocument = await searchRef.get()
+        const dbFacilities = dbDocument.docs
         const gqlFacilities = dbFacilities.map(dbFacility =>
             mapDbEntityTogqlEntity(dbFacility.data() as dbSchema.Facility))
 
@@ -151,10 +151,15 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
 
         //TODO: Add new facilityid to associated healthcare professionals. 
 
-        const createdFacility = await getFacilityById(newFacilityId)
+        const createdFacilityResult = await getFacilityById(newFacilityId)
+
+        // if we didn't get it back or have errors, this is an actual error.
+        if (createdFacilityResult.hasErrors || !createdFacilityResult.data) {
+            throw new Error(`Error creating facility: ${JSON.stringify(createdFacilityResult.errors)}`)
+        }
 
         return {
-            data: createdFacility.data,
+            data: createdFacilityResult.data,
             hasErrors: false
         }
     } catch (error) {
@@ -192,8 +197,8 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         }
 
         const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-        const snapshot = await facilityRef.get()
-        const dbFacilityToUpdate = snapshot.data() as dbSchema.Facility
+        const dbDocument = await facilityRef.get()
+        const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
         const updatedDbFacility: dbSchema.Facility = {
             ...dbFacilityToUpdate,
             //todo the partial update should happen right here
@@ -229,10 +234,15 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
 
         console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(updatedDbFacility)}`)
 
-        const updatedFacility = await getFacilityById(facilityId)
+        const updatedFacilityResult = await getFacilityById(facilityId)
+
+        // if we didn't get it back or have errors, this is an actual error.
+        if (updatedFacilityResult.hasErrors || !updatedFacilityResult.data) {
+            throw new Error(`Error updating facility: ${JSON.stringify(updatedFacilityResult.errors)}`)
+        }
 
         return {
-            data: updatedFacility.data,
+            data: updatedFacilityResult.data,
             hasErrors: false
         }
     } catch (error) {
