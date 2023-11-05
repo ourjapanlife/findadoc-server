@@ -33,7 +33,7 @@ export async function getHealthcareProfessionalById(id: string): Promise<Result<
             hasErrors: false
         }
     } catch (error) {
-        console.log(`Error retrieving healthcareProfessional by id ${id}: ${error}`)
+        console.log(`ERROR: Error retrieving healthcareProfessional by id ${id}: ${error}`)
 
         return {
             data: {} as gqlTypes.HealthcareProfessional,
@@ -71,7 +71,7 @@ export async function createHealthcareProfessional(
 
         await healthcareProfessionalRef.set(newHealthcareProfessional)
 
-        console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}. Entity: ${JSON.stringify(newHealthcareProfessional)}`)
+        console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
 
         //TODO: add healthcare professional id to associated facility
 
@@ -87,7 +87,7 @@ export async function createHealthcareProfessional(
             hasErrors: false
         }
     } catch (error) {
-        console.log(`Error creating healthcare professional: ${error}`)
+        console.log(`ERROR: Error creating healthcare professional: ${error}`)
 
         return {
             data: {} as gqlTypes.HealthcareProfessional,
@@ -134,13 +134,13 @@ export const updateHealthcareProfessional = async (
 
         await professionalRef.set(updatedDbProfessional, { merge: true })
 
-        console.log(`DB-UPDATE: Updated healthcare professional ${professionalRef.id}. Entity: ${JSON.stringify(updatedDbProfessional)}`)
+        console.log(`DB-UPDATE: Updated healthcare professional ${professionalRef.id}.\nEntity: ${JSON.stringify(updatedDbProfessional)}`)
 
         const updatedProfessionalResult = await getHealthcareProfessionalById(professionalRef.id)
 
         // if we didn't get it back or have errors, this is an actual error.
         if (updatedProfessionalResult.hasErrors || !updatedProfessionalResult.data) {
-            throw new Error(`Error updating healthcare professional: ${JSON.stringify(updatedProfessionalResult.errors)}`)
+            throw new Error(`ERROR: Error updating healthcare professional: ${JSON.stringify(updatedProfessionalResult.errors)}`)
         }
 
         return {
@@ -148,7 +148,7 @@ export const updateHealthcareProfessional = async (
             hasErrors: false
         }
     } catch (error) {
-        console.log(`Error updating healthcareProfessional ${id}: ${error}`)
+        console.log(`ERROR: Error updating healthcareProfessional ${id}: ${error}`)
 
         return {
             data: {} as gqlTypes.HealthcareProfessional,

@@ -187,7 +187,11 @@ describe('getSubmissionById', () => {
         const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(newSubmissionResult.body.errors).toBeUndefined()
+        const errors = newSubmissionResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         // Get the ID of the new Submission
         const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
@@ -280,7 +284,11 @@ describe('searchSubmissions', () => {
         const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(newSubmissionResult.body?.errors).toBeUndefined()
+        const errors = newSubmissionResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         // Query to get the Submission using language filter
         const searchSubmissionsRequest = {
@@ -307,7 +315,11 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.errors).toBeUndefined()
+        const errors = createSubmissionResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         const originalGoogleMapsUrl = createSubmissionRequest.variables.input.googleMapsUrl
 
@@ -338,7 +350,11 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.errors).toBeUndefined()
+        const errors = createSubmissionResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         // Get the ID of the new Submission
         const newSubmission = createSubmissionResult.body.data.createSubmission as Submission
@@ -372,7 +388,11 @@ describe('searchSubmissions', () => {
         const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(createSubmissionResult.body.errors).toBeUndefined()
+        const errors = createSubmissionResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         // Query to get the Submission using 3 filters
         const searchSubmissionsRequest = {
@@ -407,8 +427,14 @@ describe('searchSubmissions', () => {
         const createdSubmission2 = createSubmissionResult2.body.data.createSubmission as Submission
 
         //should not have errors
-        expect(createSubmissionResult1.body.errors).toBeUndefined()
-        expect(createSubmissionResult2.body.errors).toBeUndefined()
+        const errors1 = createSubmissionResult1.body?.errors
+        const errors2 = createSubmissionResult1.body?.errors
+
+        if (errors1 || errors2) {
+            console.log(`errors from first: ${JSON.stringify(errors1)}. errors from second: ${JSON.stringify(errors2)}`)
+            expect(errors1).toBeUndefined()
+            expect(errors2).toBeUndefined()
+        }
 
         // Query to get all (both) submissions
         const searchSubmissionsRequest = {

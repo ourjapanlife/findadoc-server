@@ -37,7 +37,11 @@ describe('createHealthcareProfessional', () => {
         const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(createFacilityResult.body?.errors).toBeUndefined()
+        const errors = createFacilityResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         const facility = await createFacilityResult.body.data.createFacility as Facility
         const facilityId = facility.id
@@ -60,7 +64,11 @@ describe('createHealthcareProfessional', () => {
         const createProfessionalResult = await request(url).post('/').send(createHealthcareProfessionalMutationRequest)
 
         //should not have errors
-        expect(createProfessionalResult.body?.errors).toBeUndefined()
+        const errors = createProfessionalResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         const createdHealthcareProfessional =
             createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional

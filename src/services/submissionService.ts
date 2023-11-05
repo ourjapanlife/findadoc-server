@@ -46,7 +46,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
 
         return searchResults
     } catch (error) {
-        console.log(`Error retrieving submission by id ${id}: ${error}`)
+        console.log(`ERROR: Error retrieving submission by id ${id}: ${error}`)
 
         return {
             data: undefined,
@@ -130,7 +130,7 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
             data: submissions
         }
     } catch (error) {
-        console.log(`Error searching submissions by filters ${filters}: ${error}`)
+        console.log(`ERROR: Error searching submissions by filters ${filters}: ${error}`)
 
         return {
             data: [],
@@ -179,7 +179,7 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
 
         // if we didn't get it back or have errors, this is an actual error.
         if (createdSubmission.hasErrors || !createdSubmission.data) {
-            throw new Error(`Error creating submission: ${JSON.stringify(createdSubmission.errors)}`)
+            throw new Error(`ERROR: Error creating submission: ${JSON.stringify(createdSubmission.errors)}`)
         }
 
         return {
@@ -187,7 +187,7 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
             hasErrors: false
         }
     } catch (error) {
-        console.log(`Error creating submission: ${error}`)
+        console.log(`ERROR: Error creating submission: ${error}`)
 
         return {
             data: {} as gqlTypes.Submission,
@@ -234,12 +234,12 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
 
         await submissionRef.set(updatedSubmissionValues, { merge: true })
 
-        console.log(`DB-UPDATE: Submission ${submissionId} was updated. \n Fields updated: ${JSON.stringify(fieldsToUpdate)}`)
+        console.log(`DB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
 
         const updatedSubmission = await getSubmissionById(submissionId)
 
         if (updatedSubmission.hasErrors || !updatedSubmission.data) {
-            throw new Error(`Error creating submission: ${JSON.stringify(updatedSubmission.errors)}`)
+            throw new Error(`ERROR: Error creating submission: ${JSON.stringify(updatedSubmission.errors)}`)
         }
 
         return {
@@ -247,7 +247,7 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
             hasErrors: false
         }
     } catch (error) {
-        console.log(`Error updating submission ${submissionId}: ${error}`)
+        console.log(`ERROR: Error updating submission ${submissionId}: ${error}`)
 
         return {
             data: {} as gqlTypes.Submission,

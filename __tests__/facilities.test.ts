@@ -207,9 +207,8 @@ describe('updateFacility', () => {
         const errors = newFacilityResult.body?.errors
 
         if (errors) {
-            console.log(newFacilityResult.body.errors)
+            expect(JSON.stringify(errors)).toBeUndefined()
         }
-        expect(errors).toBeUndefined()
 
         // Get the ID of the new facility
         const newFacility = newFacilityResult.body.data.createFacility as gqlType.Facility

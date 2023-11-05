@@ -147,7 +147,7 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
 
         await facilityRef.set(newDbFacility)
 
-        console.log(`DB-CREATE: CREATE facility ${newFacilityId}. Entity: ${JSON.stringify(newDbFacility)}`)
+        console.log(`DB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
 
         //TODO: Add new facilityid to associated healthcare professionals. 
 
@@ -163,7 +163,7 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
             hasErrors: false
         }
     } catch (error) {
-        console.log(`Error creating facility: ${error}`)
+        console.log(`ERROR: Error creating facility: ${error}`)
 
         return {
             data: {} as gqlTypes.Facility,
