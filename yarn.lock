@@ -3911,11 +3911,8 @@ __metadata:
 "@types/supertest@npm:^2.0.12":
   version: 2.0.15
   resolution: "@types/supertest@npm:2.0.15"
-  version: 2.0.15
-  resolution: "@types/supertest@npm:2.0.15"
   dependencies:
     "@types/superagent": "*"
-  checksum: 89c1983662f0ab20969b3a6c44344397fd222d0f78b282619aabbe817f7c88a64210fd2b8b8f075ea22a27084e30ebc287bc5105619cbbf9af7f008e77f6eb93
   checksum: 89c1983662f0ab20969b3a6c44344397fd222d0f78b282619aabbe817f7c88a64210fd2b8b8f075ea22a27084e30ebc287bc5105619cbbf9af7f008e77f6eb93
   languageName: node
   linkType: hard
