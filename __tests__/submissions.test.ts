@@ -1,35 +1,13 @@
-import { expect, describe, beforeEach, beforeAll, afterAll, it } from 'vitest'
+import { expect, describe, it } from 'vitest'
 import request from 'supertest'
-import { ApolloServer } from '@apollo/server'
-import { startStandaloneServer } from '@apollo/server/standalone'
-import { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing'
-import fs from 'fs'
-import resolvers from '../src/resolvers.js'
-import loadSchema from '../src/schema.js'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
 import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions.js'
 import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
 import { Error, ErrorCode } from '../src/result.js'
 import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlRequest } from '../utils/gqlTool.js'
+import { gqlApiUrl } from './testSetup.test.js'
 
 describe('createSubmission', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        await initiatilizeFirebaseInstance()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-
     it('creates a new Submission', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
@@ -38,7 +16,7 @@ describe('createSubmission', () => {
             }
         } satisfies gqlRequest
         // send request to create a new Submission
-        const response = await request(url).post('/').send(createSubmissionRequest)
+        const response = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
         //should not have errors
         expect(response.body.errors).toBeUndefined()
@@ -55,7 +33,7 @@ describe('createSubmission', () => {
         } satisfies gqlRequest
 
         // Get the submission by id query data
-        const searchResult = await request(url).post('/').send(getSubmissionByIdRequest)
+        const searchResult = await request(gqlApiUrl).post('/').send(getSubmissionByIdRequest)
 
         //should not have errors
         expect(searchResult.body?.errors).toBeUndefined()
@@ -74,33 +52,6 @@ describe('createSubmission', () => {
 })
 
 describe('updateSubmission', () => {
-    let url: string
-    let testEnv: RulesTestEnvironment
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        testEnv = await initializeTestEnvironment({
-            projectId: process.env.FIRESTORE_PROJECT_ID,
-            firestore: {
-                rules: fs.readFileSync('./firestore.rules', 'utf8')
-            }
-        })
-        await initiatilizeFirebaseInstance()
-    })
-
-    beforeEach(async () => {
-        await testEnv.clearFirestore()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-
     it('updates a Submission with the fields included in the input', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
@@ -110,7 +61,7 @@ describe('updateSubmission', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
+        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
         //should not have errors
         expect(newSubmissionResult.body.errors).toBeUndefined()
@@ -128,7 +79,7 @@ describe('updateSubmission', () => {
         } satisfies gqlRequest
 
         // Update the submission
-        const updateSubmissionResult = await request(url).post('/').send(updateSubmissionRequest)
+        const updateSubmissionResult = await request(gqlApiUrl).post('/').send(updateSubmissionRequest)
 
         //should not have errors
         expect(updateSubmissionResult.body?.errors).toBeUndefined()
@@ -148,33 +99,6 @@ describe('updateSubmission', () => {
 })
 
 describe('getSubmissionById', () => {
-    let url: string
-    let testEnv: RulesTestEnvironment
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        testEnv = await initializeTestEnvironment({
-            projectId: process.env.FIRESTORE_PROJECT_ID,
-            firestore: {
-                rules: fs.readFileSync('./firestore.rules', 'utf8')
-            }
-        })
-        await initiatilizeFirebaseInstance()
-    })
-
-    beforeEach(async () => {
-        await testEnv.clearFirestore()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-
     it('get the submission that matches the id', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
@@ -184,7 +108,7 @@ describe('getSubmissionById', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
+        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
         //should not have errors
         const errors = newSubmissionResult.body?.errors
@@ -220,7 +144,7 @@ describe('getSubmissionById', () => {
         } satisfies gqlRequest
 
         // Get the submission by id
-        const getByIdResults = await request(url).post('/').send(getSubmissionByIdRequest)
+        const getByIdResults = await request(gqlApiUrl).post('/').send(getSubmissionByIdRequest)
 
         const gqlErrors = getByIdResults.body.errors
 
@@ -241,33 +165,6 @@ describe('getSubmissionById', () => {
 })
 
 describe('searchSubmissions', () => {
-    let url: string
-    let testEnv: RulesTestEnvironment
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        testEnv = await initializeTestEnvironment({
-            projectId: process.env.FIRESTORE_PROJECT_ID,
-            firestore: {
-                rules: fs.readFileSync('./firestore.rules', 'utf8')
-            }
-        })
-        await initiatilizeFirebaseInstance()
-    })
-
-    beforeEach(async () => {
-        await testEnv.clearFirestore()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-
     it('search submissions using the language filter', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
@@ -281,7 +178,7 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const newSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
+        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
         //should not have errors
         const errors = newSubmissionResult.body?.errors
@@ -300,7 +197,7 @@ describe('searchSubmissions', () => {
             }
         } satisfies gqlRequest
 
-        await checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
+        await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
     it('search submissions using the googleMapsUrl filter', async () => {
@@ -312,7 +209,7 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
+        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
         //should not have errors
         const errors = createSubmissionResult.body?.errors
@@ -335,7 +232,7 @@ describe('searchSubmissions', () => {
             }
         }
 
-        await checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
+        await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
     it('get submissions using the createdDate filter', async () => {
@@ -347,7 +244,7 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
+        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
         //should not have errors
         const errors = createSubmissionResult.body?.errors
@@ -373,7 +270,7 @@ describe('searchSubmissions', () => {
             }
         } satisfies gqlRequest
 
-        await checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
+        await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
     it('get submissions using multiple filters combining healthcareProfessionalName, spokenLanguages, and isUnderReview', async () => {
@@ -385,7 +282,7 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const createSubmissionResult = await request(url).post('/').send(createSubmissionRequest)
+        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
         //should not have errors
         const errors = createSubmissionResult.body?.errors
@@ -406,7 +303,7 @@ describe('searchSubmissions', () => {
             }
         } satisfies gqlRequest
 
-        await checkSearchResults(url, searchSubmissionsRequest, createSubmissionRequest.variables.input)
+        await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
     it('get all the submissions without filters', async () => {
@@ -421,8 +318,8 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const createSubmissionResult1 = await request(url).post('/').send(createSubmissionRequest)
-        const createSubmissionResult2 = await request(url).post('/').send(createSubmissionRequest)
+        const createSubmissionResult1 = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const createSubmissionResult2 = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
         const createdSubmission1 = createSubmissionResult1.body.data.createSubmission as Submission
         const createdSubmission2 = createSubmissionResult2.body.data.createSubmission as Submission
 
@@ -445,7 +342,7 @@ describe('searchSubmissions', () => {
         } as gqlRequest
 
         //Get the submissions query data
-        const searchResult = await request(url).post('/').send(searchSubmissionsRequest)
+        const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
 
         //should not have errors
         expect(searchResult.body.errors).toBeUndefined()
@@ -465,10 +362,9 @@ describe('searchSubmissions', () => {
     })
 })
 
-async function checkSearchResults(url: string,
-    searchSubmissionsRequest: gqlRequest, originalValues: CreateSubmissionInput) {
+async function checkSearchResults(searchSubmissionsRequest: gqlRequest, originalValues: CreateSubmissionInput) {
     //Get the submissions query data
-    const searchResult = await request(url).post('/').send(searchSubmissionsRequest)
+    const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
 
     //should not have errors
     expect(searchResult.body.errors).toSatisfy((errors: Array<unknown> | undefined) =>

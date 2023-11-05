@@ -1,67 +1,21 @@
 import request from 'supertest'
-import { ApolloServer } from '@apollo/server'
-import { startStandaloneServer } from '@apollo/server/standalone'
-import { expect, describe, beforeAll, afterAll, it } from 'vitest'
-import resolvers from '../src/resolvers.js'
-import loadSchema from '../src/schema.js'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
+import { expect, describe, it } from 'vitest'
 import { Error, ErrorCode } from '../src/result.js'
 import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
-import { CreateFacilityInput, CreateHealthcareProfessionalInput, Facility, HealthcareProfessional } from '../src/typeDefs/gqlTypes.js'
-import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
-import { createFacilityMutation } from './facilities.test.js'
-
-const facilityIds = [] as string[]
+import { CreateHealthcareProfessionalInput, HealthcareProfessional } from '../src/typeDefs/gqlTypes.js'
+import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
 
 describe('createHealthcareProfessional', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        await initiatilizeFirebaseInstance()
-
-        // Create a new Facility to add HealthProfessionals to
-        const createFacilityRequest = {
-            query: createFacilityMutation,
-            variables: {
-                input: generateRandomCreateFacilityInput()
-            }
-        } as gqlMutation<CreateFacilityInput>
-
-        const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
-
-        //should not have errors
-        const errors = createFacilityResult.body?.errors
-
-        if (errors) {
-            expect(JSON.stringify(errors)).toBeUndefined()
-        }
-
-        const facility = await createFacilityResult.body.data.createFacility as Facility
-        const facilityId = facility.id
-
-        facilityIds.push(facilityId)
-    })
-
-    afterAll(async () => {
-        await server.stop()
-    })
-
     it('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
         const createHealthcareProfessionalMutationRequest = {
             query: createHealthcareProfessionalMutation,
             variables: {
-                input: generateRandomCreateHealthcareProfessionalInput({ facilityIds })
+                input: generateRandomCreateHealthcareProfessionalInput({ facilityIds: sharedFacilityIds })
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(url).post('/').send(createHealthcareProfessionalMutationRequest)
+        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalMutationRequest)
 
         //should not have errors
         const errors = createProfessionalResult.body?.errors
@@ -80,7 +34,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlRequest
 
-        const searchResult = await request(url).post('/').send(getHealthcareProfessionalByIdRequest)
+        const searchResult = await request(gqlApiUrl).post('/').send(getHealthcareProfessionalByIdRequest)
 
         //should not have errors
         expect(searchResult.body?.errors).toBeUndefined()
@@ -110,7 +64,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(url).post('/').send(createHealthcareProfessionalRequest)
+        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalRequest)
         const createdProfessional
             = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
 

@@ -1,31 +1,11 @@
 import request from 'supertest'
-import { ApolloServer } from '@apollo/server'
-import { startStandaloneServer } from '@apollo/server/standalone'
-import { expect, describe, beforeAll, afterAll, it } from 'vitest'
-import resolvers from '../src/resolvers.js'
-import loadSchema from '../src/schema.js'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
+import { expect, describe, it } from 'vitest'
 import * as gqlType from '../src/typeDefs/gqlTypes.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
+import { gqlApiUrl } from './testSetup.test.js'
 
 describe('createFacility', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        await initiatilizeFirebaseInstance()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-
     it('creates a new Facility', async () => {
         const createFacilityRequest = {
             query: createFacilityMutation,
@@ -34,7 +14,7 @@ describe('createFacility', () => {
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
 
-        const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
+        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
 
         //should not have errors
         expect(createFacilityResult.body.errors).toBeUndefined()
@@ -50,7 +30,7 @@ describe('createFacility', () => {
         } as gqlRequest
 
         // Query the facility by id
-        const getFacilityResult = await request(url).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
         const errors = createFacilityResult.body?.errors
@@ -78,7 +58,7 @@ describe('createFacility', () => {
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
 
-        const createFacilityResult = await request(url).post('/').send(createFacilityRequest)
+        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
 
         //should not have errors
         const errors = createFacilityResult.body?.errors
@@ -99,7 +79,7 @@ describe('createFacility', () => {
         } as gqlRequest
 
         // Query the facility by id
-        const getFacilityResult = await request(url).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
         expect(getFacilityResult.body.errors).toBeUndefined()
@@ -112,22 +92,6 @@ describe('createFacility', () => {
 })
 
 describe('getFacilityById', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        await initiatilizeFirebaseInstance()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-
     it('gets the Facility that matches the facility_id', async () => {
         const createFacilityRequest = {
             query: createFacilityMutation,
@@ -137,7 +101,7 @@ describe('getFacilityById', () => {
         } as gqlMutation<gqlType.CreateFacilityInput>
 
         // Create a new facility
-        const newFacilityResult = await request(url).post('/').send(createFacilityRequest)
+        const newFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
 
         //should not have errors
         const errors = newFacilityResult.body?.errors
@@ -158,7 +122,7 @@ describe('getFacilityById', () => {
         } as gqlRequest
 
         // Query the facility by id
-        const getFacilityResult = await request(url).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
         expect(getFacilityResult.body?.errors).toBeUndefined()
@@ -177,22 +141,6 @@ describe('getFacilityById', () => {
 })
 
 describe('updateFacility', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        await initiatilizeFirebaseInstance()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-
     it('updates various Facility fields', async () => {
         // Create a new facility
         const createFacilityRequest = {
@@ -201,7 +149,7 @@ describe('updateFacility', () => {
                 input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
-        const newFacilityResult = await request(url).post('/').send(createFacilityRequest)
+        const newFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
 
         //should not have errors
         const errors = newFacilityResult.body?.errors
@@ -225,7 +173,7 @@ describe('updateFacility', () => {
         } as gqlMutation<gqlType.CreateFacilityInput>
 
         // Mutation to update the facility
-        const updateFacilityResult = await request(url).post('/').send(updateFacilityMutationRequest)
+        const updateFacilityResult = await request(gqlApiUrl).post('/').send(updateFacilityMutationRequest)
 
         //should not have errors
         expect(updateFacilityResult.body?.errors).toBeUndefined()
@@ -238,7 +186,7 @@ describe('updateFacility', () => {
         } as gqlRequest
 
         // fetch the updated facility
-        const getFacilityResult = await request(url).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
 
         // Compare the actual updated facility returned by getFacilityById to the update request we sent
         const updatedFacility = getFacilityResult.body.data.facility as gqlType.Facility
@@ -255,6 +203,7 @@ describe('updateFacility', () => {
 
 export const createFacilityMutation = `mutation test_createFacility($input: CreateFacilityInput!) {
     createFacility(input: $input) {
+        id
         contact {
         address {
             addressLine1En
@@ -273,7 +222,6 @@ export const createFacilityMutation = `mutation test_createFacility($input: Crea
         website
         }
         healthcareProfessionalIds
-        id
         nameEn
         nameJa
         createdDate
