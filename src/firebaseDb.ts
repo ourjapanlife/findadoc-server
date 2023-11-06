@@ -13,8 +13,10 @@ export let dbInstance: Firestore
 const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
     try {
         const ref = newDbInstance.collection('facilities')
-        //eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-        const dbResult = await ref.limit(1).get()
+
+        // we want to test that we can connect to firestore, so we try to get a document. 
+        // If the connection fails, unfortunately this will hang for a really long time. There is no timeout option for this, currently. 
+        await ref.limit(1).get()
 
         console.log('🔥 Firestore connection established 🔥')
     } catch (ex) {

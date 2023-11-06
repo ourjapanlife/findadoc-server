@@ -29,12 +29,6 @@ const resolvers = {
             convertErrorsToGqlErrors(matchingHealthcareProfessionalResult)
             return matchingHealthcareProfessionalResult.data
         },
-        // healthcareProfessionals: async () => {
-        //     const matchingProfessionals = await healthcareProfessional.searchHealthcareProfessionals(['1'])
-        
-        //     convertErrorsToGqlErrors(queryResults)
-        //     return matchingProfessionals
-        // },
         submission: async (_parent: unknown, args: { id: string })
         : Promise<gqlType.Submission | undefined> => {
             const matchingSubmissionResult = await submissionService.getSubmissionById(args.id)

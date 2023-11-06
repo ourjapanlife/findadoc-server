@@ -208,28 +208,6 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         //TODO fix this: add/remove healthcareprofessionalIds based on the actions. 
         //TODO update the associated healthcare professionals based on these changes. 
 
-        // Object.keys((fieldsToUpdate, currentKey) => {
-        // const key = fieldsToUpdate[currentKey] as keyof gqlTypes.UpdateFacilityInput
-        // (Object.keys(fieldsToUpdate) as (keyof typeof fieldsToUpdate)[]).forEach((currentKey, index) => {
-
-        // for (const currentKey in fieldsToUpdate) {
-        //     if (currentKey && currentKey in updatedDbFacility) {
-        //         updatedDbFacility[currentKey as keyof gqlTypes.UpdateFacilityInput] =
-        //             fieldsToUpdate[currentKey as keyof gqlTypes.UpdateFacilityInput]
-        //     }
-
-        //     if(currentKey === 'healthcareProfessionalIds' && fieldsToUpdate.healthcareProfessionalIds) {
-        //         fieldsToUpdate.healthcareProfessionalIds.forEach((relationship, index) => {
-        //             if(relationship.action === gqlTypes.AssociationAction.Add) {
-        //                 updatedDbFacility.healthcareProfessionalIds?.push(id)
-        //             } 
-        //             if(relationship?.action === gqlTypes.AssociationAction.Remove) {
-        //                 updatedDbFacility.healthcareProfessionalIds?.splice(index, 1)
-        //             }
-        //         }
-        //     }
-        // }
-
         await facilityRef.set(updatedDbFacility, { merge: true })
 
         console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(updatedDbFacility)}`)

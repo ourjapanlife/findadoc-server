@@ -40,15 +40,15 @@ describe('createHealthcareProfessional', () => {
         expect(searchResult.body?.errors).toBeUndefined()
 
         const searchedProfessional = searchResult.body.data.healthcareProfessional as HealthcareProfessional
-        const originalValues = createHealthcareProfessionalMutationRequest.variables.input
+        const originalInputValues = createHealthcareProfessionalMutationRequest.variables.input
 
         //validate the created HealthcareProfessional has the same values as the original
         expect(searchedProfessional).toBeDefined()
         expect(searchedProfessional.id).toBeDefined()
-        expect(searchedProfessional.names).toEqual(originalValues.names)
-        expect(searchedProfessional.degrees).toEqual(originalValues.degrees)
-        expect(searchedProfessional.spokenLanguages).toEqual(originalValues.spokenLanguages)
-        expect(searchedProfessional.acceptedInsurance).toEqual(originalValues.acceptedInsurance)
+        expect(searchedProfessional.names).toEqual(originalInputValues.names)
+        expect(searchedProfessional.degrees).toEqual(originalInputValues.degrees)
+        expect(searchedProfessional.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(searchedProfessional.acceptedInsurance).toEqual(originalInputValues.acceptedInsurance)
         expect(searchedProfessional.createdDate).toBeDefined()
         expect(searchedProfessional.updatedDate).toBeDefined()
     })

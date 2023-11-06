@@ -21,7 +21,7 @@ describe('createSubmission', () => {
         //should not have errors
         expect(response.body.errors).toBeUndefined()
 
-        const originalValues = createSubmissionRequest.variables.input
+        const originalInputValues = createSubmissionRequest.variables.input
         const newSubmission = response.body.data.createSubmission as Submission
 
         // Query to get the Submission by id
@@ -42,12 +42,12 @@ describe('createSubmission', () => {
 
         expect(foundSubmissions).toBeDefined()
         expect(foundSubmissions.id).toBeDefined()
-        expect(foundSubmissions.healthcareProfessionalName).toBe(originalValues.healthcareProfessionalName)
-        expect(foundSubmissions.googleMapsUrl).toBe(originalValues.googleMapsUrl)
+        expect(foundSubmissions.healthcareProfessionalName).toBe(originalInputValues.healthcareProfessionalName)
+        expect(foundSubmissions.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
         expect(foundSubmissions.isApproved).toBe(false)
         expect(foundSubmissions.isRejected).toBe(false)
         expect(foundSubmissions.isUnderReview).toBe(false)
-        expect(foundSubmissions.spokenLanguages).toEqual(originalValues.spokenLanguages)
+        expect(foundSubmissions.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
     })
 })
 
@@ -86,15 +86,15 @@ describe('updateSubmission', () => {
 
         // Compare the data returned in the response to the updated fields that were sent
         const updatedSubmission = updateSubmissionResult.body.data.updateSubmission as Submission
-        const originalValues = updateSubmissionRequest.variables.input
+        const originalInputValues = updateSubmissionRequest.variables.input
 
         expect(updatedSubmission.id).toBe(newSubmission.id)
-        expect(updatedSubmission.googleMapsUrl).toBe(originalValues.googleMapsUrl)
-        expect(updatedSubmission.healthcareProfessionalName).toBe(originalValues.healthcareProfessionalName)
-        expect(updatedSubmission.spokenLanguages).toEqual(originalValues.spokenLanguages)
-        expect(updatedSubmission.isApproved).toBe(originalValues.isApproved)
-        expect(updatedSubmission.isUnderReview).toBe(originalValues.isUnderReview)
-        expect(updatedSubmission.isRejected).toBe(originalValues.isRejected)
+        expect(updatedSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
+        expect(updatedSubmission.healthcareProfessionalName).toBe(originalInputValues.healthcareProfessionalName)
+        expect(updatedSubmission.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(updatedSubmission.isApproved).toBe(originalInputValues.isApproved)
+        expect(updatedSubmission.isUnderReview).toBe(originalInputValues.isUnderReview)
+        expect(updatedSubmission.isRejected).toBe(originalInputValues.isRejected)
     })
 })
 
@@ -121,11 +121,11 @@ describe('getSubmissionById', () => {
         const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
 
         // Compare the data returned in the response to the updated fields that were sent
-        const originalValues = createSubmissionRequest.variables.input
+        const originalInputValues = createSubmissionRequest.variables.input
 
-        expect(newSubmission.googleMapsUrl).toBe(originalValues.googleMapsUrl)
-        expect(newSubmission.healthcareProfessionalName).toBe(originalValues.healthcareProfessionalName)
-        expect(newSubmission.spokenLanguages).toEqual(originalValues.spokenLanguages)
+        expect(newSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
+        expect(newSubmission.healthcareProfessionalName).toBe(originalInputValues.healthcareProfessionalName)
+        expect(newSubmission.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
         expect(newSubmission.isApproved).toBeFalsy()
         expect(newSubmission.isUnderReview).toBeFalsy()
         expect(newSubmission.isRejected).toBeFalsy()
@@ -362,7 +362,7 @@ describe('searchSubmissions', () => {
     })
 })
 
-async function checkSearchResults(searchSubmissionsRequest: gqlRequest, originalValues: CreateSubmissionInput) {
+async function checkSearchResults(searchSubmissionsRequest: gqlRequest, originalInputValues: CreateSubmissionInput) {
     //Get the submissions query data
     const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
 
@@ -379,14 +379,14 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
     const firstSubmission = searchedSubmissions[0]
 
     //Compare the data returned in the response to the createdSubmission
-    expect(firstSubmission.googleMapsUrl).toBe(originalValues.googleMapsUrl)
+    expect(firstSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
     expect(!!Date.parse(firstSubmission.createdDate)).toBe(true)
     expect(firstSubmission.healthcareProfessionalName)
-        .toBe(originalValues.healthcareProfessionalName)
+        .toBe(originalInputValues.healthcareProfessionalName)
     expect(firstSubmission.isApproved).toBe(false)
     expect(firstSubmission.isRejected).toBe(false)
     expect(firstSubmission.isUnderReview).toBe(false)
-    expect(firstSubmission.spokenLanguages).toStrictEqual(originalValues.spokenLanguages)
+    expect(firstSubmission.spokenLanguages).toStrictEqual(originalInputValues.spokenLanguages)
 }
 
 const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
