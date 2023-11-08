@@ -1,7 +1,5 @@
-import { GraphQLError } from 'graphql'
-
 export type Result<T> = {
-    data?: T,
+    data: T,
     hasErrors: boolean,
     errors?: Error[]
 }
@@ -12,10 +10,10 @@ export type Error = {
     httpStatus?: number,
 }
 
-
 export enum ErrorCode {
     SERVER_ERROR = 'SERVER_ERROR',
     NOT_FOUND = 'NOT_FOUND',
+    REQUIRED = 'REQUIRED',
     MISSING_INPUT = 'MISSING_INPUT',
     NEGATIVE_NUMBER = 'NEGATIVE_NUMBER',
     INVALID_ID = 'INVALID_ID',
@@ -26,29 +24,7 @@ export enum ErrorCode {
     INVALID_PHONE_NUMBER = 'INVALID_PHONE_NUMBER',
     INVALID_WEBSITE = 'INVALID_WEBSITE',
     SUBMISSION_ALREADY_APPROVED = 'SUBMISSION_ALREADY_APPROVED',
-    ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED = 'ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED',
-    INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR'
-}
-
-export const CustomErrors = {
-    notFound: (message: string) => {
-        throw new GraphQLError(message, {
-            extensions: {
-                code: 'NOT_FOUND',
-                http: {
-                    status: 404
-                }
-            }
-        })
-    },
-    missingInput: (message: string) => {
-        throw new GraphQLError(message, {
-            extensions: {
-                code: 'MISSING_INPUT',
-                http: {
-                    status: 400
-                }
-            }
-        })
-    }
+    CREATEPROFFESIONAL_FACILITYIDS_REQUIRED = 'CREATEPROFFESIONAL_FACILITYIDS_REQUIRED',
+    UPDATEPROFFESIONAL_FACILITYIDS_REQUIRED = 'UPDATEPROFFESIONAL_FACILITYIDS_REQUIRED',
+    INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
 }

@@ -1,219 +1,136 @@
-import { expect } from '@jest/globals'
-import resolvers from '../src/resolvers'
-import loadSchema from '../src/schema'
 import request from 'supertest'
-import { ApolloServer } from '@apollo/server'
-import { startStandaloneServer } from '@apollo/server/standalone'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
-import { Error, ErrorCode } from '../src/result'
-
-const facilityIds = [] as string[]
-
-const facilityQueryData = {
-    query: `mutation CreateFacilityWithHealthcareProfessional($input: FacilityInput) {
-        createFacilityWithHealthcareProfessional(input: $input) {
-          id
-        }
-      }`,
-    variables: {
-        input: {
-            contact: {
-                address: {
-                    addressLine1En: null,
-                    addressLine1Ja: null,
-                    addressLine2En: null,
-                    addressLine2Ja: null,
-                    cityEn: null,
-                    postalCode: null,
-                    cityJa: null,
-                    prefectureEn: null,
-                    prefectureJa: null
-                },
-                email: null,
-                mapsLink: null,
-                phone: null,
-                website: null
-            },
-            healthcareProfessionalIds: null,
-            healthcareProfessionals: [
-                {
-                    acceptedInsurance: 'JAPANESE_HEALTH_INSURANCE',
-                    degrees: [
-                        {
-                            nameJa: null,
-                            nameEn: null,
-                            abbreviation: null
-                        }
-                    ],
-                    facilityIds: [],
-                    names: [
-                        {
-                            middleName: null,
-                            locale: 'ENGLISH',
-                            lastName: 'null',
-                            firstName: 'null'
-                        }
-                    ],
-                    specialties: [
-                        {
-                            names: [
-                                {
-                                    name: null,
-                                    locale: null
-                                }
-                            ]
-                        }
-                    ],
-                    spokenLanguages: [
-                        {
-                            nameNative: 'null',
-                            nameEn: 'null',
-                            iso639_3: 'null',
-                            nameJa: 'null'
-                        }
-                    ]
-                }
-            ],
-            isDeleted: null,
-            nameEn: null,
-            nameJa: null
-        }
-    }
-
-}
-
-const healthcareProfessionalQueryData = {
-    query: `mutation Mutation($input: HealthcareProfessionalInput) {
-        createHealthcareProfessional(input: $input) {
-          id
-          names {
-            lastName
-            firstName
-            middleName
-            locale
-          }
-          degrees {
-            nameJa
-            nameEn
-            abbreviation
-          }
-          spokenLanguages {
-            iso639_3
-            nameJa
-            nameEn
-            nameNative
-          }
-          specialties {
-            names {
-              name
-              locale
-            }
-          }
-          acceptedInsurance
-          isDeleted
-          createdDate
-          updatedDate
-        }
-      }`,
-    variables: {
-        input: {
-            acceptedInsurance: ['INSURANCE_NOT_ACCEPTED'],
-            degrees: [
-                {
-                    abbreviation: 'DG',
-                    nameEn: 'some degree EN',
-                    nameJa: 'some degree JA'
-                }
-            ],
-            names: [
-                {
-                    firstName: 'some first name',
-                    lastName: 'some last name',
-                    locale: 'ENGLISH',
-                    middleName: 'some middle name'
-                }
-            ],
-            specialties: [
-                {
-                    names: [
-                        {
-                            locale: 'ENGLISH',
-                            name: 'some specialty name'
-                        }
-                    ]
-                }
-            ],
-            spokenLanguages: [
-                {
-                    iso639_3: 'EN',
-                    nameEn: 'some spoken language EN',
-                    nameJa: 'some spoken language JA',
-                    nameNative: 'some spoken language NATIVE'
-                }
-            ],
-            facilityIds: facilityIds
-        }
-    }
-}
+import { expect, describe, it } from 'vitest'
+import { Error, ErrorCode } from '../src/result.js'
+import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
+import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
+import { CreateHealthcareProfessionalInput, HealthcareProfessional } from '../src/typeDefs/gqlTypes.js'
+import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
 
 describe('createHealthcareProfessional', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, { listen: { port: 0 } }))
-        await initiatilizeFirebaseInstance()
-
-        // Create a new Facility to add HealthProfessionals to
-        const facility = await request(url).post('/').send(facilityQueryData)
-
-        const facilityId = await facility.body.data.createFacilityWithHealthcareProfessional.id
-
-        facilityIds.push(facilityId)
-    })
-
-    afterAll(async () => {
-        await server.stop()
-    })
-
     it('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
-        const response = await request(url).post('/').send(healthcareProfessionalQueryData)
+        const createHealthcareProfessionalMutationRequest = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: generateRandomCreateHealthcareProfessionalInput({ facilityIds: sharedFacilityIds })
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalMutationRequest)
 
         //should not have errors
-        expect(response.body.errors).toBeUndefined()
+        const errors = createProfessionalResult.body?.errors
 
-        const inputData = healthcareProfessionalQueryData.variables.input
-        const newHealthcareProfessionalData = response.body.data.createHealthcareProfessional
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
-        expect(newHealthcareProfessionalData.id).toBeDefined()
-        expect(newHealthcareProfessionalData.names).toEqual(inputData.names)
-        expect(newHealthcareProfessionalData.degrees).toEqual(inputData.degrees)
-        expect(newHealthcareProfessionalData.spokenLanguages).toEqual(inputData.spokenLanguages)
-        expect(newHealthcareProfessionalData.acceptedInsurance).toEqual(inputData.acceptedInsurance)
-        expect(newHealthcareProfessionalData.isDeleted).toBe(false)
-        expect(newHealthcareProfessionalData.createdDate).toBeDefined()
-        expect(newHealthcareProfessionalData.updatedDate).toBeDefined()
+        const createdHealthcareProfessional =
+            createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+
+        const getHealthcareProfessionalByIdRequest = {
+            query: getHealthcareProfessionalByIdQuery,
+            variables: {
+                id: createdHealthcareProfessional.id
+            }
+        } as gqlRequest
+
+        const searchResult = await request(gqlApiUrl).post('/').send(getHealthcareProfessionalByIdRequest)
+
+        //should not have errors
+        expect(searchResult.body?.errors).toBeUndefined()
+
+        const searchedProfessional = searchResult.body.data.healthcareProfessional as HealthcareProfessional
+        const originalInputValues = createHealthcareProfessionalMutationRequest.variables.input
+
+        //validate the created HealthcareProfessional has the same values as the original
+        expect(searchedProfessional).toBeDefined()
+        expect(searchedProfessional.id).toBeDefined()
+        expect(searchedProfessional.names).toEqual(originalInputValues.names)
+        expect(searchedProfessional.degrees).toEqual(originalInputValues.degrees)
+        expect(searchedProfessional.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(searchedProfessional.acceptedInsurance).toEqual(originalInputValues.acceptedInsurance)
+        expect(searchedProfessional.createdDate).toBeDefined()
+        expect(searchedProfessional.updatedDate).toBeDefined()
     })
 
     it('failing: throws an error if the list of facilityIds is empty', async () => {
-        //clear facilityIds so the empty list will throw a validation error
-        facilityIds.pop()
+        //send an empty facilityIds array so the empty list will throw a validation error
+        const emptyFacilityIds = [] as string[]
 
-        const response = await request(url).post('/').send(healthcareProfessionalQueryData)
+        const createHealthcareProfessionalRequest = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: generateRandomCreateHealthcareProfessionalInput({ facilityIds: emptyFacilityIds })
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        expect(response.body.errors).toBeDefined()
-        expect(response.body.errors[0].extensions.errors[0]).toBeDefined()
-        expect(response.body.errors[0].extensions.errors.length).toEqual(1)
+        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalRequest)
+        const createdProfessional
+            = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
 
-        const error = response.body.errors[0].extensions.errors[0] as Error
+        expect(createdProfessional).toBeFalsy()
+        expect(createProfessionalResult.body?.errors).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toEqual(1)
 
-        expect(error.field).toBe('facilityId')
-        expect(error.errorCode).toBe(ErrorCode.ADDHEALTHCAREPROF_FACILITYIDS_REQUIRED)
+        const error = createProfessionalResult.body?.errors[0].extensions.errors[0] as Error
+
+        expect(error.field).toBe('facilityIds')
+        expect(error.errorCode).toBe(ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED)
         expect(error.httpStatus).toBe(400)
     })
 })
 
+const createHealthcareProfessionalMutation = `mutation test_createHealthcareProfessional($input: CreateHealthcareProfessionalInput!) {
+    createHealthcareProfessional(input: $input) {
+        id
+        names {
+            lastName
+            firstName
+            middleName
+            locale
+        }
+        degrees {
+            nameJa
+            nameEn
+            abbreviation
+        }
+        specialties {
+            names {
+                name
+                locale
+            }
+        }
+        spokenLanguages
+        acceptedInsurance
+        createdDate
+        updatedDate
+    }
+}`
+
+const getHealthcareProfessionalByIdQuery = `query test_getHealthcareProfessionalById($id: ID!) {
+    healthcareProfessional(id: $id) {
+        id
+        names {
+            lastName
+            firstName
+            middleName
+            locale
+        }
+        degrees {
+            nameJa
+            nameEn
+            abbreviation
+        }
+        specialties {
+            names {
+                name
+                locale
+            }
+        }
+        spokenLanguages
+        acceptedInsurance
+        createdDate
+        updatedDate
+    }
+}`

@@ -154,21 +154,15 @@ Then, just add breakpoints by clicking on the line number of your code.
 # How to Test your code
 
 <details>
-  <summary> Testing with Jest </summary>
-  
-  1. To run Jest directly from the CLI, install it globally with the following:
-  
-  ```sh
-  npm install jest --global
-  ```
+  <summary> Testing with Vitest </summary>
 
-2. Start the Docker container:
+1. Start the Docker container:
 
 ```sh
 yarn test:dockerstart
 ```
 
-3. Run the tests:
+2. Run the tests:
 
 ```sh
 yarn test

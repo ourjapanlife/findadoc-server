@@ -1,11 +1,9 @@
-import { ApolloServer } from '@apollo/server'
+import { ApolloServer, BaseContext, GraphQLRequestContext } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
-import loadSchema from './schema'
-import resolvers from './resolvers'
-import { initiatilizeFirebaseInstance } from './firebaseDb'
-import { envVariables } from '../utils/environmentVariables'
-import { Error } from './result'
-
+import loadSchema from './schema.js'
+import resolvers from './resolvers.js'
+import { initiatilizeFirebaseInstance } from './firebaseDb.js'
+import { envVariables } from '../utils/environmentVariables.js'
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
 
 export const createApolloServer = async () => {
@@ -18,37 +16,20 @@ export const createApolloServer = async () => {
         introspection: true,
         plugins: [
             //enables the apollo sanbox as the landing page
-            ApolloServerPluginLandingPageLocalDefault()
-        ],
-        // Allows you to choose what error info is visable for client side
-        formatError: gqlError => {
-            console.log('gqlError', gqlError)
+            ApolloServerPluginLandingPageLocalDefault(),
+            {
+                async requestDidStart(requestContext: GraphQLRequestContext<BaseContext>) {
+                    //we want to skip logging requests from the apollo query explorer internal introspection query
+                    const isApolloIntrospectionQuery = requestContext.request.query?.includes('IntrospectionQuery')
 
-            //these are the errors that are thrown in the resolvers using the Result.errors object
-            if (gqlError.extensions?.errors) {
-                //let's format these errors similar to native apollo gql errors. 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const formattedErrors = (gqlError.extensions.errors as any[])
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    .reduce((formattedError: any, error: Error) => {
-                        formattedError.path.push(error.field)
-                        formattedError.errors.push(error)
-                        return formattedError
-                    }, {
-                        path: [],
-                        errors: []
-                    })
-
-                formattedErrors.message = gqlError.message
-                formattedErrors.path = gqlError.path
-
-                return formattedErrors
+                    if (!isApolloIntrospectionQuery) {
+                        console.log(`Apollo Request received:\n Query: ' + ${requestContext.request.query} \nVariables: ${JSON.stringify(requestContext.request.variables)}`)
+                    }
+                }
             }
-
-            return gqlError
-        }
+        ]
     })
-
+        
     console.log('⛽️ Starting server...')
     const { url } = await startStandaloneServer(server, { listen: { port: parseInt(envVariables.serverPort()) } })
 

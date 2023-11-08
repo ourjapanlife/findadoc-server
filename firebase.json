@@ -1,16 +1,16 @@
 {
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "emulators": {
     "firestore": {
-        "enabled": true,
-        "port": 3004
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
     },
-    "ui": {
-      "enabled": true,
-      "port": 3005
+    "emulators": {
+        "firestore": {
+            "enabled": true,
+            "port": 3004
+        },
+        "ui": {
+            "enabled": true,
+            "port": 3005
+        }
     }
-  }
 }

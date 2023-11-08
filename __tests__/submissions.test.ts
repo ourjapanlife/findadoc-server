@@ -1,581 +1,452 @@
-import { expect } from '@jest/globals'
-import resolvers from '../src/resolvers'
-import loadSchema from '../src/schema'
+import { expect, describe, it } from 'vitest'
 import request from 'supertest'
-import { ApolloServer } from '@apollo/server'
-import { startStandaloneServer } from '@apollo/server/standalone'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
-import { initializeTestEnvironment, RulesTestEnvironment} from '@firebase/rules-unit-testing'
-import fs from 'fs'
-
-const queryData = {
-    query: `mutation Mutation($input: SubmissionInput) {
-        createSubmission(input: $input) {
-          id
-          googleMapsUrl
-          createdDate
-          healthcareProfessionalName
-          isApproved
-          isRejected
-          isUnderReview
-          spokenLanguages {
-            iso639_3
-            nameEn
-            nameJa
-            nameNative
-          }
-          updatedDate
-        }
-      }`,
-    variables: {
-        input: {
-            googleMapsUrl: 'http://domain.com',
-            healthcareProfessionalName: 'a',
-            spokenLanguages: [
-                {
-                    iso639_3: 'en',
-                    nameEn: 'English',
-                    nameJa: '英語',
-                    nameNative: 'English'
-                }
-            ]
-        }
-    }
-}
+import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions.js'
+import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
+import { Error, ErrorCode } from '../src/result.js'
+import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
+import { gqlRequest } from '../utils/gqlTool.js'
+import { gqlApiUrl } from './testSetup.test.js'
 
 describe('createSubmission', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        await initiatilizeFirebaseInstance()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-    
     it('creates a new Submission', async () => {
-        const response = await request(url).post('/').send(queryData)
-        
-        const inputData = queryData.variables.input
-        const newSubmissionData = response.body.data.createSubmission
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: generateRandomCreateSubmissionInput()
+            }
+        } satisfies gqlRequest
+        // send request to create a new Submission
+        const response = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
-        expect(newSubmissionData.googleMapsUrl).toBe(inputData.googleMapsUrl)
-        expect(newSubmissionData.healthcareProfessionalName).toBe(inputData.healthcareProfessionalName)
-        expect(newSubmissionData.isApproved).toBe(false)
-        expect(newSubmissionData.isRejected).toBe(false)
-        expect(newSubmissionData.isUnderReview).toBe(false)
-        expect(newSubmissionData.spokenLanguages).toEqual(inputData.spokenLanguages)
-        expect(newSubmissionData.id).toBeDefined()
+        //should not have errors
+        expect(response.body.errors).toBeUndefined()
+
+        const originalInputValues = createSubmissionRequest.variables.input
+        const newSubmission = response.body.data.createSubmission as Submission
+
+        // Query to get the Submission by id
+        const getSubmissionByIdRequest = {
+            query: getSubmissionByIdQuery,
+            variables: {
+                id: newSubmission.id
+            }
+        } satisfies gqlRequest
+
+        // Get the submission by id query data
+        const searchResult = await request(gqlApiUrl).post('/').send(getSubmissionByIdRequest)
+
+        //should not have errors
+        expect(searchResult.body?.errors).toBeUndefined()
+
+        const foundSubmissions = searchResult.body.data.submission as Submission
+
+        expect(foundSubmissions).toBeDefined()
+        expect(foundSubmissions.id).toBeDefined()
+        expect(foundSubmissions.healthcareProfessionalName).toBe(originalInputValues.healthcareProfessionalName)
+        expect(foundSubmissions.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
+        expect(foundSubmissions.isApproved).toBe(false)
+        expect(foundSubmissions.isRejected).toBe(false)
+        expect(foundSubmissions.isUnderReview).toBe(false)
+        expect(foundSubmissions.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
     })
 })
 
 describe('updateSubmission', () => {
-    let url: string
-    let testEnv: RulesTestEnvironment
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        testEnv = await initializeTestEnvironment({
-            projectId: process.env.FIRESTORE_PROJECT_ID,
-            firestore: {
-                rules: fs.readFileSync('./firestore.rules', 'utf8')
-            }
-        })
-    })
-
-    beforeEach(async () => {
-        await testEnv.clearFirestore()
-    })
-
-    afterAll(async () => {
-        await server?.stop()  
-    })
-    
     it('updates a Submission with the fields included in the input', async () => {
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: generateRandomCreateSubmissionInput()
+            }
+        } satisfies gqlRequest
+
         // Create a new Submission
-        const newSubmission = await request(url).post('/').send(queryData)
+        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+
+        //should not have errors
+        expect(newSubmissionResult.body.errors).toBeUndefined()
 
         // Get the ID of the new Submission
-        const submissionId = newSubmission.body.data.createSubmission.id
+        const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
 
         // Mutation to update the Submission
-        const submissionQuery = {
-            query: `mutation Mutation($updateSubmissionId: ID!, $input: SubmissionInput) {
-                updateSubmission(id: $updateSubmissionId, input: $input) {
-                  id
-                  googleMapsUrl
-                  healthcareProfessionalName
-                  spokenLanguages {
-                    iso639_3
-                    nameJa
-                    nameEn
-                    nameNative
-                  }
-                  isUnderReview
-                  isApproved
-                  isRejected
-                  createdDate
-                  updatedDate
-                }
-              }`,
+        const updateSubmissionRequest = {
+            query: updateSubmissionMutation,
             variables: {
-                input: {
-                    googleMapsUrl: 'http://new.com',
-                    healthcareProfessionalName: 'some NEW name',
-                    spokenLanguages: [
-                        {
-                            iso639_3: 'en',
-                            nameEn: 'English',
-                            nameJa: 'Eigo',
-                            nameNative: 'English'
-                        }
-                    ],
-                    isUnderReview: true,
-                    isApproved: true,
-                    isRejected: true
-                },
-                updateSubmissionId: submissionId
+                id: newSubmission.id,
+                input: generateRandomUpdateSubmissionInput({ isRejected: true, isApproved: false })
             }
-        }
+        } satisfies gqlRequest
 
-        // Get the submission query data
-        const searchResult = await request(url).post('/').send(submissionQuery)
+        // Update the submission
+        const updateSubmissionResult = await request(gqlApiUrl).post('/').send(updateSubmissionRequest)
+
+        //should not have errors
+        expect(updateSubmissionResult.body?.errors).toBeUndefined()
 
         // Compare the data returned in the response to the updated fields that were sent
-        const submissionResponse = searchResult.body.data.updateSubmission
-        const updatedFields = submissionQuery.variables.input
+        const updatedSubmission = updateSubmissionResult.body.data.updateSubmission as Submission
+        const originalInputValues = updateSubmissionRequest.variables.input
 
-        expect(submissionResponse.id).toBe(submissionId)
-        expect(submissionResponse.googleMapsUrl).toBe(updatedFields.googleMapsUrl)
-        expect(submissionResponse.healthcareProfessionalName).toBe(updatedFields.healthcareProfessionalName)
-        expect(submissionResponse.spokenLanguages).toEqual(updatedFields.spokenLanguages)
-        expect(submissionResponse.isApproved).toBe(updatedFields.isApproved)
-        expect(submissionResponse.isUnderReview).toBe(updatedFields.isUnderReview)
-        expect(submissionResponse.isRejected).toBe(updatedFields.isRejected)
+        expect(updatedSubmission.id).toBe(newSubmission.id)
+        expect(updatedSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
+        expect(updatedSubmission.healthcareProfessionalName).toBe(originalInputValues.healthcareProfessionalName)
+        expect(updatedSubmission.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(updatedSubmission.isApproved).toBe(originalInputValues.isApproved)
+        expect(updatedSubmission.isUnderReview).toBe(originalInputValues.isUnderReview)
+        expect(updatedSubmission.isRejected).toBe(originalInputValues.isRejected)
     })
 })
 
 describe('getSubmissionById', () => {
-    let url: string
-    let testEnv: RulesTestEnvironment
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        testEnv = await initializeTestEnvironment({
-            projectId: process.env.FIRESTORE_PROJECT_ID,
-            firestore: {
-                rules: fs.readFileSync('./firestore.rules', 'utf8')
-            }
-        })
-    })
-
-    beforeEach(async () => {
-        await testEnv.clearFirestore()
-    })
-
-    afterAll(async () => {
-        await server?.stop()  
-    })
-    
     it('get the submission that matches the id', async () => {
-        // Create a new Submission
-        const newSubmission = await request(url).post('/').send(queryData)
-
-        // Destructure newSubmission
-        const createdSubmissionData = newSubmission.body.data.createSubmission
-        
-        // Get the ID of the new Submission
-        const submissionId = createdSubmissionData.id
-        
-        // Query to get the Submission by id
-        const submissionQuery = {
-            query: `query Query($submissionId: ID!) {
-                submission(id: $submissionId) {
-                  id
-                  googleMapsUrl
-                  healthcareProfessionalName
-                  spokenLanguages {
-                    iso639_3
-                    nameJa
-                    nameEn
-                    nameNative
-                  }
-                  isUnderReview
-                  isApproved
-                  isRejected
-                  createdDate
-                  updatedDate
-                }
-              }`,
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
             variables: {
-                submissionId: submissionId
+                input: generateRandomCreateSubmissionInput()
             }
+        } satisfies gqlRequest
+
+        // Create a new Submission
+        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+
+        //should not have errors
+        const errors = newSubmissionResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
         }
 
-        // Get the submission by id query data
-        const searchResult = await request(url).post('/').send(submissionQuery)
+        // Get the ID of the new Submission
+        const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
 
         // Compare the data returned in the response to the updated fields that were sent
-        const submissionResponse = searchResult.body.data.submission
-    
-        expect(submissionResponse.id).toBe(submissionId)
-        expect(submissionResponse.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
-        expect(submissionResponse.healthcareProfessionalName).toBe(createdSubmissionData.healthcareProfessionalName)
-        expect(submissionResponse.spokenLanguages).toEqual(createdSubmissionData.spokenLanguages)
-        expect(submissionResponse.isApproved).toBe(createdSubmissionData.isApproved)
-        expect(submissionResponse.isUnderReview).toBe(createdSubmissionData.isUnderReview)
-        expect(submissionResponse.isRejected).toBe(createdSubmissionData.isRejected)
+        const originalInputValues = createSubmissionRequest.variables.input
+
+        expect(newSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
+        expect(newSubmission.healthcareProfessionalName).toBe(originalInputValues.healthcareProfessionalName)
+        expect(newSubmission.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(newSubmission.isApproved).toBeFalsy()
+        expect(newSubmission.isUnderReview).toBeFalsy()
+        expect(newSubmission.isRejected).toBeFalsy()
     })
 
     it('failing: returns an error when submission does not exist', async () => {
         // Create a non existing uuid
-        const submissionId = 'f34ec7a260e9'
-        
+        const submissionId = 'this1doesntexist'
+
         // Query to get the Submission by non existing uuid
-        const submissionQuery = {
-            query: `query Query($submissionId: ID!) {
-                submission(id: $submissionId) {
-                  id
-                  googleMapsUrl
-                  healthcareProfessionalName
-                  spokenLanguages {
-                    iso639_3
-                    nameJa
-                    nameEn
-                    nameNative
-                  }
-                  isUnderReview
-                  isApproved
-                  isRejected
-                  createdDate
-                  updatedDate
-                }
-              }`,
+        const getSubmissionByIdRequest = {
+            query: getSubmissionByIdQuery,
             variables: {
-                submissionId: submissionId
+                id: submissionId
             }
-        }
+        } satisfies gqlRequest
 
-        // Get error data
-        const searchData = await request(url).post('/').send(submissionQuery)
+        // Get the submission by id
+        const getByIdResults = await request(gqlApiUrl).post('/').send(getSubmissionByIdRequest)
 
-        // Compare the data returned in the response to the updated fields that were sent
-        const submissionErrorResponse = searchData.body
+        const gqlErrors = getByIdResults.body.errors
 
-        expect(submissionErrorResponse.errors[0].message).toBe('Error: Submission was not found.')
-        expect(submissionErrorResponse.errors[0].extensions.code).toBe('NOT_FOUND')
-        expect(searchData.status).toBe(404)
-        expect(submissionErrorResponse.data.submission).toEqual(null)
+        expect(gqlErrors).toBeDefined()
+        expect(gqlErrors.length).toBe(1)
+
+        const submissionErrors = gqlErrors[0].extensions.errors as Error[]
+
+        //We should have 1 error
+        expect(submissionErrors.length).toBe(1)
+        expect(submissionErrors[0].field).toBe('id')
+        expect(submissionErrors[0].errorCode).toBe(ErrorCode.NOT_FOUND)
+        expect(submissionErrors[0].httpStatus).toBe(404)
+
+        //there should be no result
+        expect(getByIdResults.body.data.submission).toBeFalsy()
     })
 })
 
 describe('searchSubmissions', () => {
-    let url: string
-    let testEnv: RulesTestEnvironment
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        testEnv = await initializeTestEnvironment({
-            projectId: process.env.FIRESTORE_PROJECT_ID,
-            firestore: {
-                rules: fs.readFileSync('./firestore.rules', 'utf8')
+    it('search submissions using the language filter', async () => {
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: {
+                    ...generateRandomCreateSubmissionInput(),
+                    //we want to guarantee english is a spoken language
+                    spokenLanguages: generateSpokenLanguages({ onlyEnglish: true, count: 1 })
+                } satisfies CreateSubmissionInput
             }
-        })
-    })
+        } satisfies gqlRequest
 
-    beforeEach(async () => {
-        await testEnv.clearFirestore()
-    })
-
-    afterAll(async () => {
-        await server?.stop()  
-    })
-
-    it('get submissions using the language filter', async () => {
         // Create a new Submission
-        const newSubmission = await request(url).post('/').send(queryData)
+        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
-        // Destructure newSubmission result data 
-        const createdSubmissionData = newSubmission.body.data.createSubmission
+        //should not have errors
+        const errors = newSubmissionResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         // Query to get the Submission using language filter
-        const submissionQuery = {
-            query: `query Query($filters: SubmissionSearchFilters) {
-                submissions(filters: $filters) {
-                  googleMapsUrl
-                  createdDate
-                  id
-                  healthcareProfessionalName
-                  isApproved
-                  isRejected
-                  isUnderReview
-                  spokenLanguages {
-                    iso639_3
-                    nameEn
-                    nameJa
-                    nameNative
-                  }
-                  updatedDate
-                }
-              }`,
+        const searchSubmissionsRequest = {
+            query: searchSubmissionsQuery,
             variables: {
                 filters: {
-                    spokenLanguages: [
-                        {
-                            iso639_3: 'en',
-                            nameEn: 'English',
-                            nameJa: '英語',
-                            nameNative: 'English'
-                        }
-                    ]
+                    spokenLanguages: createSubmissionRequest.variables.input.spokenLanguages
                 }
             }
-        }
+        } satisfies gqlRequest
 
-        // Get the submissions query data
-        const searchResult = await request(url).post('/').send(submissionQuery)
-
-        // Compare the data returned in the response to the createdSubmission
-        const resultData = searchResult.body.data.submissions[0]
-        
-        expect(resultData.id).toBe(createdSubmissionData.id)
-        expect(resultData.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
-        expect(resultData.createdDate).toBe(createdSubmissionData.createdDate)
-        expect(resultData.healthcareProfessionalName)
-            .toBe(createdSubmissionData.healthcareProfessionalName)
-        expect(resultData.isApproved).toBe(createdSubmissionData.isApproved)
-        expect(resultData.isRejected).toBe(createdSubmissionData.isRejected)
-        expect(resultData.isUnderReview).toBe(createdSubmissionData.isUnderReview)
-        expect(resultData.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
+        await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('get submissions using the googleMapUrl filter', async () => {
-        // Create a new Submission
-        const newSubmission = await request(url).post('/').send(queryData)
+    it('search submissions using the googleMapsUrl filter', async () => {
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: generateRandomCreateSubmissionInput() satisfies CreateSubmissionInput
+            }
+        } satisfies gqlRequest
 
-        // Destructure newSubmission result data
-        const createdSubmissionData = newSubmission.body.data.createSubmission
+        // Create a new Submission
+        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+
+        //should not have errors
+        const errors = createSubmissionResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
+
+        const originalGoogleMapsUrl = createSubmissionRequest.variables.input.googleMapsUrl
 
         // Get googleUrl of newSubmission
-        const googleMapsUrlNewSubmission = newSubmission.body.data.createSubmission.googleMapsUrl
-    
+
         // Query to get the Submission using googleMapUrl filter
-        const submissionQuery = {
-            query: `query Query($filters: SubmissionSearchFilters) {
-                submissions(filters: $filters) {
-                  googleMapsUrl
-                  createdDate
-                  id
-                  healthcareProfessionalName
-                  isApproved
-                  isRejected
-                  isUnderReview
-                  spokenLanguages {
-                    iso639_3
-                    nameEn
-                    nameJa
-                    nameNative
-                  }
-                  updatedDate
-                }
-              }`,
+        const searchSubmissionsRequest = {
+            query: searchSubmissionsQuery,
             variables: {
                 filters: {
-                    googleMapsUrl: googleMapsUrlNewSubmission
+                    googleMapsUrl: originalGoogleMapsUrl
                 }
             }
         }
 
-        const searchResult = await request(url).post('/').send(submissionQuery)
-
-        // Compare the data returned in the response to the createSubmission
-        const submissionResponse = searchResult.body.data.submissions[0]
-
-        expect(submissionResponse.id).toBe(createdSubmissionData.id)
-        expect(submissionResponse.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
-        expect(submissionResponse.createdDate).toBe(createdSubmissionData.createdDate)
-        expect(submissionResponse.healthcareProfessionalName)
-            .toBe(createdSubmissionData.healthcareProfessionalName)
-        expect(submissionResponse.isApproved).toBe(createdSubmissionData.isApproved)
-        expect(submissionResponse.isRejected).toBe(createdSubmissionData.isRejected)
-        expect(submissionResponse.isUnderReview).toBe(createdSubmissionData.isUnderReview)
-        expect(submissionResponse.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
+        await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('get submissions using the createDate filter', async () => {
+    it('get submissions using the createdDate filter', async () => {
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: generateRandomCreateSubmissionInput() satisfies CreateSubmissionInput
+            }
+        } satisfies gqlRequest
+
         // Create a new Submission
-        const newSubmission = await request(url).post('/').send(queryData)
-        
-        // Destructure newSubmission result data
-        const createdSubmissionData = newSubmission.body.data.createSubmission
+        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
-        // Get createDate 
-        const newSubmissionCreateDate = createdSubmissionData.createDate
+        //should not have errors
+        const errors = createSubmissionResult.body?.errors
 
-        // Query to get the Submission using createDate filter
-        const submissionQuery = {
-            query: `query Query($filters: SubmissionSearchFilters) {
-                submissions(filters: $filters) {
-                  googleMapsUrl
-                  createdDate
-                  id
-                  healthcareProfessionalName
-                  isApproved
-                  isRejected
-                  isUnderReview
-                  spokenLanguages {
-                    iso639_3
-                    nameEn
-                    nameJa
-                    nameNative
-                  }
-                  updatedDate
-                }
-              }`,
-            variables: {
-                filters: {
-                    createdDate: newSubmissionCreateDate
-                }
-            }
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
         }
 
-        // Get the submissions query data
-        const searchResult = await request(url).post('/').send(submissionQuery)
+        // Get the ID of the new Submission
+        const newSubmission = createSubmissionResult.body.data.createSubmission as Submission
 
-        // Compare the data returned in the response to the createdSubmissionsData
-        const resultData = searchResult.body.data.submissions[0]
-        
-        expect(resultData.id).toBe(createdSubmissionData.id)
-        expect(resultData.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
-        expect(resultData.createdDate).toBe(createdSubmissionData.createdDate)
-        expect(resultData.healthcareProfessionalName).toBe(createdSubmissionData.healthcareProfessionalName)
-        expect(resultData.isApproved).toBe(createdSubmissionData.isApproved)
-        expect(resultData.isRejected).toBe(createdSubmissionData.isRejected)
-        expect(resultData.isUnderReview).toBe(createdSubmissionData.isUnderReview)
-        expect(resultData.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
+        const isValidDate = newSubmission.createdDate && !!Date.parse(newSubmission.createdDate)
+
+        expect(isValidDate).toBe(true)
+
+        // Query to get the Submission by createdDate
+        const searchSubmissionsRequest = {
+            query: searchSubmissionsQuery,
+            variables: {
+                filters: {
+                    createdDate: newSubmission.createdDate
+                } satisfies SubmissionSearchFilters
+            }
+        } satisfies gqlRequest
+
+        await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('get submissions using multiple filters combining isApproved, isRejected and underReview', 
-       async () => {
-           // In this test beside testing the filters I want to test if it excepts multiple filters
-           
-           // Create a new Submission
-           const newSubmission = await request(url).post('/').send(queryData)
+    it('get submissions using multiple filters combining healthcareProfessionalName, spokenLanguages, and isUnderReview', async () => {
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: generateRandomCreateSubmissionInput() satisfies CreateSubmissionInput
+            }
+        } satisfies gqlRequest
 
-           // Destructure newSubmission result data
-           const createdSubmissionData = newSubmission.body.data.createSubmission
+        // Create a new Submission
+        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
-           // Get isApproved, isRejected, isUnderReview of createSubmission
-           const isApprovedNewSubmission = createdSubmissionData.isApproved
-           const isRejectedNewSubmission = createdSubmissionData.isRejected
-           const isUnderReviewNewSubmission = createdSubmissionData.isUnderReview
+        //should not have errors
+        const errors = createSubmissionResult.body?.errors
 
-           // Query to get the Submission using 3 filters
-           const submissionQuery = {
-               query: `query Query($filters: SubmissionSearchFilters) {
-                submissions(filters: $filters) {
-                  googleMapsUrl
-                  createdDate
-                  id
-                  healthcareProfessionalName
-                  isApproved
-                  isRejected
-                  isUnderReview
-                  spokenLanguages {
-                    iso639_3
-                    nameEn
-                    nameJa
-                    nameNative
-                  }
-                  updatedDate
-                }
-              }`,
-               variables: {
-                   filters: {
-                       isApproved: isApprovedNewSubmission,
-                       isRejected: isRejectedNewSubmission,
-                       isUnderReview: isUnderReviewNewSubmission
-                   }
-               }
-           }
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
-           //Get the submissions query data
-           const searchResult = await request(url).post('/').send(submissionQuery)
-        
-           // Compare the data returned in the response to the createSubmission
-           const resultData = searchResult.body.data.submissions[0]
-        
-           expect(resultData.id).toBe(createdSubmissionData.id)
-           expect(resultData.googleMapsUrl).toBe(createdSubmissionData.googleMapsUrl)
-           expect(resultData.createdDate).toBe(createdSubmissionData.createdDate)
-           expect(resultData.healthcareProfessionalName).toBe(createdSubmissionData.healthcareProfessionalName)
-           expect(resultData.isApproved).toBe(createdSubmissionData.isApproved)
-           expect(resultData.isRejected).toBe(createdSubmissionData.isRejected)
-           expect(resultData.isUnderReview).toBe(createdSubmissionData.isUnderReview)
-           expect(resultData.spokenLanguages).toStrictEqual(createdSubmissionData.spokenLanguages)
-       })
+        // Query to get the Submission using 3 filters
+        const searchSubmissionsRequest = {
+            query: searchSubmissionsQuery,
+            variables: {
+                filters: {
+                    healthcareProfessionalName: createSubmissionRequest.variables.input.healthcareProfessionalName,
+                    spokenLanguages: createSubmissionRequest.variables.input.spokenLanguages,
+                    isUnderReview: false
+                } satisfies SubmissionSearchFilters
+            }
+        } satisfies gqlRequest
+
+        await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
+    })
 
     it('get all the submissions without filters', async () => {
         // Create two new submissons to be able to see that we get 2 submissions back
-        const newSubmissionOne = await request(url).post('/').send(queryData)
-        const newSubmissionTwo = await request(url).post('/').send(queryData)
- 
-        // Destructure newSubmission result data 
-        const createdSubmissionOneData = newSubmissionOne.body.data.createSubmission
-        const createdSubmissionTwoData = newSubmissionTwo.body.data.createSubmission
-
-        // Query to get the Submission using googleMapUrl filter
-        const submissionQuery = {
-            query: `query Query($filters: SubmissionSearchFilters) {
-            submissions(filters: $filters) {
-              googleMapsUrl
-              createdDate
-              id
-              healthcareProfessionalName
-              isApproved
-              isRejected
-              isUnderReview
-              spokenLanguages {
-                iso639_3
-                nameEn
-                nameJa
-                nameNative
-              }
-              updatedDate
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: {
+                    ...generateRandomCreateSubmissionInput()
+                } satisfies CreateSubmissionInput
             }
-          }`
+        } satisfies gqlRequest
+
+        // Create a new Submission
+        const createSubmissionResult1 = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const createSubmissionResult2 = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const createdSubmission1 = createSubmissionResult1.body.data.createSubmission as Submission
+        const createdSubmission2 = createSubmissionResult2.body.data.createSubmission as Submission
+
+        //should not have errors
+        const errors1 = createSubmissionResult1.body?.errors
+        const errors2 = createSubmissionResult1.body?.errors
+
+        if (errors1 || errors2) {
+            console.log(`errors from first: ${JSON.stringify(errors1)}. errors from second: ${JSON.stringify(errors2)}`)
+            expect(errors1).toBeUndefined()
+            expect(errors2).toBeUndefined()
         }
 
-        // Get the query data
-        const searchResult = await request(url).post('/').send(submissionQuery)
-    
-        // Get all the submissions data
-        const allSubmissionsData = searchResult.body.data.submissions
-        
-        expect(allSubmissionsData.length).toBe(2)
-        expect(allSubmissionsData[1].id).toBe(createdSubmissionOneData.id)
-        expect(allSubmissionsData[0].id).toBe(createdSubmissionTwoData.id)
+        // Query to get all (both) submissions
+        const searchSubmissionsRequest = {
+            query: searchSubmissionsQuery,
+            variables: {
+                filters: {} satisfies SubmissionSearchFilters
+            }
+        } as gqlRequest
+
+        //Get the submissions query data
+        const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
+
+        //should not have errors
+        expect(searchResult.body.errors).toBeUndefined()
+
+        const searchedSubmissions = searchResult.body.data.submissions as Submission[]
+
+        //should not be empty
+        expect(searchedSubmissions).toBeDefined()
+        expect(searchedSubmissions.length).toBeGreaterThanOrEqual(2)
+
+        const foundFirstSubmission = searchedSubmissions.find(submission => submission.id === createdSubmission1.id)
+        const foundSecondSubmission = searchedSubmissions.find(submission => submission.id === createdSubmission2.id)
+
+        // we should find both submissions
+        expect(foundFirstSubmission).toBeTruthy()
+        expect(foundSecondSubmission).toBeTruthy()
     })
 })
+
+async function checkSearchResults(searchSubmissionsRequest: gqlRequest, originalInputValues: CreateSubmissionInput) {
+    //Get the submissions query data
+    const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
+
+    //should not have errors
+    expect(searchResult.body.errors).toSatisfy((errors: Array<unknown> | undefined) =>
+        errors == undefined || errors.length <= 0)
+
+    const searchedSubmissions = searchResult.body.data.submissions as Submission[]
+
+    //should have at least 1 result
+    expect(searchedSubmissions).toBeDefined()
+    expect(searchedSubmissions.length).toBeGreaterThanOrEqual(1)
+
+    const firstSubmission = searchedSubmissions[0]
+
+    //Compare the data returned in the response to the createdSubmission
+    expect(firstSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
+    expect(!!Date.parse(firstSubmission.createdDate)).toBe(true)
+    expect(firstSubmission.healthcareProfessionalName)
+        .toBe(originalInputValues.healthcareProfessionalName)
+    expect(firstSubmission.isApproved).toBe(false)
+    expect(firstSubmission.isRejected).toBe(false)
+    expect(firstSubmission.isUnderReview).toBe(false)
+    expect(firstSubmission.spokenLanguages).toStrictEqual(originalInputValues.spokenLanguages)
+}
+
+const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
+    submission(id: $id) {
+      id
+      googleMapsUrl
+      healthcareProfessionalName
+      spokenLanguages
+      isUnderReview
+      isApproved
+      isRejected
+      createdDate
+      updatedDate
+    }
+}`
+
+const searchSubmissionsQuery = /* GraphQL */ `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
+    submissions(filters: $filters) {
+        id
+        googleMapsUrl
+        healthcareProfessionalName
+        isApproved
+        isRejected
+        isUnderReview
+        spokenLanguages
+        createdDate
+        updatedDate
+    }
+}`
+
+const createSubmissionMutation = `mutation test_createSubmission($input: CreateSubmissionInput!) {
+    createSubmission(input: $input) {
+        id
+        googleMapsUrl
+        healthcareProfessionalName
+        spokenLanguages
+        isApproved
+        isRejected
+        isUnderReview
+        createdDate
+        updatedDate
+    }
+}`
+
+const updateSubmissionMutation = `mutation test_updateSubmission($id: ID!, $input: UpdateSubmissionInput!) {
+    updateSubmission(id: $id, input: $input) {
+        id
+        googleMapsUrl
+        healthcareProfessionalName
+        spokenLanguages
+        facility {
+            id
+        }
+        healthcareProfessionals {
+            id
+        }
+        isUnderReview
+        isApproved
+        isRejected
+        createdDate
+        updatedDate
+    }
+}`

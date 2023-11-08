@@ -1,25 +1,38 @@
-import { addHealthcareProfessional } from '../src/services/healthcareProfessionalService'
-import { addFacility } from '../src/services/facilityService'
+import { createHealthcareProfessional } from '../src/services/healthcareProfessionalService.js'
+import { createFacility } from '../src/services/facilityService.js'
 
-import { fakeHealthcareProfessionals } from '../src/fakeData/healthcareProfessionals'
-import { fakeFacilities } from '../src/fakeData/facilities'
+import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/fakeHealthcareProfessionals.js'
+import { generateRandomCreateFacilityInputArray } from '../src/fakeData/fakeFacilities.js'
 
 export const seedDatabase = async () => {
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
     const args = process.argv
 
-    const healthcareProfessionals = fakeHealthcareProfessionals()
-    const facilities = fakeFacilities()
-    
-    const healthcareProfessionalForFacility = healthcareProfessionals[0]
-    
-    facilities[0].healthcareProfessionals = [healthcareProfessionalForFacility]
+    const facilities = generateRandomCreateFacilityInputArray()
+    const healthcareProfessionals = generateRandomCreateHealthcareProfessionalInputArray()
 
-    for await (const hp of healthcareProfessionals) {
-        await addHealthcareProfessional(hp)
-    }
+    const facilityIds: string[] = []
 
     for await (const facility of facilities) {
-        await addFacility(facility)
+        const createdFacilityResult = await createFacility(facility)
+
+        //we should fail here if we have errors
+        if (createdFacilityResult.hasErrors) {
+            throw new Error(`Error seeding database ${JSON.stringify(createdFacilityResult.errors)}`)
+        }
+
+        facilityIds.push(createdFacilityResult.data.id)
+    }
+
+    for await (const hp of healthcareProfessionals) {
+        //build the association 
+        hp.facilityIds = facilityIds
+
+        const createProfessionalResult = await createHealthcareProfessional(hp)
+
+        //we should fail here if we have errors
+        if (createProfessionalResult.hasErrors) {
+            throw new Error(`Error seeding database ${JSON.stringify(createProfessionalResult.errors)}`)
+        }
     }
 }

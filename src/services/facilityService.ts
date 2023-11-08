@@ -1,103 +1,121 @@
 import { DocumentData, Query } from 'firebase-admin/firestore'
-import * as gqlTypes from '../typeDefs/gqlTypes'
-import * as dbSchema from '../typeDefs/dbSchema'
-import { ErrorCode, Result } from '../result'
-import { addHealthcareProfessional } from './healthcareProfessionalService'
-import { dbInstance } from '../firebaseDb'
-import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils'
+import * as gqlTypes from '../typeDefs/gqlTypes.js'
+import * as dbSchema from '../typeDefs/dbSchema.js'
+import { ErrorCode, Result } from '../result.js'
+import { dbInstance } from '../firebaseDb.js'
+import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
 
 /**
  * Gets the Facility from the database that matches on the id.
  * @param id A string that matches the id of the Firestore Document for the Facility.
  * @returns A Facility object.
  */
-export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility | null>> => {
-    const validationResult = validateIdInput(id)
+export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility>> => {
+    try {
+        const validationResult = validateIdInput(id)
 
-    if (validationResult.hasErrors) {
-        return validationResult
-    }
+        if (validationResult.hasErrors) {
+            return validationResult as Result<gqlTypes.Facility>
+        }
 
-    const facilityRef = dbInstance.collection('facilities')
-    const snapshot = await facilityRef.where('id', '==', id).get()
+        const facilityRef = dbInstance.collection('facilities')
+        const dbDocument = await facilityRef.doc(id).get()
 
-    if (snapshot.docs.length < 1) {
+        if (!dbDocument.exists) {
+            return {
+                data: {} as gqlTypes.Facility,
+                hasErrors: true,
+                errors: [{
+                    field: 'id',
+                    errorCode: ErrorCode.NOT_FOUND,
+                    httpStatus: 404
+                }]
+            }
+        }
+
+        const dbFacility = dbDocument.data() as dbSchema.Facility
+        const convertedEntity = mapDbEntityTogqlEntity(dbFacility)
+
         return {
-            data: null,
+            data: convertedEntity,
             hasErrors: false
         }
+    } catch (error) {
+        console.log(`Error retrieving facility by id: ${error}`)
+
+        return {
+            data: {} as gqlTypes.Facility,
+            hasErrors: true,
+            errors: [{
+                field: 'getFacilityById',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
-
-    const convertedEntity = mapDbEntityTogqlEntity(snapshot.docs[0].data())
-
-    const searchResults = {
-        data: convertedEntity,
-        hasErrors: false
-    }
-
-    return searchResults
 }
 
+/**
+ * This is a search function that will return a list of Facilities that match the filters. 
+ * - At the moment, filters have to match exactly, and there is no fuzzy search.
+ * @param filters All the optional filters that can be applied to the search.
+ * @returns The matching Facilities.
+ */
 export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters = {}):
     Promise<Result<gqlTypes.Facility[]>> {
     try {
         const validationResult = validateFacilitiesSearchInput(filters)
 
         if (validationResult.hasErrors) {
-            return validationResult
+            return validationResult as Result<gqlTypes.Facility[]>
         }
 
-        let subRef: Query<DocumentData> = dbInstance.collection('facilities')
+        let searchRef: Query<DocumentData> = dbInstance.collection('facilities')
 
         if (filters.nameEn) {
-            subRef = subRef.where('nameEn', '==', filters.nameEn)
+            searchRef = searchRef.where('nameEn', '==', filters.nameEn)
         }
 
         if (filters.nameJa) {
-            subRef = subRef.where('nameJa', '==', filters.nameJa)
-        }
-
-        if (filters.isDeleted !== null && filters.isDeleted !== undefined) {
-            subRef = subRef.where('isDeleted', '==', filters.isDeleted)
+            searchRef = searchRef.where('nameJa', '==', filters.nameJa)
         }
 
         if (filters.createdDate) {
-            subRef = subRef.where('createdDate', '==', filters.createdDate)
+            searchRef = searchRef.where('createdDate', '==', filters.createdDate)
         }
 
         if (filters.updatedDate) {
-            subRef = subRef.where('updatedDate', '==', filters.updatedDate)
+            searchRef = searchRef.where('updatedDate', '==', filters.updatedDate)
         }
 
         if (filters.orderBy && Array.isArray(filters.orderBy)) {
             filters.orderBy.forEach(order => {
                 if (order) {
-                    subRef = subRef.orderBy(order.fieldToOrder as string,
+                    searchRef = searchRef.orderBy(order.fieldToOrder as string,
                         order.orderDirection as gqlTypes.OrderDirection)
                 }
             })
         } else {
-            subRef = subRef.orderBy('createdDate', gqlTypes.OrderDirection.Desc)
+            searchRef = searchRef.orderBy('createdDate', gqlTypes.OrderDirection.Desc)
         }
 
-        subRef = subRef.limit(filters.limit || 20)
-        subRef = subRef.offset(filters.offset || 0)
+        searchRef = searchRef.limit(filters.limit || 20)
+        searchRef = searchRef.offset(filters.offset || 0)
 
-        const snapshot = await subRef.get()
+        const dbDocument = await searchRef.get()
+        const dbFacilities = dbDocument.docs
+        const gqlFacilities = dbFacilities.map(dbFacility =>
+            mapDbEntityTogqlEntity(dbFacility.data() as dbSchema.Facility))
 
-        const facilities = snapshot.docs.map(doc =>
-            mapDbEntityTogqlEntity({ ...doc.data(), id: doc.id }))
-
-        const searchResults = {
-            data: facilities,
+        return {
+            data: gqlFacilities,
             hasErrors: false
         }
-
-        return searchResults
     } catch (error) {
-        console.log(`Error retrieving facilities: ${error}`)
-        
+        console.log(`Error retrieving facilities by filters ${JSON.stringify(filters)}: ${error}`)
+
         return {
+            data: [],
             hasErrors: true,
             errors: [{
                 field: 'searchFacilities',
@@ -109,109 +127,139 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
 }
 
 /**
- * Adds a new Facility with a new HealthcareProfessional. 
- * Only a list containing the `HealthcareProfessional.id` will 
- * be returned and not the whole HealthcareProfessional Entity.
+ * Creates a new Facility. 
+ * Any healthcareprofessionalIds will build an association, but it won't create a healthcare professional. 
+ * You need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
  * @param facilityInput 
- * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was added.
+ * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was created.
  */
-export async function addFacility(facilityInput: gqlTypes.FacilityInput): Promise<Result<dbSchema.Facility>> {
-    const validationResult = validateAddFacilityInput(facilityInput)
+export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput): Promise<Result<gqlTypes.Facility>> {
+    try {
+        const validationResult = validateCreateFacilityInput(facilityInput)
 
-    if (validationResult.hasErrors) {
-        return validationResult
-    }
+        if (validationResult.hasErrors) {
+            return validationResult as Result<gqlTypes.Facility>
+        }
 
-    const addFacilityResult: Result<dbSchema.Facility> = {
-        hasErrors: false,
-        errors: []
-    }
+        const facilityRef = dbInstance.collection('facilities').doc()
+        const newFacilityId = facilityRef.id
+        const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
 
-    const facilityRef = dbInstance.collection('facilities').doc()
-    const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
+        await facilityRef.set(newDbFacility)
 
-    if (facilityInput.healthcareProfessionals && facilityInput.healthcareProfessionals.length) {
-        for await (const profEntity of facilityInput.healthcareProfessionals) {
-            const healthcareProfAddResults = await addHealthcareProfessional(
-                profEntity, healthcareProfessionalRef
-            )
+        console.log(`DB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
 
-            if (healthcareProfAddResults.hasErrors && healthcareProfAddResults.errors?.length) {
-                addFacilityResult.hasErrors = true
-                addFacilityResult.errors?.concat(healthcareProfAddResults.errors)
-            } else {
-                facilityInput.healthcareProfessionalIds?.push(healthcareProfAddResults.data as string)
-            }
+        //TODO: Add new facilityid to associated healthcare professionals. 
+
+        const createdFacilityResult = await getFacilityById(newFacilityId)
+
+        // if we didn't get it back or have errors, this is an actual error.
+        if (createdFacilityResult.hasErrors || !createdFacilityResult.data) {
+            throw new Error(`Error creating facility: ${JSON.stringify(createdFacilityResult.errors)}`)
+        }
+
+        return {
+            data: createdFacilityResult.data,
+            hasErrors: false
+        }
+    } catch (error) {
+        console.log(`ERROR: Error creating facility: ${error}`)
+
+        return {
+            data: {} as gqlTypes.Facility,
+            hasErrors: true,
+            errors: [{
+                field: 'createFacility',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
         }
     }
-
-    const newFacility = convertToDbFacility(facilityInput, facilityRef.id)
-
-    await facilityRef.set(newFacility)
-
-    console.log(`DB-ADD: Added facility ${facilityRef.id}`)
-
-    addFacilityResult.data = newFacility
-
-    return addFacilityResult
 }
 
 /**
- * Updates a Facility in the database with the params.
+ * Updates a Facility in the database with the params in the database based on the id. 
+ * - It will only update the fields that are provided and are not undefined.
+ * - If you want to create a new HealthcareProfessional, you need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
+ * - If you want to link an existing HealthcareProfessional to a Facility, add the healthcareprofessionalId to the `healthcareProfessionalIds` array. 
+     Use the action to add or remove the association. If an id isn't in the list, no change will occur. 
  * @param facilityId The ID of the facility in the database.
  * @param fieldsToUpdate The values that should be updated. They will be created if they don't exist.
  * @returns The updated Facility.
  */
-export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<dbSchema.Facility>):
-    Promise<Result<dbSchema.Facility | null>> => {
+export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<gqlTypes.UpdateFacilityInput>):
+    Promise<Result<gqlTypes.Facility>> => {
     try {
+        const validationResult = validateUpdateFacilityInput(fieldsToUpdate)
+
+        if (validationResult.hasErrors) {
+            return validationResult as Result<gqlTypes.Facility>
+        }
+
         const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-
-        const snapshot = await facilityRef.get()
-
-        const facilityToUpdate = mapDbEntityTogqlEntity(snapshot.data() as DocumentData)
-
-        const updatedFacilityValues: dbSchema.Facility = {
-            ...facilityToUpdate,
-            ...fieldsToUpdate,
+        const dbDocument = await facilityRef.get()
+        const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
+        const updatedDbFacility: dbSchema.Facility = {
+            ...dbFacilityToUpdate,
+            //todo the partial update should happen right here
             updatedDate: new Date().toISOString()
         }
 
-        await facilityRef.set(updatedFacilityValues, { merge: true })
+        //TODO fix this: add/remove healthcareprofessionalIds based on the actions. 
+        //TODO update the associated healthcare professionals based on these changes. 
 
-        console.log(`DB-UPDATE: Added facility ${facilityRef.id}`)
+        await facilityRef.set(updatedDbFacility, { merge: true })
 
-        const updatedFacility = await getFacilityById(facilityRef.id)
+        console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(updatedDbFacility)}`)
 
-        return updatedFacility
+        const updatedFacilityResult = await getFacilityById(facilityId)
+
+        // if we didn't get it back or have errors, this is an actual error.
+        if (updatedFacilityResult.hasErrors || !updatedFacilityResult.data) {
+            throw new Error(`Error updating facility: ${JSON.stringify(updatedFacilityResult.errors)}`)
+        }
+
+        return {
+            data: updatedFacilityResult.data,
+            hasErrors: false
+        }
     } catch (error) {
-        throw new Error(`Error updating facility: ${error}`)
+        console.log(`Error updating facility ${facilityId}: ${error}`)
+
+        return {
+            data: {} as gqlTypes.Facility,
+            hasErrors: true,
+            errors: [{
+                field: 'updateFacility',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
 }
 
 /**
- * Converts the values for FacilityInput variables to the format they will be stored as in the database.
- * @param facility - The `FacilityInput` variables that were passed in the API request.
- * @param id - The ID of the Facility in the Firestore collection.
+ * Converts the values for FacilityInput to the format they will be stored as in the database.
+ * @param input - The `FacilityInput` variables that were passed in the API request.
+ * @param newId - The ID of the Facility in the Firestore collection.
  * @returns 
  */
-function convertToDbFacility(facility: gqlTypes.FacilityInput, id: string): dbSchema.Facility {
+function mapGqlCreateInputToDbEntity(input: gqlTypes.CreateFacilityInput, newId: string): dbSchema.Facility {
     return {
-        ...facility,
-        id: id,
-        nameEn: facility.nameEn,
-        nameJa: facility.nameJa,
-        contact: facility.contact,
-        healthcareProfessionalIds: facility.healthcareProfessionalIds,
-        healthcareProfessionals: [],
-        isDeleted: false,
+        id: newId,
+        nameEn: input.nameEn,
+        nameJa: input.nameJa,
+        contact: input.contact,
+        healthcareProfessionalIds: input.healthcareProfessionalIds as string[],
+        //business rule: createdDate cannot be set by the user.
         createdDate: new Date().toISOString(),
+        //business rule: updatedDate is updated on every change.
         updatedDate: new Date().toISOString()
 
-    } as gqlTypes.Facility
+    } satisfies dbSchema.Facility
 }
 
-const mapDbEntityTogqlEntity = (dbEntity: DocumentData): gqlTypes.Facility => {
+const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Facility): gqlTypes.Facility => {
     const gqlEntity = {
         id: dbEntity.id,
         nameEn: dbEntity.nameEn,
@@ -219,15 +267,15 @@ const mapDbEntityTogqlEntity = (dbEntity: DocumentData): gqlTypes.Facility => {
         contact: dbEntity.contact,
         healthcareProfessionalIds: dbEntity.healthcareProfessionalIds,
         createdDate: dbEntity.createdDate,
-        updatedDate: dbEntity.updatedDate,
-        isDeleted: dbEntity.isDeleted
+        updatedDate: dbEntity.updatedDate
     } satisfies gqlTypes.Facility
 
     return gqlEntity
 }
 
-function validateIdInput(id: string): Result<gqlTypes.Facility> {
-    const validationResults: Result<gqlTypes.Facility> = {
+function validateIdInput(id: string): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -244,8 +292,9 @@ function validateIdInput(id: string): Result<gqlTypes.Facility> {
     return validationResults
 }
 
-function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilters): Result<gqlTypes.Facility[]> {
-    const validationResults: Result<gqlTypes.Facility[]> = {
+function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilters): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: [],
         hasErrors: false,
         errors: []
     }
@@ -289,8 +338,9 @@ function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilte
     return validationResults
 }
 
-function validateAddFacilityInput(input: gqlTypes.FacilityInput): Result<dbSchema.Facility> {
-    const validationResults: Result<dbSchema.Facility> = {
+function validateUpdateFacilityInput(input: Partial<gqlTypes.UpdateFacilityInput>): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -325,8 +375,64 @@ function validateAddFacilityInput(input: gqlTypes.FacilityInput): Result<dbSchem
     return validationResults
 }
 
-function validateContactInput(contactInput: gqlTypes.ContactInput): Result<boolean> {
-    const validationResults: Result<boolean> = {
+function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
+        hasErrors: false,
+        errors: []
+    }
+
+    if (!input.nameEn) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameEn',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    if (input.nameEn && input.nameEn.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameEn',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (!input.nameJa) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameJa',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    if (input.nameJa && input.nameJa.length > 128) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'nameJa',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (input.contact) {
+        const contactValidationResults = validateContactInput(input.contact)
+
+        if (contactValidationResults.hasErrors) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push(...contactValidationResults.errors as [])
+        }
+    }
+
+    return validationResults
+}
+
+function validateContactInput(contactInput: gqlTypes.Contact): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }
@@ -374,8 +480,9 @@ function validateContactInput(contactInput: gqlTypes.ContactInput): Result<boole
     return validationResults
 }
 
-function validateAddressInput(input: gqlTypes.PhysicalAddressInput): Result<string> {
-    const validationResults: Result<string> = {
+function validateAddressInput(input: gqlTypes.PhysicalAddress): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
         hasErrors: false,
         errors: []
     }

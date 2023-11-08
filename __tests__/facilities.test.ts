@@ -1,306 +1,286 @@
-import { expect } from '@jest/globals'
-import resolvers from '../src/resolvers'
-import loadSchema from '../src/schema'
 import request from 'supertest'
-import { ApolloServer } from '@apollo/server'
-import { startStandaloneServer } from '@apollo/server/standalone'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb'
+import { expect, describe, it } from 'vitest'
+import * as gqlType from '../src/typeDefs/gqlTypes.js'
+import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
+import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
+import { gqlApiUrl } from './testSetup.test.js'
 
-const queryData = {
-    query: `mutation Mutation($input: FacilityInput) {
-        createFacilityWithHealthcareProfessional(input: $input) {
-          contact {
-            address {
-              addressLine1En
-              addressLine1Ja
-              addressLine2En
-              addressLine2Ja
-              cityEn
-              cityJa
-              postalCode
-              prefectureEn
-              prefectureJa
+describe('createFacility', () => {
+    it('creates a new Facility', async () => {
+        const createFacilityRequest = {
+            query: createFacilityMutation,
+            variables: {
+                input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
             }
-            email
-            mapsLink
-            phone
-            website
-          }
-          healthcareProfessionalIds
-          id
-          isDeleted
-          nameEn
-          nameJa
-          createdDate
-          updatedDate
-        }
-      }`,
-    variables: {
-        input: {
-            contact: {
-                address: {
-                    addressLine1Ja: 'some address line 1 JA',
-                    addressLine1En: 'some address line 1 EN',
-                    addressLine2En: 'some address line 2 EN',
-                    addressLine2Ja: 'some address line 2 JA',
-                    cityEn: 'some city EN',
-                    cityJa: 'some city JA',
-                    postalCode: 'some postal code',
-                    prefectureEn: 'some prefecture EN',
-                    prefectureJa: 'some prefecture JA'
-                },
-                email: 'some@email.com',
-                mapsLink: 'https://some-map-link',
-                phone: '000-000-0000',
-                website: 'https://foo.com'
-            },
-            healthcareProfessionalIds: [],
-            healthcareProfessionals: [
-                {
-                    acceptedInsurance: 'JAPANESE_HEALTH_INSURANCE',
-                    degrees: [
-                        {
-                            nameJa: 'some degree JA',
-                            nameEn: 'some degree EN',
-                            abbreviation: 's.D.'
-                        }
-                    ],
-                    names: [
-                        {
-                            middleName: 'some middle name',
-                            locale: 'ENGLISH',
-                            lastName: 'some last name',
-                            firstName: 'some first name'
-                        }
-                    ],
-                    specialties: [
-                        {
-                            names: [
-                                {
-                                    name: 'some specialty',
-                                    locale: 'ENGLISH'
-                                }
-                            ]
-                        }
-                    ],
-                    spokenLanguages: [
-                        {
-                            nameNative: 'some native language',
-                            nameJa: 'some language JA',
-                            nameEn: 'some language EN',
-                            iso639_3: 'en'
-                        }
-                    ],
-                    facilityIds: []
-                }
-            ],
-            nameEn: 'some facility name EN',
-            nameJa: 'some facility name JA'
-        }
-    }
-}
+        } as gqlMutation<gqlType.CreateFacilityInput>
 
-describe('createFacilityWithHealthcareProfessional', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        await initiatilizeFirebaseInstance()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-    
-    it('creates a new Facility with a new HealthcareProfessional', async () => {
-        const response = await request(url).post('/').send(queryData)
+        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(response.body.errors).toBeUndefined()
+        expect(createFacilityResult.body.errors).toBeUndefined()
 
-        const inputData = queryData.variables.input
-        const newFacilityData = response.body.data.createFacilityWithHealthcareProfessional
+        const originalInputValues = createFacilityRequest.variables.input
+        const newFacility = createFacilityResult.body.data.createFacility as gqlType.Facility
 
-        expect(newFacilityData.contact).toEqual(inputData.contact)
-        expect(newFacilityData.healthcareProfessionalIds).toHaveLength(1)
-        expect(newFacilityData.id).toBeDefined()
-        expect(newFacilityData.isDeleted).toBe(false)
-        expect(newFacilityData.createdDate).toBeDefined()
-        expect(newFacilityData.updatedDate).toBeDefined()
-        expect(newFacilityData.nameEn).toBe(inputData.nameEn)
-        expect(newFacilityData.nameJa).toBe(inputData.nameJa)
+        const getFacilityByIdRequest = {
+            query: getFacilityByIdQuery,
+            variables: {
+                id: newFacility.id
+            }
+        } as gqlRequest
+
+        // Query the facility by id
+        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+
+        //should not have errors
+        const errors = createFacilityResult.body?.errors
+        
+        if (errors) {
+            console.log(createFacilityResult.body.errors)
+        }
+        expect(errors).toBeUndefined()
+
+        const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
+
+        expect(searchedFacility.contact).toEqual(originalInputValues.contact)
+        expect(searchedFacility.id).toBeDefined()
+        expect(searchedFacility.createdDate).toBeDefined()
+        expect(searchedFacility.updatedDate).toBeDefined()
+        expect(searchedFacility.nameEn).toBe(originalInputValues.nameEn)
+        expect(searchedFacility.nameJa).toBe(originalInputValues.nameJa)
+    })
+
+    it.skip('properly updates facility/healthcareprofessional associations', async () => {
+        const createFacilityRequest = {
+            query: createFacilityMutation,
+            variables: {
+                input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
+            }
+        } as gqlMutation<gqlType.CreateFacilityInput>
+
+        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+
+        //should not have errors
+        const errors = createFacilityResult.body?.errors
+        
+        if (errors) {
+            console.log(createFacilityResult.body.errors)
+        }
+        expect(errors).toBeUndefined()
+
+        const originalInputValues = createFacilityRequest.variables.input
+        const newFacility = createFacilityResult.body.data.createFacility as gqlType.Facility
+
+        const getFacilityByIdRequest = {
+            query: getFacilityByIdQuery,
+            variables: {
+                id: newFacility.id
+            }
+        } as gqlRequest
+
+        // Query the facility by id
+        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+
+        //should not have errors
+        expect(getFacilityResult.body.errors).toBeUndefined()
+
+        const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
+
+        expect(searchedFacility.contact).toEqual(originalInputValues.contact)
+        expect(searchedFacility.updatedDate).toBeDefined()
     })
 })
 
 describe('getFacilityById', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        await initiatilizeFirebaseInstance()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-    
     it('gets the Facility that matches the facility_id', async () => {
-        // Create a new facility
-        const newFacility = await request(url).post('/').send(queryData)
-
-        // Get the ID of the new facility
-        const facilityId = newFacility.body.data.createFacilityWithHealthcareProfessional.id
-
-        // Query the facility by id
-        const facilityQuery = {
-            query: `query Facility($facilityId: ID!) {
-                facility(id: $facilityId) {
-                  id
-                  nameEn
-                  nameJa
-                  contact {
-                    email
-                    phone
-                    website
-                    mapsLink
-                    address {
-                      postalCode
-                      prefectureEn
-                      cityEn
-                      addressLine1En
-                      addressLine2En
-                      prefectureJa
-                      cityJa
-                      addressLine1Ja
-                      addressLine2Ja
-                    }
-                  }
-                  healthcareProfessionalIds
-                  isDeleted
-                  createdDate
-                  updatedDate
-                }
-              }`,
+        const createFacilityRequest = {
+            query: createFacilityMutation,
             variables: {
-                facilityId: facilityId
+                input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
             }
-        }
-        const response = await request(url).post('/').send(facilityQuery)
+        } as gqlMutation<gqlType.CreateFacilityInput>
+
+        // Create a new facility
+        const newFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(response.body.errors).toBeUndefined()
+        const errors = newFacilityResult.body?.errors
+        
+        if (errors) {
+            console.log(newFacilityResult.body.errors)
+        }
+        expect(errors).toBeUndefined()
 
-        // Compare the data returned by getFacilityById to the new facility stored in the database
-        const facilityData = response.body.data.facility
-        const inputData = queryData.variables.input
+        // Get the ID of the new facility
+        const newFacility = newFacilityResult.body.data.createFacility as gqlType.Facility
 
-        expect(facilityData.id).toBe(facilityId)
-        expect(facilityData.nameEn).toBe(inputData.nameEn)
-        expect(facilityData.nameJa).toBe(inputData.nameJa)
-        expect(facilityData.contact).toEqual(inputData.contact)
-        expect(facilityData.healthcareProfessionalIds).toHaveLength(1)
-        expect(facilityData.isDeleted).toBe(false)
-        expect(facilityData.createdDate).toBeDefined()
-        expect(facilityData.updatedDate).toBeDefined()
+        const getFacilityByIdRequest = {
+            query: getFacilityByIdQuery,
+            variables: {
+                id: newFacility.id
+            }
+        } as gqlRequest
+
+        // Query the facility by id
+        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+
+        //should not have errors
+        expect(getFacilityResult.body?.errors).toBeUndefined()
+
+        // Compare the actual data returned by getFacilityById to the new facility stored in the database
+        const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
+        const originalInputValues = createFacilityRequest.variables.input
+
+        expect(searchedFacility.id).toBe(newFacility.id)
+        expect(searchedFacility.nameEn).toBe(originalInputValues.nameEn)
+        expect(searchedFacility.nameJa).toBe(originalInputValues.nameJa)
+        expect(searchedFacility.contact).toEqual(originalInputValues.contact)
+        expect(searchedFacility.createdDate).toBeDefined()
+        expect(searchedFacility.updatedDate).toBeDefined()
     })
 })
 
 describe('updateFacility', () => {
-    let url: string
-
-    const server = new ApolloServer({
-        typeDefs: loadSchema(),
-        resolvers
-    })
-
-    beforeAll(async () => {
-        ({ url } = await startStandaloneServer(server, {listen: { port: 0 }}))
-        await initiatilizeFirebaseInstance()
-    })
-
-    afterAll(async () => {
-        await server?.stop()
-    })
-    
-    it('updates the Facility fields included in the input', async () => {
+    it('updates various Facility fields', async () => {
         // Create a new facility
-        const newFacility = await request(url).post('/').send(queryData)
+        const createFacilityRequest = {
+            query: createFacilityMutation,
+            variables: {
+                input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
+            }
+        } as gqlMutation<gqlType.CreateFacilityInput>
+        const newFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
 
         //should not have errors
-        expect(newFacility.body.errors).toBeUndefined()
+        const errors = newFacilityResult.body?.errors
+
+        if (errors) {
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         // Get the ID of the new facility
-        const facilityId = newFacility.body.data.createFacilityWithHealthcareProfessional.id
+        const newFacility = newFacilityResult.body.data.createFacility as gqlType.Facility
+
+        const updateFacilityMutationRequest = {
+            query: updateFacilityMutation,
+            variables: {
+                id: newFacility.id,
+                input: {
+                    ...generateRandomCreateFacilityInput(),
+                    healthcareProfessionalIds: []
+                } satisfies gqlType.UpdateFacilityInput
+            }
+        } as gqlMutation<gqlType.CreateFacilityInput>
 
         // Mutation to update the facility
-        const facilityQuery = {
-            query: `mutation Mutation($input: FacilityInput, $updateFacilityId: ID!) {
-                updateFacility(input: $input, id: $updateFacilityId) {
-                  id
-                  nameEn
-                  nameJa
-                  contact {
-                    email
-                    phone
-                    website
-                    mapsLink
-                    address {
-                      postalCode
-                      prefectureEn
-                      cityEn
-                      addressLine1En
-                      addressLine2En
-                      prefectureJa
-                      cityJa
-                      addressLine1Ja
-                      addressLine2Ja
-                    }
-                  }
-                  healthcareProfessionalIds
-                  isDeleted
-                  createdDate
-                  updatedDate
-                }
-              }`,
-            variables: {
-                updateFacilityId: facilityId,
-                input: {
-                    nameEn: 'some NEW facility name EN',
-                    nameJa: 'some NEW facility name JA',
-                    contact: {
-                        phone: '111-111-1111'
-                    },
-                    isDeleted: true
-                }
-                  
-            }
-        }
-        const facility = await request(url).post('/').send(facilityQuery)
+        const updateFacilityResult = await request(gqlApiUrl).post('/').send(updateFacilityMutationRequest)
 
         //should not have errors
-        expect(facility.body.errors).toBeUndefined()
+        expect(updateFacilityResult.body?.errors).toBeUndefined()
 
-        // Compare the data returned by getFacilityById to the new facility stored in the database
-        const updatedFacilityData = facility.body.data.updateFacility
-        const updatedFields = facilityQuery.variables.input
+        const getFacilityByIdRequest = {
+            query: getFacilityByIdQuery,
+            variables: {
+                id: newFacility.id
+            }
+        } as gqlRequest
 
-        expect(updatedFacilityData.id).toBe(facilityId)
-        expect(updatedFacilityData.nameEn).toBe(updatedFields.nameEn)
-        expect(updatedFacilityData.nameJa).toBe(updatedFields.nameJa)
-        expect(updatedFacilityData.contact.phone).toBe(updatedFields.contact.phone)
-        expect(updatedFacilityData.healthcareProfessionalIds).toHaveLength(1)
-        expect(updatedFacilityData.isDeleted).toBe(updatedFields.isDeleted)
-        expect(updatedFacilityData.createdDate).toBeDefined()
-        expect(updatedFacilityData.updatedDate).toBeDefined()
+        // fetch the updated facility
+        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+
+        // Compare the actual updated facility returned by getFacilityById to the update request we sent
+        const updatedFacility = getFacilityResult.body.data.facility as gqlType.Facility
+        const fieldsThatWereUpdated = createFacilityRequest.variables.input
+
+        expect(updatedFacility.id).toBe(newFacility.id)
+        expect(updatedFacility.nameEn).toBe(fieldsThatWereUpdated.nameEn)
+        expect(updatedFacility.nameJa).toBe(fieldsThatWereUpdated.nameJa)
+        expect(updatedFacility.contact.phone).toBe(fieldsThatWereUpdated.contact.phone)
+        expect(updatedFacility.createdDate).toBeDefined()
+        expect(updatedFacility.updatedDate).toBeDefined()
     })
 })
+
+export const createFacilityMutation = `mutation test_createFacility($input: CreateFacilityInput!) {
+    createFacility(input: $input) {
+        id
+        contact {
+        address {
+            addressLine1En
+            addressLine1Ja
+            addressLine2En
+            addressLine2Ja
+            cityEn
+            cityJa
+            postalCode
+            prefectureEn
+            prefectureJa
+        }
+        googleMapsUrl
+        email
+        phone
+        website
+        }
+        healthcareProfessionalIds
+        nameEn
+        nameJa
+        createdDate
+        updatedDate
+    }
+}`
+
+const updateFacilityMutation = `mutation test_updateFacility($id: ID!, $input: UpdateFacilityInput!) {
+    updateFacility(id: $id, input: $input) {
+        id
+        nameEn
+        nameJa
+        contact {
+        googleMapsUrl
+        email
+        phone
+        website
+        address {
+            postalCode
+            prefectureEn
+            cityEn
+            addressLine1En
+            addressLine2En
+            prefectureJa
+            cityJa
+            addressLine1Ja
+            addressLine2Ja
+        }
+        }
+        healthcareProfessionalIds
+        createdDate
+        updatedDate
+    }
+}`
+
+const getFacilityByIdQuery = `query test_getfacilityById($id: ID!) {
+    facility(id: $id) {
+        id
+        nameEn
+        nameJa
+        contact {
+            googleMapsUrl
+            email
+            phone
+            website
+            address {
+                postalCode
+                prefectureEn
+                cityEn
+                addressLine1En
+                addressLine2En
+                prefectureJa
+                cityJa
+                addressLine1Ja
+                addressLine2Ja
+            }
+        }
+        healthcareProfessionalIds
+        createdDate
+        updatedDate
+    }
+}`
