@@ -6030,9 +6030,9 @@ __metadata:
   linkType: hard
 
 "csv-parse@npm:^5.0.4, csv-parse@npm:^5.3.3":
-  version: 5.5.0
-  resolution: "csv-parse@npm:5.5.0"
-  checksum: cea1e28530f9e70b1f66b7cbf7e131c1aab29fdb7f1b054baa3dfc3fdf641a71eab656559d632fd503f02b602ca9f5c6625c42c2c4f3cac5ea765d9893eaf664
+  version: 5.5.2
+  resolution: "csv-parse@npm:5.5.2"
+  checksum: 86129018fcef1545a95fec4d5fa0422b97881379d534f5cea8660e54010c3f7bb6b951130839b6ec1a5a576c049955ea05548228016681e92bcfa1a888ac9ca5
   languageName: node
   linkType: hard
 
