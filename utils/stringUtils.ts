@@ -26,3 +26,8 @@ export function isValidPhoneNumber(phoneNumber: string) {
 export function isValidWebsite(website: string) {
     return /^((https?|ftp|smtp):\/\/)?(www.)?[a-z0-9-]+\.[a-zA-Z0-9-_#/]+$/g.test(website)
 }
+
+export function hasScriptTags(input: string) {
+    const tagPattern = /<script.*?>.*?<\/script>/gi
+    return tagPattern.test(input)
+}
