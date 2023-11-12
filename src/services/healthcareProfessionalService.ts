@@ -1,9 +1,10 @@
-import * as firebase from 'firebase-admin/firestore'
+import { DocumentData, Transaction } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { dbInstance } from '../firebaseDb.js'
-import { updateHealthcareProfessionalIdRelationships as updateFacilitiesWithHealthcareProfessionalIdChanges } from './facilityService.js'
+import { updateFacilitiesWithHealthcareProfessionalIdChanges } from './facilityService.js'
+import { MapDefinedFields } from '../../utils/objectUtils.js'
 
 export async function getHealthcareProfessionalById(id: string): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
@@ -124,20 +125,22 @@ export const updateHealthcareProfessional = async (
         }
 
         //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        await dbInstance.runTransaction(async (transaction: firebase.Transaction) => {
+        await dbInstance.runTransaction(async (transaction: Transaction) => {
 
             const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
             const dbDocument = await transaction.get(professionalRef)
             const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
-            const updatedDbProfessional: dbSchema.HealthcareProfessional = {
-                ...dbProfessionalToUpdate,
-                //TODO: the partial update should happen right here
-                updatedDate: new Date().toISOString()
-            }
+            
+            //let's update the fields that were provided
+            MapDefinedFields(fieldsToUpdate, dbProfessionalToUpdate)
+
+            //Business rule: always timestamp when the entity was updated.
+            dbProfessionalToUpdate.updatedDate = new Date().toISOString()
+                    
 
             //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array 
             if (fieldsToUpdate.facilityIds && fieldsToUpdate.facilityIds.length > 0) {
-                const facilityUpdateResults = await updateFacilityRelationships(dbProfessionalToUpdate.id, fieldsToUpdate.facilityIds, dbProfessionalToUpdate.facilityIds)
+                const facilityUpdateResults = await processFacilityRelationshipChanges(dbProfessionalToUpdate.id, fieldsToUpdate.facilityIds, dbProfessionalToUpdate.facilityIds)
 
                 // if we didn't get it back or have errors, this is an actual error.
                 if (facilityUpdateResults.hasErrors || !facilityUpdateResults.data) {
@@ -145,12 +148,12 @@ export const updateHealthcareProfessional = async (
                 }
 
                 //let's update the professional with the new facility ids
-                updatedDbProfessional.facilityIds = facilityUpdateResults.data
+                dbProfessionalToUpdate.facilityIds = facilityUpdateResults.data
             }
 
             //this will update only the fields that are provided and are not undefined.
-            await transaction.update(updatedDbProfessional, { merge: true })
-            console.log(`DB-UPDATE: Updated healthcare professional ${id}.\nEntity: ${JSON.stringify(updatedDbProfessional)}`)
+            await transaction.set(professionalRef, dbProfessionalToUpdate, { merge: true })
+            console.log(`DB-UPDATE: Updated healthcare professional ${id}.\nEntity: ${JSON.stringify(dbProfessionalToUpdate)}`)
         })
 
         const updatedProfessionalResult = await getHealthcareProfessionalById(id)
@@ -186,7 +189,7 @@ export const updateHealthcareProfessional = async (
  * @param originalFacilityIds The original facility ids for the healthcare professional.
  * @returns The updated facility ids for the healthcare professional based on the action.
 */
-async function updateFacilityRelationships(healthcareProfessionalId: string, facilityRelationshipChanges: gqlTypes.Relationship[], originalFacilityIds: string[])
+async function processFacilityRelationshipChanges(healthcareProfessionalId: string, facilityRelationshipChanges: gqlTypes.Relationship[], originalFacilityIds: string[])
 : Promise<Result<string[]>> {
     // deep clone the array so we don't modify the original
     let updatedFacilityIdsArray = [...originalFacilityIds]
@@ -215,6 +218,67 @@ async function updateFacilityRelationships(healthcareProfessionalId: string, fac
     }
 }
 
+/**
+    * This function updates the facilityIds list for each healthcare professional listed. 
+    * Based on the action, it will add or remove the facility id from the existing list of facilityIds.
+    * @param healthcareProfessionalsToUpdate - The list of healthcare professionals to update. 
+    * @param facilityId - The id of the facility that is being added or removed. 
+    * @returns Result containing any errors that occurred.
+*/
+export async function updateHealthcareProfessionalsWithFacilityIdChanges(healthcareProfessionalsToUpdate: gqlTypes.Relationship[], facilityId: string): Promise<Result<void>> {
+    try {
+        //since we're updating several records at once, let's batch together the updates.
+        const dbBatch = dbInstance.batch()
+
+        for await (const relationship of healthcareProfessionalsToUpdate) {
+
+            const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc(relationship.otherEntityId)
+            const dbDocument = await healthcareProfessionalRef.get()
+            const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
+
+            //we want to add or remove the healthcareprofessional id from the list based on the action.
+            switch (relationship.action) {
+                case gqlTypes.RelationshipAction.Create:
+                    dbProfessionalToUpdate.facilityIds.push(facilityId)
+                    break;
+                case gqlTypes.RelationshipAction.Delete:
+                    dbProfessionalToUpdate.facilityIds = dbProfessionalToUpdate.facilityIds.filter(id => id !== facilityId)
+                    break;
+                default:
+                    console.log(`ERROR: updating healthcare professional's facilityId list for ${relationship.otherEntityId}. Contained an invalid relationship action of ${relationship.action}`)
+                    break;
+            }
+
+            //business rule: we always timestamp when the entity was updated.
+            dbProfessionalToUpdate.updatedDate = new Date().toISOString()
+
+            //This will add the record update to the batch.
+            await healthcareProfessionalRef.set(dbProfessionalToUpdate, { merge: true })
+            console.log(`DB-UPDATE: Updated healthcare professional ${healthcareProfessionalRef.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalToUpdate)}`)
+        }
+
+        //commit the batch of updates.
+        await dbBatch.commit()
+
+        return {
+            data: undefined,
+            hasErrors: false
+        }
+    } catch (error) {
+        console.log(`Error updating healthcareProfessional facilityId list: ${error}`)
+
+        return {
+            data: undefined,
+            hasErrors: true,
+            errors: [{
+                field: 'updateHealthcareprofessionalFacilityAssociations',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
 function mapGqlEntityToDbEntity(newHealthcareProfessionalId: string, input: gqlTypes.CreateHealthcareProfessionalInput) {
     return {
         id: newHealthcareProfessionalId,
@@ -231,7 +295,7 @@ function mapGqlEntityToDbEntity(newHealthcareProfessionalId: string, input: gqlT
     } satisfies dbSchema.HealthcareProfessional
 }
 
-function mapDbEntityTogqlEntity(dbEntity: firebase.DocumentData) {
+function mapDbEntityTogqlEntity(dbEntity: DocumentData) {
     const gqlEntity = {
         id: dbEntity.id,
         names: dbEntity.names,

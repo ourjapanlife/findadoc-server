@@ -1,9 +1,11 @@
-import { DocumentData, Query } from 'firebase-admin/firestore'
+import { DocumentData, Query, Transaction } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { dbInstance } from '../firebaseDb.js'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
+import { MapDefinedFields } from '../../utils/objectUtils.js'
+import { updateHealthcareProfessionalsWithFacilityIdChanges } from './healthcareProfessionalService.js'
 
 /**
  * Gets the Facility from the database that matches on the id.
@@ -197,20 +199,21 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         }
 
         //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        await dbInstance.runTransaction(async (transaction: firebase.Transaction) => {
+        await dbInstance.runTransaction(async (transaction: Transaction) => {
 
             const facilityRef = dbInstance.collection('facilities').doc(facilityId)
             const dbDocument = await facilityRef.get()
             const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
-            const updatedDbFacility: dbSchema.Facility = {
-                ...dbFacilityToUpdate,
-                //todo the partial update should happen right here
-                updatedDate: new Date().toISOString()
-            }
 
+            //let's update the fields that were provided
+            MapDefinedFields(fieldsToUpdate, dbFacilityToUpdate)
+
+            //Business rule: always timestamp when the entity was updated.
+            dbFacilityToUpdate.updatedDate = new Date().toISOString()
+        
             //let's update all the healthcareProfessionals that should add or remove this facilityId from their facilityIds array 
             if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
-                const healthcareProfessionalUpdateResults = await updateHealthcareProfessionalRelationships(dbFacilityToUpdate.id, fieldsToUpdate.healthcareProfessionalIds, dbFacilityToUpdate.healthcareProfessionalIds)
+                const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(dbFacilityToUpdate.id, fieldsToUpdate.healthcareProfessionalIds, dbFacilityToUpdate.healthcareProfessionalIds)
 
                 // if we didn't get it back or have errors, this is an actual error.
                 if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
@@ -218,12 +221,12 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
                 }
 
                 //let's update the professional with the new facility ids
-                updatedDbFacility.healthcareProfessionalIds = healthcareProfessionalUpdateResults.data
+                dbFacilityToUpdate.healthcareProfessionalIds = healthcareProfessionalUpdateResults.data
             }
 
-            await facilityRef.set(updatedDbFacility, { merge: true })
+            await transaction.set(facilityRef, dbFacilityToUpdate, { merge: true })
 
-            console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(updatedDbFacility)}`)
+            console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(dbFacilityToUpdate)}`)
         })
 
         const updatedFacilityResult = await getFacilityById(facilityId)
@@ -252,24 +255,6 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
     }
 }
 
-// export async function addHealthcareProfessionalIdToFacilities(facilitiesIdToUpdate: string[], healthcareProfessionalId: string): Promise<Result<void>> {
-//     return updateHealthcareProfessionalIdRelationships(facilitiesIdToUpdate.map(facilityId => {
-//         return {
-//             otherEntityId: facilityId,
-//             action: gqlTypes.RelationshipAction.Create
-//         } satisfies gqlTypes.Relationship
-//     }), healthcareProfessionalId)
-// }
-
-// export async function removeHealthcareProfessionalIdToFacilities(facilitiesIdToUpdate: string[], healthcareProfessionalId: string): Promise<Result<void>> {
-//     return updateHealthcareProfessionalIdRelationships(facilitiesIdToUpdate.map(facilityId => {
-//         return {
-//             otherEntityId: facilityId,
-//             action: gqlTypes.RelationshipAction.Delete
-//         } satisfies gqlTypes.Relationship
-//     }), healthcareProfessionalId)
-// }
-
 /** 
  * Updates all the healthcare professionals that have an id in the healthcareProfessionalIds array. It will add or delete based on the action provided. 
  * @param facilityId The ID of the facility in the database.
@@ -277,7 +262,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
  * @param originalHealthcareProfessionalIds The original healthcare professional ids for the facility.
  * @returns The updated facility ids for the healthcare professional based on the action.
 */
-async function updateHealthcareProfessionalRelationships(facilityId: string, healthcareProfessionalRelationshipChanges: gqlTypes.Relationship[], originalHealthcareProfessionalIds: string[])
+async function processHealthcareProfessionalRelationshipChanges(facilityId: string, healthcareProfessionalRelationshipChanges: gqlTypes.Relationship[], originalHealthcareProfessionalIds: string[])
     : Promise<Result<string[]>> {
     // deep clone the array so we don't modify the original
     let updatedProfessionalIdsArray = [...originalHealthcareProfessionalIds]
@@ -295,8 +280,8 @@ async function updateHealthcareProfessionalRelationships(facilityId: string, hea
         }
     });
 
-    //update all the associated facilities (note: this should be contained within a transaction with the professional  so we can roll back if anything fails)
-    const healthcareProfessionalUpdateResults = await updateFacilitiesWithHealthcareProfessionalIdChanges(healthcareProfessionalRelationshipChanges, facilityId)
+    //update all the associated healthcare professionals (note: this should be contained within a transaction with the facility so we can roll back if anything fails)
+    const healthcareProfessionalUpdateResults = await updateHealthcareProfessionalsWithFacilityIdChanges(healthcareProfessionalRelationshipChanges, facilityId)
 
     return {
         //let's return the updated healthcareProfessionalIds array so we can update the facility
@@ -306,14 +291,14 @@ async function updateHealthcareProfessionalRelationships(facilityId: string, hea
     }
 }
 
-/*
+/**
     * This function updates the healthcareprofessional id list for each facility listed. 
     * Based on the action, it will add or remove the healthcareprofessional id from the existing list of healthcare professional ids.
     * @param facilitiesToUpdate - The list of facilities to update. 
     * @param healthcareProfessionalId - The id of the healthcareprofessional that is being added or removed. 
     * @returns Result containing any errors that occurred.
-    */
-export async function updateHealthcareProfessionalIdRelationships(facilitiesToUpdate: gqlTypes.Relationship[], healthcareProfessionalId: string): Promise<Result<void>> {
+*/
+export async function updateFacilitiesWithHealthcareProfessionalIdChanges(facilitiesToUpdate: gqlTypes.Relationship[], healthcareProfessionalId: string): Promise<Result<void>> {
     try {
         //since we're updating several records at once, let's batch together the updates.
         const dbBatch = dbInstance.batch()
@@ -359,7 +344,7 @@ export async function updateHealthcareProfessionalIdRelationships(facilitiesToUp
             data: undefined,
             hasErrors: true,
             errors: [{
-                field: 'updateFacility',
+                field: 'updateFacilityHealthcareprofessionalAssociations',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]
