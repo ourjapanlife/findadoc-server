@@ -126,21 +126,21 @@ export const updateHealthcareProfessional = async (
 
         //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
         await dbInstance.runTransaction(async (transaction: Transaction) => {
-
             const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
             const dbDocument = await transaction.get(professionalRef)
             const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
-            
+
             //let's update the fields that were provided
             MapDefinedFields(fieldsToUpdate, dbProfessionalToUpdate)
 
             //Business rule: always timestamp when the entity was updated.
             dbProfessionalToUpdate.updatedDate = new Date().toISOString()
-                    
 
             //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array 
             if (fieldsToUpdate.facilityIds && fieldsToUpdate.facilityIds.length > 0) {
-                const facilityUpdateResults = await processFacilityRelationshipChanges(dbProfessionalToUpdate.id, fieldsToUpdate.facilityIds, dbProfessionalToUpdate.facilityIds)
+                const facilityUpdateResults = await processFacilityRelationshipChanges(
+                    dbProfessionalToUpdate.id, fieldsToUpdate.facilityIds, dbProfessionalToUpdate.facilityIds
+                )
 
                 // if we didn't get it back or have errors, this is an actual error.
                 if (facilityUpdateResults.hasErrors || !facilityUpdateResults.data) {
@@ -189,8 +189,10 @@ export const updateHealthcareProfessional = async (
  * @param originalFacilityIds The original facility ids for the healthcare professional.
  * @returns The updated facility ids for the healthcare professional based on the action.
 */
-async function processFacilityRelationshipChanges(healthcareProfessionalId: string, facilityRelationshipChanges: gqlTypes.Relationship[], originalFacilityIds: string[])
-: Promise<Result<string[]>> {
+async function processFacilityRelationshipChanges(healthcareProfessionalId: string,
+    facilityRelationshipChanges: gqlTypes.Relationship[],
+    originalFacilityIds: string[])
+    : Promise<Result<string[]>> {
     // deep clone the array so we don't modify the original
     let updatedFacilityIdsArray = [...originalFacilityIds]
 
@@ -198,18 +200,20 @@ async function processFacilityRelationshipChanges(healthcareProfessionalId: stri
         switch (change.action) {
             case gqlTypes.RelationshipAction.Create:
                 updatedFacilityIdsArray.push(change.otherEntityId)
-                break;
+                break
             case gqlTypes.RelationshipAction.Delete:
                 updatedFacilityIdsArray = updatedFacilityIdsArray.filter(id => id !== change.otherEntityId)
-                break;
+                break
             default:
-                break;
+                break
         }
-    });
+    })
 
     //update all the associated facilities (note: this should be contained within a transaction with the professional  so we can roll back if anything fails)
-    const facilityUpdateResults = await updateFacilitiesWithHealthcareProfessionalIdChanges(facilityRelationshipChanges, healthcareProfessionalId)
-    
+    const facilityUpdateResults = await updateFacilitiesWithHealthcareProfessionalIdChanges(
+        facilityRelationshipChanges, healthcareProfessionalId
+    )
+
     return {
         //let's return the updated facilityIds array so we can update the healthcare professional
         data: updatedFacilityIdsArray,
@@ -225,13 +229,15 @@ async function processFacilityRelationshipChanges(healthcareProfessionalId: stri
     * @param facilityId - The id of the facility that is being added or removed. 
     * @returns Result containing any errors that occurred.
 */
-export async function updateHealthcareProfessionalsWithFacilityIdChanges(healthcareProfessionalsToUpdate: gqlTypes.Relationship[], facilityId: string): Promise<Result<void>> {
+export async function updateHealthcareProfessionalsWithFacilityIdChanges(
+    healthcareProfessionalsToUpdate: gqlTypes.Relationship[],
+    facilityId: string
+): Promise<Result<void>> {
     try {
         //since we're updating several records at once, let's batch together the updates.
         const dbBatch = dbInstance.batch()
 
         for await (const relationship of healthcareProfessionalsToUpdate) {
-
             const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc(relationship.otherEntityId)
             const dbDocument = await healthcareProfessionalRef.get()
             const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
@@ -240,13 +246,14 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(healthc
             switch (relationship.action) {
                 case gqlTypes.RelationshipAction.Create:
                     dbProfessionalToUpdate.facilityIds.push(facilityId)
-                    break;
+                    break
                 case gqlTypes.RelationshipAction.Delete:
-                    dbProfessionalToUpdate.facilityIds = dbProfessionalToUpdate.facilityIds.filter(id => id !== facilityId)
-                    break;
+                    dbProfessionalToUpdate.facilityIds = dbProfessionalToUpdate.facilityIds
+                        .filter(id => id !== facilityId)
+                    break
                 default:
                     console.log(`ERROR: updating healthcare professional's facilityId list for ${relationship.otherEntityId}. Contained an invalid relationship action of ${relationship.action}`)
-                    break;
+                    break
             }
 
             //business rule: we always timestamp when the entity was updated.
@@ -279,7 +286,9 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(healthc
     }
 }
 
-function mapGqlEntityToDbEntity(newHealthcareProfessionalId: string, input: gqlTypes.CreateHealthcareProfessionalInput) {
+function mapGqlEntityToDbEntity(newHealthcareProfessionalId: string,
+    input: gqlTypes.CreateHealthcareProfessionalInput)
+    : dbSchema.HealthcareProfessional {
     return {
         id: newHealthcareProfessionalId,
         acceptedInsurance: input.acceptedInsurance as gqlTypes.Insurance[],
@@ -295,7 +304,8 @@ function mapGqlEntityToDbEntity(newHealthcareProfessionalId: string, input: gqlT
     } satisfies dbSchema.HealthcareProfessional
 }
 
-function mapDbEntityTogqlEntity(dbEntity: DocumentData) {
+function mapDbEntityTogqlEntity(dbEntity: DocumentData)
+    : gqlTypes.HealthcareProfessional {
     const gqlEntity = {
         id: dbEntity.id,
         names: dbEntity.names,

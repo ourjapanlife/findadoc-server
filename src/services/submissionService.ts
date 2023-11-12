@@ -83,7 +83,7 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
             subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
         }
 
-        if(filters.spokenLanguages && filters.spokenLanguages.length > 0) {
+        if (filters.spokenLanguages && filters.spokenLanguages.length > 0) {
             subRef = subRef.where('spokenLanguages', 'array-contains-any', filters.spokenLanguages)
         }
 
@@ -152,7 +152,6 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
 export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
     Promise<Result<gqlTypes.Submission>> => {
     try {
-        
         const validationResults = validateSubmissionInputFields(submissionInput)
         
         if (validationResults.hasErrors) {
