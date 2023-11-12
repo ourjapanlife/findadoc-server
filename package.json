@@ -18,8 +18,8 @@
         "prod:dockerstop": "echo '\n🐳 🐳 🐳✨ Stopping docker compose...' && docker compose -f docker/docker-compose-api.yml down",
         "prod:logs": "docker logs findadoc-api -f",
         "generate": "echo '\n➡ ➡ ➡ Generating types from graphql schema ➡ ➡ ➡\n' && graphql-codegen --config ./typesgeneratorconfig.ts",
-        "lint": "ESLINT_USE_FLAT_CONFIG=true eslint . --fix",
-        "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint ."
+        "lint": "ESLINT_USE_FLAT_CONFIG=true eslint --fix",
+        "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint"
     },
     "repository": {
         "type": "git",
