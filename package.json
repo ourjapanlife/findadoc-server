@@ -84,6 +84,6 @@
         "supertest": "^6.3.3"
     },
     "resolutions": {
-        "long": "^4.0.0"
+        "long": "^5.0.0"
     }
 }
