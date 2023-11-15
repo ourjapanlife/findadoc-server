@@ -147,12 +147,30 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
         const newFacilityId = facilityRef.id
         const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
 
-        await facilityRef.set(newDbFacility)
+        //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        await dbInstance.runTransaction(async (transaction: Transaction) => {
+            await transaction.set(facilityRef, newDbFacility)
 
-        console.log(`DB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
+            console.log(`DB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
 
-        //TODO: Add new facilityid to associated healthcare professionals. 
+            //let's update all the healthcareProfessionals that should add this facilityId to their facilityIds array
+            if (newDbFacility.healthcareProfessionalIds && newDbFacility.healthcareProfessionalIds.length > 0) {
+                const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
+                    newDbFacility.id,
+                    newDbFacility.healthcareProfessionalIds.map(id => ({
+                        otherEntityId: id,
+                        action: gqlTypes.RelationshipAction.Create
+                    } satisfies gqlTypes.Relationship))
+                )
 
+                // if we didn't get it back or have errors, this is an actual error.
+                if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
+                    throw new Error(`ERROR: Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
+                }
+            }
+        })
+
+        //let's return the newly created facility
         const createdFacilityResult = await getFacilityById(newFacilityId)
 
         // if we didn't get it back or have errors, this is an actual error.
@@ -267,7 +285,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
 */
 async function processHealthcareProfessionalRelationshipChanges(facilityId: string,
     healthcareProfessionalRelationshipChanges: gqlTypes.Relationship[],
-    originalHealthcareProfessionalIds: string[])
+    originalHealthcareProfessionalIds: string[] = [])
     : Promise<Result<string[]>> {
     // deep clone the array so we don't modify the original
     let updatedProfessionalIdsArray = [...originalHealthcareProfessionalIds]
