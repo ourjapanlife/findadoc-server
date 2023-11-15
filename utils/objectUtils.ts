@@ -2,7 +2,7 @@ export function MapDefinedFields<T>(objectToCopyFrom: Partial<T>, objectToCopyTo
     for (const [key, value] of Object.entries(objectToCopyFrom)) {
         // we want to map null/0/'' as valid empty values, so we're only checking undefined
         if (value !== undefined && key in objectToCopyTo) {
-            return objectToCopyTo[key] = value
+            objectToCopyTo[key] = value
         }
     }
 

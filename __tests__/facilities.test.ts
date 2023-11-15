@@ -3,7 +3,9 @@ import { expect, describe, it } from 'vitest'
 import * as gqlType from '../src/typeDefs/gqlTypes.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
-import { gqlApiUrl } from './testSetup.test.js'
+import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
+import { createHealthcareProfessionalMutation } from './healthcareProfessional.test.js'
+import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 
 describe('createFacility', () => {
     it('creates a new Facility', async () => {
@@ -34,7 +36,7 @@ describe('createFacility', () => {
 
         //should not have errors
         const errors = createFacilityResult.body?.errors
-        
+
         if (errors) {
             console.log(createFacilityResult.body.errors)
         }
@@ -50,44 +52,55 @@ describe('createFacility', () => {
         expect(searchedFacility.nameJa).toBe(originalInputValues.nameJa)
     })
 
-    it.skip('properly updates facility/healthcareprofessional associations', async () => {
-        const createFacilityRequest = {
-            query: createFacilityMutation,
+    it('facility/healthcareprofessional associations: Creating healthcareprofessional updates facility\'s healthcareProfessionalIds', async () => {
+        //// Step 1: Create a new facility that has the sharedFacilityIds.
+        const createHealthcareProfessionalRequest = {
+            query: createHealthcareProfessionalMutation,
             variables: {
-                input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
+                // eslint-disable-next-line max-len
+                input: {
+                    ...generateRandomCreateHealthcareProfessionalInput(),
+                    facilityIds: sharedFacilityIds
+                } satisfies gqlType.CreateHealthcareProfessionalInput
             }
-        } as gqlMutation<gqlType.CreateFacilityInput>
+        } as gqlMutation<gqlType.CreateHealthcareProfessionalInput>
 
-        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        // Create a new healthcare professional with the associated facility id
+        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalRequest)
 
         //should not have errors
-        const errors = createFacilityResult.body?.errors
-        
-        if (errors) {
-            console.log(createFacilityResult.body.errors)
-        }
-        expect(errors).toBeUndefined()
+        expect(createProfessionalResult.body.errors).toBeUndefined()
 
-        const originalInputValues = createFacilityRequest.variables.input
-        const newFacility = createFacilityResult.body.data.createFacility as gqlType.Facility
+        const createdProfessional =
+            createProfessionalResult.body.data.healthcareProfessional as gqlType.HealthcareProfessional
+
+        // The healthcare professional should have the facility ids that we provided.
+        expect(createdProfessional.facilityIds).toBeDefined()
+        expect(createdProfessional.facilityIds).toContain(sharedFacilityIds)
 
         const getFacilityByIdRequest = {
             query: getFacilityByIdQuery,
             variables: {
-                id: newFacility.id
+                id: sharedFacilityIds[0]
             }
         } as gqlRequest
 
-        // Query the facility by id
+        //// Step 2: Query the facility by id and check if it has the new healthcare professional id added to it.
         const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
-        expect(getFacilityResult.body.errors).toBeUndefined()
+        const errors = getFacilityResult.body?.errors
+
+        if (errors) {
+            console.log(getFacilityResult.body.errors)
+        }
+        expect(errors).toBeUndefined()
 
         const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
 
-        expect(searchedFacility.contact).toEqual(originalInputValues.contact)
-        expect(searchedFacility.updatedDate).toBeDefined()
+        // The healthcare professional should have the facility ids that we provided.
+        expect(searchedFacility.healthcareProfessionalIds).toBeDefined()
+        expect(searchedFacility.healthcareProfessionalIds).toContain(createdProfessional.id)
     })
 })
 
@@ -105,7 +118,7 @@ describe('getFacilityById', () => {
 
         //should not have errors
         const errors = newFacilityResult.body?.errors
-        
+
         if (errors) {
             console.log(newFacilityResult.body.errors)
         }

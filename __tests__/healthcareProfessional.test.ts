@@ -81,7 +81,7 @@ describe('createHealthcareProfessional', () => {
     })
 })
 
-const createHealthcareProfessionalMutation = `mutation test_createHealthcareProfessional($input: CreateHealthcareProfessionalInput!) {
+export const createHealthcareProfessionalMutation = `mutation test_createHealthcareProfessional($input: CreateHealthcareProfessionalInput!) {
     createHealthcareProfessional(input: $input) {
         id
         names {
