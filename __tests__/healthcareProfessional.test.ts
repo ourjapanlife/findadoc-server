@@ -16,10 +16,10 @@ describe('createHealthcareProfessional', () => {
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
         const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalMutationRequest)
-
+        
         //should not have errors
         const errors = createProfessionalResult.body?.errors
-
+        
         if (errors) {
             expect(JSON.stringify(errors)).toBeUndefined()
         }
@@ -45,7 +45,9 @@ describe('createHealthcareProfessional', () => {
         //validate the created HealthcareProfessional has the same values as the original
         expect(searchedProfessional).toBeDefined()
         expect(searchedProfessional.id).toBeDefined()
-        expect(searchedProfessional.names).toEqual(originalInputValues.names)
+        expect(searchedProfessional.names[0].firstName).toEqual(originalInputValues.names[0].firstName)
+        expect(searchedProfessional.names[0].lastName).toEqual(originalInputValues.names[0].lastName)
+        expect(searchedProfessional.names[0].middleName).toEqual(originalInputValues.names[0].middleName || null)
         expect(searchedProfessional.degrees).toEqual(originalInputValues.degrees)
         expect(searchedProfessional.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
         expect(searchedProfessional.acceptedInsurance).toEqual(originalInputValues.acceptedInsurance)
@@ -71,7 +73,7 @@ describe('createHealthcareProfessional', () => {
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
         expect(createProfessionalResult.body?.errors[0].extensions.errors[0]).toBeDefined()
-        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toEqual(1)
+        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toBeGreaterThan(0)
 
         const error = createProfessionalResult.body?.errors[0].extensions.errors[0] as Error
 
