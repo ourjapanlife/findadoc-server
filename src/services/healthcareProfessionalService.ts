@@ -71,11 +71,29 @@ export async function createHealthcareProfessional(
         const newHealthcareProfessionalId = healthcareProfessionalRef.id
         const newHealthcareProfessional = mapGqlEntityToDbEntity(newHealthcareProfessionalId, input)
 
-        await healthcareProfessionalRef.set(newHealthcareProfessional)
+        //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        await dbInstance.runTransaction(async (transaction: Transaction) => {
+            await healthcareProfessionalRef.set(newHealthcareProfessional)
 
-        console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
+            //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array 
+            if (newHealthcareProfessional.facilityIds && newHealthcareProfessional.facilityIds.length > 0) {
+                const facilityUpdateResults = await processFacilityRelationshipChanges(
+                    newHealthcareProfessional.id, newHealthcareProfessional.facilityIds.map(id => ({
+                        otherEntityId: id,
+                        action: gqlTypes.RelationshipAction.Create
+                    } satisfies gqlTypes.Relationship))
+                )
 
-        //TODO: add healthcare professional id to associated facility
+                // if we didn't get it back or have errors, this is an actual error.
+                if (facilityUpdateResults.hasErrors || !facilityUpdateResults.data) {
+                    throw new Error(`ERROR: Error updating healthcare professional facilityIds: ${JSON.stringify(facilityUpdateResults.errors)}`)
+                }
+            }
+
+            //this will update only the fields that are provided and are not undefined.
+            await transaction.set(healthcareProfessionalRef, newHealthcareProfessional, { merge: true })
+            console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
+        })
 
         const createdHealthcareProfessionalResult = await getHealthcareProfessionalById(newHealthcareProfessionalId)
 
@@ -191,7 +209,7 @@ export const updateHealthcareProfessional = async (
 */
 async function processFacilityRelationshipChanges(healthcareProfessionalId: string,
     facilityRelationshipChanges: gqlTypes.Relationship[],
-    originalFacilityIds: string[])
+    originalFacilityIds: string[] = [])
     : Promise<Result<string[]>> {
     // deep clone the array so we don't modify the original
     let updatedFacilityIdsArray = [...originalFacilityIds]
