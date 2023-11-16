@@ -86,7 +86,7 @@ export default function validateNames(
             })
         }
 
-        if (!nameObject.middleName?.trim()) {
+        if (nameObject.middleName && !nameObject.middleName?.trim()) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: `names[${index}].middleName`,
