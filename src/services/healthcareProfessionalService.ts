@@ -3,6 +3,7 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { dbInstance } from '../firebaseDb.js'
+import validateNames from '../validation/validationHealthcareProfessional.js'
 
 export async function getHealthcareProfessionalById(id: string): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
@@ -300,31 +301,6 @@ function validateDegrees(
     })
 
     //TODO validate each degree
-}
-
-function validateNames(
-    names: gqlTypes.LocalizedNameInput[] | undefined | null,
-    validationResults: Result<unknown>
-): void {
-    if (!names) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'names',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    }
-
-    if (names && names.length > 16) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'names',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    //TODO validate each name
 }
 
 function validateSpecialties(
