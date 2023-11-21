@@ -42,7 +42,7 @@ function validateSubmissionOrderBy(
         })
     }
 
-    if (filters.orderBy && filters.orderBy.length > 2) {
+    if (filters.orderBy.length > 2) {
         validateSearchResults.hasErrors = true
         validateSearchResults.errors?.push({
             field: 'orderBy',
@@ -51,7 +51,7 @@ function validateSubmissionOrderBy(
         })
     }
 
-    if (filters.orderBy && filters.orderBy.length === 2 && 
+    if (filters.orderBy.length === 2 && 
         filters.orderBy[0].fieldToOrder === filters.orderBy[1].fieldToOrder) {
         validateSearchResults.hasErrors = true
         validateSearchResults.errors?.push({
@@ -91,7 +91,7 @@ function validateSubmissionSearchBySpokenLanguage(
         }
     }
     
-    const languageCodeOccurrences: any = {}
+    const languageCodeOccurrences: { [key: string]: number } = {}
     for (let lang of filters.spokenLanguages) {
         if(languageCodeOccurrences[lang]) {     
             validateSearchResults.hasErrors = true
@@ -113,7 +113,7 @@ function validateSearchByName(
 ): void {
     const name = filters.healthcareProfessionalName
 
-    if (name === undefined || name === null) {
+    if (!name) {
         return
     }
 
@@ -160,7 +160,7 @@ function validateSearchByGoogleMapsUrl(
 ): void {
     const mapUrl = filters.googleMapsUrl
 
-    if (mapUrl === undefined || mapUrl === null) {
+    if (!mapUrl) {
         return
     }
 

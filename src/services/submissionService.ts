@@ -73,8 +73,6 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
     : Promise<Result<gqlTypes.Submission[]>> {
     
     try {
-        //TODO: convert this to a validation method instead of a mapping method
-        // const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
         const validationResults = validateSubmissionSearchFilters(filters)
         if (validationResults.hasErrors) {
             return {
