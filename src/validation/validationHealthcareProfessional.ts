@@ -1,12 +1,12 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
-import { isInvalidName, hasJapaneseCharacters, hasLatinCharacters } from '../../utils/stringUtils.js'
+import { isInvalidName, hasJapaneseCharacters, hasLatinCharacters, hasSpecialCharacters } from '../../utils/stringUtils.js'
 import { ErrorCode, Result } from '../result.js'
 
-export default function validateNames(
+export function names(
     names: gqlTypes.LocalizedNameInput[] | undefined | null,
     validationResults: Result<unknown>
 ): void {
-    if (!names || !names?.length) {
+    if (!names || !names.length) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'names',
@@ -142,6 +142,90 @@ export default function validateNames(
                     })
                 }
             }
+        }
+    })
+}
+
+export function degrees(
+    degrees: gqlTypes.InputMaybe<gqlTypes.Degree[]> | undefined,
+    validationResults: Result<unknown>
+): void {
+    if (!degrees || !degrees.length) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'degrees',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+        return
+    }
+
+    if (degrees && degrees.length > 64) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'degrees',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    degrees.forEach((degree, index) => {
+        if (degree.nameJa.length > 64) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].nameJa`,
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (degree.nameEn.length > 64) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].nameEn`,
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (degree.abbreviation.length > 15) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].abbreviation`,
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (hasLatinCharacters(degree.nameJa)) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].nameJa`,
+                errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
+                httpStatus: 400
+            })
+        }
+
+        if (hasJapaneseCharacters(degree.nameEn)) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].nameEn`,
+                errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
+                httpStatus: 400
+            })
+        }
+
+        const containsSpecialCharAbbreviation = hasSpecialCharacters(degree.abbreviation)
+        const containsSpecialCharNameJa = hasSpecialCharacters(degree.nameJa)
+        const containsSpecialCharNameEn = hasSpecialCharacters(degree.nameEn)
+
+        if (containsSpecialCharAbbreviation || containsSpecialCharNameEn || containsSpecialCharNameJa) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].${containsSpecialCharAbbreviation ? 'abbreviation': containsSpecialCharNameEn ? 'nameEn' : 'nameJa'}`,
+                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
+                httpStatus: 400
+            })
         }
     })
 }

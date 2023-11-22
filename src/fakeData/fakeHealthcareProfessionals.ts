@@ -47,7 +47,7 @@ function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
 function generateDegreeInput(): gqlTypes.DegreeInput {
     return {
         nameEn: faker.person.jobTitle(),
-        nameJa: fakerJA.person.jobTitle(),
+        nameJa: '役職名',
         abbreviation: faker.person.suffix()
     }
 }

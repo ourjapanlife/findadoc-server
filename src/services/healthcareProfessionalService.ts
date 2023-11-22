@@ -3,9 +3,13 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { dbInstance } from '../firebaseDb.js'
+<<<<<<< HEAD
 import validateNames from '../validation/validationHealthcareProfessional.js'
 import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } from './facilityService.js'
 import { MapDefinedFields } from '../../utils/objectUtils.js'
+=======
+import * as validateHealthcareProfessional from '../validation/validationHealthcareProfessional.js'
+>>>>>>> 00a98e5 (change: build out validation for degrees field of HP)
 
 /**
  * Gets the Healthcare Professional from the database that matches on the id.
@@ -475,8 +479,8 @@ function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcar
         })
     }
 
-    validateNames(input.names, validationResults)
-    validateDegrees(input.degrees, validationResults)
+    validateHealthcareProfessional.names(input.names, validationResults)
+    validateHealthcareProfessional.degrees(input.degrees, validationResults)
     validateSpecialties(input.specialties, validationResults)
     validateInsurance(input.acceptedInsurance, validationResults)
     validateSpokenLanguages(input.spokenLanguages, validationResults)
@@ -502,67 +506,13 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
         })
     }
 
-    validateNames(input.names, validationResults)
-    validateDegrees(input.degrees, validationResults)
+    validateHealthcareProfessional.names(input.names, validationResults)
+    validateHealthcareProfessional.degrees(input.degrees, validationResults)
     validateSpecialties(input.specialties, validationResults)
     validateInsurance(input.acceptedInsurance, validationResults)
     validateSpokenLanguages(input.spokenLanguages, validationResults)
 
     return validationResults
-}
-
-function validateDegrees(
-    degrees: gqlTypes.InputMaybe<gqlTypes.Degree[]> | undefined,
-    validationResults: Result<unknown>
-): void {
-    if (!degrees) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'degrees',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    }
-
-    if (degrees && degrees.length > 64) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'degrees',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    degrees?.forEach(degree => {
-        if (degree.nameJa && degree.nameJa.length > 64) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: 'degrees',
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-
-        if (degree.nameEn && degree.nameEn.length > 64) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: 'degrees',
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-
-        if (degree.abbreviation && degree.abbreviation.length > 64) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: 'degrees',
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-    })
-
-    //TODO validate each degree
 }
 
 function validateSpecialties(
