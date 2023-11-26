@@ -129,7 +129,7 @@ describe('deleteHealthcareProfessional', () => {
 
         const searchedProfessional = validQueryResult.body.data.healthcareProfessional as HealthcareProfessional
 
-        // We want to ensure the facility was created before we delete it. 
+        // We want to ensure the professional was created before we delete it. 
         expect(searchedProfessional.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
         expect(searchedProfessional.id).toBeDefined()
 
@@ -140,7 +140,7 @@ describe('deleteHealthcareProfessional', () => {
             }
         } as gqlRequest
 
-        // -- Let's try to delete the facility! --
+        // -- Let's try to delete the professional! --
         const deleteResult = await request(gqlApiUrl).post('/').send(deleteRequest)
 
         //should not have errors
@@ -167,14 +167,14 @@ describe('deleteHealthcareProfessional', () => {
         expect(validQueryErrors[0].field).toBe('getHealthcareProfessionalById')
         expect(validQueryErrors[0].errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR)
 
-        // -- Let's try to delete the facility again! We should receive an error now that it doesn't exist --
-        const deleteAgainFacilityResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+        // -- Let's try to delete the professional again! We should receive an error now that it doesn't exist --
+        const deleteAgainResult = await request(gqlApiUrl).post('/').send(deleteRequest)
 
         //should have an error that it doesn't exist
-        const deleteAgainErrors = deleteAgainFacilityResult.body?.errors[0].extensions.errors as Error[]
+        const deleteAgainErrors = deleteAgainResult.body?.errors[0].extensions.errors as Error[]
 
         console.log(JSON.stringify(deleteAgainErrors))
-        expect(deleteAgainFacilityResult.body?.deleteHealthcareProfessional).toBeFalsy()
+        expect(deleteAgainResult.body?.deleteHealthcareProfessional).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()
         expect(deleteAgainErrors[0].field).toBe('deleteHealthcareProfessional')
