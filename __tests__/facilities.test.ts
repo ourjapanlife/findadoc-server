@@ -202,7 +202,7 @@ describe('updateFacility', () => {
     })
 })
 
-describe.concurrent('deleteFacility', () => {
+describe('deleteFacility', () => {
     test('deletes a new facility', async () => {
         // -- Create a new facility that we plan to delete --
         const createFacilityRequest = {
