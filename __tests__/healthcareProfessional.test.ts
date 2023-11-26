@@ -1,7 +1,7 @@
 import request from 'supertest'
-import { expect, describe, it } from 'vitest'
+import { expect, describe, it, test } from 'vitest'
 import { Error, ErrorCode } from '../src/result.js'
-import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
+import { generateRandomCreateHealthcareProfessionalInput as generateCreateProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { CreateHealthcareProfessionalInput, HealthcareProfessional } from '../src/typeDefs/gqlTypes.js'
 import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
@@ -11,15 +11,15 @@ describe('createHealthcareProfessional', () => {
         const createHealthcareProfessionalMutationRequest = {
             query: createHealthcareProfessionalMutation,
             variables: {
-                input: generateRandomCreateHealthcareProfessionalInput({ facilityIds: sharedFacilityIds })
+                input: generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
         const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalMutationRequest)
-        
+
         //should not have errors
         const errors = createProfessionalResult.body?.errors
-        
+
         if (errors) {
             expect(JSON.stringify(errors)).toBeUndefined()
         }
@@ -62,7 +62,7 @@ describe('createHealthcareProfessional', () => {
         const createHealthcareProfessionalRequest = {
             query: createHealthcareProfessionalMutation,
             variables: {
-                input: generateRandomCreateHealthcareProfessionalInput({ facilityIds: emptyFacilityIds })
+                input: generateCreateProfessionalInput({ facilityIds: emptyFacilityIds })
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
@@ -80,6 +80,105 @@ describe('createHealthcareProfessional', () => {
         expect(error.field).toBe('facilityIds')
         expect(error.errorCode).toBe(ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED)
         expect(error.httpStatus).toBe(400)
+    })
+})
+
+describe('deleteHealthcareProfessional', () => {
+    test('deletes a new healthcare professional', async () => {
+        // -- Create a new professional that we plan to delete --
+        const createRequest = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: generateCreateProfessionalInput({
+                    facilityIds: sharedFacilityIds
+                }) satisfies CreateHealthcareProfessionalInput
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createResult = await request(gqlApiUrl).post('/').send(createRequest)
+
+        //should not have errors
+        const createErrors = createResult.body?.errors
+
+        if (createErrors) {
+            console.log(JSON.stringify(createErrors))
+            expect(createErrors).toBeUndefined()
+        }
+
+        const originalInputValues = createRequest.variables.input
+        const newProfessional = createResult.body.data.createHealthcareProfessional as HealthcareProfessional
+        const newProfessionalId = newProfessional.id
+
+        const getByIdRequest = {
+            query: getHealthcareProfessionalByIdQuery,
+            variables: {
+                id: newProfessional.id
+            }
+        } as gqlRequest
+
+        // -- Query the professional by id --
+        const validQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+
+        //should not have errors
+        const queryErrors = createResult.body?.errors
+
+        if (queryErrors) {
+            console.log(JSON.stringify(queryErrors))
+            expect(queryErrors).toBeUndefined()
+        }
+
+        const searchedProfessional = validQueryResult.body.data.healthcareProfessional as HealthcareProfessional
+
+        // We want to ensure the facility was created before we delete it. 
+        expect(searchedProfessional.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(searchedProfessional.id).toBeDefined()
+
+        const deleteRequest = {
+            query: deleteProfessionalMutation,
+            variables: {
+                id: newProfessionalId
+            }
+        } as gqlRequest
+
+        // -- Let's try to delete the facility! --
+        const deleteResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+
+        //should not have errors
+        const deleteErrors = deleteResult.body?.errors
+
+        if (deleteErrors) {
+            console.log(JSON.stringify(deleteErrors))
+            expect(deleteErrors).toBeUndefined()
+        }
+
+        // we should have a success response
+        expect(deleteResult.body.data.deleteHealthcareProfessional.isSuccessful).toBe(true)
+
+        // -- Let's try to fetch the professional again to confirm it's deleted --
+        const missingQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+
+        //should have an error that it doesn't exist
+        const validQueryGqlErrors = missingQueryResult.body?.errors
+        const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
+
+        console.log(JSON.stringify(validQueryErrors))
+        expect(validQueryErrors.length).toBe(1)
+        expect(validQueryErrors[0]).toBeDefined()
+        expect(validQueryErrors[0].field).toBe('getHealthcareProfessionalById')
+        expect(validQueryErrors[0].errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR)
+
+        // -- Let's try to delete the facility again! We should receive an error now that it doesn't exist --
+        const deleteAgainFacilityResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+
+        //should have an error that it doesn't exist
+        const deleteAgainErrors = deleteAgainFacilityResult.body?.errors[0].extensions.errors as Error[]
+
+        console.log(JSON.stringify(deleteAgainErrors))
+        expect(deleteAgainFacilityResult.body?.deleteHealthcareProfessional).toBeFalsy()
+        expect(deleteAgainErrors.length).toBe(1)
+        expect(deleteAgainErrors[0]).toBeDefined()
+        expect(deleteAgainErrors[0].field).toBe('deleteHealthcareProfessional')
+        expect(deleteAgainErrors[0].errorCode).toBe(ErrorCode.INVALID_ID)
     })
 })
 
@@ -136,5 +235,11 @@ const getHealthcareProfessionalByIdQuery = `query test_getHealthcareProfessional
         acceptedInsurance
         createdDate
         updatedDate
+    }
+}`
+
+const deleteProfessionalMutation = `mutation test_deleteHealthcareProfessional($id: ID!) {
+    deleteHealthcareProfessional(id: $id) {
+        isSuccessful
     }
 }`
