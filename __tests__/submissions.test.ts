@@ -1,10 +1,10 @@
-import { expect, describe, it } from 'vitest'
+import { expect, describe, it, test } from 'vitest'
 import request from 'supertest'
 import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions.js'
 import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
 import { Error, ErrorCode } from '../src/result.js'
 import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
-import { gqlRequest } from '../utils/gqlTool.js'
+import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { gqlApiUrl } from './testSetup.test.js'
 
 describe('createSubmission', () => {
@@ -371,6 +371,103 @@ describe('searchSubmissions', () => {
     })
 })
 
+describe('deleteSubmission', () => {
+    test('deletes a new submission', async () => {
+        // -- Create a new submission that we plan to delete --
+        const createRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: generateRandomCreateSubmissionInput() satisfies CreateSubmissionInput
+            }
+        } as gqlMutation<CreateSubmissionInput>
+
+        const createResult = await request(gqlApiUrl).post('/').send(createRequest)
+
+        //should not have errors
+        const createErrors = createResult.body?.errors
+
+        if (createErrors) {
+            console.log(JSON.stringify(createErrors))
+            expect(createErrors).toBeUndefined()
+        }
+
+        const originalInputValues = createRequest.variables.input
+        const newSubmission = createResult.body.data.createSubmission as Submission
+        const newSubmissionId = newSubmission.id
+
+        const getByIdRequest = {
+            query: getSubmissionByIdQuery,
+            variables: {
+                id: newSubmission.id
+            }
+        } as gqlRequest
+
+        // -- Query the submission by id --
+        const validQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+
+        //should not have errors
+        const queryErrors = createResult.body?.errors
+
+        if (queryErrors) {
+            console.log(JSON.stringify(queryErrors))
+            expect(queryErrors).toBeUndefined()
+        }
+
+        const searchedSubmission = validQueryResult.body.data.submission as Submission
+
+        // We want to ensure the submission was created before we delete it. 
+        expect(searchedSubmission.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(searchedSubmission.id).toBeDefined()
+
+        const deleteRequest = {
+            query: deleteSubmissionMutation,
+            variables: {
+                id: newSubmissionId
+            }
+        } as gqlRequest
+
+        // -- Let's try to delete the submission! --
+        const deleteResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+
+        //should not have errors
+        const deleteErrors = deleteResult.body?.errors
+
+        if (deleteErrors) {
+            console.log(JSON.stringify(deleteErrors))
+            expect(deleteErrors).toBeUndefined()
+        }
+
+        // we should have a success response
+        expect(deleteResult.body.data.deleteSubmission.isSuccessful).toBe(true)
+
+        // -- Let's try to fetch the submission again to confirm it's deleted --
+        const missingQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+
+        //should have an error that it doesn't exist
+        const validQueryGqlErrors = missingQueryResult.body?.errors
+        const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
+
+        console.log(JSON.stringify(validQueryErrors))
+        expect(validQueryErrors.length).toBe(1)
+        expect(validQueryErrors[0]).toBeDefined()
+        expect(validQueryErrors[0].field).toBe('id')
+        expect(validQueryErrors[0].errorCode).toBe(ErrorCode.NOT_FOUND)
+
+        // -- Let's try to delete the submission again! We should receive an error now that it doesn't exist --
+        const deleteAgainResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+
+        //should have an error that it doesn't exist
+        const deleteAgainErrors = deleteAgainResult.body?.errors[0].extensions.errors as Error[]
+
+        console.log(JSON.stringify(deleteAgainErrors))
+        expect(deleteAgainResult.body?.deleteSubmission).toBeFalsy()
+        expect(deleteAgainErrors.length).toBe(1)
+        expect(deleteAgainErrors[0]).toBeDefined()
+        expect(deleteAgainErrors[0].field).toBe('deleteSubmission')
+        expect(deleteAgainErrors[0].errorCode).toBe(ErrorCode.INVALID_ID)
+    })
+})
+
 async function checkSearchResults(searchSubmissionsRequest: gqlRequest, originalInputValues: CreateSubmissionInput) {
     //Get the submissions query data
     const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
@@ -457,5 +554,11 @@ const updateSubmissionMutation = `mutation test_updateSubmission($id: ID!, $inpu
         isRejected
         createdDate
         updatedDate
+    }
+}`
+
+const deleteSubmissionMutation = `mutation test_deleteSubmission($id: ID!) {
+    deleteSubmission(id: $id) {
+        isSuccessful
     }
 }`
