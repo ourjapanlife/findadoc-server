@@ -1,4 +1,4 @@
-import { DocumentData, Query, Transaction } from 'firebase-admin/firestore'
+import { DocumentData, Query, Transaction, DocumentReference } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
@@ -10,9 +10,11 @@ import { updateHealthcareProfessionalsWithFacilityIdChanges } from './healthcare
 /**
  * Gets the Facility from the database that matches on the id.
  * @param id A string that matches the id of the Firestore Document for the Facility.
+ * @param firestoreRef An optional reference to the Firestore database within a transaction. If we don't use this during a transaction, we might not get the latest saved data. 
  * @returns A Facility object.
  */
-export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility>> => {
+export const getFacilityById = async (id: string, transactionRef?: DocumentReference<DocumentData>)
+    : Promise<Result<gqlTypes.Facility>> => {
     try {
         const validationResult = validateIdInput(id)
 
@@ -20,8 +22,8 @@ export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facil
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        const facilityRef = dbInstance.collection('facilities')
-        const dbDocument = await facilityRef.doc(id).get()
+        const facilityRef = transactionRef ?? dbInstance.collection('facilities').doc(id)
+        const dbDocument = await facilityRef.get()
 
         if (!dbDocument.exists) {
             return {
@@ -148,7 +150,7 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
         const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
 
         //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        await dbInstance.runTransaction(async (transaction: Transaction) => {
+        const result = await dbInstance.runTransaction(async (transaction: Transaction) => {
             await transaction.set(facilityRef, newDbFacility)
 
             console.log(`DB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
@@ -160,7 +162,8 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
                     newDbFacility.healthcareProfessionalIds.map(id => ({
                         otherEntityId: id,
                         action: gqlTypes.RelationshipAction.Create
-                    } satisfies gqlTypes.Relationship))
+                    } satisfies gqlTypes.Relationship)),
+                    transaction
                 )
 
                 // if we didn't get it back or have errors, this is an actual error.
@@ -168,18 +171,15 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
                     throw new Error(`ERROR: Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
                 }
             }
+
+            return newDbFacility
         })
 
-        //let's return the newly created facility
-        const createdFacilityResult = await getFacilityById(newFacilityId)
-
-        // if we didn't get it back or have errors, this is an actual error.
-        if (createdFacilityResult.hasErrors || !createdFacilityResult.data) {
-            throw new Error(`Error creating facility: ${JSON.stringify(createdFacilityResult.errors)}`)
-        }
+        //let's return the newly created facility. Since we have the full entity, no need to do a new query. 
+        const createdGqlEntity = mapDbEntityTogqlEntity(result)
 
         return {
-            data: createdFacilityResult.data,
+            data: createdGqlEntity,
             hasErrors: false
         }
     } catch (error) {
@@ -207,8 +207,8 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
  * @param fieldsToUpdate The values that should be updated. They will be created if they don't exist.
  * @returns The updated Facility.
  */
-export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<gqlTypes.UpdateFacilityInput>):
-    Promise<Result<gqlTypes.Facility>> => {
+export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<gqlTypes.UpdateFacilityInput>)
+    : Promise<Result<gqlTypes.Facility>> => {
     try {
         const validationResult = validateUpdateFacilityInput(fieldsToUpdate)
 
@@ -217,7 +217,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         }
 
         //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        await dbInstance.runTransaction(async (transaction: Transaction) => {
+        const result = await dbInstance.runTransaction(async (transaction: Transaction) => {
             const facilityRef = dbInstance.collection('facilities').doc(facilityId)
             const dbDocument = await facilityRef.get()
             const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
@@ -233,7 +233,8 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
                 const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
                     dbFacilityToUpdate.id,
                     fieldsToUpdate.healthcareProfessionalIds,
-                    dbFacilityToUpdate.healthcareProfessionalIds
+                    transaction,
+                    dbFacilityToUpdate.healthcareProfessionalIds ?? []
                 )
 
                 // if we didn't get it back or have errors, this is an actual error.
@@ -248,17 +249,19 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
             await transaction.set(facilityRef, dbFacilityToUpdate, { merge: true })
 
             console.log(`DB-UPDATE: Updated facility ${facilityRef.id}. Entity: ${JSON.stringify(dbFacilityToUpdate)}`)
+
+            const updatedFacilityResult = await getFacilityById(facilityId, facilityRef)
+
+            return updatedFacilityResult
         })
 
-        const updatedFacilityResult = await getFacilityById(facilityId)
-
         // if we didn't get it back or have errors, this is an actual error.
-        if (updatedFacilityResult.hasErrors || !updatedFacilityResult.data) {
-            throw new Error(`Error updating facility: ${JSON.stringify(updatedFacilityResult.errors)}`)
+        if (result.hasErrors || !result.data) {
+            throw new Error(`Error updating facility: ${JSON.stringify(result.errors)}`)
         }
 
         return {
-            data: updatedFacilityResult.data,
+            data: result.data,
             hasErrors: false
         }
     } catch (error) {
@@ -281,10 +284,12 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
  * @param facilityId The ID of the facility in the database.
  * @param healthcareProfessionalRelationshipChanges The changes to the healthcare professional relationships.
  * @param originalHealthcareProfessionalIds The original healthcare professional ids for the facility.
+ * @param transaction The transaction to use for the updates.
  * @returns The updated facility ids for the healthcare professional based on the action.
 */
 async function processHealthcareProfessionalRelationshipChanges(facilityId: string,
     healthcareProfessionalRelationshipChanges: gqlTypes.Relationship[],
+    transaction: Transaction,
     originalHealthcareProfessionalIds: string[] = [])
     : Promise<Result<string[]>> {
     // deep clone the array so we don't modify the original
@@ -306,7 +311,8 @@ async function processHealthcareProfessionalRelationshipChanges(facilityId: stri
     //update all the associated healthcare professionals (note: this should be contained within a transaction with the facility so we can roll back if anything fails)
     const healthcareProfessionalUpdateResults = await updateHealthcareProfessionalsWithFacilityIdChanges(
         healthcareProfessionalRelationshipChanges,
-        facilityId
+        facilityId,
+        transaction
     )
 
     return {
@@ -322,19 +328,21 @@ async function processHealthcareProfessionalRelationshipChanges(facilityId: stri
     * Based on the action, it will add or remove the healthcareprofessional id from the existing list of healthcare professional ids.
     * @param facilitiesToUpdate - The list of facilities to update. 
     * @param healthcareProfessionalId - The id of the healthcareprofessional that is being added or removed. 
+    * @param transaction - The transaction to use for the updates.
     * @returns Result containing any errors that occurred.
 */
 export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
     facilitiesToUpdate: gqlTypes.Relationship[],
-    healthcareProfessionalId: string
+    healthcareProfessionalId: string,
+    transaction: Transaction
 ): Promise<Result<void>> {
     try {
         //since we're updating several records at once, let's batch together the updates.
-        const dbBatch = dbInstance.batch()
+        const facilityCollection = dbInstance.collection('facilities')
 
         for await (const facilityIdRelationship of facilitiesToUpdate) {
-            const facilityRef = dbInstance.collection('facilities').doc(facilityIdRelationship.otherEntityId)
-            const dbDocument = await facilityRef.get()
+            const facilityRef = facilityCollection.doc(facilityIdRelationship.otherEntityId)
+            const dbDocument = await transaction.get(facilityRef)
             const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
 
             //we want to add or remove the healthcareprofessional id from the list based on the action.
@@ -355,12 +363,9 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             dbFacilityToUpdate.updatedDate = new Date().toISOString()
 
             //This will add the record update to the batch.
-            await facilityRef.set(dbFacilityToUpdate, { merge: true })
+            await transaction.set(facilityRef, dbFacilityToUpdate, { merge: true })
             console.log(`DB-UPDATE: Updated facility ${facilityRef.id} healthcareprofession relation ids. Updated values: ${JSON.stringify(dbFacilityToUpdate)}`)
         }
-
-        //commit the batch of updates.
-        await dbBatch.commit()
 
         return {
             data: undefined,

@@ -101,6 +101,7 @@ export const createHealthcareProfessionalMutation = `mutation test_createHealthc
                 locale
             }
         }
+        facilityIds
         spokenLanguages
         acceptedInsurance
         createdDate
@@ -128,6 +129,7 @@ const getHealthcareProfessionalByIdQuery = `query test_getHealthcareProfessional
                 locale
             }
         }
+        facilityIds
         spokenLanguages
         acceptedInsurance
         createdDate

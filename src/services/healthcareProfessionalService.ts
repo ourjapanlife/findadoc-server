@@ -1,4 +1,4 @@
-import { DocumentData, Transaction } from 'firebase-admin/firestore'
+import { DocumentData, DocumentReference, Transaction } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
@@ -6,7 +6,14 @@ import { dbInstance } from '../firebaseDb.js'
 import { updateFacilitiesWithHealthcareProfessionalIdChanges } from './facilityService.js'
 import { MapDefinedFields } from '../../utils/objectUtils.js'
 
-export async function getHealthcareProfessionalById(id: string): Promise<Result<gqlTypes.HealthcareProfessional>> {
+/**
+ * Gets the Healthcare Professional from the database that matches on the id.
+ * @param id A string that matches the id of the Firestore Document for the professional.
+ * @param firestoreRef An optional reference to the Firestore database within a transaction. If we don't use this during a transaction, we might not get the latest saved data. 
+ * @returns A Healthcare Professional object.
+ */
+export async function getHealthcareProfessionalById(id: string, transactionRef?: DocumentReference<DocumentData>)
+    : Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
         if (!id || !id.trim()) {
             return {
@@ -20,8 +27,8 @@ export async function getHealthcareProfessionalById(id: string): Promise<Result<
             }
         }
 
-        const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals')
-        const dbDocument = await healthcareProfessionalRef.doc(id).get()
+        const healthcareProfessionalRef = transactionRef ?? dbInstance.collection('healthcareProfessionals').doc(id)
+        const dbDocument = await healthcareProfessionalRef.get()
 
         if (!dbDocument.exists) {
             throw new Error('No healthcare Professional found with this id')
@@ -72,16 +79,18 @@ export async function createHealthcareProfessional(
         const newHealthcareProfessional = mapGqlEntityToDbEntity(newHealthcareProfessionalId, input)
 
         //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        await dbInstance.runTransaction(async (transaction: Transaction) => {
+        const result = await dbInstance.runTransaction(async (transaction: Transaction) => {
             await healthcareProfessionalRef.set(newHealthcareProfessional)
 
             //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array 
             if (newHealthcareProfessional.facilityIds && newHealthcareProfessional.facilityIds.length > 0) {
                 const facilityUpdateResults = await processFacilityRelationshipChanges(
-                    newHealthcareProfessional.id, newHealthcareProfessional.facilityIds.map(id => ({
+                    newHealthcareProfessional.id, 
+                    newHealthcareProfessional.facilityIds.map(id => ({
                         otherEntityId: id,
                         action: gqlTypes.RelationshipAction.Create
-                    } satisfies gqlTypes.Relationship))
+                    } satisfies gqlTypes.Relationship)),
+                    transaction
                 )
 
                 // if we didn't get it back or have errors, this is an actual error.
@@ -93,17 +102,15 @@ export async function createHealthcareProfessional(
             //this will update only the fields that are provided and are not undefined.
             await transaction.set(healthcareProfessionalRef, newHealthcareProfessional, { merge: true })
             console.log(`DB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
+
+            //let's return the newly created professional. Since we have the full entity, no need to do a new query. 
+            const createdHealthcareProfessionalResult = mapDbEntityTogqlEntity(newHealthcareProfessional)
+    
+            return createdHealthcareProfessionalResult
         })
 
-        const createdHealthcareProfessionalResult = await getHealthcareProfessionalById(newHealthcareProfessionalId)
-
-        // if we didn't get it back or have errors, this is an actual error.
-        if (createdHealthcareProfessionalResult.hasErrors || !createdHealthcareProfessionalResult.data) {
-            throw new Error(`Error creating healthcare professional: ${JSON.stringify(createdHealthcareProfessionalResult.errors)}`)
-        }
-
         return {
-            data: createdHealthcareProfessionalResult.data,
+            data: result,
             hasErrors: false
         }
     } catch (error) {
@@ -157,7 +164,10 @@ export const updateHealthcareProfessional = async (
             //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array 
             if (fieldsToUpdate.facilityIds && fieldsToUpdate.facilityIds.length > 0) {
                 const facilityUpdateResults = await processFacilityRelationshipChanges(
-                    dbProfessionalToUpdate.id, fieldsToUpdate.facilityIds, dbProfessionalToUpdate.facilityIds
+                    dbProfessionalToUpdate.id,
+                    fieldsToUpdate.facilityIds,
+                    transaction,
+                    dbProfessionalToUpdate.facilityIds ?? []
                 )
 
                 // if we didn't get it back or have errors, this is an actual error.
@@ -209,6 +219,7 @@ export const updateHealthcareProfessional = async (
 */
 async function processFacilityRelationshipChanges(healthcareProfessionalId: string,
     facilityRelationshipChanges: gqlTypes.Relationship[],
+    transaction: Transaction,
     originalFacilityIds: string[] = [])
     : Promise<Result<string[]>> {
     // deep clone the array so we don't modify the original
@@ -229,7 +240,9 @@ async function processFacilityRelationshipChanges(healthcareProfessionalId: stri
 
     //update all the associated facilities (note: this should be contained within a transaction with the professional  so we can roll back if anything fails)
     const facilityUpdateResults = await updateFacilitiesWithHealthcareProfessionalIdChanges(
-        facilityRelationshipChanges, healthcareProfessionalId
+        facilityRelationshipChanges, 
+        healthcareProfessionalId,
+        transaction
     )
 
     return {
@@ -245,19 +258,18 @@ async function processFacilityRelationshipChanges(healthcareProfessionalId: stri
     * Based on the action, it will add or remove the facility id from the existing list of facilityIds.
     * @param healthcareProfessionalsToUpdate - The list of healthcare professionals to update. 
     * @param facilityId - The id of the facility that is being added or removed. 
+    * @param transaction - The transaction to use for the updates.
     * @returns Result containing any errors that occurred.
 */
 export async function updateHealthcareProfessionalsWithFacilityIdChanges(
     healthcareProfessionalsToUpdate: gqlTypes.Relationship[],
-    facilityId: string
+    facilityId: string,
+    transaction: Transaction
 ): Promise<Result<void>> {
     try {
-        //since we're updating several records at once, let's batch together the updates.
-        const dbBatch = dbInstance.batch()
-
         for await (const relationship of healthcareProfessionalsToUpdate) {
             const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc(relationship.otherEntityId)
-            const dbDocument = await healthcareProfessionalRef.get()
+            const dbDocument = await transaction.get(healthcareProfessionalRef)
             const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
 
             //we want to add or remove the healthcareprofessional id from the list based on the action.
@@ -278,12 +290,9 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             dbProfessionalToUpdate.updatedDate = new Date().toISOString()
 
             //This will add the record update to the batch.
-            await healthcareProfessionalRef.set(dbProfessionalToUpdate, { merge: true })
+            await transaction.set(healthcareProfessionalRef, dbProfessionalToUpdate, { merge: true })
             console.log(`DB-UPDATE: Updated healthcare professional ${healthcareProfessionalRef.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalToUpdate)}`)
         }
-
-        //commit the batch of updates.
-        await dbBatch.commit()
 
         return {
             data: undefined,
