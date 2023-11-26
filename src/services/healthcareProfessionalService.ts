@@ -212,7 +212,7 @@ export const updateHealthcareProfessional = async (
  * @param id The ID of the professional in the database to delete.
  */
 export async function deleteHealthcareProfessional(id: string)
-    : Promise<Result<boolean>> {
+    : Promise<Result<gqlTypes.DeleteResult>> {
     try {
         const dbRef = dbInstance.collection('healthcareProfessionals').doc(id)
         const dbDocument = await dbRef.get()
@@ -221,7 +221,9 @@ export async function deleteHealthcareProfessional(id: string)
             console.log(`Validation Error: User tried deleting non-existant healthcare professional: ${id}`)
 
             return {
-                data: false,
+                data: {
+                    isSuccessful: false
+                },
                 hasErrors: true,
                 errors: [{
                     field: 'deleteHealthcareProfessional',
@@ -235,14 +237,18 @@ export async function deleteHealthcareProfessional(id: string)
         console.log(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
 
         return {
-            data: true,
+            data: {
+                isSuccessful: true
+            },
             hasErrors: false
         }
     } catch (error) {
         console.log(`ERROR: Error deleting professional ${id}: ${error}`)
 
         return {
-            data: false,
+            data: {
+                isSuccessful: false
+            },
             hasErrors: true,
             errors: [{
                 field: 'deleteFacility',
