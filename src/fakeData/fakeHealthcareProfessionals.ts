@@ -7,7 +7,7 @@ export function generateRandomCreateHealthcareProfessionalInput(
     : gqlTypes.CreateHealthcareProfessionalInput {
     return {
         facilityIds: facilityIds,
-        names: faker.helpers.multiple(generateLocalizedNameInput, { count: 2 }),
+        names: faker.helpers.multiple(generateLocalizedNameInput, { count: 1 }),
         degrees: faker.helpers.multiple(generateDegreeInput, { count: 1 }),
         specialties: faker.helpers.multiple(generateSpecialty, { count: 1 }),
         spokenLanguages: generateSpokenLanguages(),
@@ -23,11 +23,24 @@ export function generateRandomCreateHealthcareProfessionalInputArray({ count = 5
 }
 
 function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
-    return {
-        firstName: faker.person.firstName(),
-        middleName: faker.person.middleName(),
-        lastName: faker.person.lastName(),
-        locale: faker.helpers.enumValue(gqlTypes.Locale)
+    const randomLocal = faker.helpers.enumValue(gqlTypes.Locale)
+
+    switch (randomLocal) {
+        case gqlTypes.Locale.EnUs:
+            return {
+                firstName: faker.person.firstName(),
+                middleName: faker.person.middleName(),
+                lastName: faker.person.lastName(),
+                locale: randomLocal
+            }
+        case gqlTypes.Locale.JaJp:
+            return {
+                firstName: fakerJA.person.firstName(),
+                lastName: fakerJA.person.lastName(),
+                locale: randomLocal
+            }
+        default:
+            throw new Error(`Unexpected locale value: ${randomLocal}`)
     }
 }
 

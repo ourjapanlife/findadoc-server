@@ -43,7 +43,7 @@ describe('createSubmission', () => {
         //should not have errors
         const searchErrors = searchResult.body?.errors
 
-        if(searchErrors) {
+        if (searchErrors) {
             console.log(`errors: ${JSON.stringify(searchErrors)}`)
             expect(searchResult.body?.errors).toBeUndefined()
         }
