@@ -11,14 +11,12 @@ import { gqlMutation } from '../utils/gqlTool.js'
 import { CreateFacilityInput, Facility } from '../src/typeDefs/gqlTypes.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
 import { createFacilityMutation } from './facilities.test.js'
-import { RulesTestEnvironment, initializeTestEnvironment } from '@firebase/rules-unit-testing'
+import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
 
 // These ids can be used in any of the tests so they don't have to recreate the same data. 
 export const sharedFacilityIds = [] as string[]
 // This is the url of the graphql api. All supertest requests should be sent to this url.
 export let gqlApiUrl: string
-
-let testEnv: RulesTestEnvironment
 
 const server = new ApolloServer({
     typeDefs: loadSchema(),
@@ -29,7 +27,7 @@ beforeAll(async () => {
     ({ url: gqlApiUrl } = await startStandaloneServer(server, { listen: { port: 0 } }))
     
     //this sets up the firebase test environment
-    testEnv = await initializeTestEnvironment({
+    await initializeTestEnvironment({
         projectId: process.env.FIRESTORE_PROJECT_ID,
         firestore: {
             rules: fs.readFileSync('./firestore.rules', 'utf8')
@@ -38,9 +36,6 @@ beforeAll(async () => {
 
     //this initializes a shared firebase instance for all the tests.
     await initiatilizeFirebaseInstance()
-
-    // we want to clear all test data before each full test run. (not per test, but per `yarn test`. Per test, can cause one test to clear another's in-use data)
-    await testEnv.clearFirestore()
 
     // Create a new Facility to add HealthProfessionals to
     const createFacilityRequest = {

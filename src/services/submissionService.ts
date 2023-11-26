@@ -233,7 +233,7 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
 
         await submissionRef.set(updatedSubmissionValues, { merge: true })
 
-        console.log(`DB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
+        console.log(`\nDB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
 
         const updatedSubmission = await getSubmissionById(submissionId)
 
@@ -305,7 +305,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
 
         await submissionRef.set(currentSubmission, { merge: true })
 
-        console.log(`DB-UPDATE: Submission ${submissionId} was approved.`)
+        console.log(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
 
         //try creating healthcare professional(s)
         for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {

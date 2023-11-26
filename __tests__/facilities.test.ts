@@ -97,7 +97,7 @@ describe('createFacility', () => {
         const errors = getFacilityResult.body?.errors
 
         if (errors) {
-            console.log(JSON.stringify(getFacilityResult.body.errors))
+            console.log(JSON.stringify(errors))
             expect(errors).toBeUndefined()
         }
 
@@ -211,6 +211,14 @@ describe('updateFacility', () => {
 
         // fetch the updated facility
         const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+
+        //should not have errors
+        const queryErrors = getFacilityResult.body?.errors
+
+        if (queryErrors) {
+            console.log(JSON.stringify(queryErrors))
+            expect(JSON.stringify(queryErrors)).toBeUndefined()
+        }
 
         // Compare the actual updated facility returned by getFacilityById to the update request we sent
         const updatedFacility = getFacilityResult.body.data.facility as gqlType.Facility
