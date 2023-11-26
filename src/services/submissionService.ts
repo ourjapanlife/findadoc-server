@@ -6,6 +6,8 @@ import { ErrorCode, Result } from '../result.js'
 import { hasSpecialCharacters } from '../../utils/stringUtils.js'
 import { createFacility } from './facilityService.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService.js'
+import { validateSubmissionSearchFilters } from '../validation/validateSubmissions.js'
+
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -69,10 +71,17 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
  */
 export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilters)
     : Promise<Result<gqlTypes.Submission[]>> {
+    
     try {
-        //TODO: convert this to a validation method instead of a mapping method
-        // const searchFilters = submissionService.mapGqlSearchFiltersToDbSearchFilters(args.filters)
-
+        const validationResults = validateSubmissionSearchFilters(filters)
+        if (validationResults.hasErrors) {
+            return {
+                data: [],
+                hasErrors: true,
+                errors: validationResults.errors
+            }
+        }
+        
         let subRef: Query<DocumentData> = dbInstance.collection('submissions')
 
         if (filters.googleMapsUrl) {
