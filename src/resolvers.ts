@@ -66,7 +66,7 @@ const resolvers = {
 
         deleteFacility: async (_parent: unknown, args: {
             id: string
-        }): Promise<boolean> => {
+        }): Promise<gqlType.DeleteResult> => {
             const deleteFacilityResult = await facilityService.deleteFacility(args.id)
 
             convertErrorsToGqlErrors(deleteFacilityResult)
@@ -96,7 +96,7 @@ const resolvers = {
 
         deleteHealthcareProfessional: async (_parent: unknown, args: {
             id: string
-        }): Promise<boolean> => {
+        }): Promise<gqlType.DeleteResult> => {
             const deleteHealthcareProfessionalResult
                 = await healthcareProfessionalService.deleteHealthcareProfessional(args.id)
 
@@ -125,7 +125,7 @@ const resolvers = {
 
         deleteSubmission: async (_parent: unknown, args: {
             id: string
-        }): Promise<boolean> => {
+        }): Promise<gqlType.DeleteResult> => {
             const deleteSubmissionResult = await submissionService.deleteSubmission(args.id)
 
             convertErrorsToGqlErrors(deleteSubmissionResult)

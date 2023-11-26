@@ -68,6 +68,11 @@ export type DegreeInput = {
   nameJa: Scalars['String']['input'];
 };
 
+export type DeleteResult = {
+  __typename?: 'DeleteResult';
+  isSuccessful: Scalars['Boolean']['output'];
+};
+
 export type Facility = {
   __typename?: 'Facility';
   contact: Contact;
@@ -168,9 +173,9 @@ export type Mutation = {
   createFacility?: Maybe<Facility>;
   createHealthcareProfessional?: Maybe<HealthcareProfessional>;
   createSubmission?: Maybe<Submission>;
-  deleteFacility?: Maybe<Scalars['Boolean']['output']>;
-  deleteHealthcareProfessional?: Maybe<Scalars['Boolean']['output']>;
-  deleteSubmission?: Maybe<Scalars['Boolean']['output']>;
+  deleteFacility?: Maybe<DeleteResult>;
+  deleteHealthcareProfessional?: Maybe<DeleteResult>;
+  deleteSubmission?: Maybe<DeleteResult>;
   updateFacility?: Maybe<Facility>;
   updateHealthcareProfessional?: Maybe<HealthcareProfessional>;
   updateSubmission?: Maybe<Submission>;
@@ -465,6 +470,7 @@ export type ResolversTypes = {
   CreateSubmissionInput: CreateSubmissionInput;
   Degree: ResolverTypeWrapper<Degree>;
   DegreeInput: DegreeInput;
+  DeleteResult: ResolverTypeWrapper<DeleteResult>;
   Facility: ResolverTypeWrapper<Facility>;
   FacilitySearchFilters: FacilitySearchFilters;
   FacilitySubmission: ResolverTypeWrapper<FacilitySubmission>;
@@ -507,6 +513,7 @@ export type ResolversParentTypes = {
   CreateSubmissionInput: CreateSubmissionInput;
   Degree: Degree;
   DegreeInput: DegreeInput;
+  DeleteResult: DeleteResult;
   Facility: Facility;
   FacilitySearchFilters: FacilitySearchFilters;
   FacilitySubmission: FacilitySubmission;
@@ -548,6 +555,11 @@ export type DegreeResolvers<ContextType = any, ParentType extends ResolversParen
   abbreviation?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   nameEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DeleteResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['DeleteResult'] = ResolversParentTypes['DeleteResult']> = {
+  isSuccessful?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -607,9 +619,9 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   createFacility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<MutationCreateFacilityArgs, 'input'>>;
   createHealthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<MutationCreateHealthcareProfessionalArgs, 'input'>>;
   createSubmission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<MutationCreateSubmissionArgs, 'input'>>;
-  deleteFacility?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteFacilityArgs, 'id'>>;
-  deleteHealthcareProfessional?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteHealthcareProfessionalArgs, 'id'>>;
-  deleteSubmission?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationDeleteSubmissionArgs, 'id'>>;
+  deleteFacility?: Resolver<Maybe<ResolversTypes['DeleteResult']>, ParentType, ContextType, RequireFields<MutationDeleteFacilityArgs, 'id'>>;
+  deleteHealthcareProfessional?: Resolver<Maybe<ResolversTypes['DeleteResult']>, ParentType, ContextType, RequireFields<MutationDeleteHealthcareProfessionalArgs, 'id'>>;
+  deleteSubmission?: Resolver<Maybe<ResolversTypes['DeleteResult']>, ParentType, ContextType, RequireFields<MutationDeleteSubmissionArgs, 'id'>>;
   updateFacility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<MutationUpdateFacilityArgs, 'id' | 'input'>>;
   updateHealthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<MutationUpdateHealthcareProfessionalArgs, 'id' | 'input'>>;
   updateSubmission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<MutationUpdateSubmissionArgs, 'id' | 'input'>>;
@@ -666,6 +678,7 @@ export type SubmissionResolvers<ContextType = any, ParentType extends ResolversP
 export type Resolvers<ContextType = any> = {
   Contact?: ContactResolvers<ContextType>;
   Degree?: DegreeResolvers<ContextType>;
+  DeleteResult?: DeleteResultResolvers<ContextType>;
   Facility?: FacilityResolvers<ContextType>;
   FacilitySubmission?: FacilitySubmissionResolvers<ContextType>;
   HealthcareProfessional?: HealthcareProfessionalResolvers<ContextType>;

@@ -243,7 +243,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
  * @param id The ID of the facility in the database to delete.
  */
 export async function deleteFacility(id: string)
-    : Promise<Result<boolean>> {
+    : Promise<Result<gqlTypes.DeleteResult>> {
     try {
         const facilityRef = dbInstance.collection('facilities').doc(id)
 
@@ -253,7 +253,9 @@ export async function deleteFacility(id: string)
             console.log(`Validation Error: User tried deleting non-existant facility: ${id}`)
 
             return {
-                data: false,
+                data: {
+                    isSuccessful: false
+                },
                 hasErrors: true,
                 errors: [{
                     field: 'deleteFacility',
@@ -267,14 +269,18 @@ export async function deleteFacility(id: string)
         console.log(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
 
         return {
-            data: true,
+            data: {
+                isSuccessful: true
+            },
             hasErrors: false
         }
     } catch (error) {
         console.log(`ERROR: Error deleting facility ${id}: ${error}`)
 
         return {
-            data: false,
+            data: {
+                isSuccessful: false
+            },
             hasErrors: true,
             errors: [{
                 field: 'deleteFacility',
