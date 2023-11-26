@@ -207,6 +207,52 @@ export const updateHealthcareProfessional = async (
     }
 }
 
+/**
+ * This deletes a Healthcare Professional from the database. If the Healthcare Professional doesn't exist, it will return a validation error.
+ * @param id The ID of the professional in the database to delete.
+ */
+export async function deleteHealthcareProfessional(id: string)
+    : Promise<Result<boolean>> {
+    try {
+        const dbRef = dbInstance.collection('healthcareProfessionals').doc(id)
+        const dbDocument = await dbRef.get()
+
+        if (!dbDocument.exists) {
+            console.log(`Validation Error: User tried deleting non-existant healthcare professional: ${id}`)
+
+            return {
+                data: false,
+                hasErrors: true,
+                errors: [{
+                    field: 'deleteHealthcareProfessional',
+                    errorCode: ErrorCode.INVALID_ID,
+                    httpStatus: 404
+                }]
+            }
+        }
+
+        await dbRef.delete()
+        console.log(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+
+        return {
+            data: true,
+            hasErrors: false
+        }
+    } catch (error) {
+        console.log(`ERROR: Error deleting professional ${id}: ${error}`)
+
+        return {
+            data: false,
+            hasErrors: true,
+            errors: [{
+                field: 'deleteFacility',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
 /** 
  * Updates all the facilities that have an id in the facilityIds array. It will add or delete based on the action provided. 
  * @param healthcareProfessionalId The ID of the healthcare professional in the database.
