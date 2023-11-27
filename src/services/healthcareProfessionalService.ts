@@ -3,13 +3,9 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { dbInstance } from '../firebaseDb.js'
-<<<<<<< HEAD
-import validateNames from '../validation/validationHealthcareProfessional.js'
+import {validateNames, validateDegrees} from '../validation/validationHealthcareProfessional.js'
 import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } from './facilityService.js'
 import { MapDefinedFields } from '../../utils/objectUtils.js'
-=======
-import * as validateHealthcareProfessional from '../validation/validationHealthcareProfessional.js'
->>>>>>> 00a98e5 (change: build out validation for degrees field of HP)
 
 /**
  * Gets the Healthcare Professional from the database that matches on the id.
@@ -479,8 +475,8 @@ function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcar
         })
     }
 
-    validateHealthcareProfessional.names(input.names, validationResults)
-    validateHealthcareProfessional.degrees(input.degrees, validationResults)
+    validateNames(input.names, validationResults)
+    validateDegrees(input.degrees, validationResults)
     validateSpecialties(input.specialties, validationResults)
     validateInsurance(input.acceptedInsurance, validationResults)
     validateSpokenLanguages(input.spokenLanguages, validationResults)
@@ -506,8 +502,8 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
         })
     }
 
-    validateHealthcareProfessional.names(input.names, validationResults)
-    validateHealthcareProfessional.degrees(input.degrees, validationResults)
+    validateNames(input.names, validationResults)
+    validateDegrees(input.degrees, validationResults)
     validateSpecialties(input.specialties, validationResults)
     validateInsurance(input.acceptedInsurance, validationResults)
     validateSpokenLanguages(input.spokenLanguages, validationResults)

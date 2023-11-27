@@ -22,7 +22,7 @@ export function generateRandomCreateHealthcareProfessionalInputArray({ count = 5
     })
 }
 
-function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
+export function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
     const randomLocal = faker.helpers.enumValue(gqlTypes.Locale)
 
     switch (randomLocal) {
@@ -44,7 +44,7 @@ function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
     }
 }
 
-function generateDegreeInput(): gqlTypes.DegreeInput {
+export function generateDegreeInput(): gqlTypes.DegreeInput {
     return {
         nameEn: faker.person.jobTitle(),
         nameJa: '役職名',
@@ -52,7 +52,7 @@ function generateDegreeInput(): gqlTypes.DegreeInput {
     }
 }
 
-function generateSpecialty(): gqlTypes.SpecialtyInput {
+export function generateSpecialty(): gqlTypes.SpecialtyInput {
     const generateSpecialtyName = (): gqlTypes.SpecialtyNameInput => {
         const locale = faker.helpers.enumValue(gqlTypes.Locale)
 
@@ -86,3 +86,98 @@ export function generateSpokenLanguages({ count = 0, onlyEnglish = false } = {})
 
         )
 }
+
+export function generateAcceptedInsurance() {
+    return faker.helpers.enumValue(gqlTypes.Insurance)
+}
+
+export function generateFailingNames(validationToBeChecked:string, local: gqlTypes.Locale = gqlTypes.Locale.EnUs)
+    : gqlTypes.LocalizedNameInput {
+    let namesField: gqlTypes.LocalizedNameInput = {firstName: '', lastName: '', locale: gqlTypes.Locale.JaJp}
+    
+    switch (validationToBeChecked) {
+        case 'namesContainsInvalidAlphabet': {
+            if (local === gqlTypes.Locale.EnUs) {
+                namesField = {
+                    firstName: fakerJA.person.firstName(),
+                    middleName: 'ロイ',
+                    lastName: fakerJA.person.lastName(),
+                    locale: gqlTypes.Locale.EnUs
+                }
+                break
+            }
+
+            if (local === gqlTypes.Locale.JaJp) {
+                namesField = {
+                    firstName: faker.person.firstName(),
+                    middleName: faker.person.middleName(),
+                    lastName: faker.person.lastName(),
+                    locale: gqlTypes.Locale.JaJp
+                }
+                break
+            }
+            break
+        }
+        case 'namesWithToLongStrings':
+            namesField = {
+                firstName: 'Rhoshandiatellyneshiaunneveshenk',
+                middleName: 'Blaine Charles David Earl Frederick Gerald Hubert',
+                lastName: 'Keihanaikukauakahihulihe\'ekahaunaele',
+                locale: gqlTypes.Locale.EnUs
+            }
+            break
+        case 'namesWithEmptyStrings':
+            namesField = {
+                firstName: '   ',
+                middleName: '     ',
+                lastName: '      ',
+                locale: gqlTypes.Locale.EnUs
+            }
+            break
+        case 'nameWithInvalidChar':
+            namesField = {
+                firstName: 'John/42$',
+                middleName: 'Roe123',
+                lastName: 'Doe&',
+                locale: gqlTypes.Locale.EnUs
+            }
+            break
+        default:
+            throw new Error(`Unexpected validation check value: ${validationToBeChecked}`)
+    }
+
+    return namesField
+}
+
+export function generateFailingDegrees(validationToBeChecked: string): gqlTypes.DegreeInput {
+    let degreeField = { nameEn: '', nameJa: '', abbreviation: ''}
+
+    switch (validationToBeChecked) {
+        case 'degreeWithLongName':
+            degreeField = {
+                nameEn: 'Mathematics with specialization in computational science mathematics and engineering', 
+                nameJa: '同志社大学グローバル・コミュニケーション学部グローバル・コミュニケーション学科・同志社大学グローバル・コミュニケーション学部グローバル', 
+                abbreviation: 'B.Tech M.Acc B.S.S.W'
+            }
+            break
+        case 'degreeWithWrongAlphabet':
+            degreeField = {
+                nameEn: '同志社大学グローバル', 
+                nameJa: 'Mathematics', 
+                abbreviation: 'B.Tech'
+            }
+            break
+        case 'degreeWithInvalidChar':
+            degreeField = {
+                nameEn: 'Mathe[matics=', 
+                nameJa: '同志社大学グ\'ローバル,', 
+                abbreviation: '#B.T$ech'
+            }
+            break
+        default:
+            throw new Error(`Unexpected validation check value: ${validationToBeChecked}`)
+    }
+    
+    return degreeField
+}
+

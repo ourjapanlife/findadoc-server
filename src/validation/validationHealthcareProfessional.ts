@@ -2,7 +2,7 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { isInvalidName, hasJapaneseCharacters, hasLatinCharacters, hasSpecialCharacters } from '../../utils/stringUtils.js'
 import { ErrorCode, Result } from '../result.js'
 
-export function names(
+export function validateNames(
     names: gqlTypes.LocalizedNameInput[] | undefined | null,
     validationResults: Result<unknown>
 ): void {
@@ -54,30 +54,12 @@ export function names(
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: `names[${index}].firstName`,
-                errorCode: ErrorCode.REQUIRED,
+                errorCode: ErrorCode.MISSING_INPUT,
                 httpStatus: 400
             })
         }
 
-        if (nameObject.lastName.length > 30) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `names[${index}].lastName`,
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-
-        if (!nameObject.lastName?.trim()) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `names[${index}].lastName`,
-                errorCode: ErrorCode.REQUIRED,
-                httpStatus: 400
-            })
-        }
-
-        if (nameObject.middleName && nameObject.middleName.length > 60) {
+        if (nameObject.middleName && nameObject.middleName.length > 35) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: `names[${index}].middleName`,
@@ -95,14 +77,50 @@ export function names(
             })
         }
 
+        if (nameObject.lastName.length > 30) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `names[${index}].lastName`,
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (!nameObject.lastName?.trim()) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `names[${index}].lastName`,
+                errorCode: ErrorCode.MISSING_INPUT,
+                httpStatus: 400
+            })
+        }
+    
         const containsInvalidCharFirstName = isInvalidName(nameObject.firstName)
         const containsInvalidCharLastName = isInvalidName(nameObject.lastName)
         const containsInvalidCharMiddleName = nameObject.middleName ? isInvalidName(nameObject.middleName) : false
 
-        if (containsInvalidCharFirstName || containsInvalidCharLastName || containsInvalidCharMiddleName) {
+        if (containsInvalidCharFirstName) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
-                field: `names[${index}].${containsInvalidCharFirstName ? 'firstName' : containsInvalidCharLastName ? 'lastName' : 'middleName'}`,
+                field: `names[${index}].firstName`,
+                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
+                httpStatus: 400
+            })
+        }
+
+        if (containsInvalidCharMiddleName) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `names[${index}].middleName`,
+                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
+                httpStatus: 400
+            })
+        }
+
+        if (containsInvalidCharLastName) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `names[${index}].lastName`,
                 errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
                 httpStatus: 400
             })
@@ -116,10 +134,28 @@ export function names(
                     ? hasJapaneseCharacters(nameObject.middleName)
                     : false
 
-                if (containsJapaneseCharFirstName || containsJapaneseCharLastName || containsJapaneseCharMiddleName) {
+                if (containsJapaneseCharFirstName) {
                     validationResults.hasErrors = true
                     validationResults.errors?.push({
-                        field: `names[${index}].${containsInvalidCharFirstName ? 'firstName' : containsInvalidCharLastName ? 'lastName' : 'middleName'}`,
+                        field: `names[${index}].firstName`,
+                        errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
+                        httpStatus: 400
+                    })
+                }
+
+                if (containsJapaneseCharMiddleName) {
+                    validationResults.hasErrors = true
+                    validationResults.errors?.push({
+                        field: `names[${index}].middleName`,
+                        errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
+                        httpStatus: 400
+                    })
+                }
+
+                if (containsJapaneseCharLastName) {
+                    validationResults.hasErrors = true
+                    validationResults.errors?.push({
+                        field: `names[${index}].lastName`,
                         errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
                         httpStatus: 400
                     })
@@ -133,10 +169,28 @@ export function names(
                     ? hasLatinCharacters(nameObject.middleName)
                     : false
 
-                if (containsLatinCharFirstName || containsLatinCharLastName || containsLatinCharMiddleName) {
+                if (containsLatinCharFirstName) {
                     validationResults.hasErrors = true
                     validationResults.errors?.push({
-                        field: `names[${index}].${containsInvalidCharFirstName ? 'firstName' : containsInvalidCharLastName ? 'lastName' : 'middleName'}`,
+                        field: `names[${index}].firstName`,
+                        errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
+                        httpStatus: 400
+                    })
+                }
+
+                if (containsLatinCharMiddleName) {
+                    validationResults.hasErrors = true
+                    validationResults.errors?.push({
+                        field: `names[${index}].middleName`,
+                        errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
+                        httpStatus: 400
+                    })
+                }
+
+                if (containsLatinCharLastName) {
+                    validationResults.hasErrors = true
+                    validationResults.errors?.push({
+                        field: `names[${index}].lastName`,
                         errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
                         httpStatus: 400
                     })
@@ -146,7 +200,7 @@ export function names(
     })
 }
 
-export function degrees(
+export function validateDegrees(
     degrees: gqlTypes.InputMaybe<gqlTypes.Degree[]> | undefined,
     validationResults: Result<unknown>
 ): void {
@@ -170,19 +224,19 @@ export function degrees(
     }
 
     degrees.forEach((degree, index) => {
-        if (degree.nameJa.length > 64) {
+        if (degree.nameEn.length > 64) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
-                field: `degrees[${index}].nameJa`,
+                field: `degrees[${index}].nameEn`,
                 errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
                 httpStatus: 400
             })
         }
 
-        if (degree.nameEn.length > 64) {
+        if (degree.nameJa.length > 64) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
-                field: `degrees[${index}].nameEn`,
+                field: `degrees[${index}].nameJa`,
                 errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
                 httpStatus: 400
             })
@@ -196,6 +250,15 @@ export function degrees(
                 httpStatus: 400
             })
         }
+        
+        if (hasJapaneseCharacters(degree.nameEn)) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].nameEn`,
+                errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
+                httpStatus: 400
+            })
+        }
 
         if (hasLatinCharacters(degree.nameJa)) {
             validationResults.hasErrors = true
@@ -206,23 +269,32 @@ export function degrees(
             })
         }
 
-        if (hasJapaneseCharacters(degree.nameEn)) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].nameEn`,
-                errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
-                httpStatus: 400
-            })
-        }
-
         const containsSpecialCharAbbreviation = hasSpecialCharacters(degree.abbreviation)
         const containsSpecialCharNameJa = hasSpecialCharacters(degree.nameJa)
         const containsSpecialCharNameEn = hasSpecialCharacters(degree.nameEn)
 
-        if (containsSpecialCharAbbreviation || containsSpecialCharNameEn || containsSpecialCharNameJa) {
+        if (containsSpecialCharNameEn) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
-                field: `degrees[${index}].${containsSpecialCharAbbreviation ? 'abbreviation': containsSpecialCharNameEn ? 'nameEn' : 'nameJa'}`,
+                field: `degrees[${index}].nameEn`,
+                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
+                httpStatus: 400
+            })
+        }
+
+        if (containsSpecialCharNameJa) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].nameJa`,
+                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
+                httpStatus: 400
+            })
+        }
+
+        if (containsSpecialCharAbbreviation) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `degrees[${index}].abbreviation`,
                 errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
                 httpStatus: 400
             })
