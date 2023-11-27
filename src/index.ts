@@ -39,5 +39,5 @@ export const createApolloServer = async () => {
     return { server, url }
 }
 
-createApolloServer()
+await createApolloServer()
 

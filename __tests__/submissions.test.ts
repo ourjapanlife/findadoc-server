@@ -19,7 +19,12 @@ describe('createSubmission', () => {
         const response = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
 
         //should not have errors
-        expect(response.body.errors).toBeUndefined()
+        const errors = response.body.errors
+
+        if (errors) {
+            console.log(`errors: ${JSON.stringify(errors)}`)
+            expect(JSON.stringify(errors)).toBeUndefined()
+        }
 
         const originalInputValues = createSubmissionRequest.variables.input
         const newSubmission = response.body.data.createSubmission as Submission
@@ -36,8 +41,12 @@ describe('createSubmission', () => {
         const searchResult = await request(gqlApiUrl).post('/').send(getSubmissionByIdRequest)
 
         //should not have errors
-        expect(searchResult.body?.errors).toBeUndefined()
+        const searchErrors = searchResult.body?.errors
 
+        if (searchErrors) {
+            console.log(`errors: ${JSON.stringify(searchErrors)}`)
+            expect(searchResult.body?.errors).toBeUndefined()
+        }
         const foundSubmissions = searchResult.body.data.submission as Submission
 
         expect(foundSubmissions).toBeDefined()

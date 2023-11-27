@@ -24,7 +24,8 @@ export function generateRandomCreateHealthcareProfessionalInputArray({ count = 5
 
 function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
     const randomLocal = faker.helpers.enumValue(gqlTypes.Locale)
-    switch(randomLocal) {
+
+    switch (randomLocal) {
         case gqlTypes.Locale.EnUs:
             return {
                 firstName: faker.person.firstName(),
@@ -38,6 +39,8 @@ function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
                 lastName: fakerJA.person.lastName(),
                 locale: randomLocal
             }
+        default:
+            throw new Error(`Unexpected locale value: ${randomLocal}`)
     }
 }
 
