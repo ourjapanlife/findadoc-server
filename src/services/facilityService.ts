@@ -212,7 +212,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
         await dbInstance.runTransaction(async (transaction: Transaction) => {
             const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-            const dbDocument = await facilityRef.get()
+            const dbDocument = await transaction.get(facilityRef)
             const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
 
             //let's update the fields that were provided
@@ -334,12 +334,13 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             }
         }
 
-        const facilityCollection = dbInstance.collection('facilities')
+        const facilityQuery = dbInstance.collection('facilities').where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first. 
-        const allFacilityDocuments = await facilityCollection.where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId)).get()
+        const allFacilityDocuments = await transaction.get(facilityQuery)
         const dbFacilitiesToUpdate = allFacilityDocuments.docs ?? []
 
-        for await (const dbFacility of dbFacilitiesToUpdate) {
+        await Promise.all(dbFacilitiesToUpdate.map(async dbFacility => {
+            // for await (const dbFacility of dbFacilitiesToUpdate) {
             const matchingRelationship = facilitiesToUpdate.find(f => f.otherEntityId === dbFacility.id)
             const dbFacilityData = dbFacility.data() as dbSchema.Facility
 
@@ -367,7 +368,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             //This will add the record update to the batch.
             await transaction.set(dbFacility.ref, dbFacilityData, { merge: true })
             console.log(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
-        }
+        }))
 
         return {
             data: undefined,
@@ -450,7 +451,7 @@ export async function deleteFacility(id: string)
 
             await transaction.delete(dbDocument.docs[0].ref)
             console.log(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
-            
+
             return {
                 data: {
                     isSuccessful: true

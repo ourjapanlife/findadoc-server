@@ -269,7 +269,7 @@ export async function deleteHealthcareProfessional(id: string)
 
             await transaction.delete(dbDocument.docs[0].ref)
             console.log(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
-            
+
             return {
                 data: {
                     isSuccessful: true
@@ -359,12 +359,13 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
         }
 
-        const professionalsCollection = dbInstance.collection('healthcareProfessionals')
+        const professionalsQuery = dbInstance.collection('healthcareProfessionals').where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first.
-        const allProfessionalDocuments = await professionalsCollection.where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId)).get()
+        const allProfessionalDocuments = await transaction.get(professionalsQuery)
         const dbProfessionalsToUpdate = allProfessionalDocuments.docs ?? []
 
-        for await (const dbProfessional of dbProfessionalsToUpdate) {
+        await Promise.all(dbProfessionalsToUpdate.map(async dbProfessional => {
+            // for await (const dbProfessional of dbProfessionalsToUpdate) {
             const matchingRelationship
                 = professionalRelationshipsToUpdate.find(f => f.otherEntityId === dbProfessional.id)
             const dbProfessionalData = dbProfessional.data() as dbSchema.HealthcareProfessional
@@ -393,7 +394,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             //This will add the record update to the batch.
             await transaction.set(dbProfessional.ref, dbProfessionalData, { merge: true })
             console.log(`\nDB-UPDATE: Updated healthcare professional ${dbProfessionalData.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalData)}`)
-        }
+        }))
 
         return {
             data: undefined,

@@ -1,5 +1,5 @@
 import request from 'supertest'
-import { expect, describe, it, test } from 'vitest'
+import { expect, describe, test } from 'vitest'
 import { Error, ErrorCode } from '../src/result.js'
 import { generateRandomCreateHealthcareProfessionalInput as generateCreateProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
@@ -7,7 +7,7 @@ import { CreateHealthcareProfessionalInput, HealthcareProfessional } from '../sr
 import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
 
 describe('createHealthcareProfessional', () => {
-    it('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
+    test('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
         const createHealthcareProfessionalMutationRequest = {
             query: createHealthcareProfessionalMutation,
             variables: {
@@ -55,7 +55,7 @@ describe('createHealthcareProfessional', () => {
         expect(searchedProfessional.updatedDate).toBeDefined()
     })
 
-    it('failing: throws an error if the list of facilityIds is empty', async () => {
+    test('failing: throws an error if the list of facilityIds is empty', async () => {
         //send an empty facilityIds array so the empty list will throw a validation error
         const emptyFacilityIds = [] as string[]
 
@@ -84,7 +84,7 @@ describe('createHealthcareProfessional', () => {
 })
 
 describe('deleteHealthcareProfessional', () => {
-    test.skip('deletes a new healthcare professional', async () => {
+    test('deletes a new healthcare professional', async () => {
         // -- Create a new professional that we plan to delete --
         const createRequest = {
             query: createHealthcareProfessionalMutation,

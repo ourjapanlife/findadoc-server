@@ -1,4 +1,4 @@
-import { expect, describe, it, test } from 'vitest'
+import { expect, describe, test } from 'vitest'
 import request from 'supertest'
 import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions.js'
 import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
@@ -8,7 +8,7 @@ import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { gqlApiUrl } from './testSetup.test.js'
 
 describe('createSubmission', () => {
-    it('creates a new Submission', async () => {
+    test('creates a new Submission', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -61,7 +61,7 @@ describe('createSubmission', () => {
 })
 
 describe('updateSubmission', () => {
-    it('updates a Submission with the fields included in the input', async () => {
+    test('updates a Submission with the fields included in the input', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -108,7 +108,7 @@ describe('updateSubmission', () => {
 })
 
 describe('getSubmissionById', () => {
-    it('get the submission that matches the id', async () => {
+    test('get the submission that matches the id', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -140,7 +140,7 @@ describe('getSubmissionById', () => {
         expect(newSubmission.isRejected).toBeFalsy()
     })
 
-    it('failing: returns an error when submission does not exist', async () => {
+    test('failing: returns an error when submission does not exist', async () => {
         // Create a non existing uuid
         const submissionId = 'this1doesntexist'
 
@@ -174,7 +174,7 @@ describe('getSubmissionById', () => {
 })
 
 describe('searchSubmissions', () => {
-    it('search submissions using the language filter', async () => {
+    test('search submissions using the language filter', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -209,7 +209,7 @@ describe('searchSubmissions', () => {
         await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('search submissions using the googleMapsUrl filter', async () => {
+    test('search submissions using the googleMapsUrl filter', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -244,7 +244,7 @@ describe('searchSubmissions', () => {
         await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('get submissions using the createdDate filter', async () => {
+    test('get submissions using the createdDate filter', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -282,7 +282,7 @@ describe('searchSubmissions', () => {
         await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('get submissions using multiple filters combining healthcareProfessionalName, spokenLanguages, and isUnderReview', async () => {
+    test('get submissions using multiple filters combining healthcareProfessionalName, spokenLanguages, and isUnderReview', async () => {
         const createSubmissionRequest = {
             query: createSubmissionMutation,
             variables: {
@@ -315,7 +315,7 @@ describe('searchSubmissions', () => {
         await checkSearchResults(searchSubmissionsRequest, createSubmissionRequest.variables.input)
     })
 
-    it('get all the submissions without filters', async () => {
+    test('get all the submissions without filters', async () => {
         // Create two new submissons to be able to see that we get 2 submissions back
         const createSubmissionRequest = {
             query: createSubmissionMutation,
