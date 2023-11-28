@@ -473,8 +473,12 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
     const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
 
     //should not have errors
-    expect(searchResult.body.errors).toSatisfy((errors: Array<unknown> | undefined) =>
-        errors == undefined || errors.length <= 0)
+    const errors = searchResult.body.errors
+
+    if (errors && errors.length > 0) {
+        console.log(`errors: ${JSON.stringify(errors)}`)
+        expect(errors).toBeUndefined()
+    }
 
     const searchedSubmissions = searchResult.body.data.submissions as Submission[]
 
