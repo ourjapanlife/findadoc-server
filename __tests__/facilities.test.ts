@@ -1,12 +1,14 @@
 import request from 'supertest'
-import { expect, describe, it } from 'vitest'
+import { expect, describe, test } from 'vitest'
 import * as gqlType from '../src/typeDefs/gqlTypes.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
-import { gqlApiUrl } from './testSetup.test.js'
+import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
+import { createHealthcareProfessionalMutation } from './healthcareProfessional.test.js'
+import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 
 describe('createFacility', () => {
-    it('creates a new Facility', async () => {
+    test('creates a new Facility', async () => {
         const createFacilityRequest = {
             query: createFacilityMutation,
             variables: {
@@ -34,7 +36,7 @@ describe('createFacility', () => {
 
         //should not have errors
         const errors = createFacilityResult.body?.errors
-        
+
         if (errors) {
             console.log(createFacilityResult.body.errors)
         }
@@ -50,49 +52,65 @@ describe('createFacility', () => {
         expect(searchedFacility.nameJa).toBe(originalInputValues.nameJa)
     })
 
-    it.skip('properly updates facility/healthcareprofessional associations', async () => {
-        const createFacilityRequest = {
-            query: createFacilityMutation,
+    test('facility/healthcareprofessional associations: Creating healthcareprofessional updates facility\'s healthcareProfessionalIds', async () => {
+        //// Step 1: Create a new facility that has the sharedFacilityIds.
+        const createHealthcareProfessionalRequest = {
+            query: createHealthcareProfessionalMutation,
             variables: {
-                input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
+                // eslint-disable-next-line max-len
+                input: {
+                    ...generateRandomCreateHealthcareProfessionalInput(),
+                    facilityIds: sharedFacilityIds
+                } satisfies gqlType.CreateHealthcareProfessionalInput
             }
-        } as gqlMutation<gqlType.CreateFacilityInput>
+        } as gqlMutation<gqlType.CreateHealthcareProfessionalInput>
 
-        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        // Create a new healthcare professional with the associated facility id
+        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalRequest)
 
         //should not have errors
-        const errors = createFacilityResult.body?.errors
-        
-        if (errors) {
-            console.log(createFacilityResult.body.errors)
-        }
-        expect(errors).toBeUndefined()
+        const createdErrors = createProfessionalResult.body.errors
 
-        const originalInputValues = createFacilityRequest.variables.input
-        const newFacility = createFacilityResult.body.data.createFacility as gqlType.Facility
+        if (createdErrors) {
+            console.log(JSON.stringify(createdErrors))
+            expect(createdErrors).toBeUndefined()
+        }
+        const createdProfessional =
+            createProfessionalResult.body.data.createHealthcareProfessional as gqlType.HealthcareProfessional
+
+        // The healthcare professional should have the facility ids that we provided.
+        expect(createdProfessional).toBeDefined()
+        expect(createdProfessional.facilityIds).toBeDefined()
+        expect(createdProfessional.facilityIds).containSubset(sharedFacilityIds)
 
         const getFacilityByIdRequest = {
             query: getFacilityByIdQuery,
             variables: {
-                id: newFacility.id
+                id: sharedFacilityIds[0]
             }
         } as gqlRequest
 
-        // Query the facility by id
+        //// Step 2: Query the facility by id and check if it has the new healthcare professional id added to it.
         const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
 
         //should not have errors
-        expect(getFacilityResult.body.errors).toBeUndefined()
+        const errors = getFacilityResult.body?.errors
+
+        if (errors) {
+            console.log(JSON.stringify(errors))
+            expect(errors).toBeUndefined()
+        }
 
         const searchedFacility = getFacilityResult.body.data.facility as gqlType.Facility
 
-        expect(searchedFacility.contact).toEqual(originalInputValues.contact)
-        expect(searchedFacility.updatedDate).toBeDefined()
+        // The healthcare professional should have the facility ids that we provided.
+        expect(searchedFacility.healthcareProfessionalIds).toBeDefined()
+        expect(searchedFacility.healthcareProfessionalIds).toContain(createdProfessional.id)
     })
 })
 
 describe('getFacilityById', () => {
-    it('gets the Facility that matches the facility_id', async () => {
+    test('gets the Facility that matches the facility_id', async () => {
         const createFacilityRequest = {
             query: createFacilityMutation,
             variables: {
@@ -105,7 +123,7 @@ describe('getFacilityById', () => {
 
         //should not have errors
         const errors = newFacilityResult.body?.errors
-        
+
         if (errors) {
             console.log(newFacilityResult.body.errors)
         }
@@ -141,7 +159,7 @@ describe('getFacilityById', () => {
 })
 
 describe('updateFacility', () => {
-    it('updates various Facility fields', async () => {
+    test('updates various Facility fields', async () => {
         // Create a new facility
         const createFacilityRequest = {
             query: createFacilityMutation,
@@ -155,6 +173,7 @@ describe('updateFacility', () => {
         const errors = newFacilityResult.body?.errors
 
         if (errors) {
+            console.log(JSON.stringify(errors))
             expect(JSON.stringify(errors)).toBeUndefined()
         }
 
@@ -170,13 +189,18 @@ describe('updateFacility', () => {
                     healthcareProfessionalIds: []
                 } satisfies gqlType.UpdateFacilityInput
             }
-        } as gqlMutation<gqlType.CreateFacilityInput>
+        } as gqlMutation<gqlType.UpdateFacilityInput>
 
         // Mutation to update the facility
         const updateFacilityResult = await request(gqlApiUrl).post('/').send(updateFacilityMutationRequest)
 
         //should not have errors
-        expect(updateFacilityResult.body?.errors).toBeUndefined()
+        const updateErrors = updateFacilityResult.body?.errors
+
+        if (updateErrors) {
+            console.log(JSON.stringify(updateErrors))
+            expect(JSON.stringify(updateErrors)).toBeUndefined()
+        }
 
         const getFacilityByIdRequest = {
             query: getFacilityByIdQuery,
@@ -188,14 +212,22 @@ describe('updateFacility', () => {
         // fetch the updated facility
         const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
 
+        //should not have errors
+        const queryErrors = getFacilityResult.body?.errors
+
+        if (queryErrors) {
+            console.log(JSON.stringify(queryErrors))
+            expect(JSON.stringify(queryErrors)).toBeUndefined()
+        }
+
         // Compare the actual updated facility returned by getFacilityById to the update request we sent
         const updatedFacility = getFacilityResult.body.data.facility as gqlType.Facility
-        const fieldsThatWereUpdated = createFacilityRequest.variables.input
+        const fieldsThatWereUpdated = updateFacilityMutationRequest.variables.input
 
         expect(updatedFacility.id).toBe(newFacility.id)
         expect(updatedFacility.nameEn).toBe(fieldsThatWereUpdated.nameEn)
         expect(updatedFacility.nameJa).toBe(fieldsThatWereUpdated.nameJa)
-        expect(updatedFacility.contact.phone).toBe(fieldsThatWereUpdated.contact.phone)
+        expect(updatedFacility.contact.phone).toBe(fieldsThatWereUpdated.contact?.phone)
         expect(updatedFacility.createdDate).toBeDefined()
         expect(updatedFacility.updatedDate).toBeDefined()
     })
@@ -205,21 +237,21 @@ export const createFacilityMutation = `mutation test_createFacility($input: Crea
     createFacility(input: $input) {
         id
         contact {
-        address {
-            addressLine1En
-            addressLine1Ja
-            addressLine2En
-            addressLine2Ja
-            cityEn
-            cityJa
-            postalCode
-            prefectureEn
-            prefectureJa
-        }
-        googleMapsUrl
-        email
-        phone
-        website
+            address {
+                addressLine1En
+                addressLine1Ja
+                addressLine2En
+                addressLine2Ja
+                cityEn
+                cityJa
+                postalCode
+                prefectureEn
+                prefectureJa
+            }
+            googleMapsUrl
+            email
+            phone
+            website
         }
         healthcareProfessionalIds
         nameEn

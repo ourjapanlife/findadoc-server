@@ -5,8 +5,7 @@ import { hasScriptTags, isInvalidName } from '../../utils/stringUtils.js'
 function validateSubmissionOrderBy(
     filters: gqlTypes.SubmissionSearchFilters,
     validateSearchResults: Result<unknown>
-    ): void {
-
+): void {
     if (!filters.orderBy || filters.orderBy.length === 0) {
         return
     }
@@ -18,7 +17,7 @@ function validateSubmissionOrderBy(
         'isApproved',
         'isRejected',
         'createdDate',
-        'updatedDate',
+        'updatedDate'
     ]
 
     if (filters.orderBy?.some(order => order.fieldToOrder === 'id')) {
@@ -65,8 +64,7 @@ function validateSubmissionOrderBy(
 function validateSubmissionSearchBySpokenLanguage(
     filters: gqlTypes.SubmissionSearchFilters,
     validateSearchResults: Result<unknown>
-    ): void {
-
+): void {
     if (!filters.spokenLanguages) {
         return
     }
@@ -92,8 +90,9 @@ function validateSubmissionSearchBySpokenLanguage(
     }
     
     const languageCodeOccurrences: { [key: string]: number } = {}
-    for (let lang of filters.spokenLanguages) {
-        if(languageCodeOccurrences[lang]) {     
+
+    for (const lang of filters.spokenLanguages) {
+        if (languageCodeOccurrences[lang]) {     
             validateSearchResults.hasErrors = true
             validateSearchResults.errors?.push({
                 field: 'spokenLanguages',
