@@ -67,6 +67,12 @@ function generateSpecialty(): gqlTypes.SpecialtyInput {
     }
 }
 
+/**
+ * This generates an array languages. Note that the langauges are not guaranteed to be unique. You may want to call .removeDuplicates() on the result. 
+ * @param count the number of languages to generate. If 0, a random number between 1 and 2 will be generated.
+ * @param onlyEnglish if true, only English will be generated
+ * @returns the generated languages
+ */
 export function generateSpokenLanguages({ count = 0, onlyEnglish = false } = {}): gqlTypes.Locale[] {
     return onlyEnglish
         ? [gqlTypes.Locale.EnUs]
@@ -77,5 +83,6 @@ export function generateSpokenLanguages({ count = 0, onlyEnglish = false } = {})
                     ? count
                     : faker.number.int({ min: 1, max: 2 })
             }
+
         )
 }

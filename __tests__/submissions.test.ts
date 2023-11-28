@@ -476,7 +476,7 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
     const errors = searchResult.body.errors
 
     if (errors && errors.length > 0) {
-        console.log(`errors: ${JSON.stringify(errors)}`)
+        console.log(`test errors: ${JSON.stringify(errors)}`)
         expect(errors).toBeUndefined()
     }
 
