@@ -435,59 +435,6 @@ export async function deleteFacility(id: string)
 }
 
 /**
- * This deletes a Facility from the database. If the Facility doesn't exist, it will return a validation error.
- * @param id The ID of the facility in the database to delete.
- */
-export async function deleteFacility(id: string)
-    : Promise<Result<gqlTypes.DeleteResult>> {
-    try {
-        const facilityRef = dbInstance.collection('facilities').doc(id)
-
-        const dbDocument = await facilityRef.get()
-
-        if (!dbDocument.exists) {
-            console.log(`Validation Error: User tried deleting non-existant facility: ${id}`)
-
-            return {
-                data: {
-                    isSuccessful: false
-                },
-                hasErrors: true,
-                errors: [{
-                    field: 'deleteFacility',
-                    errorCode: ErrorCode.INVALID_ID,
-                    httpStatus: 404
-                }]
-            }
-        }
-
-        await facilityRef.delete()
-        console.log(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
-
-        return {
-            data: {
-                isSuccessful: true
-            },
-            hasErrors: false
-        }
-    } catch (error) {
-        console.log(`ERROR: Error deleting facility ${id}: ${error}`)
-
-        return {
-            data: {
-                isSuccessful: false
-            },
-            hasErrors: true,
-            errors: [{
-                field: 'deleteFacility',
-                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                httpStatus: 500
-            }]
-        }
-    }
-}
-
-/**
  * Converts the values for FacilityInput to the format they will be stored as in the database.
  * @param input - The `FacilityInput` variables that were passed in the API request.
  * @param newId - The ID of the Facility in the Firestore collection.
