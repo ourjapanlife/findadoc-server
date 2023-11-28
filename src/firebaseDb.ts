@@ -10,30 +10,26 @@ const isLocal = envVariables.isLocal()
 
 export let dbInstance: Firestore
 
-const testFirestoreIsInitialized = async (newDbInstance: Firestore) => {
+const testFirestoreIsInitialized = async (shouldSeedDatabase: boolean) => {
     try {
-        const ref = newDbInstance.collection('facilities')
+        const ref = dbInstance.collection('facilities')
 
         // we want to test that we can connect to firestore, so we try to get a document. 
         // If the connection fails, unfortunately this will hang for a really long time. There is no timeout option for this, currently. 
-        await ref.limit(1).get()
-
+        const existingData = await ref.limit(1).get()
+        
         console.log('🔥 Firestore connection established 🔥')
+        const hasExistingData = existingData.docs.length > 0
+
+        // if we don't have any data, we should seed the database
+        if (!hasExistingData && shouldSeedDatabase) {
+            console.log('\n🌱 Seeding firebase emulator data... 🌱\n')
+            await seedDatabase()
+        }
     } catch (ex) {
         console.log('❌ Firestore is not connecting... ❌')
         console.log(ex)
         throw new Error('❌ Firestore is not connecting... ❌')
-    }
-}
-
-const setupSeedData = async (newDbInstance: Firestore) => {
-    const ref = newDbInstance.collection('facilities')
-    const firstFacility = await ref.limit(1).get()
-    const hasSeedData = firstFacility.docs.length > 0
-
-    if (!hasSeedData) {
-        console.log('\n🌱 Seeding firebase emulator data... 🌱\n')
-        await seedDatabase()
     }
 }
 
@@ -55,22 +51,22 @@ export const initiatilizeFirebaseInstance = async () => {
     }
 
     initializeApp(firebaseConfig)
-
+    
     const newDbInstance = admin.firestore()
-
+    
     dbInstance = newDbInstance
+    
+    const isNotProduction = !!isTestingEnvironment || isLocal
 
     if (isProduction) {
         console.log('\n🔥 Connecting to production firebase...')
-        await testFirestoreIsInitialized(newDbInstance)
-    } else if (isTestingEnvironment || isLocal) {
+    } else if (isNotProduction) {
         console.log('\n🔥 Connecting to firebase emulator...')
         console.log('TIP: if it doesn\'t connect after 10 secs,' +
             ' make sure you have the firebase emulator running using the "yarn dev:startlocaldb" command')
-
-        await testFirestoreIsInitialized(newDbInstance)
-        await setupSeedData(newDbInstance)
     }
+
+    await testFirestoreIsInitialized(isNotProduction)
 
     console.log('✅ Firebase is initialized! ✅ \n')
 }

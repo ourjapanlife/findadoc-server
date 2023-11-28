@@ -8,7 +8,6 @@ import { createFacility } from './facilityService.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService.js'
 import { validateSubmissionSearchFilters } from '../validation/validateSubmissions.js'
 
-
 /**
  * Gets the Submission from the database that matches the id.
  * @param id A string that matches the id of the Firestore Document for the Submission.
@@ -71,9 +70,9 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
  */
 export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilters)
     : Promise<Result<gqlTypes.Submission[]>> {
-    
     try {
         const validationResults = validateSubmissionSearchFilters(filters)
+
         if (validationResults.hasErrors) {
             return {
                 data: [],
@@ -92,7 +91,7 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
             subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
         }
 
-        if(filters.spokenLanguages && filters.spokenLanguages.length > 0) {
+        if (filters.spokenLanguages && filters.spokenLanguages.length > 0) {
             subRef = subRef.where('spokenLanguages', 'array-contains-any', filters.spokenLanguages)
         }
 
@@ -161,7 +160,6 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
 export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
     Promise<Result<gqlTypes.Submission>> => {
     try {
-        
         const validationResults = validateSubmissionInputFields(submissionInput)
         
         if (validationResults.hasErrors) {
@@ -243,7 +241,7 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
 
         await submissionRef.set(updatedSubmissionValues, { merge: true })
 
-        console.log(`DB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
+        console.log(`\nDB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
 
         const updatedSubmission = await getSubmissionById(submissionId)
 
@@ -315,7 +313,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
 
         await submissionRef.set(currentSubmission, { merge: true })
 
-        console.log(`DB-UPDATE: Submission ${submissionId} was approved.`)
+        console.log(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
 
         //try creating healthcare professional(s)
         for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
