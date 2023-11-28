@@ -214,34 +214,69 @@ export const updateHealthcareProfessional = async (
 export async function deleteHealthcareProfessional(id: string)
     : Promise<Result<gqlTypes.DeleteResult>> {
     try {
-        const dbRef = dbInstance.collection('healthcareProfessionals').doc(id)
-        const dbDocument = await dbRef.get()
+        const dbRef = dbInstance.collection('healthcareProfessionals')
 
-        if (!dbDocument.exists) {
-            console.log(`Validation Error: User tried deleting non-existant healthcare professional: ${id}`)
+        //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        return await dbInstance.runTransaction(async (transaction: Transaction) => {
+            const query = dbRef.where('id', '==', id)
+            const dbDocument = await transaction.get(query)
 
+            if (dbDocument.empty) {
+                console.log(`Validation Error: User tried deleting non-existant healthcare professional: ${id}`)
+
+                return {
+                    data: {
+                        isSuccessful: false
+                    },
+                    hasErrors: true,
+                    errors: [{
+                        field: 'deleteHealthcareProfessional',
+                        errorCode: ErrorCode.INVALID_ID,
+                        httpStatus: 404
+                    }]
+                }
+            }
+
+            if (dbDocument.docs.length > 1) {
+                console.log(`ERROR: Found multiple healthcare professionals with id ${id}. This should never happen.`)
+
+                return {
+                    data: {
+                        isSuccessful: false
+                    },
+                    hasErrors: true,
+                    errors: [{
+                        field: 'deleteFacility',
+                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                        httpStatus: 500
+                    }]
+                }
+            }
+
+            const professional = dbDocument.docs[0].data() as dbSchema.HealthcareProfessional
+
+            //let's update all the facilities that should remove this healthcareProfessionalId from their healthcareProfessionalIds array
+            processFacilityRelationshipChanges(
+                id,
+                professional.facilityIds.map(
+                    facilityId => ({
+                        otherEntityId: facilityId,
+                        action: gqlTypes.RelationshipAction.Delete
+                    } satisfies gqlTypes.Relationship)
+                ),
+                transaction
+            )
+
+            await transaction.delete(dbDocument.docs[0].ref)
+            console.log(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+            
             return {
                 data: {
-                    isSuccessful: false
+                    isSuccessful: true
                 },
-                hasErrors: true,
-                errors: [{
-                    field: 'deleteHealthcareProfessional',
-                    errorCode: ErrorCode.INVALID_ID,
-                    httpStatus: 404
-                }]
+                hasErrors: false
             }
-        }
-
-        await dbRef.delete()
-        console.log(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
-
-        return {
-            data: {
-                isSuccessful: true
-            },
-            hasErrors: false
-        }
+        })
     } catch (error) {
         console.log(`ERROR: Error deleting professional ${id}: ${error}`)
 
@@ -317,6 +352,13 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
     transaction: Transaction
 ): Promise<Result<void>> {
     try {
+        if (!professionalRelationshipsToUpdate || professionalRelationshipsToUpdate.length < 1) {
+            return {
+                data: undefined,
+                hasErrors: false
+            }
+        }
+
         const professionalsCollection = dbInstance.collection('healthcareProfessionals')
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first.
         const allProfessionalDocuments = await professionalsCollection.where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId)).get()

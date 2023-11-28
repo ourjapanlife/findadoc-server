@@ -327,6 +327,13 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
     transaction: Transaction
 ): Promise<Result<void>> {
     try {
+        if (!facilitiesToUpdate || facilitiesToUpdate.length === 0) {
+            return {
+                data: undefined,
+                hasErrors: false
+            }
+        }
+
         const facilityCollection = dbInstance.collection('facilities')
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first. 
         const allFacilityDocuments = await facilityCollection.where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId)).get()
@@ -388,35 +395,69 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
 export async function deleteFacility(id: string)
     : Promise<Result<gqlTypes.DeleteResult>> {
     try {
-        const facilityRef = dbInstance.collection('facilities').doc(id)
+        const facilityRef = dbInstance.collection('facilities')
 
-        const dbDocument = await facilityRef.get()
+        //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        return await dbInstance.runTransaction(async (transaction: Transaction) => {
+            const query = facilityRef.where('id', '==', id)
+            const dbDocument = await transaction.get(query)
 
-        if (!dbDocument.exists) {
-            console.log(`Validation Error: User tried deleting non-existant facility: ${id}`)
+            if (dbDocument.empty) {
+                console.log(`Validation Error: User tried deleting non-existant facility: ${id}`)
 
+                return {
+                    data: {
+                        isSuccessful: false
+                    },
+                    hasErrors: true,
+                    errors: [{
+                        field: 'deleteFacility',
+                        errorCode: ErrorCode.INVALID_ID,
+                        httpStatus: 404
+                    }]
+                }
+            }
+
+            if (dbDocument.docs.length > 1) {
+                console.log(`ERROR: Found multiple facilities with id ${id}. This should never happen.`)
+
+                return {
+                    data: {
+                        isSuccessful: false
+                    },
+                    hasErrors: true,
+                    errors: [{
+                        field: 'deleteFacility',
+                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                        httpStatus: 500
+                    }]
+                }
+            }
+
+            const facility = dbDocument.docs[0].data() as dbSchema.Facility
+
+            //let's update all the healthcareProfessionals that should remove this facilityId from their facilityIds array
+            processHealthcareProfessionalRelationshipChanges(
+                id,
+                facility.healthcareProfessionalIds.map(
+                    professionalId => ({
+                        otherEntityId: professionalId,
+                        action: gqlTypes.RelationshipAction.Delete
+                    } satisfies gqlTypes.Relationship)
+                ),
+                transaction
+            )
+
+            await transaction.delete(dbDocument.docs[0].ref)
+            console.log(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+            
             return {
                 data: {
-                    isSuccessful: false
+                    isSuccessful: true
                 },
-                hasErrors: true,
-                errors: [{
-                    field: 'deleteFacility',
-                    errorCode: ErrorCode.INVALID_ID,
-                    httpStatus: 404
-                }]
+                hasErrors: false
             }
-        }
-
-        await facilityRef.delete()
-        console.log(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
-
-        return {
-            data: {
-                isSuccessful: true
-            },
-            hasErrors: false
-        }
+        })
     } catch (error) {
         console.log(`ERROR: Error deleting facility ${id}: ${error}`)
 

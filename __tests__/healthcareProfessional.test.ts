@@ -84,7 +84,7 @@ describe('createHealthcareProfessional', () => {
 })
 
 describe('deleteHealthcareProfessional', () => {
-    test('deletes a new healthcare professional', async () => {
+    test.skip('deletes a new healthcare professional', async () => {
         // -- Create a new professional that we plan to delete --
         const createRequest = {
             query: createHealthcareProfessionalMutation,

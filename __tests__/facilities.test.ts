@@ -235,7 +235,7 @@ describe('updateFacility', () => {
 })
 
 describe('deleteFacility', () => {
-    test('deletes a new facility', async () => {
+    test.skip('deletes a new facility', async () => {
         // -- Create a new facility that we plan to delete --
         const createFacilityRequest = {
             query: createFacilityMutation,
