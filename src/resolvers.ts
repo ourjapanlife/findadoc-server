@@ -8,36 +8,36 @@ import { Result } from './result.js'
 const resolvers = {
     Query: {
         facility: async (_parent: gqlType.Facility, args: { id: string; })
-        : Promise<gqlType.Facility> => {
+            : Promise<gqlType.Facility> => {
             const queryResults = await facilityService.getFacilityById(args.id)
 
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
         facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters })
-        : Promise<gqlType.Facility[]> => {
+            : Promise<gqlType.Facility[]> => {
             const queryResults = await facilityService.searchFacilities(args.filters)
 
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
         healthcareProfessional: async (_parent: unknown, args: { id: string; })
-        : Promise<gqlType.HealthcareProfessional> => {
+            : Promise<gqlType.HealthcareProfessional> => {
             const matchingHealthcareProfessionalResult =
-            await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
-            
+                await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
+
             convertErrorsToGqlErrors(matchingHealthcareProfessionalResult)
             return matchingHealthcareProfessionalResult.data
         },
         submission: async (_parent: unknown, args: { id: string })
-        : Promise<gqlType.Submission | undefined> => {
+            : Promise<gqlType.Submission | undefined> => {
             const matchingSubmissionResult = await submissionService.getSubmissionById(args.id)
 
             convertErrorsToGqlErrors(matchingSubmissionResult)
             return matchingSubmissionResult.data
         },
         submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters })
-        : Promise<gqlType.Submission[]> => {
+            : Promise<gqlType.Submission[]> => {
             const matchingSubmissionsResult = await submissionService.searchSubmissions(args.filters)
 
             convertErrorsToGqlErrors(matchingSubmissionsResult)
@@ -64,6 +64,15 @@ const resolvers = {
             return updateFacilityResult.data
         },
 
+        deleteFacility: async (_parent: unknown, args: {
+            id: string
+        }): Promise<gqlType.DeleteResult> => {
+            const deleteFacilityResult = await facilityService.deleteFacility(args.id)
+
+            convertErrorsToGqlErrors(deleteFacilityResult)
+            return deleteFacilityResult.data
+        },
+
         createHealthcareProfessional: async (_parent: unknown, args: {
             input: gqlType.CreateHealthcareProfessionalInput
         }): Promise<gqlType.HealthcareProfessional> => {
@@ -85,6 +94,16 @@ const resolvers = {
             return updateProfessionalResult.data
         },
 
+        deleteHealthcareProfessional: async (_parent: unknown, args: {
+            id: string
+        }): Promise<gqlType.DeleteResult> => {
+            const deleteHealthcareProfessionalResult
+                = await healthcareProfessionalService.deleteHealthcareProfessional(args.id)
+
+            convertErrorsToGqlErrors(deleteHealthcareProfessionalResult)
+            return deleteHealthcareProfessionalResult.data
+        },
+
         createSubmission: async (_parent: unknown, args: {
             input: gqlType.CreateSubmissionInput
         }): Promise<gqlType.Submission> => {
@@ -102,6 +121,15 @@ const resolvers = {
 
             convertErrorsToGqlErrors(updatedSubmissionResult)
             return updatedSubmissionResult.data
+        },
+
+        deleteSubmission: async (_parent: unknown, args: {
+            id: string
+        }): Promise<gqlType.DeleteResult> => {
+            const deleteSubmissionResult = await submissionService.deleteSubmission(args.id)
+
+            convertErrorsToGqlErrors(deleteSubmissionResult)
+            return deleteSubmissionResult.data
         }
     }
 }

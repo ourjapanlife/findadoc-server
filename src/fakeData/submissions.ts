@@ -2,12 +2,13 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { faker } from '@faker-js/faker'
 import { generateRandomCreateHealthcareProfessionalInputArray, generateSpokenLanguages } from './fakeHealthcareProfessionals.js'
 import { generateRandomCreateFacilityInput } from './fakeFacilities.js'
+import { removeDuplicates } from '../../utils/arrayUtils.js'
 
 export function generateRandomCreateSubmissionInput(): gqlTypes.CreateSubmissionInput {
     return {
         googleMapsUrl: faker.internet.url(),
         healthcareProfessionalName: faker.person.fullName(),
-        spokenLanguages: generateSpokenLanguages({ count: 2 })
+        spokenLanguages: removeDuplicates(generateSpokenLanguages({ count: 2 }))
     }
 }
 

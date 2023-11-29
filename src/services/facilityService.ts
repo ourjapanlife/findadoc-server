@@ -1,4 +1,4 @@
-import { DocumentData, Query, Transaction } from 'firebase-admin/firestore'
+import { DocumentData, Query, WriteBatch } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
@@ -143,33 +143,33 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
         const newFacilityId = facilityRef.id
         const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
 
-        //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        const result = await dbInstance.runTransaction(async (transaction: Transaction) => {
-            //let's update all the healthcareProfessionals that should add this facilityId to their facilityIds array
-            if (newDbFacility.healthcareProfessionalIds && newDbFacility.healthcareProfessionalIds.length > 0) {
-                const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
-                    newDbFacility.id,
-                    newDbFacility.healthcareProfessionalIds.map(id => ({
-                        otherEntityId: id,
-                        action: gqlTypes.RelationshipAction.Create
-                    } satisfies gqlTypes.Relationship)),
-                    transaction
-                )
+        //let's wrap all of our updates in a batch so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        const batch = dbInstance.batch()
 
-                // if we didn't get it back or have errors, this is an actual error.
-                if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
-                    throw new Error(`ERROR: Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
-                }
+        //let's update all the healthcareProfessionals that should add this facilityId to their facilityIds array
+        if (newDbFacility.healthcareProfessionalIds && newDbFacility.healthcareProfessionalIds.length > 0) {
+            const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
+                newDbFacility.id,
+                newDbFacility.healthcareProfessionalIds.map(id => ({
+                    otherEntityId: id,
+                    action: gqlTypes.RelationshipAction.Create
+                } satisfies gqlTypes.Relationship)),
+                batch
+            )
+
+            // if we didn't get it back or have errors, this is an actual error.
+            if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
+                throw new Error(`ERROR: Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
             }
+        }
 
-            await transaction.set(facilityRef, newDbFacility)
-            console.log(`\nDB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
+        batch.set(facilityRef, newDbFacility)
+        console.log(`\nDB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
 
-            return newDbFacility
-        })
+        await batch.commit()
 
         //let's return the newly created facility. Since we have the full entity, no need to do a new query. 
-        const createdGqlEntity = mapDbEntityTogqlEntity(result)
+        const createdGqlEntity = mapDbEntityTogqlEntity(newDbFacility)
 
         return {
             data: createdGqlEntity,
@@ -209,39 +209,41 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        await dbInstance.runTransaction(async (transaction: Transaction) => {
-            const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-            const dbDocument = await facilityRef.get()
-            const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
+        //let's wrap all of our updates in a batch so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        const batch = dbInstance.batch()
+        const facilityRef = dbInstance.collection('facilities').doc(facilityId)
+        const dbDocument = await facilityRef.get()
+        const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
 
-            //let's update the fields that were provided
-            MapDefinedFields(fieldsToUpdate, dbFacilityToUpdate)
+        //let's update the fields that were provided
+        MapDefinedFields(fieldsToUpdate, dbFacilityToUpdate)
 
-            //Business rule: always timestamp when the entity was updated.
-            dbFacilityToUpdate.updatedDate = new Date().toISOString()
+        //Business rule: always timestamp when the entity was updated.
+        dbFacilityToUpdate.updatedDate = new Date().toISOString()
 
-            //let's update all the healthcareProfessionals that should add or remove this facilityId from their facilityIds array 
-            if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
-                const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
-                    dbFacilityToUpdate.id,
-                    fieldsToUpdate.healthcareProfessionalIds,
-                    transaction,
-                    dbFacilityToUpdate.healthcareProfessionalIds ?? []
-                )
+        //let's update all the healthcareProfessionals that should add or remove this facilityId from their facilityIds array 
+        if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
+            const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
+                dbFacilityToUpdate.id,
+                fieldsToUpdate.healthcareProfessionalIds,
+                batch,
+                dbFacilityToUpdate.healthcareProfessionalIds ?? []
+            )
 
-                // if we didn't get it back or have errors, this is an actual error.
-                if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
-                    throw new Error(`Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
-                }
-
-                //let's update the professional with the new facility ids
-                dbFacilityToUpdate.healthcareProfessionalIds = healthcareProfessionalUpdateResults.data
+            // if we didn't get it back or have errors, this is an actual error.
+            if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
+                throw new Error(`Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
             }
 
-            await transaction.set(facilityRef, dbFacilityToUpdate, { merge: true })
-            console.log(`\nDB-UPDATE: Updated facility ${facilityRef.id}.\n Entity: ${JSON.stringify(dbFacilityToUpdate)}`)
-        })
+            //let's update the professional with the new facility ids
+            dbFacilityToUpdate.healthcareProfessionalIds = healthcareProfessionalUpdateResults.data
+        }
+
+        batch.set(facilityRef, dbFacilityToUpdate, { merge: true })
+        console.log(`\nDB-UPDATE: Updated facility ${facilityRef.id}.\n Entity: ${JSON.stringify(dbFacilityToUpdate)}`)
+
+        // This will commit all the changes across the facility and the associated professionals.
+        await batch.commit()
 
         const queriedFacilityResult = await getFacilityById(facilityId)
 
@@ -273,13 +275,13 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
  * Updates all the healthcare professionals that have an id in the healthcareProfessionalIds array. It will add or delete based on the action provided. 
  * @param facilityId The ID of the facility in the database.
  * @param healthcareProfessionalRelationshipChanges The changes to the healthcare professional relationships.
+* @param batch - The batch that we add the db writes to. The parent controls when the batch is committed.
  * @param originalHealthcareProfessionalIds The original healthcare professional ids for the facility.
- * @param transaction The transaction to use for the updates.
  * @returns The updated facility ids for the healthcare professional based on the action.
 */
 async function processHealthcareProfessionalRelationshipChanges(facilityId: string,
     healthcareProfessionalRelationshipChanges: gqlTypes.Relationship[],
-    transaction: Transaction,
+    batch: WriteBatch,
     originalHealthcareProfessionalIds: string[] = [])
     : Promise<Result<string[]>> {
     // deep clone the array so we don't modify the original
@@ -302,7 +304,7 @@ async function processHealthcareProfessionalRelationshipChanges(facilityId: stri
     const healthcareProfessionalUpdateResults = await updateHealthcareProfessionalsWithFacilityIdChanges(
         healthcareProfessionalRelationshipChanges,
         facilityId,
-        transaction
+        batch
     )
 
     return {
@@ -318,21 +320,30 @@ async function processHealthcareProfessionalRelationshipChanges(facilityId: stri
     * Based on the action, it will add or remove the healthcareprofessional id from the existing list of healthcare professional ids.
     * @param facilitiesToUpdate - The list of facilities to update. 
     * @param healthcareProfessionalId - The id of the healthcareprofessional that is being added or removed. 
-    * @param transaction - The transaction to use for the updates.
+    * @param batch - The batch that we add the db writes to. The parent controls when the batch is committed.
     * @returns Result containing any errors that occurred.
 */
 export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
     facilitiesToUpdate: gqlTypes.Relationship[],
     healthcareProfessionalId: string,
-    transaction: Transaction
+    batch: WriteBatch
 ): Promise<Result<void>> {
     try {
-        const facilityCollection = dbInstance.collection('facilities')
+        if (!facilitiesToUpdate || facilitiesToUpdate.length === 0) {
+            return {
+                data: undefined,
+                hasErrors: false
+            }
+        }
+
+        const facilityQuery = dbInstance.collection('facilities').where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first. 
-        const allFacilityDocuments = await facilityCollection.where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId)).get()
+        const allFacilityDocuments = await facilityQuery.get()
         const dbFacilitiesToUpdate = allFacilityDocuments.docs ?? []
 
-        for await (const dbFacility of dbFacilitiesToUpdate) {
+        dbFacilitiesToUpdate.forEach(dbFacility => {
+            // await Promise.all(dbFacilitiesToUpdate.map(async dbFacility => {
+            // for await (const dbFacility of dbFacilitiesToUpdate) {
             const matchingRelationship = facilitiesToUpdate.find(f => f.otherEntityId === dbFacility.id)
             const dbFacilityData = dbFacility.data() as dbSchema.Facility
 
@@ -357,10 +368,10 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             //business rule: we always timestamp when the entity was updated.
             dbFacilityData.updatedDate = new Date().toISOString()
 
-            //This will add the record update to the batch.
-            await transaction.set(dbFacility.ref, dbFacilityData, { merge: true })
+            //This will add the record update to the batch, but we don't want to commit at this point. 
+            batch.set(dbFacility.ref, dbFacilityData, { merge: true })
             console.log(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
-        }
+        })
 
         return {
             data: undefined,
@@ -374,6 +385,98 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             hasErrors: true,
             errors: [{
                 field: 'updateFacilityHealthcareprofessionalAssociations',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+/**
+ * This deletes a Facility from the database. If the Facility doesn't exist, it will return a validation error.
+ * @param id The ID of the facility in the database to delete.
+ */
+export async function deleteFacility(id: string)
+    : Promise<Result<gqlTypes.DeleteResult>> {
+    try {
+        //let's wrap all of our updates in a batch so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        const batch = dbInstance.batch()
+        const facilityRef = dbInstance.collection('facilities').where('id', '==', id)
+        const dbDocument = await facilityRef.get()
+
+        if (dbDocument.empty) {
+            console.log(`Validation Error: User tried deleting non-existant facility: ${id}`)
+
+            return {
+                data: {
+                    isSuccessful: false
+                },
+                hasErrors: true,
+                errors: [{
+                    field: 'deleteFacility',
+                    errorCode: ErrorCode.INVALID_ID,
+                    httpStatus: 404
+                }]
+            }
+        }
+
+        if (dbDocument.docs.length > 1) {
+            console.log(`ERROR: Found multiple facilities with id ${id}. This should never happen.`)
+
+            return {
+                data: {
+                    isSuccessful: false
+                },
+                hasErrors: true,
+                errors: [{
+                    field: 'deleteFacility',
+                    errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                    httpStatus: 500
+                }]
+            }
+        }
+
+        const facility = dbDocument.docs[0].data() as dbSchema.Facility
+
+        //let's update all the healthcareProfessionals that should remove this facilityId from their facilityIds array
+        const professionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
+            id,
+            facility.healthcareProfessionalIds.map(
+                professionalId => ({
+                    otherEntityId: professionalId,
+                    action: gqlTypes.RelationshipAction.Delete
+                } satisfies gqlTypes.Relationship)
+            ),
+            batch
+        )
+
+        // if we have errors, this is an actual error.
+        if (professionalUpdateResults.hasErrors) {
+            throw new Error(`ERROR: Error updating associated facility's healthcareProfessionalIds: ${JSON.stringify(professionalUpdateResults.errors)}`)
+        }
+
+        batch.delete(dbDocument.docs[0].ref)
+        console.log(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+
+        // This will commit all the changes across the facility and the associated professionals.
+        await batch.commit()
+
+        return {
+            data: {
+                isSuccessful: true
+            },
+            hasErrors: false
+        }
+    } catch (error) {
+        console.log(`ERROR: Error deleting facility ${id}: ${error}`)
+
+        return {
+            data: {
+                isSuccessful: false
+            },
+            hasErrors: true,
+            errors: [{
+                field: 'deleteFacility',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]

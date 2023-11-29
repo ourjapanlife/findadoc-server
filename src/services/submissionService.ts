@@ -349,6 +349,58 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
     }
 }
 
+/**
+ * This deletes a submission from the database. If the submission doesn't exist, it will return a validation error.
+ * @param id The ID of the submission in the database to delete.
+ */
+export async function deleteSubmission(id: string)
+    : Promise<Result<gqlTypes.DeleteResult>> {
+    try {
+        const dbRef = dbInstance.collection('submissions').doc(id)
+        const dbDocument = await dbRef.get()
+
+        if (!dbDocument.exists) {
+            console.log(`Validation Error: User tried deleting non-existant submission: ${id}`)
+
+            return {
+                data: {
+                    isSuccessful: false
+                },
+                hasErrors: true,
+                errors: [{
+                    field: 'deleteSubmission',
+                    errorCode: ErrorCode.INVALID_ID,
+                    httpStatus: 404
+                }]
+            }
+        }
+
+        await dbRef.delete()
+        console.log(`\nDB-DELETE: Submission ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+
+        return {
+            data: {
+                isSuccessful: true
+            },
+            hasErrors: false
+        }
+    } catch (error) {
+        console.log(`ERROR: Error deleting submission ${id}: ${error}`)
+
+        return {
+            data: {
+                isSuccessful: false
+            },
+            hasErrors: true,
+            errors: [{
+                field: 'deleteSubmission',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
 function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
     return {
         id: newId,

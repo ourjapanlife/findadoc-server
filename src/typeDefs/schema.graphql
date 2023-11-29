@@ -258,6 +258,10 @@ enum OrderDirection {
   desc
 }
 
+type DeleteResult {
+    isSuccessful: Boolean!
+  }
+
 # ======== Queries =========
 
 type Query {
@@ -279,7 +283,7 @@ type Mutation {
     input: UpdateHealthcareProfessionalInput!
   ) : HealthcareProfessional
 
-  deleteHealthcareProfessional(id: ID!) : Boolean
+  deleteHealthcareProfessional(id: ID!) : DeleteResult
 
   createFacility(input: CreateFacilityInput!): Facility
 
@@ -288,7 +292,7 @@ type Mutation {
     input: UpdateFacilityInput!
   ): Facility
 
-  deleteFacility(id: ID!) : Boolean
+  deleteFacility(id: ID!) : DeleteResult
 
   createSubmission(input: CreateSubmissionInput!): Submission
 
@@ -297,5 +301,5 @@ type Mutation {
     input: UpdateSubmissionInput!
   ): Submission
 
-  deleteSubmission(id: ID!) : Boolean
+  deleteSubmission(id: ID!) : DeleteResult
 }
