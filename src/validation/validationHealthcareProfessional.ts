@@ -41,6 +41,7 @@ export function validateNames(
             localesUsed.push(nameObject.locale)
         }
 
+        // 30 characters is the limit on passports and driver's licenses 
         if (nameObject.firstName.length > 30) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
@@ -59,6 +60,7 @@ export function validateNames(
             })
         }
 
+        // 35 characters, since people can have 2 middle names, so 5 characters extra as a buffer
         if (nameObject.middleName && nameObject.middleName.length > 35) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
@@ -77,6 +79,7 @@ export function validateNames(
             })
         }
 
+        // 30 characters is the limit on passports and driver's licenses 
         if (nameObject.lastName.length > 30) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
@@ -224,7 +227,8 @@ export function validateDegrees(
     }
 
     degrees.forEach((degree, index) => {
-        if (degree.nameEn.length > 64) {
+        // 45 was one of the longest degree names I could find.
+        if (degree.nameEn.length > 45) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: `degrees[${index}].nameEn`,
@@ -233,7 +237,8 @@ export function validateDegrees(
             })
         }
 
-        if (degree.nameJa.length > 64) {
+        // 45 was one of the longest degree names I could find.
+        if (degree.nameJa.length > 45) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: `degrees[${index}].nameJa`,
@@ -242,6 +247,7 @@ export function validateDegrees(
             })
         }
 
+        // A single abbreviations can as long as 5 characters but some people have multiple abbreviations, 15 characters sounded reasonable
         if (degree.abbreviation.length > 15) {
             validationResults.hasErrors = true
             validationResults.errors?.push({

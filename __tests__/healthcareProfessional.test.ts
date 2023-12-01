@@ -94,7 +94,7 @@ describe('createHealthcareProfessional', () => {
                 variables: {
                     input: {
                         facilityIds: sharedFacilityIds,
-                        names: [testData.generateFailingNames('namesContainsInvalidAlphabet', locale)],
+                        names: [testData.generateFailingNameInvalidAlphabet(locale)],
                         degrees: [testData.generateDegreeInput()],
                         specialties: [testData.generateSpecialty()],
                         spokenLanguages: testData.generateSpokenLanguages(),
@@ -136,16 +136,7 @@ describe('createHealthcareProfessional', () => {
             variables: {
                 input: {
                     facilityIds: sharedFacilityIds,
-                    names: [{
-                        firstName: 'John',
-                        lastName: 'Doe',
-                        locale: gqlTypes.Locale.EnUs
-                    },
-                            {
-                                firstName: 'Jane',
-                                lastName: 'Doe',
-                                locale: gqlTypes.Locale.EnUs
-                            }],
+                    names: testData.generateFailingNameDuplicateLocale(),
                     degrees: [testData.generateDegreeInput()],
                     specialties: [testData.generateSpecialty()],
                     spokenLanguages: testData.generateSpokenLanguages(),
@@ -176,7 +167,7 @@ describe('createHealthcareProfessional', () => {
             variables: {
                 input: {
                     facilityIds: sharedFacilityIds,
-                    names: [testData.generateFailingNames('namesWithToLongStrings')],
+                    names: [testData.generateFailingNameInvalidLenght()],
                     degrees: [testData.generateDegreeInput()],
                     specialties: [testData.generateSpecialty()],
                     spokenLanguages: testData.generateSpokenLanguages(),
@@ -217,7 +208,7 @@ describe('createHealthcareProfessional', () => {
             variables: {
                 input: {
                     facilityIds: sharedFacilityIds,
-                    names: [testData.generateFailingNames('namesWithEmptyStrings')],
+                    names: [testData.generateFailingNameEmptyString()],
                     degrees: [testData.generateDegreeInput()],
                     specialties: [testData.generateSpecialty()],
                     spokenLanguages: testData.generateSpokenLanguages(),
@@ -258,7 +249,7 @@ describe('createHealthcareProfessional', () => {
             variables: {
                 input: {
                     facilityIds: sharedFacilityIds,
-                    names: [testData.generateFailingNames('nameWithInvalidChar')],
+                    names: [testData.generateFailingNameInvalidCharacter()],
                     degrees: [testData.generateDegreeInput()],
                     specialties: [testData.generateSpecialty()],
                     spokenLanguages: testData.generateSpokenLanguages(),
@@ -331,7 +322,7 @@ describe('createHealthcareProfessional', () => {
                 input: {
                     facilityIds: sharedFacilityIds,
                     names: [testData.generateLocalizedNameInput()],
-                    degrees: [testData.generateFailingDegrees('degreeWithLongName')],
+                    degrees: [testData.generateFailingDegreeInvalidLenght()],
                     specialties: [testData.generateSpecialty()],
                     spokenLanguages: testData.generateSpokenLanguages(),
                     acceptedInsurance: [testData.generateAcceptedInsurance()]
@@ -372,7 +363,7 @@ describe('createHealthcareProfessional', () => {
                 input: {
                     facilityIds: sharedFacilityIds,
                     names: [testData.generateLocalizedNameInput()],
-                    degrees: [testData.generateFailingDegrees('degreeWithWrongAlphabet')],
+                    degrees: [testData.generateFailingDegreeInvalidAlphabet()],
                     specialties: [testData.generateSpecialty()],
                     spokenLanguages: testData.generateSpokenLanguages(),
                     acceptedInsurance: [testData.generateAcceptedInsurance()]
@@ -408,7 +399,7 @@ describe('createHealthcareProfessional', () => {
                 input: {
                     facilityIds: sharedFacilityIds,
                     names: [testData.generateLocalizedNameInput()],
-                    degrees: [testData.generateFailingDegrees('degreeWithInvalidChar')],
+                    degrees: [testData.generateFailingDegreeInvalidCharacter()],
                     specialties: [testData.generateSpecialty()],
                     spokenLanguages: testData.generateSpokenLanguages(),
                     acceptedInsurance: [testData.generateAcceptedInsurance()]

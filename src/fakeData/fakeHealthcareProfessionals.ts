@@ -91,93 +91,95 @@ export function generateAcceptedInsurance() {
     return faker.helpers.enumValue(gqlTypes.Insurance)
 }
 
-export function generateFailingNames(validationToBeChecked:string, local: gqlTypes.Locale = gqlTypes.Locale.EnUs)
-    : gqlTypes.LocalizedNameInput {
+export function generateFailingNameInvalidAlphabet(locale: gqlTypes.Locale): gqlTypes.LocalizedNameInput {
     let namesField: gqlTypes.LocalizedNameInput = {firstName: '', lastName: '', locale: gqlTypes.Locale.JaJp}
-    
-    switch (validationToBeChecked) {
-        case 'namesContainsInvalidAlphabet': {
-            if (local === gqlTypes.Locale.EnUs) {
-                namesField = {
-                    firstName: fakerJA.person.firstName(),
-                    middleName: 'ロイ',
-                    lastName: fakerJA.person.lastName(),
-                    locale: gqlTypes.Locale.EnUs
-                }
-                break
-            }
 
-            if (local === gqlTypes.Locale.JaJp) {
-                namesField = {
-                    firstName: faker.person.firstName(),
-                    middleName: faker.person.middleName(),
-                    lastName: faker.person.lastName(),
-                    locale: gqlTypes.Locale.JaJp
-                }
-                break
-            }
-            break
-        }
-        case 'namesWithToLongStrings':
+    switch(locale) {
+        case gqlTypes.Locale.EnUs:
             namesField = {
-                firstName: 'Rhoshandiatellyneshiaunneveshenk',
-                middleName: 'Blaine Charles David Earl Frederick Gerald Hubert',
-                lastName: 'Keihanaikukauakahihulihe\'ekahaunaele',
+                firstName: fakerJA.person.firstName(),
+                middleName: 'ロイ',
+                lastName: fakerJA.person.lastName(),
                 locale: gqlTypes.Locale.EnUs
             }
             break
-        case 'namesWithEmptyStrings':
-            namesField = {
-                firstName: '   ',
-                middleName: '     ',
-                lastName: '      ',
-                locale: gqlTypes.Locale.EnUs
-            }
-            break
-        case 'nameWithInvalidChar':
-            namesField = {
-                firstName: 'John/42$',
-                middleName: 'Roe123',
-                lastName: 'Doe&',
-                locale: gqlTypes.Locale.EnUs
+        case gqlTypes.Locale.JaJp: 
+            namesField =  {
+                firstName: faker.person.firstName(),
+                middleName: faker.person.middleName(),
+                lastName: faker.person.lastName(),
+                locale: gqlTypes.Locale.JaJp
             }
             break
         default:
-            throw new Error(`Unexpected validation check value: ${validationToBeChecked}`)
+            throw new Error(`Unexpected locale value: ${locale}`)
     }
-
     return namesField
 }
 
-export function generateFailingDegrees(validationToBeChecked: string): gqlTypes.DegreeInput {
-    let degreeField = { nameEn: '', nameJa: '', abbreviation: ''}
-
-    switch (validationToBeChecked) {
-        case 'degreeWithLongName':
-            degreeField = {
-                nameEn: 'Mathematics with specialization in computational science mathematics and engineering', 
-                nameJa: '同志社大学グローバル・コミュニケーション学部グローバル・コミュニケーション学科・同志社大学グローバル・コミュニケーション学部グローバル', 
-                abbreviation: 'B.Tech M.Acc B.S.S.W'
-            }
-            break
-        case 'degreeWithWrongAlphabet':
-            degreeField = {
-                nameEn: '同志社大学グローバル', 
-                nameJa: 'Mathematics', 
-                abbreviation: 'B.Tech'
-            }
-            break
-        case 'degreeWithInvalidChar':
-            degreeField = {
-                nameEn: 'Mathe[matics=', 
-                nameJa: '同志社大学グ\'ローバル,', 
-                abbreviation: '#B.T$ech'
-            }
-            break
-        default:
-            throw new Error(`Unexpected validation check value: ${validationToBeChecked}`)
+export function generateFailingNameInvalidLenght(): gqlTypes.LocalizedNameInput {
+    return {
+        firstName: 'Rhoshandiatellyneshiaunneveshenk',
+        middleName: 'Blaine Charles David Earl Frederick Gerald Hubert',
+        lastName: 'Keihanaikukauakahihulihe\'ekahaunaele',
+        locale: gqlTypes.Locale.EnUs
     }
-    
-    return degreeField
+}
+
+export function generateFailingNameEmptyString(): gqlTypes.LocalizedNameInput {
+    return {
+        firstName: '   ',
+        middleName: '     ',
+        lastName: '      ',
+        locale: gqlTypes.Locale.EnUs
+    }
+}
+
+export function generateFailingNameInvalidCharacter(): gqlTypes.LocalizedNameInput {
+    return {
+        firstName: 'John/42$',
+        middleName: 'Roe123',
+        lastName: 'Doe&',
+        locale: gqlTypes.Locale.EnUs
+    }
+}
+
+export function generateFailingNameDuplicateLocale(): gqlTypes.LocalizedNameInput[] {
+    return [
+            {
+                firstName: faker.person.firstName(),
+                lastName: faker.person.lastName(),
+                locale: gqlTypes.Locale.EnUs
+            },
+            {
+                firstName: faker.person.firstName(),
+                lastName: faker.person.lastName(),
+                locale: gqlTypes.Locale.EnUs
+            }
+        ]
+}
+
+export function generateFailingDegreeInvalidLenght(): gqlTypes.DegreeInput {
+    return {
+        nameEn: 'Mathematics with specialization in computational science mathematics and engineering', 
+        nameJa: '同志社大学グローバル・コミュニケーション学部グローバル・コミュニケーション学科・同志社大学グローバル・コミュニケーション学部グローバル', 
+        abbreviation: 'B.Tech M.Acc B.S.S.W'
+    }
+}
+
+export function generateFailingDegreeInvalidAlphabet(): gqlTypes.DegreeInput {
+    return {
+        nameEn: '同志社大学グローバル', 
+        nameJa: 'Mathematics', 
+        abbreviation: 'B.Tech'
+    }
+}
+
+export function generateFailingDegreeInvalidCharacter(): gqlTypes.DegreeInput {
+    return {
+        nameEn: 'Mathe[matics=', 
+        nameJa: '同志社大学グ\'ローバル,', 
+        abbreviation: '#B.T$ech'
+    }
 }
 
