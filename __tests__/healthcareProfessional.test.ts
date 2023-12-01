@@ -464,6 +464,166 @@ describe('createHealthcareProfessional', () => {
         expect(error.errorCode).toBe(ErrorCode.REQUIRED)
         expect(error.httpStatus).toBe(400)
     })
+
+    test('failing: throws an error if specialties is empty', async () => {
+        const createFailingHealthcareProfessional = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: {
+                    facilityIds: sharedFacilityIds,
+                    names: [testData.generateLocalizedNameInput()],
+                    degrees: [testData.generateDegreeInput()],
+                    specialties: [],
+                    spokenLanguages: testData.generateSpokenLanguages(),
+                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                }
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
+        const createdProfessional
+                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+        
+        expect(createdProfessional).toBeFalsy()
+        expect(createProfessionalResult.body?.errors).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toBeGreaterThanOrEqual(1)
+
+        const error = createProfessionalResult.body?.errors[0].extensions.errors[0]
+
+        expect(error.field).toBe('specialties')
+        expect(error.errorCode).toBe(ErrorCode.REQUIRED)
+        expect(error.httpStatus).toBe(400)
+    })
+
+    test('failing: throws an error if specialties name is empty', async () => {
+        const createFailingHealthcareProfessional = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: {
+                    facilityIds: sharedFacilityIds,
+                    names: [testData.generateLocalizedNameInput()],
+                    degrees: [testData.generateDegreeInput()],
+                    specialties: [{names: []}],
+                    spokenLanguages: testData.generateSpokenLanguages(),
+                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                }
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
+        const createdProfessional
+                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+        
+        expect(createdProfessional).toBeFalsy()
+        expect(createProfessionalResult.body?.errors).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toBeGreaterThanOrEqual(1)
+
+        const error = createProfessionalResult.body?.errors[0].extensions.errors[0]
+
+        expect(error.field).toBe('specialties')
+        expect(error.errorCode).toBe(ErrorCode.REQUIRED)
+        expect(error.httpStatus).toBe(400)
+    })
+
+    test('failing: throws an error if specialties name is to long', async () => {
+        const createFailingHealthcareProfessional = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: {
+                    facilityIds: sharedFacilityIds,
+                    names: [testData.generateLocalizedNameInput()],
+                    degrees: [testData.generateDegreeInput()],
+                    specialties: [testData.generateSpecialitieInvalidLenght()],
+                    spokenLanguages: testData.generateSpokenLanguages(),
+                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                }
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
+        const createdProfessional
+                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+        
+        expect(createdProfessional).toBeFalsy()
+        expect(createProfessionalResult.body?.errors).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toBeGreaterThanOrEqual(1)
+
+        const error = createProfessionalResult.body?.errors[0].extensions.errors[0]
+
+        expect(error.field).toBe('specialties[0].name')
+        expect(error.errorCode).toBe(ErrorCode.INVALID_LENGTH_TOO_LONG)
+        expect(error.httpStatus).toBe(400)
+    })
+
+    test('failing: throws an error if specialties name contains invalid alphabet', async () => {
+        const createFailingHealthcareProfessional = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: {
+                    facilityIds: sharedFacilityIds,
+                    names: [testData.generateLocalizedNameInput()],
+                    degrees: [testData.generateDegreeInput()],
+                    specialties: [testData.generateSpecialitieInvalidAlphabet()],
+                    spokenLanguages: testData.generateSpokenLanguages(),
+                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                }
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
+        const createdProfessional
+                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+        
+        expect(createdProfessional).toBeFalsy()
+        expect(createProfessionalResult.body?.errors).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toBeGreaterThanOrEqual(1)
+
+        const errorNameEn = createProfessionalResult.body?.errors[0].extensions.errors[0]
+        const errorNameJa = createProfessionalResult.body?.errors[0].extensions.errors[1]
+
+        expect(errorNameEn.field).toBe('specialties[0].name')
+        expect(errorNameEn.errorCode).toBe(ErrorCode.CONTAINS_JAPANESE_CHARACTER)
+        expect(errorNameEn.httpStatus).toBe(400)
+
+        expect(errorNameJa.field).toBe('specialties[1].name')
+        expect(errorNameJa.errorCode).toBe(ErrorCode.CONTAINS_LATIN_CHARACTER)
+        expect(errorNameJa.httpStatus).toBe(400)
+    })
+
+    test('failing: throws an error if specialties name contains invalid characters', async () => {
+        const createFailingHealthcareProfessional = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: {
+                    facilityIds: sharedFacilityIds,
+                    names: [testData.generateLocalizedNameInput()],
+                    degrees: [testData.generateDegreeInput()],
+                    specialties: [testData.generateSpecialitieInvalidCharacters()],
+                    spokenLanguages: testData.generateSpokenLanguages(),
+                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                }
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
+        const createdProfessional
+                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+        
+        expect(createdProfessional).toBeFalsy()
+        expect(createProfessionalResult.body?.errors).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors[0]).toBeDefined()
+        expect(createProfessionalResult.body?.errors[0].extensions.errors.length).toBeGreaterThanOrEqual(1)
+
+        const error = createProfessionalResult.body?.errors[0].extensions.errors[0]
+
+        expect(error.field).toBe('specialties[0].name')
+        expect(error.errorCode).toBe(ErrorCode.CONTAINS_INVALID_CHARACTER)
+        expect(error.httpStatus).toBe(400)
+    })
 })
 
 describe('deleteHealthcareProfessional', () => {

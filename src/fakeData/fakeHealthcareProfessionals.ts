@@ -183,3 +183,46 @@ export function generateFailingDegreeInvalidCharacter(): gqlTypes.DegreeInput {
     }
 }
 
+export function generateSpecialitieInvalidLenght(): gqlTypes.SpecialtyInput { 
+    return {names: [
+        {
+            name: 'Female pelvic medicine and reconstructive surgery Advanced heart failure and transplant cardiology Pediatric Hematology Oncology',
+            locale: gqlTypes.Locale.EnUs
+            
+        }
+    ]}
+}
+
+export function generateSpecialitieNameEmptyString(): gqlTypes.SpecialtyInput { 
+    return {names: [
+        {
+            name: '  ',
+            locale: gqlTypes.Locale.EnUs
+            
+        }
+    ]}
+}
+
+export function generateSpecialitieInvalidAlphabet(): gqlTypes.SpecialtyInput {
+    return {names: [
+        {
+            name: '小児血液腫瘍学',
+            locale: gqlTypes.Locale.EnUs
+            
+        }, 
+        {
+            name: 'Pediatric Hematology Oncology',
+            locale: gqlTypes.Locale.JaJp
+        }
+    ]}
+}
+
+export function generateSpecialitieInvalidCharacters(): gqlTypes.SpecialtyInput {
+    return {names: [
+        {
+            name: 'Pediatric %#Hematology Oncology{',
+            locale: gqlTypes.Locale.EnUs
+            
+        }
+    ]}
+}
