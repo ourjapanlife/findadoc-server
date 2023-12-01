@@ -1,10 +1,11 @@
 import { ApolloServer, BaseContext, GraphQLRequestContext } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
 import loadSchema from './schema.js'
 import resolvers from './resolvers.js'
+import { initializeAuth } from './auth.js'
 import { initiatilizeFirebaseInstance } from './firebaseDb.js'
 import { envVariables } from '../utils/environmentVariables.js'
-import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
 
 export const createApolloServer = async () => {
     await initiatilizeFirebaseInstance()
@@ -29,6 +30,12 @@ export const createApolloServer = async () => {
             }
         ]
     })
+
+    app.use(cors({
+        origin: "https://findadoc.jp",
+        allowedHeaders: ["content-type", ...supertokens.getAllCORSHeaders()],
+        credentials: true,
+    }));
         
     console.log('⛽️ Starting server...')
     const { url } = await startStandaloneServer(server, { listen: { port: parseInt(envVariables.serverPort()) } })
