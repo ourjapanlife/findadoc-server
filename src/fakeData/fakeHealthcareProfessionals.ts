@@ -94,7 +94,7 @@ export function generateAcceptedInsurance() {
 export function generateFailingNameInvalidAlphabet(locale: gqlTypes.Locale): gqlTypes.LocalizedNameInput {
     let namesField: gqlTypes.LocalizedNameInput = {firstName: '', lastName: '', locale: gqlTypes.Locale.JaJp}
 
-    switch(locale) {
+    switch (locale) {
         case gqlTypes.Locale.EnUs:
             namesField = {
                 firstName: fakerJA.person.firstName(),
@@ -104,7 +104,7 @@ export function generateFailingNameInvalidAlphabet(locale: gqlTypes.Locale): gql
             }
             break
         case gqlTypes.Locale.JaJp: 
-            namesField =  {
+            namesField = {
                 firstName: faker.person.firstName(),
                 middleName: faker.person.middleName(),
                 lastName: faker.person.lastName(),
@@ -146,17 +146,17 @@ export function generateFailingNameInvalidCharacter(): gqlTypes.LocalizedNameInp
 
 export function generateFailingNameDuplicateLocale(): gqlTypes.LocalizedNameInput[] {
     return [
-            {
-                firstName: faker.person.firstName(),
-                lastName: faker.person.lastName(),
-                locale: gqlTypes.Locale.EnUs
-            },
-            {
-                firstName: faker.person.firstName(),
-                lastName: faker.person.lastName(),
-                locale: gqlTypes.Locale.EnUs
-            }
-        ]
+        {
+            firstName: faker.person.firstName(),
+            lastName: faker.person.lastName(),
+            locale: gqlTypes.Locale.EnUs
+        },
+        {
+            firstName: faker.person.firstName(),
+            lastName: faker.person.lastName(),
+            locale: gqlTypes.Locale.EnUs
+        }
+    ]
 }
 
 export function generateFailingDegreeInvalidLenght(): gqlTypes.DegreeInput {
