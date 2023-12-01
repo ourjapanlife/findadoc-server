@@ -1,5 +1,4 @@
 import supertokens from 'supertokens-node'
-import Session from 'supertokens-node/recipe/session'
 import ThirdPartyEmailPassword from 'supertokens-node/recipe/thirdpartyemailpassword'
 
 export const initializeAuth = () => {
@@ -18,7 +17,7 @@ export const initializeAuth = () => {
             websiteBasePath: '/'
         },
         recipeList: [
-            ThirdPartyEmailPassword.init({/*TODO: See next step*/ }),
+            ThirdPartyEmailPassword.init({/*TODO: See next step*/ })
             // Session.init() // initializes session features
         ]
     })

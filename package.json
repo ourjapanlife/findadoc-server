@@ -69,9 +69,13 @@
     },
     "dependencies": {
         "@apollo/server": "^4.9.3",
+        "@as-integrations/fastify": "^2.1.1",
+        "@fastify/cors": "^8.4.1",
+        "@fastify/middie": "^8.3.0",
         "cross-env": "^7.0.3",
         "csv-parse": "^5.3.3",
         "dotenv": "^16.3.1",
+        "fastify": "^4.24.3",
         "firebase": "^10.5.2",
         "firebase-admin": "^11.11.0",
         "graphql": "^16.8.1",
