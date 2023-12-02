@@ -1,8 +1,12 @@
 
 import Fastify from 'fastify'
-import fastifyApollo, { fastifyApolloDrainPlugin } from '@as-integrations/fastify'
-import cors from '@fastify/cors'
-import * as middie from '@fastify/middie'
+import fastifyApolloHandler, { fastifyApolloDrainPlugin } from '@as-integrations/fastify'
+// import { fastifyMiddie } from '@fastify/middie'
+import corsPlugin from '@fastify/cors'
+import rateLimitPlugin from '@fastify/rate-limit'
+import compressionPlugin from '@fastify/compress'
+import supertokens from 'supertokens-node'
+import { plugin as superTokensPlugin, errorHandler as superTokensErrorHandler } from 'supertokens-node/framework/fastify/index.js'
 import { ApolloServer, BaseContext, GraphQLRequestContext } from '@apollo/server'
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
 import loadSchema from './schema.js'
@@ -10,18 +14,33 @@ import resolvers from './resolvers.js'
 import { envVariables } from '../utils/environmentVariables.js'
 
 export const createApolloFastifyServer = async () => {
-    //fastify is our http server (a better alternative to express)
-    const fastify = Fastify()
+    //fastify is our http server (a modern, faster alternative to express)
+    const fastify = await Fastify()
 
     //middie is fast and helps us to use middleware with fastify (we can use express middleware with fastify thanks to this)
-    await fastify.register(middie.fastifyMiddie)
-
-    await fastify.register(cors, {
+    // await fastify.register(fastifyMiddie)
+    //cors is a middleware that allows us to make requests from the a different url (findadoc.jp) to our server (api.findadoc.jp)
+    await fastify.register(corsPlugin, {
         origin: 'https://findadoc.jp',
-        // allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
+        allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
+        methods: ['GET', 'POST', 'OPTIONS'],
         credentials: true
     })
 
+    //add rate limiting to prevent abuse
+    await fastify.register(rateLimitPlugin, {
+        max: 100,
+        timeWindow: '1 minute'
+    })
+
+    //add compression to reduce the size of the requests/responses (makes the api faster)
+    await fastify.register(compressionPlugin)
+
+    //supertokens auth integration
+    await fastify.register(superTokensPlugin)
+    await fastify.setErrorHandler(superTokensErrorHandler())
+
+    //set up the apollo graphql server
     const apolloServer = new ApolloServer<BaseContext>({
         typeDefs: loadSchema(),
         resolvers,
@@ -43,20 +62,23 @@ export const createApolloFastifyServer = async () => {
             }
         ]
     })
-    
+
     console.log('⛽️ Starting server...')
     //this is called instead of startStandaloneServer() since we're using fastify (https://www.apollographql.com/docs/apollo-server/api/apollo-server/#start)
     //the apollo server isn't listening until fastify is actually started. 
     await apolloServer.start()
-    await fastify.register(fastifyApollo(apolloServer))
 
-    //start the actual fastify http server
-    const url = await fastify.listen({ port: parseInt(envVariables.serverPort()) }, err => {
-        if (err) {
-            console.log(err)
-        }
+    //this adds the apollo server to fastify. 
+    //Instead of using fastifyApolloHandler(apollo), we use the handler so we can choose the url 
+    fastify.route({
+        url: '/api',
+        method: ['GET', 'POST', 'OPTIONS'],
+        //@ts-expect-error - fastify apollo types are wrong, but it works
+        handler: fastifyApolloHandler(apolloServer)
     })
 
-    // eslint-disable-next-line no-console
+    //start the actual fastify http server
+    const url = await fastify.listen({ port: parseInt(envVariables.serverPort()) })
+
     console.log(`\n🚀 🚀 🚀 Server ready at: ${url}\n`)
 }

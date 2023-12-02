@@ -10,6 +10,8 @@ const envVariables = {
     isProduction: () => process.env.NODE_ENV === 'production',
     isLocal: () => !envVariables.isProduction(),
     serverPort: () => process.env.SERVER_PORT as string,
+    authAPIKey: () => process.env.AUTH_API_KEY as string,
+    supertokensAuthURL: () => process.env.SUPERTOKENS_AUTH_URL as string,
     getDbUrl: () =>
         envVariables.isProduction()
             ? process.env.FIREBASE_DATABASE_URL
