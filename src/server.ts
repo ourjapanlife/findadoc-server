@@ -1,6 +1,6 @@
 
 import Fastify from 'fastify'
-import fastifyApolloHandler, { fastifyApolloDrainPlugin } from '@as-integrations/fastify'
+import { fastifyApolloDrainPlugin, fastifyApolloHandler } from '@as-integrations/fastify'
 // import { fastifyMiddie } from '@fastify/middie'
 import corsPlugin from '@fastify/cors'
 import rateLimitPlugin from '@fastify/rate-limit'
@@ -73,7 +73,6 @@ export const createApolloFastifyServer = async () => {
     fastify.route({
         url: '/api',
         method: ['GET', 'POST', 'OPTIONS'],
-        //@ts-expect-error - fastify apollo types are wrong, but it works
         handler: fastifyApolloHandler(apolloServer)
     })
 
