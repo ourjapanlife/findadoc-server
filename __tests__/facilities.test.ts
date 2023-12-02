@@ -17,7 +17,7 @@ describe('createFacility', () => {
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
 
-        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        const createFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
         //should not have errors
         expect(createFacilityResult.body.errors).toBeUndefined()
@@ -33,7 +33,7 @@ describe('createFacility', () => {
         } as gqlRequest
 
         // Query the facility by id
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         const errors = createFacilityResult.body?.errors
@@ -67,7 +67,7 @@ describe('createFacility', () => {
         } as gqlMutation<gqlType.CreateHealthcareProfessionalInput>
 
         // Create a new healthcare professional with the associated facility id
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalRequest)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createHealthcareProfessionalRequest)
 
         //should not have errors
         const createdErrors = createProfessionalResult.body.errors
@@ -92,7 +92,7 @@ describe('createFacility', () => {
         } as gqlRequest
 
         //// Step 2: Query the facility by id and check if it has the new healthcare professional id added to it.
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         const errors = getFacilityResult.body?.errors
@@ -120,7 +120,7 @@ describe('getFacilityById', () => {
         } as gqlMutation<gqlType.CreateFacilityInput>
 
         // Create a new facility
-        const newFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        const newFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
         //should not have errors
         const errors = newFacilityResult.body?.errors
@@ -141,7 +141,7 @@ describe('getFacilityById', () => {
         } as gqlRequest
 
         // Query the facility by id
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         expect(getFacilityResult.body?.errors).toBeUndefined()
@@ -168,7 +168,7 @@ describe('updateFacility', () => {
                 input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
-        const newFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        const newFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
         //should not have errors
         const errors = newFacilityResult.body?.errors
@@ -193,7 +193,7 @@ describe('updateFacility', () => {
         } as gqlMutation<gqlType.UpdateFacilityInput>
 
         // Mutation to update the facility
-        const updateFacilityResult = await request(gqlApiUrl).post('/').send(updateFacilityMutationRequest)
+        const updateFacilityResult = await request(gqlApiUrl).post('').send(updateFacilityMutationRequest)
 
         //should not have errors
         const updateErrors = updateFacilityResult.body?.errors
@@ -211,7 +211,7 @@ describe('updateFacility', () => {
         } as gqlRequest
 
         // fetch the updated facility
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         const queryErrors = getFacilityResult.body?.errors
@@ -244,7 +244,7 @@ describe('deleteFacility', () => {
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
 
-        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        const createFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
         //should not have errors
         const createErrors = createFacilityResult.body?.errors
@@ -266,7 +266,7 @@ describe('deleteFacility', () => {
         } as gqlRequest
 
         // -- Query the facility by id --
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         const queryErrors = createFacilityResult.body?.errors
@@ -290,7 +290,7 @@ describe('deleteFacility', () => {
         } as gqlRequest
 
         // -- Let's try to delete the facility! --
-        const deleteFacilityResult = await request(gqlApiUrl).post('/').send(deleteFacilityRequest)
+        const deleteFacilityResult = await request(gqlApiUrl).post('').send(deleteFacilityRequest)
 
         //should not have errors
         const deleteErrors = deleteFacilityResult.body?.errors
@@ -304,7 +304,7 @@ describe('deleteFacility', () => {
         expect(deleteFacilityResult.body.data.deleteFacility.isSuccessful).toBe(true)
 
         // -- Let's try to fetch the facility again to confirm it's deleted --
-        const missingFacilityQueryResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const missingFacilityQueryResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should have an error that it doesn't exist
         const validQueryGqlErrors = missingFacilityQueryResult.body?.errors
@@ -317,7 +317,7 @@ describe('deleteFacility', () => {
         expect(validQueryErrors[0].errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR)
 
         // -- Let's try to delete the facility again! We should receive an error now that it doesn't exist --
-        const deleteAgainFacilityResult = await request(gqlApiUrl).post('/').send(deleteFacilityRequest)
+        const deleteAgainFacilityResult = await request(gqlApiUrl).post('').send(deleteFacilityRequest)
 
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainFacilityResult.body?.errors[0].extensions.errors as Error[]

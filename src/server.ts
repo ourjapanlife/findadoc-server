@@ -1,7 +1,6 @@
 
 import Fastify from 'fastify'
 import { fastifyApolloDrainPlugin, fastifyApolloHandler } from '@as-integrations/fastify'
-// import { fastifyMiddie } from '@fastify/middie'
 import corsPlugin from '@fastify/cors'
 import rateLimitPlugin from '@fastify/rate-limit'
 import compressionPlugin from '@fastify/compress'
@@ -12,13 +11,14 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
 import loadSchema from './schema.js'
 import resolvers from './resolvers.js'
 import { envVariables } from '../utils/environmentVariables.js'
+import { buildUserContext } from './auth.js'
 
-export const createApolloFastifyServer = async () => {
+export const createApolloFastifyServer = async (customPort?: number): Promise<string> => {
+    console.log('⛽️ Starting server...')
+
     //fastify is our http server (a modern, faster alternative to express)
     const fastify = await Fastify()
 
-    //middie is fast and helps us to use middleware with fastify (we can use express middleware with fastify thanks to this)
-    // await fastify.register(fastifyMiddie)
     //cors is a middleware that allows us to make requests from the a different url (findadoc.jp) to our server (api.findadoc.jp)
     await fastify.register(corsPlugin, {
         origin: 'https://findadoc.jp',
@@ -63,21 +63,26 @@ export const createApolloFastifyServer = async () => {
         ]
     })
 
-    console.log('⛽️ Starting server...')
     //this is called instead of startStandaloneServer() since we're using fastify (https://www.apollographql.com/docs/apollo-server/api/apollo-server/#start)
     //the apollo server isn't listening until fastify is actually started. 
     await apolloServer.start()
 
     //this adds the apollo server to fastify. 
     //Instead of using fastifyApolloHandler(apollo), we use the handler so we can choose the url 
-    fastify.route({
+    await fastify.route({
         url: '/api',
         method: ['GET', 'POST', 'OPTIONS'],
-        handler: fastifyApolloHandler(apolloServer)
+        // preHandler: verifySession(),
+        handler: fastifyApolloHandler(apolloServer, {
+            //this is where we add the supertokens user authentication to the context. We can access this context in the resolvers
+            context: buildUserContext
+        })
     })
 
     //start the actual fastify http server
-    const url = await fastify.listen({ port: parseInt(envVariables.serverPort()) })
+    const serverUrl = await fastify.listen({ port: customPort ?? parseInt(envVariables.serverPort()) })
 
-    console.log(`\n🚀 🚀 🚀 Server ready at: ${url}\n`)
+    console.log(`\n🚀 🚀 🚀 Server ready at: ${serverUrl}\n`)
+
+    return serverUrl
 }
