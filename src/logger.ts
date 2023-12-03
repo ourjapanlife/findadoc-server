@@ -12,8 +12,14 @@ export const initializeLogger = () => {
     const combinedTransports = []
 
     if (envVariables.isProduction()) {
+        //we still want to log to the console on the production machine
+        const prodMachineLogsTransport = new transports.Console({
+            format: format.combine(format.simple(), format.colorize()),
+            level: 'debug'
+        })
+
         //this is the production log transport that sends to grafana cloud. 
-        const productionTransport = new LokiTransport({
+        const prodGrafanaTransport = new LokiTransport({
             host: envVariables.loggerGrafanaURL(),
             basicAuth: envVariables.loggerGrafanaApiKey(),
             labels: { app: 'findadocjp' },
@@ -25,13 +31,8 @@ export const initializeLogger = () => {
             onConnectionError: err => console.error(`error connecting to grafana logger: ${err}`)
         })
 
-        const prodMachineLogsTransport = new transports.Console({
-            format: format.combine(format.simple(), format.colorize()),
-            level: 'debug'
-        })
-
         combinedTransports.push(prodMachineLogsTransport)
-        combinedTransports.push(productionTransport)
+        combinedTransports.push(prodGrafanaTransport)
     } else {
         //during local development, we just want to log to the console
         const localDevTransport = new transports.Console({
