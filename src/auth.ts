@@ -7,7 +7,7 @@ import { envVariables } from '../utils/environmentVariables.js'
 import { SessionRequest } from 'supertokens-node/framework/fastify/index.js'
 // import { exec } from 'child_process'
 import { logger } from './logger.js'
-import { env } from 'process'
+
 export interface UserContext {
     userId: string;
     tenantId: string;
@@ -116,4 +116,3 @@ export async function buildUserContext(req: SessionRequest): Promise<UserContext
         tenantId
     } satisfies UserContext
 }
- 
