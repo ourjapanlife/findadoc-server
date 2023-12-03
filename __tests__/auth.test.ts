@@ -5,13 +5,14 @@ import { searchSubmissionsQuery } from './submissions.test.js'
 import { Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
 import { gqlRequest } from '../utils/gqlTool.js'
 import { logger } from '../src/logger.js'
+import { faker } from '@faker-js/faker'
 
 describe('auth', () => {
     test('can login and access secure routes', async () => {
         const requestData = {
             formFields: [{
                 id: 'email',
-                value: 'test@findadoc.com'
+                value: `testuser_${faker.string.alphanumeric}@findadoc.com`
             }, {
                 id: 'password',
                 value: 'findadoc123'
@@ -20,7 +21,6 @@ describe('auth', () => {
         const authSignupResult = await request(serverUrl).post('/auth/signup')
             .set('rid', 'thirdpartyemailpassword')
             .set('st-auth-mode', 'cookie')
-            .set('Content-Type', 'application/json')
             .send(requestData)
 
         logger.info(JSON.stringify(authSignupResult))

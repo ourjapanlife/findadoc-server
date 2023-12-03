@@ -7,12 +7,14 @@ import { envVariables } from '../utils/environmentVariables.js'
 import { SessionRequest } from 'supertokens-node/framework/fastify/index.js'
 // import { exec } from 'child_process'
 import { logger } from './logger.js'
+import { env } from 'process'
 export interface UserContext {
     userId: string;
     tenantId: string;
 }
 
 export const initializeAuth = async () => {
+    logger.debug('🔓 Initializing Auth system...')
     initSupertokens({
         framework: 'fastify',
         supertokens: {
@@ -23,9 +25,9 @@ export const initializeAuth = async () => {
         appInfo: {
             // learn more about this on https://supertokens.com/docs/thirdpartyemailpassword/appinfo
             appName: 'findadoc',
-            apiDomain: 'https://api.findadoc.jp',
-            websiteDomain: 'https://findadoc.jp',
-            apiBasePath: '/',
+            apiDomain: envVariables.apiURL(),
+            websiteDomain: envVariables.websiteURL(),
+            apiBasePath: '/auth',
             websiteBasePath: '/auth'
         },
         recipeList: [

@@ -24,7 +24,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
     await fastify.register(corsPlugin, {
         origin: 'https://findadoc.jp',
         allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
-        methods: ['GET', 'POST', 'OPTIONS'],
+        // methods: ['GET', 'POST', 'OPTIONS'],
         credentials: true
     })
 

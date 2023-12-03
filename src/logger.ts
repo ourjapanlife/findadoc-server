@@ -26,7 +26,8 @@ export const initializeLogger = () => {
         })
 
         const prodMachineLogsTransport = new transports.Console({
-            format: format.combine(format.simple(), format.colorize())
+            format: format.combine(format.simple(), format.colorize()),
+            level: 'debug'
         })
 
         combinedTransports.push(prodMachineLogsTransport)
@@ -34,7 +35,8 @@ export const initializeLogger = () => {
     } else {
         //during local development, we just want to log to the console
         const localDevTransport = new transports.Console({
-            format: format.combine(format.simple(), format.colorize())
+            format: format.combine(format.simple(), format.colorize()),
+            level: 'debug'
         })
 
         combinedTransports.push(localDevTransport)
