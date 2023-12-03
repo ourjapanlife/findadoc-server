@@ -35,10 +35,10 @@
         "url": "https://github.com/ourjapanlife/findadoc-server/issues"
     },
     "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
-    "packageManager": "yarn@4.0.1",
+    "packageManager": "yarn@1.22.21",
     "engines": {
-        "node": "18.x",
-        "yarn": "^4.0.1"
+        "node": "18.18.2",
+        "yarn": "1.22.21"
     },
     "devDependencies": {
         "@faker-js/faker": "^8.2.0",
