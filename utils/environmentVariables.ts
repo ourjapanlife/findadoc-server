@@ -10,6 +10,8 @@ const envVariables = {
     isProduction: () => process.env.NODE_ENV === 'production',
     isLocal: () => !envVariables.isProduction(),
     serverPort: () => process.env.SERVER_PORT as string,
+    loggerGrafanaURL: () => process.env.LOGGER_GRAFANA_URL as string,
+    loggerGrafanaApiKey: () => process.env.LOGGER_GRAFANA_API_KEY as string,
     authSupertokensAPIKey: () => process.env.AUTH_SUPERTOKENS_API_KEY as string,
     authSupertokensURL: () => process.env.AUTH_SUPERTOKENS_URL as string,
     authGithubClientId: () => process.env.AUTH_GITHUB_CLIENT_ID as string,

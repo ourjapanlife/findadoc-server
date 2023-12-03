@@ -3,6 +3,7 @@ import { createFacility } from '../src/services/facilityService.js'
 
 import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { generateRandomCreateFacilityInputArray } from '../src/fakeData/fakeFacilities.js'
+import { logger } from '../src/logger.js'
 
 export const seedDatabase = async () => {
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -38,7 +39,7 @@ export const seedDatabase = async () => {
             }
         }
     } catch (error) {
-        console.log(`❌ Error seeding database: ${JSON.stringify(error)} ❌`)
+        logger.error(`❌ Error seeding database: ${JSON.stringify(error)} ❌`)
         throw new Error(`❌ Error seeding database: ${JSON.stringify(error)} ❌`)
     }
 }

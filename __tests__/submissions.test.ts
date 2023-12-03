@@ -6,6 +6,7 @@ import { Error, ErrorCode } from '../src/result.js'
 import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { gqlApiUrl } from './testSetup.test.js'
+import { logger } from '../src/logger.js'
 
 describe('createSubmission', () => {
     test('creates a new Submission', async () => {
@@ -22,7 +23,7 @@ describe('createSubmission', () => {
         const errors = response.body.errors
 
         if (errors) {
-            console.log(`errors: ${JSON.stringify(errors)}`)
+            logger.error(`errors: ${JSON.stringify(errors)}`)
             expect(JSON.stringify(errors)).toBeUndefined()
         }
 
@@ -44,7 +45,7 @@ describe('createSubmission', () => {
         const searchErrors = searchResult.body?.errors
 
         if (searchErrors) {
-            console.log(`errors: ${JSON.stringify(searchErrors)}`)
+            logger.error(`errors: ${JSON.stringify(searchErrors)}`)
             expect(searchResult.body?.errors).toBeUndefined()
         }
         const foundSubmissions = searchResult.body.data.submission as Submission
@@ -337,7 +338,7 @@ describe('searchSubmissions', () => {
         const errors2 = createSubmissionResult1.body?.errors
 
         if (errors1 || errors2) {
-            console.log(`errors from first: ${JSON.stringify(errors1)}. errors from second: ${JSON.stringify(errors2)}`)
+            logger.error(`errors from first: ${JSON.stringify(errors1)}. errors from second: ${JSON.stringify(errors2)}`)
             expect(errors1).toBeUndefined()
             expect(errors2).toBeUndefined()
         }
@@ -387,7 +388,7 @@ describe('deleteSubmission', () => {
         const createErrors = createResult.body?.errors
 
         if (createErrors) {
-            console.log(JSON.stringify(createErrors))
+            logger.error(JSON.stringify(createErrors))
             expect(createErrors).toBeUndefined()
         }
 
@@ -409,7 +410,7 @@ describe('deleteSubmission', () => {
         const queryErrors = createResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(queryErrors).toBeUndefined()
         }
 
@@ -433,7 +434,7 @@ describe('deleteSubmission', () => {
         const deleteErrors = deleteResult.body?.errors
 
         if (deleteErrors) {
-            console.log(JSON.stringify(deleteErrors))
+            logger.error(JSON.stringify(deleteErrors))
             expect(deleteErrors).toBeUndefined()
         }
 
@@ -447,7 +448,7 @@ describe('deleteSubmission', () => {
         const validQueryGqlErrors = missingQueryResult.body?.errors
         const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(validQueryErrors))
+        logger.error(JSON.stringify(validQueryErrors))
         expect(validQueryErrors.length).toBe(1)
         expect(validQueryErrors[0]).toBeDefined()
         expect(validQueryErrors[0].field).toBe('id')
@@ -459,7 +460,7 @@ describe('deleteSubmission', () => {
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainResult.body?.errors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(deleteAgainErrors))
+        logger.error(JSON.stringify(deleteAgainErrors))
         expect(deleteAgainResult.body?.deleteSubmission).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()
@@ -476,7 +477,7 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
     const errors = searchResult.body.errors
 
     if (errors && errors.length > 0) {
-        console.log(`test errors: ${JSON.stringify(errors)}`)
+        logger.error(`test errors: ${JSON.stringify(errors)}`)
         expect(errors).toBeUndefined()
     }
 
@@ -486,7 +487,14 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
     expect(searchedSubmissions).toBeDefined()
     expect(searchedSubmissions.length).toBeGreaterThanOrEqual(1)
 
-    const firstSubmission = searchedSubmissions[0]
+    const firstSubmission = searchedSubmissions.find(submission =>
+        submission.googleMapsUrl === originalInputValues.googleMapsUrl)
+
+    if (!firstSubmission) {
+        logger.error(`firstSubmission undefined: ${JSON.stringify(searchedSubmissions)}`)
+        expect(firstSubmission).toBeDefined()
+        return
+    }
 
     //Compare the data returned in the response to the createdSubmission
     expect(firstSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)

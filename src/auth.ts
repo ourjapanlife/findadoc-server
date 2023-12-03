@@ -5,9 +5,11 @@ import Dashboard from 'supertokens-node/recipe/dashboard/index.js'
 import UserRoles from 'supertokens-node/recipe/userroles/index.js'
 import { envVariables } from '../utils/environmentVariables.js'
 import { SessionRequest } from 'supertokens-node/framework/fastify/index.js'
-
+// import { exec } from 'child_process'
+import { logger } from './logger.js'
 export interface UserContext {
     userId: string;
+    tenantId: string;
 }
 
 export const initializeAuth = async () => {
@@ -20,7 +22,7 @@ export const initializeAuth = async () => {
         },
         appInfo: {
             // learn more about this on https://supertokens.com/docs/thirdpartyemailpassword/appinfo
-            appName: 'Findadoc',
+            appName: 'findadoc',
             apiDomain: 'https://api.findadoc.jp',
             websiteDomain: 'https://findadoc.jp',
             apiBasePath: '/',
@@ -59,7 +61,16 @@ export const initializeAuth = async () => {
 
     await setupRoles()
 
-    console.log('🔐 Initialized Auth system')
+    //     const result = exec(`
+    //     curl --location --request POST 'https://st-dev-48e40380-90bf-11ee-a12f-c10c15e3d0ab.aws.supertokens.io/recipe/dashboard/user' \
+    // --header 'rid: dashboard' \
+    // --header 'api-key: sqG7JfslDpaFaBTte0Edj5DHdU' \
+    // --header 'Content-Type: application/json' \
+    // --data-raw '{"email": "philipermish@gmail.com","password": "temp123"}'`)
+
+    //     logger.info(result)
+
+    logger.debug('🔐 Initialized Auth system')
 }
 
 async function setupRoles(): Promise<void> {
@@ -68,8 +79,9 @@ async function setupRoles(): Promise<void> {
     await UserRoles.createNewRoleOrAddPermissions('user', ['read'])
 }
 
-export async function getRolesForUser(userId: string) {
-    const response = await UserRoles.getRolesForUser('public', userId)
+export async function getRolesForUser(userId: string, tenantId: string): Promise<string[]> {
+    //public is the default tenantId
+    const response = await UserRoles.getRolesForUser(tenantId, userId)
     const roles: string[] = response.roles
 
     return roles
@@ -88,16 +100,18 @@ export async function hasAdminRole(context: UserContext): Promise<boolean> {
         return false
     }
 
-    const roles = await getRolesForUser(userId)
+    const roles = await getRolesForUser(userId, context.tenantId)
 
     return roles.includes('admin')
 }
 
 export async function buildUserContext(req: SessionRequest): Promise<UserContext> {
     const userId = req.session?.getUserId() ?? ''
+    const tenantId = req.session?.getTenantId() ?? ''
 
     return {
-        userId
+        userId,
+        tenantId
     } satisfies UserContext
 }
  

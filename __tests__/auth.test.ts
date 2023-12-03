@@ -4,6 +4,7 @@ import { gqlApiUrl, serverUrl } from './testSetup.test.js'
 import { searchSubmissionsQuery } from './submissions.test.js'
 import { Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
 import { gqlRequest } from '../utils/gqlTool.js'
+import { logger } from '../src/logger.js'
 
 describe('auth', () => {
     test('can login and access secure routes', async () => {
@@ -22,7 +23,7 @@ describe('auth', () => {
             .set('Content-Type', 'application/json')
             .send(requestData)
 
-        console.log(JSON.stringify(authSignupResult))
+        logger.info(JSON.stringify(authSignupResult))
 
         expect(authSignupResult).toBeDefined()
         expect(authSignupResult.body).toBeDefined()

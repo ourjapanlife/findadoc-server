@@ -10,6 +10,7 @@ import { createFacilityMutation } from './facilities.test.js'
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import { initializeAuth } from '../src/auth.js'
 import { createApolloFastifyServer } from '../src/server.js'
+import { initializeLogger, logger } from '../src/logger.js'
 
 // These ids can be used in any of the tests so they don't have to recreate the same data. 
 export const sharedFacilityIds = [] as string[]
@@ -20,6 +21,7 @@ const testPort = 0
 
 beforeAll(async () => {
     //this initializes a shared firebase instance for all the tests.
+    initializeLogger()
     await initiatilizeFirebaseInstance()
     await initializeAuth() 
     serverUrl = await createApolloFastifyServer(testPort)
@@ -47,11 +49,10 @@ beforeAll(async () => {
     const errors = createFacilityResult.body?.errors
 
     if (errors) {
-        console.log(JSON.stringify(errors))
+        logger.error(JSON.stringify(errors))
         expect(JSON.stringify(errors)).toBeUndefined()
     }
 
-    console.log(JSON.stringify(createFacilityResult.body))
     const facility = await createFacilityResult.body.data.createFacility as Facility
     const facilityId = facility.id
 

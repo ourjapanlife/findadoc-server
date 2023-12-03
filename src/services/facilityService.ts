@@ -6,6 +6,7 @@ import { dbInstance } from '../firebaseDb.js'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
 import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { updateHealthcareProfessionalsWithFacilityIdChanges } from './healthcareProfessionalService.js'
+import { logger } from '../logger.js'
 
 /**
  * Gets the Facility from the database that matches on the id.
@@ -18,7 +19,7 @@ export const getFacilityById = async (id: string)
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
-            console.log(`Validation Error: User passed in invalid id: ${id}}`)
+            logger.warn(`Validation Error: User passed in invalid id: ${id}}`)
             return validationResult as Result<gqlTypes.Facility>
         }
 
@@ -39,7 +40,7 @@ export const getFacilityById = async (id: string)
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error retrieving facility by id: ${error}`)
+        logger.error(`ERROR: Error retrieving facility by id: ${error}`)
 
         return {
             data: {} as gqlTypes.Facility,
@@ -110,7 +111,7 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error retrieving facilities by filters ${JSON.stringify(filters)}: ${error}`)
+        logger.error(`ERROR: Error retrieving facilities by filters ${JSON.stringify(filters)}: ${error}`)
 
         return {
             data: [],
@@ -164,7 +165,7 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
         }
 
         batch.set(facilityRef, newDbFacility)
-        console.log(`\nDB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
+        logger.info(`\nDB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
 
         await batch.commit()
 
@@ -176,7 +177,7 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error creating facility: ${error}`)
+        logger.error(`ERROR: Error creating facility: ${error}`)
 
         return {
             data: {} as gqlTypes.Facility,
@@ -240,7 +241,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         }
 
         batch.set(facilityRef, dbFacilityToUpdate, { merge: true })
-        console.log(`\nDB-UPDATE: Updated facility ${facilityRef.id}.\n Entity: ${JSON.stringify(dbFacilityToUpdate)}`)
+        logger.info(`\nDB-UPDATE: Updated facility ${facilityRef.id}.\n Entity: ${JSON.stringify(dbFacilityToUpdate)}`)
 
         // This will commit all the changes across the facility and the associated professionals.
         await batch.commit()
@@ -257,7 +258,7 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error updating facility ${facilityId}: ${error}`)
+        logger.error(`ERROR: Error updating facility ${facilityId}: ${error}`)
 
         return {
             data: {} as gqlTypes.Facility,
@@ -361,7 +362,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
                         .filter(id => id !== healthcareProfessionalId)
                     break
                 default:
-                    console.log(`ERROR: updating facility healthcareprofessional id list for ${matchingRelationship.otherEntityId}. Contained an invalid relationship action of ${matchingRelationship.action}`)
+                    logger.error(`ERROR: updating facility healthcareprofessional id list for ${matchingRelationship.otherEntityId}. Contained an invalid relationship action of ${matchingRelationship.action}`)
                     break
             }
 
@@ -370,7 +371,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
 
             //This will add the record update to the batch, but we don't want to commit at this point. 
             batch.set(dbFacility.ref, dbFacilityData, { merge: true })
-            console.log(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
+            logger.info(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
         })
 
         return {
@@ -378,7 +379,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error updating facility healthcareprofessional id list: ${error}`)
+        logger.error(`ERROR: Error updating facility healthcareprofessional id list: ${error}`)
 
         return {
             data: undefined,
@@ -405,7 +406,7 @@ export async function deleteFacility(id: string)
         const dbDocument = await facilityRef.get()
 
         if (dbDocument.empty) {
-            console.log(`Validation Error: User tried deleting non-existant facility: ${id}`)
+            logger.warn(`Validation Error: User tried deleting non-existant facility: ${id}`)
 
             return {
                 data: {
@@ -421,7 +422,7 @@ export async function deleteFacility(id: string)
         }
 
         if (dbDocument.docs.length > 1) {
-            console.log(`ERROR: Found multiple facilities with id ${id}. This should never happen.`)
+            logger.error(`ERROR: Found multiple facilities with id ${id}. This should never happen.`)
 
             return {
                 data: {
@@ -456,7 +457,7 @@ export async function deleteFacility(id: string)
         }
 
         batch.delete(dbDocument.docs[0].ref)
-        console.log(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+        logger.info(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
 
         // This will commit all the changes across the facility and the associated professionals.
         await batch.commit()
@@ -468,7 +469,7 @@ export async function deleteFacility(id: string)
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error deleting facility ${id}: ${error}`)
+        logger.error(`ERROR: Error deleting facility ${id}: ${error}`)
 
         return {
             data: {

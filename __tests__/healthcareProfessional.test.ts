@@ -7,6 +7,7 @@ import { generateRandomCreateHealthcareProfessionalInput as generateCreateProfes
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { CreateHealthcareProfessionalInput, HealthcareProfessional } from '../src/typeDefs/gqlTypes.js'
 import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
+import { logger } from '../src/logger.js'
 
 describe('createHealthcareProfessional', () => {
     test('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
@@ -483,7 +484,7 @@ describe('deleteHealthcareProfessional', () => {
         const createErrors = createResult.body?.errors
 
         if (createErrors) {
-            console.log(JSON.stringify(createErrors))
+            logger.error(JSON.stringify(createErrors))
             expect(createErrors).toBeUndefined()
         }
 
@@ -505,7 +506,7 @@ describe('deleteHealthcareProfessional', () => {
         const queryErrors = createResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(queryErrors).toBeUndefined()
         }
 
@@ -529,7 +530,7 @@ describe('deleteHealthcareProfessional', () => {
         const deleteErrors = deleteResult.body?.errors
 
         if (deleteErrors) {
-            console.log(JSON.stringify(deleteErrors))
+            logger.error(JSON.stringify(deleteErrors))
             expect(deleteErrors).toBeUndefined()
         }
 
@@ -543,7 +544,7 @@ describe('deleteHealthcareProfessional', () => {
         const validQueryGqlErrors = missingQueryResult.body?.errors
         const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(validQueryErrors))
+        logger.error(JSON.stringify(validQueryErrors))
         expect(validQueryErrors.length).toBe(1)
         expect(validQueryErrors[0]).toBeDefined()
         expect(validQueryErrors[0].field).toBe('getHealthcareProfessionalById')
@@ -555,7 +556,7 @@ describe('deleteHealthcareProfessional', () => {
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainResult.body?.errors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(deleteAgainErrors))
+        logger.error(JSON.stringify(deleteAgainErrors))
         expect(deleteAgainResult.body?.deleteHealthcareProfessional).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()
@@ -582,7 +583,7 @@ describe('deleteHealthcareProfessional', () => {
         const createErrors = createResult.body?.errors
 
         if (createErrors) {
-            console.log(JSON.stringify(createErrors))
+            logger.error(JSON.stringify(createErrors))
             expect(createErrors).toBeUndefined()
         }
 
@@ -604,7 +605,7 @@ describe('deleteHealthcareProfessional', () => {
         const queryErrors = createResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(queryErrors).toBeUndefined()
         }
 
@@ -628,7 +629,7 @@ describe('deleteHealthcareProfessional', () => {
         const deleteErrors = deleteResult.body?.errors
 
         if (deleteErrors) {
-            console.log(JSON.stringify(deleteErrors))
+            logger.error(JSON.stringify(deleteErrors))
             expect(deleteErrors).toBeUndefined()
         }
 
@@ -642,7 +643,7 @@ describe('deleteHealthcareProfessional', () => {
         const validQueryGqlErrors = missingQueryResult.body?.errors
         const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(validQueryErrors))
+        logger.error(JSON.stringify(validQueryErrors))
         expect(validQueryErrors.length).toBe(1)
         expect(validQueryErrors[0]).toBeDefined()
         expect(validQueryErrors[0].field).toBe('getHealthcareProfessionalById')
@@ -654,7 +655,7 @@ describe('deleteHealthcareProfessional', () => {
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainResult.body?.errors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(deleteAgainErrors))
+        logger.error(JSON.stringify(deleteAgainErrors))
         expect(deleteAgainResult.body?.deleteHealthcareProfessional).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()

@@ -5,6 +5,7 @@ import path from 'path'
 
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { logger } from './logger.js'
 
 // eslint-disable-next-line no-underscore-dangle
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -18,10 +19,10 @@ export default function loadSchema(): DocumentNode {
 
         const schema = gql`${typeString}`
 
-        console.log('📜 Loaded graphql schema')
+        logger.debug('📜 Loaded graphql schema')
         return schema
     } catch (e) {
-        console.log(e)
+        logger.error(`ERROR: error loading schema ${e}`)
         throw new Error('❌ Unable to load graphql schema ❌')
     }
 }

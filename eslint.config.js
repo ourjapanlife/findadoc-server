@@ -144,7 +144,7 @@ export default [
             'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
             'vars-on-top': 'off',
             yoda: ['error', 'never', { exceptRange: true }],
-            'no-console': 'warn', // allow debugging
+            'no-console': 'error', // we should use the logger instead
 
             // Stylistic Issues and Opinions
             'arrow-body-style': 'error',

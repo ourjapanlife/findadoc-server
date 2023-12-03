@@ -5,6 +5,7 @@ import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService.js'
 import { Result } from './result.js'
 import { UserContext, hasAdminRole } from './auth.js'
+import { logger } from './logger.js'
 
 const resolvers = {
     Query: {
@@ -256,7 +257,7 @@ const resolvers = {
 
 function convertErrorsToGqlErrors(resultObject: Result<unknown>): void {
     if (resultObject.hasErrors) {
-        console.log(`Errors sent back: ${JSON.stringify(resultObject.errors)}`)
+        logger.info(`Errors sent to user: ${JSON.stringify(resultObject.errors)}`)
 
         throw new GraphQLError('Validation Failed', {
             extensions: {

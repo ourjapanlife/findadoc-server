@@ -12,9 +12,10 @@ import loadSchema from './schema.js'
 import resolvers from './resolvers.js'
 import { envVariables } from '../utils/environmentVariables.js'
 import { buildUserContext } from './auth.js'
+import { logger } from './logger.js'
 
 export const createApolloFastifyServer = async (customPort?: number): Promise<string> => {
-    console.log('⛽️ Starting server...')
+    logger.info('⛽️ Starting server...')
 
     //fastify is our http server (a modern, faster alternative to express)
     const fastify = await Fastify()
@@ -56,7 +57,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
                     const isApolloIntrospectionQuery = requestContext.request.query?.includes('IntrospectionQuery')
 
                     if (!isApolloIntrospectionQuery) {
-                        console.log(`Apollo Request received:\n Query: ' + ${requestContext.request.query} \nVariables: ${JSON.stringify(requestContext.request.variables)}`)
+                        logger.info(`Apollo Request received:\n Query: ' + ${requestContext.request.query} \nVariables: ${JSON.stringify(requestContext.request.variables)}`, { type: 'graphqlquery' })
                     }
                 }
             }
@@ -82,7 +83,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
     //start the actual fastify http server
     const serverUrl = await fastify.listen({ port: customPort ?? parseInt(envVariables.serverPort()) })
 
-    console.log(`\n🚀 🚀 🚀 Server ready at: ${serverUrl}\n`)
+    logger.info(`\n🚀 🚀 🚀 Server ready at: ${serverUrl}\n`)
 
     return serverUrl
 }

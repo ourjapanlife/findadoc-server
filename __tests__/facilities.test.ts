@@ -7,6 +7,7 @@ import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
 import { createHealthcareProfessionalMutation } from './healthcareProfessional.test.js'
 import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { Error, ErrorCode } from '../src/result.js'
+import { logger } from '../src/logger.js'
 
 describe('createFacility', () => {
     test('creates a new Facility', async () => {
@@ -39,7 +40,7 @@ describe('createFacility', () => {
         const errors = createFacilityResult.body?.errors
 
         if (errors) {
-            console.log(createFacilityResult.body.errors)
+            logger.error(createFacilityResult.body.errors)
         }
         expect(errors).toBeUndefined()
 
@@ -73,7 +74,7 @@ describe('createFacility', () => {
         const createdErrors = createProfessionalResult.body.errors
 
         if (createdErrors) {
-            console.log(JSON.stringify(createdErrors))
+            logger.error(JSON.stringify(createdErrors))
             expect(createdErrors).toBeUndefined()
         }
         const createdProfessional =
@@ -98,7 +99,7 @@ describe('createFacility', () => {
         const errors = getFacilityResult.body?.errors
 
         if (errors) {
-            console.log(JSON.stringify(errors))
+            logger.error(JSON.stringify(errors))
             expect(errors).toBeUndefined()
         }
 
@@ -126,7 +127,7 @@ describe('getFacilityById', () => {
         const errors = newFacilityResult.body?.errors
 
         if (errors) {
-            console.log(newFacilityResult.body.errors)
+            logger.error(newFacilityResult.body.errors)
         }
         expect(errors).toBeUndefined()
 
@@ -174,7 +175,7 @@ describe('updateFacility', () => {
         const errors = newFacilityResult.body?.errors
 
         if (errors) {
-            console.log(JSON.stringify(errors))
+            logger.error(JSON.stringify(errors))
             expect(JSON.stringify(errors)).toBeUndefined()
         }
 
@@ -199,7 +200,7 @@ describe('updateFacility', () => {
         const updateErrors = updateFacilityResult.body?.errors
 
         if (updateErrors) {
-            console.log(JSON.stringify(updateErrors))
+            logger.error(JSON.stringify(updateErrors))
             expect(JSON.stringify(updateErrors)).toBeUndefined()
         }
 
@@ -217,7 +218,7 @@ describe('updateFacility', () => {
         const queryErrors = getFacilityResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(JSON.stringify(queryErrors)).toBeUndefined()
         }
 
@@ -250,7 +251,7 @@ describe('deleteFacility', () => {
         const createErrors = createFacilityResult.body?.errors
 
         if (createErrors) {
-            console.log(JSON.stringify(createErrors))
+            logger.error(JSON.stringify(createErrors))
             expect(createErrors).toBeUndefined()
         }
 
@@ -272,7 +273,7 @@ describe('deleteFacility', () => {
         const queryErrors = createFacilityResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(queryErrors).toBeUndefined()
         }
 
@@ -296,7 +297,7 @@ describe('deleteFacility', () => {
         const deleteErrors = deleteFacilityResult.body?.errors
 
         if (deleteErrors) {
-            console.log(JSON.stringify(deleteErrors))
+            logger.error(JSON.stringify(deleteErrors))
             expect(deleteErrors).toBeUndefined()
         }
 
@@ -310,7 +311,7 @@ describe('deleteFacility', () => {
         const validQueryGqlErrors = missingFacilityQueryResult.body?.errors
         const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
         
-        console.log(JSON.stringify(validQueryErrors))
+        logger.error(JSON.stringify(validQueryErrors))
         expect(validQueryErrors.length).toBe(1)
         expect(validQueryErrors[0]).toBeDefined()
         expect(validQueryErrors[0].field).toBe('getFacilityById')
@@ -322,7 +323,7 @@ describe('deleteFacility', () => {
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainFacilityResult.body?.errors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(deleteAgainErrors))
+        logger.error(JSON.stringify(deleteAgainErrors))
         expect(deleteAgainFacilityResult.body?.deleteFacility).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()
