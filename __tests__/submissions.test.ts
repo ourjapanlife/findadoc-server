@@ -6,6 +6,7 @@ import { Error, ErrorCode } from '../src/result.js'
 import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { gqlApiUrl } from './testSetup.test.js'
+import { logger } from '../src/logger.js'
 
 describe('createSubmission', () => {
     test('creates a new Submission', async () => {
@@ -16,13 +17,13 @@ describe('createSubmission', () => {
             }
         } satisfies gqlRequest
         // send request to create a new Submission
-        const response = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const response = await request(gqlApiUrl).post('').send(createSubmissionRequest)
 
         //should not have errors
         const errors = response.body.errors
 
         if (errors) {
-            console.log(`errors: ${JSON.stringify(errors)}`)
+            logger.error(`errors: ${JSON.stringify(errors)}`)
             expect(JSON.stringify(errors)).toBeUndefined()
         }
 
@@ -38,13 +39,13 @@ describe('createSubmission', () => {
         } satisfies gqlRequest
 
         // Get the submission by id query data
-        const searchResult = await request(gqlApiUrl).post('/').send(getSubmissionByIdRequest)
+        const searchResult = await request(gqlApiUrl).post('').send(getSubmissionByIdRequest)
 
         //should not have errors
         const searchErrors = searchResult.body?.errors
 
         if (searchErrors) {
-            console.log(`errors: ${JSON.stringify(searchErrors)}`)
+            logger.error(`errors: ${JSON.stringify(searchErrors)}`)
             expect(searchResult.body?.errors).toBeUndefined()
         }
         const foundSubmissions = searchResult.body.data.submission as Submission
@@ -70,7 +71,7 @@ describe('updateSubmission', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const newSubmissionResult = await request(gqlApiUrl).post('').send(createSubmissionRequest)
 
         //should not have errors
         expect(newSubmissionResult.body.errors).toBeUndefined()
@@ -88,7 +89,7 @@ describe('updateSubmission', () => {
         } satisfies gqlRequest
 
         // Update the submission
-        const updateSubmissionResult = await request(gqlApiUrl).post('/').send(updateSubmissionRequest)
+        const updateSubmissionResult = await request(gqlApiUrl).post('').send(updateSubmissionRequest)
 
         //should not have errors
         expect(updateSubmissionResult.body?.errors).toBeUndefined()
@@ -117,7 +118,7 @@ describe('getSubmissionById', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const newSubmissionResult = await request(gqlApiUrl).post('').send(createSubmissionRequest)
 
         //should not have errors
         const errors = newSubmissionResult.body?.errors
@@ -153,7 +154,7 @@ describe('getSubmissionById', () => {
         } satisfies gqlRequest
 
         // Get the submission by id
-        const getByIdResults = await request(gqlApiUrl).post('/').send(getSubmissionByIdRequest)
+        const getByIdResults = await request(gqlApiUrl).post('').send(getSubmissionByIdRequest)
 
         const gqlErrors = getByIdResults.body.errors
 
@@ -187,7 +188,7 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const newSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const newSubmissionResult = await request(gqlApiUrl).post('').send(createSubmissionRequest)
 
         //should not have errors
         const errors = newSubmissionResult.body?.errors
@@ -218,7 +219,7 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const createSubmissionResult = await request(gqlApiUrl).post('').send(createSubmissionRequest)
 
         //should not have errors
         const errors = createSubmissionResult.body?.errors
@@ -253,7 +254,7 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const createSubmissionResult = await request(gqlApiUrl).post('').send(createSubmissionRequest)
 
         //should not have errors
         const errors = createSubmissionResult.body?.errors
@@ -291,7 +292,7 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const createSubmissionResult = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const createSubmissionResult = await request(gqlApiUrl).post('').send(createSubmissionRequest)
 
         //should not have errors
         const errors = createSubmissionResult.body?.errors
@@ -327,8 +328,8 @@ describe('searchSubmissions', () => {
         } satisfies gqlRequest
 
         // Create a new Submission
-        const createSubmissionResult1 = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
-        const createSubmissionResult2 = await request(gqlApiUrl).post('/').send(createSubmissionRequest)
+        const createSubmissionResult1 = await request(gqlApiUrl).post('').send(createSubmissionRequest)
+        const createSubmissionResult2 = await request(gqlApiUrl).post('').send(createSubmissionRequest)
         const createdSubmission1 = createSubmissionResult1.body.data.createSubmission as Submission
         const createdSubmission2 = createSubmissionResult2.body.data.createSubmission as Submission
 
@@ -337,7 +338,7 @@ describe('searchSubmissions', () => {
         const errors2 = createSubmissionResult1.body?.errors
 
         if (errors1 || errors2) {
-            console.log(`errors from first: ${JSON.stringify(errors1)}. errors from second: ${JSON.stringify(errors2)}`)
+            logger.error(`errors from first: ${JSON.stringify(errors1)}. errors from second: ${JSON.stringify(errors2)}`)
             expect(errors1).toBeUndefined()
             expect(errors2).toBeUndefined()
         }
@@ -351,7 +352,7 @@ describe('searchSubmissions', () => {
         } as gqlRequest
 
         //Get the submissions query data
-        const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
+        const searchResult = await request(gqlApiUrl).post('').send(searchSubmissionsRequest)
 
         //should not have errors
         expect(searchResult.body.errors).toBeUndefined()
@@ -381,13 +382,13 @@ describe('deleteSubmission', () => {
             }
         } as gqlMutation<CreateSubmissionInput>
 
-        const createResult = await request(gqlApiUrl).post('/').send(createRequest)
+        const createResult = await request(gqlApiUrl).post('').send(createRequest)
 
         //should not have errors
         const createErrors = createResult.body?.errors
 
         if (createErrors) {
-            console.log(JSON.stringify(createErrors))
+            logger.error(JSON.stringify(createErrors))
             expect(createErrors).toBeUndefined()
         }
 
@@ -403,13 +404,13 @@ describe('deleteSubmission', () => {
         } as gqlRequest
 
         // -- Query the submission by id --
-        const validQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+        const validQueryResult = await request(gqlApiUrl).post('').send(getByIdRequest)
 
         //should not have errors
         const queryErrors = createResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(queryErrors).toBeUndefined()
         }
 
@@ -427,13 +428,13 @@ describe('deleteSubmission', () => {
         } as gqlRequest
 
         // -- Let's try to delete the submission! --
-        const deleteResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+        const deleteResult = await request(gqlApiUrl).post('').send(deleteRequest)
 
         //should not have errors
         const deleteErrors = deleteResult.body?.errors
 
         if (deleteErrors) {
-            console.log(JSON.stringify(deleteErrors))
+            logger.error(JSON.stringify(deleteErrors))
             expect(deleteErrors).toBeUndefined()
         }
 
@@ -441,25 +442,25 @@ describe('deleteSubmission', () => {
         expect(deleteResult.body.data.deleteSubmission.isSuccessful).toBe(true)
 
         // -- Let's try to fetch the submission again to confirm it's deleted --
-        const missingQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+        const missingQueryResult = await request(gqlApiUrl).post('').send(getByIdRequest)
 
         //should have an error that it doesn't exist
         const validQueryGqlErrors = missingQueryResult.body?.errors
         const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(validQueryErrors))
+        logger.error(JSON.stringify(validQueryErrors))
         expect(validQueryErrors.length).toBe(1)
         expect(validQueryErrors[0]).toBeDefined()
         expect(validQueryErrors[0].field).toBe('id')
         expect(validQueryErrors[0].errorCode).toBe(ErrorCode.NOT_FOUND)
 
         // -- Let's try to delete the submission again! We should receive an error now that it doesn't exist --
-        const deleteAgainResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+        const deleteAgainResult = await request(gqlApiUrl).post('').send(deleteRequest)
 
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainResult.body?.errors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(deleteAgainErrors))
+        logger.error(JSON.stringify(deleteAgainErrors))
         expect(deleteAgainResult.body?.deleteSubmission).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()
@@ -470,13 +471,13 @@ describe('deleteSubmission', () => {
 
 async function checkSearchResults(searchSubmissionsRequest: gqlRequest, originalInputValues: CreateSubmissionInput) {
     //Get the submissions query data
-    const searchResult = await request(gqlApiUrl).post('/').send(searchSubmissionsRequest)
+    const searchResult = await request(gqlApiUrl).post('').send(searchSubmissionsRequest)
 
     //should not have errors
     const errors = searchResult.body.errors
 
     if (errors && errors.length > 0) {
-        console.log(`test errors: ${JSON.stringify(errors)}`)
+        logger.error(`test errors: ${JSON.stringify(errors)}`)
         expect(errors).toBeUndefined()
     }
 
@@ -486,7 +487,14 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
     expect(searchedSubmissions).toBeDefined()
     expect(searchedSubmissions.length).toBeGreaterThanOrEqual(1)
 
-    const firstSubmission = searchedSubmissions[0]
+    const firstSubmission = searchedSubmissions.find(submission =>
+        submission.googleMapsUrl === originalInputValues.googleMapsUrl)
+
+    if (!firstSubmission) {
+        logger.error(`firstSubmission undefined: ${JSON.stringify(searchedSubmissions)}`)
+        expect(firstSubmission).toBeDefined()
+        return
+    }
 
     //Compare the data returned in the response to the createdSubmission
     expect(firstSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
@@ -513,7 +521,7 @@ const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
     }
 }`
 
-const searchSubmissionsQuery = /* GraphQL */ `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
+export const searchSubmissionsQuery = /* GraphQL */ `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
     submissions(filters: $filters) {
         id
         googleMapsUrl

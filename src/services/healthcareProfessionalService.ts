@@ -6,6 +6,7 @@ import { dbInstance } from '../firebaseDb.js'
 import {validateNames, validateDegrees} from '../validation/validationHealthcareProfessional.js'
 import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } from './facilityService.js'
 import { MapDefinedFields } from '../../utils/objectUtils.js'
+import { logger } from '../logger.js'
 
 /**
  * Gets the Healthcare Professional from the database that matches on the id.
@@ -19,7 +20,7 @@ export async function getHealthcareProfessionalById(id: string)
         const validationResults = validateIdInput(id)
 
         if (validationResults.hasErrors) {
-            console.log(`Validation Error: User passed in invalid id: ${id}}`)
+            logger.warn(`Validation Error: User passed in invalid id: ${id}}`)
             return validationResults as Result<gqlTypes.HealthcareProfessional>
         }
 
@@ -39,7 +40,7 @@ export async function getHealthcareProfessionalById(id: string)
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error retrieving healthcareProfessional by id ${id}: ${error}`)
+        logger.error(`ERROR: Error retrieving healthcareProfessional by id ${id}: ${error}`)
 
         return {
             data: {} as gqlTypes.HealthcareProfessional,
@@ -99,7 +100,7 @@ export async function createHealthcareProfessional(
 
         //this will update only the fields that are provided and are not undefined.
         batch.set(healthcareProfessionalRef, newHealthcareProfessional, { merge: true })
-        console.log(`\nDB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
+        logger.info(`\nDB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
 
         await batch.commit()
 
@@ -111,7 +112,7 @@ export async function createHealthcareProfessional(
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error creating healthcare professional: ${error}`)
+        logger.error(`ERROR: Error creating healthcare professional: ${error}`)
 
         return {
             data: {} as gqlTypes.HealthcareProfessional,
@@ -178,7 +179,7 @@ export const updateHealthcareProfessional = async (
 
         //this will update only the fields that are provided and are not undefined.
         batch.set(professionalRef, dbProfessionalToUpdate, { merge: true })
-        console.log(`\nDB-UPDATE: Updated healthcare professional ${id}.\nEntity: ${JSON.stringify(dbProfessionalToUpdate)}`)
+        logger.info(`\nDB-UPDATE: Updated healthcare professional ${id}.\nEntity: ${JSON.stringify(dbProfessionalToUpdate)}`)
 
         await batch.commit()
 
@@ -194,7 +195,7 @@ export const updateHealthcareProfessional = async (
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error updating healthcareProfessional ${id}: ${error}`)
+        logger.error(`ERROR: Error updating healthcareProfessional ${id}: ${error}`)
 
         return {
             data: {} as gqlTypes.HealthcareProfessional,
@@ -222,8 +223,7 @@ export async function deleteHealthcareProfessional(id: string)
         const dbDocument = await query.get()
 
         if (dbDocument.empty) {
-            console.log(`Validation Error: User tried deleting non-existant healthcare professional: ${id}`)
-
+            logger.warn(`Validation Error: User tried deleting non-existant healthcare professional: ${id}`)
             return {
                 data: {
                     isSuccessful: false
@@ -238,7 +238,7 @@ export async function deleteHealthcareProfessional(id: string)
         }
 
         if (dbDocument.docs.length > 1) {
-            console.log(`ERROR: Found multiple healthcare professionals with id ${id}. This should never happen.`)
+            logger.error(`ERROR: Found multiple healthcare professionals with id ${id}. This should never happen.`)
 
             return {
                 data: {
@@ -273,7 +273,7 @@ export async function deleteHealthcareProfessional(id: string)
         }
 
         batch.delete(dbDocument.docs[0].ref)
-        console.log(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+        logger.info(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
 
         // This will commit all the changes across the facility and the associated professionals.
         await batch.commit()
@@ -285,7 +285,7 @@ export async function deleteHealthcareProfessional(id: string)
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error deleting professional ${id}: ${error}`)
+        logger.error(`ERROR: Error deleting professional ${id}: ${error}`)
 
         return {
             data: {
@@ -391,7 +391,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                         .filter(id => id !== facilityId)
                     break
                 default:
-                    console.log(`ERROR: updating healthcare professional's facilityId list for ${matchingRelationship.otherEntityId}. Contained an invalid relationship action of ${matchingRelationship.action}`)
+                    logger.error(`ERROR: updating healthcare professional's facilityId list for ${matchingRelationship.otherEntityId}. Contained an invalid relationship action of ${matchingRelationship.action}`)
                     break
             }
 
@@ -400,7 +400,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
 
             //This will add the record update to the batch, but we don't want to commit until later when all changes are done
             batch.set(dbProfessional.ref, dbProfessionalData, { merge: true })
-            console.log(`\nDB-UPDATE: Updated healthcare professional ${dbProfessionalData.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalData)}`)
+            logger.info(`\nDB-UPDATE: Updated healthcare professional ${dbProfessionalData.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalData)}`)
         })
 
         return {
@@ -408,7 +408,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             hasErrors: false
         }
     } catch (error) {
-        console.log(`Error updating healthcareProfessional facilityId list: ${error}`)
+        logger.error(`Error updating healthcareProfessional facilityId list: ${error}`)
 
         return {
             data: undefined,

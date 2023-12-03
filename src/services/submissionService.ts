@@ -7,6 +7,7 @@ import { hasSpecialCharacters } from '../../utils/stringUtils.js'
 import { createFacility } from './facilityService.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService.js'
 import { validateSubmissionSearchFilters } from '../validation/validateSubmissions.js'
+import { logger } from '../logger.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -47,7 +48,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
 
         return searchResults
     } catch (error) {
-        console.log(`ERROR: Error retrieving submission by id ${id}: ${error}`)
+        logger.error(`ERROR: Error retrieving submission by id ${id}: ${error}`)
 
         return {
             data: undefined,
@@ -138,7 +139,7 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
             data: submissions
         }
     } catch (error) {
-        console.log(`ERROR: Error searching submissions by filters ${filters}: ${error}`)
+        logger.error(`ERROR: Error searching submissions by filters ${filters}: ${error}`)
 
         return {
             data: [],
@@ -186,7 +187,7 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
 
         // if we didn't get it back or have errors, this is an actual error.
         if (createdSubmission.hasErrors || !createdSubmission.data) {
-            throw new Error(`ERROR: Error creating submission: ${JSON.stringify(createdSubmission.errors)}`)
+            throw new Error(`${JSON.stringify(createdSubmission.errors)}`)
         }
 
         return {
@@ -194,7 +195,7 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error creating submission: ${error}`)
+        logger.error(`ERROR: Error creating submission: ${error}`)
 
         return {
             data: {} as gqlTypes.Submission,
@@ -241,7 +242,7 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
 
         await submissionRef.set(updatedSubmissionValues, { merge: true })
 
-        console.log(`\nDB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
+        logger.info(`\nDB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
 
         const updatedSubmission = await getSubmissionById(submissionId)
 
@@ -254,7 +255,7 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error updating submission ${submissionId}: ${error}`)
+        logger.error(`ERROR: Error updating submission ${submissionId}: ${error}`)
 
         return {
             data: {} as gqlTypes.Submission,
@@ -313,7 +314,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
 
         await submissionRef.set(currentSubmission, { merge: true })
 
-        console.log(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
+        logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
 
         //try creating healthcare professional(s)
         for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
@@ -337,7 +338,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
 
         return approveResult
     } catch (error) {
-        console.log(`Error approving submission ${submissionId}: ${error}`)
+        logger.error(`Error approving submission ${submissionId}: ${error}`)
 
         approveResult.errors?.push({
             field: 'isApproved',
@@ -360,7 +361,7 @@ export async function deleteSubmission(id: string)
         const dbDocument = await dbRef.get()
 
         if (!dbDocument.exists) {
-            console.log(`Validation Error: User tried deleting non-existant submission: ${id}`)
+            logger.warn(`Validation Error: User tried deleting non-existant submission: ${id}`)
 
             return {
                 data: {
@@ -376,7 +377,7 @@ export async function deleteSubmission(id: string)
         }
 
         await dbRef.delete()
-        console.log(`\nDB-DELETE: Submission ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+        logger.info(`\nDB-DELETE: Submission ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
 
         return {
             data: {
@@ -385,7 +386,7 @@ export async function deleteSubmission(id: string)
             hasErrors: false
         }
     } catch (error) {
-        console.log(`ERROR: Error deleting submission ${id}: ${error}`)
+        logger.error(`ERROR: Error deleting submission ${id}: ${error}`)
 
         return {
             data: {

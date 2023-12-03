@@ -1,31 +1,39 @@
 
 import request from 'supertest'
-import { ApolloServer } from '@apollo/server'
-import { startStandaloneServer } from '@apollo/server/standalone'
 import { expect, beforeAll, afterAll } from 'vitest'
 import fs from 'fs'
-import resolvers from '../src/resolvers.js'
-import loadSchema from '../src/schema.js'
 import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
 import { gqlMutation } from '../utils/gqlTool.js'
 import { CreateFacilityInput, Facility } from '../src/typeDefs/gqlTypes.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
 import { createFacilityMutation } from './facilities.test.js'
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
+import { initializeAuth } from '../src/auth.js'
+import { createApolloFastifyServer } from '../src/server.js'
+import { initializeLogger, logger } from '../src/logger.js'
+// import { createTestUser, deleteTestUser } from './auth.test.js'
 
 // These ids can be used in any of the tests so they don't have to recreate the same data. 
 export const sharedFacilityIds = [] as string[]
 // This is the url of the graphql api. All supertest requests should be sent to this url.
+export let serverUrl: string
 export let gqlApiUrl: string
 
-const server = new ApolloServer({
-    typeDefs: loadSchema(),
-    resolvers
-})
+//TODO: we want to share this authenticated user across all the tests. (we need to share cookies or Jwt)
+// let sharedTestUserId = ''
 
 beforeAll(async () => {
-    ({ url: gqlApiUrl } = await startStandaloneServer(server, { listen: { port: 0 } }))
-    
+    // This enables testing mode in the app. Primarily used for enabling auth restrictions on the api.
+    process.env.TEST_ENABLED = 'true'
+    const testPort = 0
+
+    //this initializes a shared firebase instance for all the tests.
+    initializeLogger()
+    await initiatilizeFirebaseInstance()
+    await initializeAuth()
+    serverUrl = await createApolloFastifyServer(testPort)
+    gqlApiUrl = `${serverUrl}/api`
+
     //this sets up the firebase test environment
     await initializeTestEnvironment({
         projectId: process.env.FIRESTORE_PROJECT_ID,
@@ -34,8 +42,9 @@ beforeAll(async () => {
         }
     })
 
-    //this initializes a shared firebase instance for all the tests.
-    await initiatilizeFirebaseInstance()
+    //let's create a logged in user for the tests
+    // const { testUserId } = await createTestUser()
+    // sharedTestUserId = testUserId
 
     // Create a new Facility to add HealthProfessionals to
     const createFacilityRequest = {
@@ -45,12 +54,13 @@ beforeAll(async () => {
         }
     } as gqlMutation<CreateFacilityInput>
 
-    const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+    const createFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
     //should not have errors
     const errors = createFacilityResult.body?.errors
 
     if (errors) {
+        logger.error(JSON.stringify(errors))
         expect(JSON.stringify(errors)).toBeUndefined()
     }
 
@@ -61,6 +71,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-    // stop the server
-    await server.stop()
+    //clean up the user
+    // const result = await deleteTestUser(sharedTestUserId)
+    // expect(result).toBeTruthy()
 })

@@ -7,6 +7,7 @@ import { generateRandomCreateHealthcareProfessionalInput as generateCreateProfes
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { CreateHealthcareProfessionalInput, HealthcareProfessional } from '../src/typeDefs/gqlTypes.js'
 import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
+import { logger } from '../src/logger.js'
 
 describe('createHealthcareProfessional', () => {
     test('creates a new HealthcareProfessional and adds it to the list of facilities', async () => {
@@ -17,7 +18,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalMutationRequest)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createHealthcareProfessionalMutationRequest)
 
         //should not have errors
         const errors = createProfessionalResult.body?.errors
@@ -36,7 +37,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlRequest
 
-        const searchResult = await request(gqlApiUrl).post('/').send(getHealthcareProfessionalByIdRequest)
+        const searchResult = await request(gqlApiUrl).post('').send(getHealthcareProfessionalByIdRequest)
 
         //should not have errors
         expect(searchResult.body?.errors).toBeUndefined()
@@ -68,7 +69,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalRequest)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createHealthcareProfessionalRequest)
         const createdProfessional
             = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
 
@@ -103,7 +104,7 @@ describe('createHealthcareProfessional', () => {
                 }
             } as gqlMutation<CreateHealthcareProfessionalInput>
     
-            const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+            const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
             const createdProfessional
                          = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
                 
@@ -145,7 +146,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
             
@@ -176,7 +177,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
             
@@ -217,7 +218,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
             
@@ -258,7 +259,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
             
@@ -299,7 +300,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
             
@@ -330,7 +331,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
         
@@ -371,7 +372,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
         
@@ -407,7 +408,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
         
@@ -448,7 +449,7 @@ describe('createHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createFailingHealthcareProfessional)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
                      = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
         
@@ -477,13 +478,13 @@ describe('deleteHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createResult = await request(gqlApiUrl).post('/').send(createRequest)
+        const createResult = await request(gqlApiUrl).post('').send(createRequest)
 
         //should not have errors
         const createErrors = createResult.body?.errors
 
         if (createErrors) {
-            console.log(JSON.stringify(createErrors))
+            logger.error(JSON.stringify(createErrors))
             expect(createErrors).toBeUndefined()
         }
 
@@ -499,13 +500,13 @@ describe('deleteHealthcareProfessional', () => {
         } as gqlRequest
 
         // -- Query the professional by id --
-        const validQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+        const validQueryResult = await request(gqlApiUrl).post('').send(getByIdRequest)
 
         //should not have errors
         const queryErrors = createResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(queryErrors).toBeUndefined()
         }
 
@@ -523,13 +524,13 @@ describe('deleteHealthcareProfessional', () => {
         } as gqlRequest
 
         // -- Let's try to delete the professional! --
-        const deleteResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+        const deleteResult = await request(gqlApiUrl).post('').send(deleteRequest)
 
         //should not have errors
         const deleteErrors = deleteResult.body?.errors
 
         if (deleteErrors) {
-            console.log(JSON.stringify(deleteErrors))
+            logger.error(JSON.stringify(deleteErrors))
             expect(deleteErrors).toBeUndefined()
         }
 
@@ -537,25 +538,25 @@ describe('deleteHealthcareProfessional', () => {
         expect(deleteResult.body.data.deleteHealthcareProfessional.isSuccessful).toBe(true)
 
         // -- Let's try to fetch the professional again to confirm it's deleted --
-        const missingQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+        const missingQueryResult = await request(gqlApiUrl).post('').send(getByIdRequest)
 
         //should have an error that it doesn't exist
         const validQueryGqlErrors = missingQueryResult.body?.errors
         const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(validQueryErrors))
+        logger.error(JSON.stringify(validQueryErrors))
         expect(validQueryErrors.length).toBe(1)
         expect(validQueryErrors[0]).toBeDefined()
         expect(validQueryErrors[0].field).toBe('getHealthcareProfessionalById')
         expect(validQueryErrors[0].errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR)
 
         // -- Let's try to delete the professional again! We should receive an error now that it doesn't exist --
-        const deleteAgainResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+        const deleteAgainResult = await request(gqlApiUrl).post('').send(deleteRequest)
 
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainResult.body?.errors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(deleteAgainErrors))
+        logger.error(JSON.stringify(deleteAgainErrors))
         expect(deleteAgainResult.body?.deleteHealthcareProfessional).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()
@@ -576,13 +577,13 @@ describe('deleteHealthcareProfessional', () => {
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
 
-        const createResult = await request(gqlApiUrl).post('/').send(createRequest)
+        const createResult = await request(gqlApiUrl).post('').send(createRequest)
 
         //should not have errors
         const createErrors = createResult.body?.errors
 
         if (createErrors) {
-            console.log(JSON.stringify(createErrors))
+            logger.error(JSON.stringify(createErrors))
             expect(createErrors).toBeUndefined()
         }
 
@@ -598,13 +599,13 @@ describe('deleteHealthcareProfessional', () => {
         } as gqlRequest
 
         // -- Query the professional by id --
-        const validQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+        const validQueryResult = await request(gqlApiUrl).post('').send(getByIdRequest)
 
         //should not have errors
         const queryErrors = createResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(queryErrors).toBeUndefined()
         }
 
@@ -622,13 +623,13 @@ describe('deleteHealthcareProfessional', () => {
         } as gqlRequest
 
         // -- Let's try to delete the professional! --
-        const deleteResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+        const deleteResult = await request(gqlApiUrl).post('').send(deleteRequest)
 
         //should not have errors
         const deleteErrors = deleteResult.body?.errors
 
         if (deleteErrors) {
-            console.log(JSON.stringify(deleteErrors))
+            logger.error(JSON.stringify(deleteErrors))
             expect(deleteErrors).toBeUndefined()
         }
 
@@ -636,25 +637,25 @@ describe('deleteHealthcareProfessional', () => {
         expect(deleteResult.body.data.deleteHealthcareProfessional.isSuccessful).toBe(true)
 
         // -- Let's try to fetch the professional again to confirm it's deleted --
-        const missingQueryResult = await request(gqlApiUrl).post('/').send(getByIdRequest)
+        const missingQueryResult = await request(gqlApiUrl).post('').send(getByIdRequest)
 
         //should have an error that it doesn't exist
         const validQueryGqlErrors = missingQueryResult.body?.errors
         const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(validQueryErrors))
+        logger.error(JSON.stringify(validQueryErrors))
         expect(validQueryErrors.length).toBe(1)
         expect(validQueryErrors[0]).toBeDefined()
         expect(validQueryErrors[0].field).toBe('getHealthcareProfessionalById')
         expect(validQueryErrors[0].errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR)
 
         // -- Let's try to delete the professional again! We should receive an error now that it doesn't exist --
-        const deleteAgainResult = await request(gqlApiUrl).post('/').send(deleteRequest)
+        const deleteAgainResult = await request(gqlApiUrl).post('').send(deleteRequest)
 
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainResult.body?.errors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(deleteAgainErrors))
+        logger.error(JSON.stringify(deleteAgainErrors))
         expect(deleteAgainResult.body?.deleteHealthcareProfessional).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()

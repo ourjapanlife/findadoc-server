@@ -7,6 +7,7 @@ import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
 import { createHealthcareProfessionalMutation } from './healthcareProfessional.test.js'
 import { generateRandomCreateHealthcareProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { Error, ErrorCode } from '../src/result.js'
+import { logger } from '../src/logger.js'
 
 describe('createFacility', () => {
     test('creates a new Facility', async () => {
@@ -17,7 +18,7 @@ describe('createFacility', () => {
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
 
-        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        const createFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
         //should not have errors
         expect(createFacilityResult.body.errors).toBeUndefined()
@@ -33,13 +34,13 @@ describe('createFacility', () => {
         } as gqlRequest
 
         // Query the facility by id
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         const errors = createFacilityResult.body?.errors
 
         if (errors) {
-            console.log(createFacilityResult.body.errors)
+            logger.error(createFacilityResult.body.errors)
         }
         expect(errors).toBeUndefined()
 
@@ -67,13 +68,13 @@ describe('createFacility', () => {
         } as gqlMutation<gqlType.CreateHealthcareProfessionalInput>
 
         // Create a new healthcare professional with the associated facility id
-        const createProfessionalResult = await request(gqlApiUrl).post('/').send(createHealthcareProfessionalRequest)
+        const createProfessionalResult = await request(gqlApiUrl).post('').send(createHealthcareProfessionalRequest)
 
         //should not have errors
         const createdErrors = createProfessionalResult.body.errors
 
         if (createdErrors) {
-            console.log(JSON.stringify(createdErrors))
+            logger.error(JSON.stringify(createdErrors))
             expect(createdErrors).toBeUndefined()
         }
         const createdProfessional =
@@ -92,13 +93,13 @@ describe('createFacility', () => {
         } as gqlRequest
 
         //// Step 2: Query the facility by id and check if it has the new healthcare professional id added to it.
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         const errors = getFacilityResult.body?.errors
 
         if (errors) {
-            console.log(JSON.stringify(errors))
+            logger.error(JSON.stringify(errors))
             expect(errors).toBeUndefined()
         }
 
@@ -120,13 +121,13 @@ describe('getFacilityById', () => {
         } as gqlMutation<gqlType.CreateFacilityInput>
 
         // Create a new facility
-        const newFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        const newFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
         //should not have errors
         const errors = newFacilityResult.body?.errors
 
         if (errors) {
-            console.log(newFacilityResult.body.errors)
+            logger.error(newFacilityResult.body.errors)
         }
         expect(errors).toBeUndefined()
 
@@ -141,7 +142,7 @@ describe('getFacilityById', () => {
         } as gqlRequest
 
         // Query the facility by id
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         expect(getFacilityResult.body?.errors).toBeUndefined()
@@ -168,13 +169,13 @@ describe('updateFacility', () => {
                 input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
-        const newFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        const newFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
         //should not have errors
         const errors = newFacilityResult.body?.errors
 
         if (errors) {
-            console.log(JSON.stringify(errors))
+            logger.error(JSON.stringify(errors))
             expect(JSON.stringify(errors)).toBeUndefined()
         }
 
@@ -193,13 +194,13 @@ describe('updateFacility', () => {
         } as gqlMutation<gqlType.UpdateFacilityInput>
 
         // Mutation to update the facility
-        const updateFacilityResult = await request(gqlApiUrl).post('/').send(updateFacilityMutationRequest)
+        const updateFacilityResult = await request(gqlApiUrl).post('').send(updateFacilityMutationRequest)
 
         //should not have errors
         const updateErrors = updateFacilityResult.body?.errors
 
         if (updateErrors) {
-            console.log(JSON.stringify(updateErrors))
+            logger.error(JSON.stringify(updateErrors))
             expect(JSON.stringify(updateErrors)).toBeUndefined()
         }
 
@@ -211,13 +212,13 @@ describe('updateFacility', () => {
         } as gqlRequest
 
         // fetch the updated facility
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         const queryErrors = getFacilityResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(JSON.stringify(queryErrors)).toBeUndefined()
         }
 
@@ -244,13 +245,13 @@ describe('deleteFacility', () => {
             }
         } as gqlMutation<gqlType.CreateFacilityInput>
 
-        const createFacilityResult = await request(gqlApiUrl).post('/').send(createFacilityRequest)
+        const createFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
 
         //should not have errors
         const createErrors = createFacilityResult.body?.errors
 
         if (createErrors) {
-            console.log(JSON.stringify(createErrors))
+            logger.error(JSON.stringify(createErrors))
             expect(createErrors).toBeUndefined()
         }
 
@@ -266,13 +267,13 @@ describe('deleteFacility', () => {
         } as gqlRequest
 
         // -- Query the facility by id --
-        const getFacilityResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const getFacilityResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should not have errors
         const queryErrors = createFacilityResult.body?.errors
 
         if (queryErrors) {
-            console.log(JSON.stringify(queryErrors))
+            logger.error(JSON.stringify(queryErrors))
             expect(queryErrors).toBeUndefined()
         }
 
@@ -290,13 +291,13 @@ describe('deleteFacility', () => {
         } as gqlRequest
 
         // -- Let's try to delete the facility! --
-        const deleteFacilityResult = await request(gqlApiUrl).post('/').send(deleteFacilityRequest)
+        const deleteFacilityResult = await request(gqlApiUrl).post('').send(deleteFacilityRequest)
 
         //should not have errors
         const deleteErrors = deleteFacilityResult.body?.errors
 
         if (deleteErrors) {
-            console.log(JSON.stringify(deleteErrors))
+            logger.error(JSON.stringify(deleteErrors))
             expect(deleteErrors).toBeUndefined()
         }
 
@@ -304,25 +305,25 @@ describe('deleteFacility', () => {
         expect(deleteFacilityResult.body.data.deleteFacility.isSuccessful).toBe(true)
 
         // -- Let's try to fetch the facility again to confirm it's deleted --
-        const missingFacilityQueryResult = await request(gqlApiUrl).post('/').send(getFacilityByIdRequest)
+        const missingFacilityQueryResult = await request(gqlApiUrl).post('').send(getFacilityByIdRequest)
 
         //should have an error that it doesn't exist
         const validQueryGqlErrors = missingFacilityQueryResult.body?.errors
         const validQueryErrors = validQueryGqlErrors[0].extensions.errors as Error[]
         
-        console.log(JSON.stringify(validQueryErrors))
+        logger.error(JSON.stringify(validQueryErrors))
         expect(validQueryErrors.length).toBe(1)
         expect(validQueryErrors[0]).toBeDefined()
         expect(validQueryErrors[0].field).toBe('getFacilityById')
         expect(validQueryErrors[0].errorCode).toBe(ErrorCode.INTERNAL_SERVER_ERROR)
 
         // -- Let's try to delete the facility again! We should receive an error now that it doesn't exist --
-        const deleteAgainFacilityResult = await request(gqlApiUrl).post('/').send(deleteFacilityRequest)
+        const deleteAgainFacilityResult = await request(gqlApiUrl).post('').send(deleteFacilityRequest)
 
         //should have an error that it doesn't exist
         const deleteAgainErrors = deleteAgainFacilityResult.body?.errors[0].extensions.errors as Error[]
 
-        console.log(JSON.stringify(deleteAgainErrors))
+        logger.error(JSON.stringify(deleteAgainErrors))
         expect(deleteAgainFacilityResult.body?.deleteFacility).toBeFalsy()
         expect(deleteAgainErrors.length).toBe(1)
         expect(deleteAgainErrors[0]).toBeDefined()

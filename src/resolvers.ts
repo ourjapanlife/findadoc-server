@@ -4,6 +4,8 @@ import * as healthcareProfessionalService from './services/healthcareProfessiona
 import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService.js'
 import { Result } from './result.js'
+import { UserContext, hasAdminRole } from './auth.js'
+import { logger } from './logger.js'
 
 const resolvers = {
     Query: {
@@ -29,15 +31,36 @@ const resolvers = {
             convertErrorsToGqlErrors(matchingHealthcareProfessionalResult)
             return matchingHealthcareProfessionalResult.data
         },
-        submission: async (_parent: unknown, args: { id: string })
+        submission: async (_parent: unknown, args: { id: string }, context: UserContext)
             : Promise<gqlType.Submission | undefined> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
             const matchingSubmissionResult = await submissionService.getSubmissionById(args.id)
 
             convertErrorsToGqlErrors(matchingSubmissionResult)
             return matchingSubmissionResult.data
         },
-        submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters })
+        submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: UserContext)
             : Promise<gqlType.Submission[]> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+
             const matchingSubmissionsResult = await submissionService.searchSubmissions(args.filters)
 
             convertErrorsToGqlErrors(matchingSubmissionsResult)
@@ -47,7 +70,18 @@ const resolvers = {
     Mutation: {
         createFacility: async (_parent: unknown, args: {
             input: gqlType.CreateFacilityInput
-        }): Promise<gqlType.Facility> => {
+        }, context: UserContext): Promise<gqlType.Facility> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+            
             const newFacilityResult = await facilityService.createFacility(args.input)
 
             convertErrorsToGqlErrors(newFacilityResult)
@@ -57,7 +91,18 @@ const resolvers = {
         updateFacility: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateFacilityInput
-        }): Promise<gqlType.Facility> => {
+        }, context: UserContext): Promise<gqlType.Facility> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+            
             const updateFacilityResult = await facilityService.updateFacility(args.id, args.input)
 
             convertErrorsToGqlErrors(updateFacilityResult)
@@ -66,7 +111,18 @@ const resolvers = {
 
         deleteFacility: async (_parent: unknown, args: {
             id: string
-        }): Promise<gqlType.DeleteResult> => {
+        }, context: UserContext): Promise<gqlType.DeleteResult> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+            
             const deleteFacilityResult = await facilityService.deleteFacility(args.id)
 
             convertErrorsToGqlErrors(deleteFacilityResult)
@@ -75,7 +131,18 @@ const resolvers = {
 
         createHealthcareProfessional: async (_parent: unknown, args: {
             input: gqlType.CreateHealthcareProfessionalInput
-        }): Promise<gqlType.HealthcareProfessional> => {
+        }, context: UserContext): Promise<gqlType.HealthcareProfessional> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+            
             const createHealthcareProfessionalResult =
                 await healthcareProfessionalService.createHealthcareProfessional(args.input)
 
@@ -86,7 +153,18 @@ const resolvers = {
         updateHealthcareProfessional: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateHealthcareProfessionalInput
-        }): Promise<gqlType.HealthcareProfessional> => {
+        }, context: UserContext): Promise<gqlType.HealthcareProfessional> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+            
             const updateProfessionalResult =
                 await healthcareProfessionalService.updateHealthcareProfessional(args.id, args.input)
 
@@ -96,7 +174,18 @@ const resolvers = {
 
         deleteHealthcareProfessional: async (_parent: unknown, args: {
             id: string
-        }): Promise<gqlType.DeleteResult> => {
+        }, context: UserContext): Promise<gqlType.DeleteResult> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+            
             const deleteHealthcareProfessionalResult
                 = await healthcareProfessionalService.deleteHealthcareProfessional(args.id)
 
@@ -106,7 +195,18 @@ const resolvers = {
 
         createSubmission: async (_parent: unknown, args: {
             input: gqlType.CreateSubmissionInput
-        }): Promise<gqlType.Submission> => {
+        }, context: UserContext): Promise<gqlType.Submission> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+            
             const createSubmissionResult = await submissionService.createSubmission(args.input)
 
             convertErrorsToGqlErrors(createSubmissionResult)
@@ -116,7 +216,17 @@ const resolvers = {
         updateSubmission: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateSubmissionInput
-        }): Promise<gqlType.Submission> => {
+        }, context: UserContext): Promise<gqlType.Submission> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
             const updatedSubmissionResult = await submissionService.updateSubmission(args.id, args.input)
 
             convertErrorsToGqlErrors(updatedSubmissionResult)
@@ -125,7 +235,18 @@ const resolvers = {
 
         deleteSubmission: async (_parent: unknown, args: {
             id: string
-        }): Promise<gqlType.DeleteResult> => {
+        }, context: UserContext): Promise<gqlType.DeleteResult> => {
+            const isAdmin = await hasAdminRole(context)
+
+            if (!isAdmin) {
+                throw new GraphQLError('User is not authenticated', {
+                    extensions: {
+                        code: 'UNAUTHENTICATED',
+                        http: { status: 401 }
+                    }
+                })
+            }
+            
             const deleteSubmissionResult = await submissionService.deleteSubmission(args.id)
 
             convertErrorsToGqlErrors(deleteSubmissionResult)
@@ -136,7 +257,7 @@ const resolvers = {
 
 function convertErrorsToGqlErrors(resultObject: Result<unknown>): void {
     if (resultObject.hasErrors) {
-        console.log(`Errors sent back: ${JSON.stringify(resultObject.errors)}`)
+        logger.info(`Errors sent to user: ${JSON.stringify(resultObject.errors)}`)
 
         throw new GraphQLError('Validation Failed', {
             extensions: {
