@@ -59,9 +59,9 @@ export const initiatilizeFirebaseInstance = async () => {
     const isNotProduction = !!isTestingEnvironment || isLocal
 
     if (isProduction) {
-        logger.info('\n🔥 Connecting to production firebase...')
+        logger.info('🔥 Connecting to prod firebase...\n')
     } else if (isNotProduction) {
-        logger.info('\n🔥 Connecting to firebase emulator...')
+        logger.info('🔥 Connecting to firebase emulator...\n')
         logger.info('TIP: if it doesn\'t connect after 10 secs,' +
             ' make sure you have the firebase emulator running using the "yarn dev:startlocaldb" command')
     }

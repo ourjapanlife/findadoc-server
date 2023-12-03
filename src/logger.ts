@@ -5,6 +5,9 @@ import { envVariables } from '../utils/environmentVariables.js'
 export let logger: Logger
 
 export const initializeLogger = () => {
+    // eslint-disable-next-line no-console
+    console.log('🔊 Initializing logger...')
+
     if (logger) {
         return
     }
