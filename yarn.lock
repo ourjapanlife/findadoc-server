@@ -892,7 +892,7 @@
   resolved "https://registry.yarnpkg.com/@fastify/deepmerge/-/deepmerge-1.3.0.tgz#8116858108f0c7d9fd460d05a7d637a13fe3239a"
   integrity sha512-J8TOSBq3SoZbDhM9+R/u77hP93gz/rajSA+K2kGyijPpORPWUXHUpTaleoj+92As0S9uPRP7Oi8IqMf0u+ro6A==
 
-"@fastify/error@^3.4.0":
+"@fastify/error@^3.0.0", "@fastify/error@^3.4.0":
   version "3.4.1"
   resolved "https://registry.yarnpkg.com/@fastify/error/-/error-3.4.1.tgz#b14bb4cac3dd4ec614becbc643d1511331a6425c"
   integrity sha512-wWSvph+29GR783IhmvdwWnN4bUxTD01Vm5Xad4i7i1VuAOItLvbPAb69sb0IQ2N57yprvhNIwAP5B6xfKTmjmQ==
@@ -912,6 +912,14 @@
     "@lukeed/ms" "^2.0.1"
     fastify-plugin "^4.0.0"
     toad-cache "^3.3.1"
+
+"@fastify/under-pressure@^8.2.0":
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/@fastify/under-pressure/-/under-pressure-8.3.0.tgz#9ef952c09a605e117489813a92b00d1352ca7738"
+  integrity sha512-ap1EePB9vHm8uQLM0nnaOeIMBLooNmAMTnccavBRwaXmu+acJFuSEQRVdMGRkW6viFDhdo5RGTcHzMBQyrucEA==
+  dependencies:
+    "@fastify/error" "^3.0.0"
+    fastify-plugin "^4.0.0"
 
 "@firebase/analytics-compat@0.2.6":
   version "0.2.6"
@@ -5308,6 +5316,13 @@ fast-xml-parser@^4.2.2:
   integrity sha512-rmrXUXwbJedoXkStenj1kkljNF7ugn5ZjR9FJcwmCfcCbtOMDghPajbc+Tck6vE6F5XsDmx+Pr2le9fw8+pXBg==
   dependencies:
     strnum "^1.0.5"
+
+fastify-healthcheck@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/fastify-healthcheck/-/fastify-healthcheck-4.4.0.tgz#f5550b9af13913369aa7e0da03cf303a743ffe06"
+  integrity sha512-goP2YYBp+inqrEFixZDxsoxFN8h219ZOzCFv1sMpleaxwbo5CmoLrVzrja6vCMa1LNx6aEvOcGaqLX5Oev1q/A==
+  dependencies:
+    "@fastify/under-pressure" "^8.2.0"
 
 fastify-plugin@^4.0.0, fastify-plugin@^4.4.0, fastify-plugin@^4.5.0:
   version "4.5.1"

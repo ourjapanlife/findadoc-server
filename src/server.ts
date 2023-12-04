@@ -5,6 +5,7 @@ import corsPlugin from '@fastify/cors'
 import rateLimitPlugin from '@fastify/rate-limit'
 import compressionPlugin from '@fastify/compress'
 import supertokens from 'supertokens-node'
+import healthcheck from 'fastify-healthcheck'
 import { plugin as superTokensPlugin, errorHandler as superTokensErrorHandler } from 'supertokens-node/framework/fastify/index.js'
 import { ApolloServer, BaseContext, GraphQLRequestContext } from '@apollo/server'
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
@@ -36,6 +37,9 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
 
     //add compression to reduce the size of the requests/responses (makes the api faster)
     await fastify.register(compressionPlugin)
+
+    //add healthcheck endpoint. this is what our cloud provider will use to check if the server is healthy (test it here: https://findadoc.jp/healthcheck)
+    await fastify.register(healthcheck)
 
     //supertokens auth integration
     await fastify.register(superTokensPlugin)
