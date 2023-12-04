@@ -13,7 +13,7 @@ describe('auth', () => {
         const { response, testUserId } = await createTestUser()
 
         //a successful auth will have cookies
-        const cookies = response.headers['set-cookie'] as string[]
+        const cookies = response.headers['set-cookie'] as unknown as string[]
 
         cookies.forEach(cookie => {
             expect(cookie).toBeDefined()
