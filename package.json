@@ -12,7 +12,7 @@
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
         "prod": "yarn prod:dockerstop && yarn prod:dockerstart",
         "prod:build": "echo '\n🧶 Installing yarn dependencies...🧶\n' && yarn install --production=false --immutable --immutable-cache && echo '\n🧹 cleaning dist folder...\n' && rimraf dist/ && echo '\n➡ ➡ copying files...\n' && copyfiles -a -V src/typeDefs/schema.graphql .env.prod dist && echo '\n💻✨ compiling code...\n' && tsc && rm -rf node_modules && yarn install --production --frozen-lockfile",
-        "prod:startserver": "echo '\n💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production PIDUSAGE_USE_PS=true pm2 start dist/src/index.js && pm2 logs --lines 100",
+        "prod:startserver": "echo '\n💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production PIDUSAGE_USE_PS=true pm2 start dist/src/index.js --no-daemon && pm2 logs --lines 100",
         "prod:stopserver": "echo '\n💻 💻 💻✨ Stopping prod server...' && pm2 stop all && pm2 delete all",
         "prod:monitor": "pm2 monitor",
         "prod:dockerstart": "echo '\n🐳 🐳 🐳✨ Running docker compose...' && docker compose -f docker/docker-compose-api.yml up -d --build --remove-orphans --force-recreate",
