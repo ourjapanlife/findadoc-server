@@ -11,7 +11,7 @@
         "test:dockerstart": "docker-compose -f 'docker/docker-compose-test.yml' up -d --build",
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
         "prod": "yarn prod:dockerstop && yarn prod:dockerstart",
-        "prod:build": "echo '\n🧶 Installing yarn dependencies...🧶\n' && yarn  --immutable --immutable-cache && echo '\n🧹 cleaning dist folder...\n' && rimraf dist/ && echo '\n➡ ➡ copying files...\n' && copyfiles -a 'src/typeDefs/schema.graphql' '.env.prod' 'jest.config.js' 'dist' && echo '\n💻✨ compiling code...\n' && tsc",
+        "prod:build": "echo '\n🧶 Installing yarn dependencies...🧶\n' && yarn  --immutable --immutable-cache && echo '\n🧹 cleaning dist folder...\n' && rimraf dist/ && echo '\n➡ ➡ copying files...\n' && copyfiles -a 'src/typeDefs/schema.graphql' '.env.prod' 'dist' && echo '\n💻✨ compiling code...\n' && tsc",
         "prod:startserver": "echo '\n💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production pm2 start dist/src/index.js && pm2 logs --lines 100",
         "prod:stopserver": "echo '\n💻 💻 💻✨ Stopping prod server...' && pm2 stop all && pm2 delete all",
         "prod:monitor": "pm2 monitor",
