@@ -28,7 +28,7 @@
     },
     "keywords": [],
     "author": "Find a Doc, Japan",
-    "license": "UNLICENSED",
+    "license": "MIT",
     "type": "module",
     "private": true,
     "bugs": {
@@ -78,6 +78,7 @@
         "csv-parse": "^5.3.3",
         "dotenv": "^16.3.1",
         "fastify": "^4.24.3",
+        "fastify-healthcheck": "^4.4.0",
         "firebase": "^10.5.2",
         "firebase-admin": "^11.11.0",
         "graphql": "^16.8.1",
