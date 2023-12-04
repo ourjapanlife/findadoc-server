@@ -40,7 +40,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
 
     //add healthcheck endpoint. this is what our cloud provider will use to check if the server is healthy (test it here: https://findadoc.jp/healthcheck)
     await fastify.register(healthcheck, {
-        healthcheckUrl: '/'
+        healthcheckUrl: '/health'
     })
 
     //supertokens auth integration
