@@ -3,7 +3,7 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { dbInstance } from '../firebaseDb.js'
-import {validateNames, validateDegrees, validateSpecialties} from '../validation/validationHealthcareProfessional.js'
+import {validateNames, validateDegrees, validateSpecialties, validateInsurance, validateSpokenLanguages} from '../validation/validationHealthcareProfessional.js'
 import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } from './facilityService.js'
 import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { logger } from '../logger.js'
@@ -509,54 +509,4 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
     validateSpokenLanguages(input.spokenLanguages, validationResults)
 
     return validationResults
-}
-
-function validateInsurance(
-    insurance: gqlTypes.Insurance[] | undefined | null,
-    validationResults: Result<unknown>
-): void {
-    if (!insurance) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'insurance',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    }
-
-    if (insurance && insurance.length > 16) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'insurance',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    //TODO validate each insurance
-}
-
-function validateSpokenLanguages(
-    spokenLanguages: gqlTypes.Locale[] | undefined | null,
-    validationResults: Result<unknown>
-): void {
-    if (!spokenLanguages || spokenLanguages.length < 1) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'spokenLanguages',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    }
-
-    if (spokenLanguages && spokenLanguages.length > 32) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'spokenLanguages',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    //TODO validate each spoken Language
 }

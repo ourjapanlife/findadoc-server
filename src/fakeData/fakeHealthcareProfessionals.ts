@@ -57,7 +57,7 @@ export function generateSpecialty(): gqlTypes.SpecialtyInput {
         const locale = faker.helpers.enumValue(gqlTypes.Locale)
 
         return {
-            name: locale == gqlTypes.Locale.EnUs ? faker.person.jobDescriptor() : fakerJA.person.jobDescriptor(),
+            name: locale == gqlTypes.Locale.EnUs ? faker.person.jobDescriptor() : '役職名',
             locale: locale
         }
     }
@@ -188,7 +188,6 @@ export function generateSpecialitieInvalidLenght(): gqlTypes.SpecialtyInput {
         {
             name: 'Female pelvic medicine and reconstructive surgery Advanced heart failure and transplant cardiology Pediatric Hematology Oncology',
             locale: gqlTypes.Locale.EnUs
-            
         }
     ]}
 }
@@ -197,8 +196,7 @@ export function generateSpecialitieNameEmptyString(): gqlTypes.SpecialtyInput {
     return {names: [
         {
             name: '  ',
-            locale: gqlTypes.Locale.EnUs
-            
+            locale: gqlTypes.Locale.EnUs 
         }
     ]}
 }
@@ -208,7 +206,6 @@ export function generateSpecialitieInvalidAlphabet(): gqlTypes.SpecialtyInput {
         {
             name: '小児血液腫瘍学',
             locale: gqlTypes.Locale.EnUs
-            
         }, 
         {
             name: 'Pediatric Hematology Oncology',
@@ -222,7 +219,6 @@ export function generateSpecialitieInvalidCharacters(): gqlTypes.SpecialtyInput 
         {
             name: 'Pediatric %#Hematology Oncology{',
             locale: gqlTypes.Locale.EnUs
-            
         }
     ]}
 }

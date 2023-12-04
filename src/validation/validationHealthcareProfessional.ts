@@ -412,3 +412,51 @@ export function validateSpecialties(
         }
     })
 }
+
+export function validateInsurance(
+    insurance: gqlTypes.Insurance[] | undefined | null,
+    validationResults: Result<unknown>
+): void {
+    if (!insurance || !insurance.length) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'insurance',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+        return
+    }
+
+    if (insurance && insurance.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'insurance',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+}
+
+export function validateSpokenLanguages(
+    spokenLanguages: gqlTypes.Locale[] | undefined | null,
+    validationResults: Result<unknown>
+): void {
+    if (!spokenLanguages || !spokenLanguages.length) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+        return
+    }
+
+    if (spokenLanguages && spokenLanguages.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+}
