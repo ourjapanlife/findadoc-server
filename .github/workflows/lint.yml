@@ -8,55 +8,36 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: '45 15 * * 4'
-env:
-  CACHE_PATH: ./*
-  CACHE_KEY: lint-cache-${{ github.sha }}
 permissions:
   contents: read
   security-events: write
   actions: write  # This is needed for pull requests to delete 
 
 jobs:
-  setup:
-   
-    name: Setup 🛫
+  # ESLint is a tool for identifying and reporting on patterns
+  # found in ECMAScript/JavaScript code.
+  # More details at https://github.com/eslint/eslint
+  # and https://eslint.org
+  eslint:
+    name: ESLint ✨
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version: [21.3.0]  
-    runs-on: ubuntu-latest
     steps:
-      - name: Setup Cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.CACHE_PATH }}
-          key: ${{ env.CACHE_KEY }}-${{ matrix.node-version }}
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install Yarn/ Node ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - name: Install Dependencies
         run: yarn install --immutable
-        # this is needed to generate things like tsconfig declarations
-      - name: Prepare Backend
-        run: echo todo
-  teardown:
-    name: Teardown 🛬
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18]  
-    needs:
-      # list of lint jobs
-      - eslint 
-    if: always()
-    env:
-      LINT_RESULTS: ${{ toJson(needs) }}
-    steps:
+      - name: Run ESLint
+        run: yarn lint:ci
       - name: Check Lint Status
         if: always()
         run: |
@@ -66,22 +47,5 @@ jobs:
             exit 1
           fi
           exit 0
-  # ESLint is a tool for identifying and reporting on patterns
-  # found in ECMAScript/JavaScript code.
-  # More details at https://github.com/eslint/eslint
-  # and https://eslint.org
-  eslint:
-    name: ESLint ✨
-    runs-on: ubuntu-latest
-    needs: setup
-    strategy:
-      matrix:
-        node-version: [18]  
-    steps:
-      - name: Load Cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.CACHE_PATH }}
-          key: ${{ env.CACHE_KEY }}-${{ matrix.node-version }}
-      - name: Run ESLint
-        run: yarn lint:ci
+    env:
+      LINT_RESULTS: ${{ toJson(needs) }}
