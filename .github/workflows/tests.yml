@@ -10,23 +10,25 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [21.3.0]
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v4
+
+    - name: Install node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 21.3.0
 
     - name: Yarn Install
       run: yarn install
 
-    - name: Start containers
-      run: yarn test:dockerstart
-
-    - name: Install node
-      uses: actions/setup-node@v3
-
     - name: Generate GQL types
       run: yarn generate
+
+    - name: Start containers
+      run: yarn test:dockerstart
 
     - name: Run tests
       run: yarn test

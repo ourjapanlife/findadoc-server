@@ -37,7 +37,7 @@
     "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
     "packageManager": "yarn@1.22.21",
     "engines": {
-        "node": "18.18.2",
+        "node": "21.3.0",
         "yarn": "1.22.21"
     },
     "devDependencies": {
