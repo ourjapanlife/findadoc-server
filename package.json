@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "dev": "echo '\n🧶 Installing yarn dependencies...🧶\n' && yarn && yarn generate && yarn dev:startserver",
-        "dev:startserver": "echo '\n💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon --esm src/index.ts",
+        "dev:startserver": "echo '\n💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon -e 'ts' --exec 'node --inspect --loader ts-node/esm src/index.ts'",
         "dev:startlocaldb": "firebase login && firebase emulators:start --proyct='find-a-doc-japan' --only firestore",
         "test": "echo '\n🧶 Installing yarn dependencies...🧶\n' && yarn && vitest",
         "test:dockerstart": "docker-compose -f 'docker/docker-compose-test.yml' up -d --build",
@@ -63,7 +63,6 @@
         "globals": "^13.23.0",
         "husky": "^8.0.3",
         "rimraf": "^5.0.1",
-        "ts-node": "^10.9.1",
         "typescript": "^5.2.2",
         "vitest": "^0.34.6"
     },
@@ -88,6 +87,7 @@
         "pm2": "^5.3.0",
         "supertest": "^6.3.3",
         "supertokens-node": "^16.6.1",
+        "ts-node": "^10.9.1",
         "winston": "^3.11.0",
         "winston-loki": "^6.0.8"
     },
