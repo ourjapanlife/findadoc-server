@@ -30,6 +30,7 @@ input FacilitySearchFilters {
   nameJa: String
   contact: ContactInput
   healthcareProfessionalName: String
+  healthcareProfessionalIds: [String!]
   createdDate: String
   updatedDate: String
   orderBy: [OrderBy!]

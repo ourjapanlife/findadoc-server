@@ -79,6 +79,10 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
             searchRef = searchRef.where('nameJa', '==', filters.nameJa)
         }
 
+        if (filters.healthcareProfessionalIds && filters.healthcareProfessionalIds.length > 0) {
+            searchRef = searchRef.where('healthcareProfessionalIds', 'array-contains-any', filters.healthcareProfessionalIds)
+        }
+
         if (filters.createdDate) {
             searchRef = searchRef.where('createdDate', '==', filters.createdDate)
         }
