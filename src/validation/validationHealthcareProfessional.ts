@@ -97,7 +97,7 @@ export function validateNames(
                 httpStatus: 400
             })
         }
-    
+
         const containsInvalidCharFirstName = isInvalidName(nameObject.firstName)
         const containsInvalidCharLastName = isInvalidName(nameObject.lastName)
         const containsInvalidCharMiddleName = nameObject.middleName ? isInvalidName(nameObject.middleName) : false
@@ -256,7 +256,7 @@ export function validateDegrees(
                 httpStatus: 400
             })
         }
-        
+
         if (hasJapaneseCharacters(degree.nameEn)) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
@@ -306,4 +306,74 @@ export function validateDegrees(
             })
         }
     })
+}
+
+export function validateProfessionalsSearchInput(
+    searchInput: gqlTypes.InputMaybe<gqlTypes.HealthcareProfessionalSearchFilters> | undefined
+): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: [],
+        hasErrors: false,
+        errors: []
+    }
+
+    if (!searchInput) {
+        return validationResults
+    }
+
+    if (searchInput.specialties && searchInput.specialties.length > 48) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'specialties',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (searchInput.spokenLanguages && searchInput.spokenLanguages.length > 64) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (searchInput.offset && searchInput.offset > 100000) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'offset',
+            errorCode: ErrorCode.MAX_LIMIT,
+            httpStatus: 400
+        })
+    }
+
+    if (searchInput.offset && searchInput.offset < 0) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'offset',
+            errorCode: ErrorCode.MIN_LIMIT,
+            httpStatus: 400
+        })
+    }
+
+    if (searchInput.limit && searchInput.limit > 1000) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'limit',
+            errorCode: ErrorCode.MAX_LIMIT,
+            httpStatus: 400
+        })
+    }
+
+    if (searchInput.limit && searchInput.limit < 0) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'limit',
+            errorCode: ErrorCode.MIN_LIMIT,
+            httpStatus: 400
+        })
+    }
+
+    return validationResults
 }
