@@ -87,6 +87,7 @@ export type Facility = {
 export type FacilitySearchFilters = {
   contact?: InputMaybe<ContactInput>;
   createdDate?: InputMaybe<Scalars['String']['input']>;
+  healthcareProfessionalIds?: InputMaybe<Array<Scalars['String']['input']>>;
   healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   nameEn?: InputMaybe<Scalars['String']['input']>;
@@ -149,8 +150,61 @@ export enum Insurance {
 }
 
 export enum Locale {
+  AkGh = 'ak_GH',
+  AmEt = 'am_ET',
+  ArAe = 'ar_AE',
+  BmMl = 'bm_ML',
+  BnBd = 'bn_BD',
+  BsBa = 'bs_BA',
+  CaEs = 'ca_ES',
+  ChrUs = 'chr_US',
+  CsCz = 'cs_CZ',
+  CyGb = 'cy_GB',
+  DaDk = 'da_DK',
+  DeDe = 'de_DE',
+  EeGh = 'ee_GH',
+  ElGr = 'el_GR',
   EnUs = 'en_US',
-  JaJp = 'ja_JP'
+  EsEs = 'es_ES',
+  EtEe = 'et_EE',
+  FaAf = 'fa_AF',
+  FiFi = 'fi_FI',
+  FilPh = 'fil_PH',
+  FrFr = 'fr_FR',
+  GuzKe = 'guz_KE',
+  HeIl = 'he_IL',
+  HiIn = 'hi_IN',
+  HrHr = 'hr_HR',
+  HuHu = 'hu_HU',
+  HyAm = 'hy_AM',
+  IdId = 'id_ID',
+  IgNg = 'ig_NG',
+  IsIs = 'is_IS',
+  ItIt = 'it_IT',
+  JaJp = 'ja_JP',
+  KabDz = 'kab_DZ',
+  KmKh = 'km_KH',
+  KnIn = 'kn_IN',
+  KoKr = 'ko_KR',
+  LagTz = 'lag_TZ',
+  LgUg = 'lg_UG',
+  LvLv = 'lv_LV',
+  NbNo = 'nb_NO',
+  NeNp = 'ne_NP',
+  NlBe = 'nl_BE',
+  PlPl = 'pl_PL',
+  PtBr = 'pt_BR',
+  RuRu = 'ru_RU',
+  SiLk = 'si_LK',
+  SqAl = 'sq_AL',
+  SrCyrl = 'sr_Cyrl',
+  SwKe = 'sw_KE',
+  ThTh = 'th_TH',
+  TrTr = 'tr_TR',
+  ViVn = 'vi_VN',
+  ZhCn = 'zh_CN',
+  ZhHk = 'zh_HK',
+  ZhTw = 'zh_TW'
 }
 
 export type LocalizedName = {
