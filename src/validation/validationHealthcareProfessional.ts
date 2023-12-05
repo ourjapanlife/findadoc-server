@@ -217,7 +217,7 @@ export function validateDegrees(
         return
     }
 
-    if (degrees && degrees.length > 64) {
+    if (degrees && degrees.length > 16) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'degrees',
@@ -306,4 +306,157 @@ export function validateDegrees(
             })
         }
     })
+}
+
+export function validateSpecialties(
+    specialties: gqlTypes.SpecialtyInput[] | undefined | null,
+    validationResults: Result<unknown>
+): void {
+    if (!specialties || !specialties.length) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'specialties',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+        return
+    }
+
+    if (specialties.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'specialties',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    const specialtiesNames = specialties[0].names
+
+    if (!specialtiesNames.length) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'specialties',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+        return
+    }
+
+    if (specialtiesNames.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'specialties',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    specialtiesNames.forEach((specialtiesObj, index) => {
+        /**
+         * 100 characters based English specialties names, with 100 characters we have more than enough buffer. 
+         * These are some examples of long specialitie names: 
+         * Pediatric Hematology Oncology
+         * Physical medicine and rehabilitation
+         * Advanced heart failure and transplant cardiology
+         * Female pelvic medicine and reconstructive surgery
+         */
+        if (specialtiesObj.name.length > 100) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `specialties[${index}].name`,
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (!specialtiesObj.name.trim()) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `specialties[${index}].name`,
+                errorCode: ErrorCode.MISSING_INPUT,
+                httpStatus: 400
+            })
+        }
+
+        if (hasSpecialCharacters(specialtiesObj.name)) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `specialties[${index}].name`,
+                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
+                httpStatus: 400
+            })
+        }
+
+        switch (specialtiesObj.locale) {
+            case gqlTypes.Locale.EnUs:
+                if (hasJapaneseCharacters(specialtiesObj.name)) {
+                    validationResults.hasErrors = true
+                    validationResults.errors?.push({
+                        field: `specialties[${index}].name`,
+                        errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
+                        httpStatus: 400
+                    })
+                }
+                break
+            case gqlTypes.Locale.JaJp:
+                if (hasLatinCharacters(specialtiesObj.name)) {
+                    validationResults.hasErrors = true
+                    validationResults.errors?.push({
+                        field: `specialties[${index}].name`,
+                        errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
+                        httpStatus: 400
+                    })
+                }
+                break
+        }
+    })
+}
+
+export function validateInsurance(
+    insurance: gqlTypes.Insurance[] | undefined | null,
+    validationResults: Result<unknown>
+): void {
+    if (!insurance || !insurance.length) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'insurance',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+        return
+    }
+
+    if (insurance && insurance.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'insurance',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+}
+
+export function validateSpokenLanguages(
+    spokenLanguages: gqlTypes.Locale[] | undefined | null,
+    validationResults: Result<unknown>
+): void {
+    if (!spokenLanguages || !spokenLanguages.length) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+        return
+    }
+
+    if (spokenLanguages && spokenLanguages.length > 16) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'spokenLanguages',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
 }
