@@ -35,7 +35,6 @@
         "url": "https://github.com/ourjapanlife/findadoc-server/issues"
     },
     "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
-    "packageManager": "npm@10.2.4",
     "engines": {
         "node": "21.3.0",
         "npm": "10.2.4"
