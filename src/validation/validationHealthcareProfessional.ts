@@ -1,5 +1,5 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
-import { isInvalidName, hasJapaneseCharacters, hasLatinCharacters, hasSpecialCharacters } from '../../utils/stringUtils.js'
+import { isInvalidName, hasJapaneseCharacters, hasLatinCharacters } from '../../utils/stringUtils.js'
 import { ErrorCode, Result } from '../result.js'
 
 export function validateNames(
@@ -225,87 +225,6 @@ export function validateDegrees(
             httpStatus: 400
         })
     }
-
-    degrees.forEach((degree, index) => {
-        // 45 was one of the longest degree names I could find.
-        if (degree.nameEn.length > 45) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].nameEn`,
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-
-        // 45 was one of the longest degree names I could find.
-        if (degree.nameJa.length > 45) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].nameJa`,
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-
-        // A single abbreviations can as long as 5 characters but some people have multiple abbreviations, 15 characters sounded reasonable
-        if (degree.abbreviation.length > 15) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].abbreviation`,
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-
-        if (hasJapaneseCharacters(degree.nameEn)) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].nameEn`,
-                errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
-                httpStatus: 400
-            })
-        }
-
-        if (hasLatinCharacters(degree.nameJa)) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].nameJa`,
-                errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
-                httpStatus: 400
-            })
-        }
-
-        const containsSpecialCharAbbreviation = hasSpecialCharacters(degree.abbreviation)
-        const containsSpecialCharNameJa = hasSpecialCharacters(degree.nameJa)
-        const containsSpecialCharNameEn = hasSpecialCharacters(degree.nameEn)
-
-        if (containsSpecialCharNameEn) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].nameEn`,
-                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
-                httpStatus: 400
-            })
-        }
-
-        if (containsSpecialCharNameJa) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].nameJa`,
-                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
-                httpStatus: 400
-            })
-        }
-
-        if (containsSpecialCharAbbreviation) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: `degrees[${index}].abbreviation`,
-                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
-                httpStatus: 400
-            })
-        }
-    })
 }
 
 export function validateProfessionalsSearchInput(

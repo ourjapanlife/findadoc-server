@@ -29,6 +29,5 @@ export type Submission = Omit<gqlType.Submission, 'facility' | 'healthcareProfes
 export type Contact = gqlType.Contact
 export type LocalizedName = gqlType.LocalizedName
 export type Specialty = gqlType.Specialty
-export type SpecialtyName = gqlType.SpecialtyName
 export type Degree = gqlType.Degree
 export type Insurance = gqlType.Insurance

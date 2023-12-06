@@ -1,5 +1,6 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { faker, fakerJA } from '@faker-js/faker'
+import { logger } from '../logger.js'
 
 export function generateRandomCreateHealthcareProfessionalInput(
     { facilityIds }: { facilityIds: string[] } = { facilityIds: [] }
@@ -8,8 +9,8 @@ export function generateRandomCreateHealthcareProfessionalInput(
     return {
         facilityIds: facilityIds,
         names: faker.helpers.multiple(generateLocalizedNameInput, { count: 1 }),
-        degrees: faker.helpers.multiple(generateDegreeInput, { count: 1 }),
-        specialties: faker.helpers.multiple(generateSpecialty, { count: 1 }),
+        degrees: generateDegrees(),
+        specialties: generateSpecialties(),
         spokenLanguages: generateSpokenLanguages(),
         acceptedInsurance: [faker.helpers.enumValue(gqlTypes.Insurance)]
     }
@@ -23,7 +24,7 @@ export function generateRandomCreateHealthcareProfessionalInputArray({ count = 5
 }
 
 export function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
-    const randomLocal = faker.helpers.enumValue(gqlTypes.Locale)
+    const randomLocal = faker.number.int({ min: 1, max: 10 }) < 5 ? gqlTypes.Locale.EnUs : gqlTypes.Locale.JaJp 
 
     switch (randomLocal) {
         case gqlTypes.Locale.EnUs:
@@ -40,31 +41,32 @@ export function generateLocalizedNameInput(): gqlTypes.LocalizedNameInput {
                 locale: randomLocal
             }
         default:
-            throw new Error(`Unexpected locale value: ${randomLocal}`)
+            logger.error(`Generating professional name: Unexpected locale value: ${randomLocal}`)
+            throw new Error(`Generating professional name: Unexpected locale value: ${randomLocal}`)
     }
 }
 
-export function generateDegreeInput(): gqlTypes.DegreeInput {
-    return {
-        nameEn: faker.person.jobTitle(),
-        nameJa: '役職名',
-        abbreviation: faker.person.suffix()
-    }
-}
-
-export function generateSpecialty(): gqlTypes.SpecialtyInput {
-    const generateSpecialtyName = (): gqlTypes.SpecialtyNameInput => {
-        const locale = faker.helpers.enumValue(gqlTypes.Locale)
-
-        return {
-            name: locale == gqlTypes.Locale.EnUs ? faker.person.jobDescriptor() : fakerJA.person.jobDescriptor(),
-            locale: locale
+export function generateDegrees({ count = 2 } = {}): gqlTypes.Degree[] {
+    return faker.helpers.multiple(
+        () => faker.helpers.enumValue(gqlTypes.Degree),
+        {
+            count: count
+                ? count
+                : faker.number.int({ min: 1, max: 2 })
         }
-    }
 
-    return {
-        names: faker.helpers.multiple(generateSpecialtyName, { count: 2 })
-    }
+    )
+}
+
+export function generateSpecialties({ count = 2 } = {}): gqlTypes.Specialty[] {
+    return faker.helpers.multiple(
+        () => faker.helpers.enumValue(gqlTypes.Specialty),
+        {
+            count: count
+                ? count
+                : faker.number.int({ min: 1, max: 2 })
+        }
+    )
 }
 
 /**
@@ -92,7 +94,7 @@ export function generateAcceptedInsurance() {
 }
 
 export function generateFailingNameInvalidAlphabet(locale: gqlTypes.Locale): gqlTypes.LocalizedNameInput {
-    let namesField: gqlTypes.LocalizedNameInput = {firstName: '', lastName: '', locale: gqlTypes.Locale.JaJp}
+    let namesField: gqlTypes.LocalizedNameInput = { firstName: '', lastName: '', locale: gqlTypes.Locale.JaJp }
 
     switch (locale) {
         case gqlTypes.Locale.EnUs:
@@ -103,7 +105,7 @@ export function generateFailingNameInvalidAlphabet(locale: gqlTypes.Locale): gql
                 locale: gqlTypes.Locale.EnUs
             }
             break
-        case gqlTypes.Locale.JaJp: 
+        case gqlTypes.Locale.JaJp:
             namesField = {
                 firstName: faker.person.firstName(),
                 middleName: faker.person.middleName(),
@@ -117,7 +119,7 @@ export function generateFailingNameInvalidAlphabet(locale: gqlTypes.Locale): gql
     return namesField
 }
 
-export function generateFailingNameInvalidLenght(): gqlTypes.LocalizedNameInput {
+export function generateFailingNameInvalidLength(): gqlTypes.LocalizedNameInput {
     return {
         firstName: 'Rhoshandiatellyneshiaunneveshenk',
         middleName: 'Blaine Charles David Earl Frederick Gerald Hubert',
@@ -158,28 +160,3 @@ export function generateFailingNameDuplicateLocale(): gqlTypes.LocalizedNameInpu
         }
     ]
 }
-
-export function generateFailingDegreeInvalidLenght(): gqlTypes.DegreeInput {
-    return {
-        nameEn: 'Mathematics with specialization in computational science mathematics and engineering', 
-        nameJa: '同志社大学グローバル・コミュニケーション学部グローバル・コミュニケーション学科・同志社大学グローバル・コミュニケーション学部グローバル', 
-        abbreviation: 'B.Tech M.Acc B.S.S.W'
-    }
-}
-
-export function generateFailingDegreeInvalidAlphabet(): gqlTypes.DegreeInput {
-    return {
-        nameEn: '同志社大学グローバル', 
-        nameJa: 'Mathematics', 
-        abbreviation: 'B.Tech'
-    }
-}
-
-export function generateFailingDegreeInvalidCharacter(): gqlTypes.DegreeInput {
-    return {
-        nameEn: 'Mathe[matics=', 
-        nameJa: '同志社大学グ\'ローバル,', 
-        abbreviation: '#B.T$ech'
-    }
-}
-

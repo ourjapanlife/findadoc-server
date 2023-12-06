@@ -353,6 +353,8 @@ export const createFacilityMutation = `mutation test_createFacility($input: Crea
             website
         }
         healthcareProfessionalIds
+        mapLatitude
+        mapLongitude
         nameEn
         nameJa
         createdDate
@@ -366,22 +368,24 @@ const updateFacilityMutation = `mutation test_updateFacility($id: ID!, $input: U
         nameEn
         nameJa
         contact {
-        googleMapsUrl
-        email
-        phone
-        website
-        address {
-            postalCode
-            prefectureEn
-            cityEn
-            addressLine1En
-            addressLine2En
-            prefectureJa
-            cityJa
-            addressLine1Ja
-            addressLine2Ja
+            googleMapsUrl
+            email
+            phone
+            website
+            address {
+                postalCode
+                prefectureEn
+                cityEn
+                addressLine1En
+                addressLine2En
+                prefectureJa
+                cityJa
+                addressLine1Ja
+                addressLine2Ja
+            }
         }
-        }
+        mapLatitude
+        mapLongitude
         healthcareProfessionalIds
         createdDate
         updatedDate
@@ -416,6 +420,8 @@ const getFacilityByIdQuery = `query test_getfacilityById($id: ID!) {
                 addressLine2Ja
             }
         }
+        mapLatitude
+        mapLongitude
         healthcareProfessionalIds
         createdDate
         updatedDate

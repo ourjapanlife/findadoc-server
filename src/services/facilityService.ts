@@ -501,6 +501,8 @@ function mapGqlCreateInputToDbEntity(input: gqlTypes.CreateFacilityInput, newId:
         nameEn: input.nameEn,
         nameJa: input.nameJa,
         contact: input.contact,
+        mapLatitude: input.mapLatitude,
+        mapLongitude: input.mapLongitude,
         healthcareProfessionalIds: input.healthcareProfessionalIds as string[],
         //business rule: createdDate cannot be set by the user.
         createdDate: new Date().toISOString(),
@@ -516,6 +518,8 @@ const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Facility): gqlTypes.Facility 
         nameEn: dbEntity.nameEn,
         nameJa: dbEntity.nameJa,
         contact: dbEntity.contact,
+        mapLatitude: dbEntity.mapLatitude,
+        mapLongitude: dbEntity.mapLongitude,
         healthcareProfessionalIds: dbEntity.healthcareProfessionalIds,
         createdDate: dbEntity.createdDate,
         updatedDate: dbEntity.updatedDate
