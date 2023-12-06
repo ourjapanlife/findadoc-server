@@ -45,7 +45,7 @@ We love and welcome contributions to our front-end repository which can be found
 ## 1. Install dependencies
 
 ```sh
-yarn
+npm install
 ```
 
 ## 2. Set up Husky Hooks 🐕️
@@ -53,7 +53,7 @@ yarn
 This will automatically run linting before commits and reduce common contributor mistakes.
 
 ```sh
-yarn prepare
+npm run prepare
 ```
 
 ## 3. Setting up the Database 🐘
@@ -103,13 +103,13 @@ Select "Use an existing project"
 ### 3.b Running the database locally
 
 ```sh
-yarn dev:startlocaldb
+npm run dev:startlocaldb
 ```
 
 ### 3.c Starting the dev server and seeding the emulator
 
 ```sh
-yarn dev
+npm run dev
 ```
 
 This will run until you shut down the instance hitting `ctrl^+C`
@@ -130,7 +130,7 @@ To set up the Firebase Service Account for this project, follow these steps:
 ## 4. Run the API
 
 ```sh
-yarn dev
+npm run dev
 ```
 
 That's it!
@@ -141,14 +141,14 @@ In production, we use docker to run the app. You can validate your code works in
 Make sure that you have docker running beforehand.
 
 ```sh
-yarn prod:build
-yarn prod
+npm run prod:build
+npm run prod
 ```
 
 # How to Debug your code
 
 This runs locally and can easily be debugged with vscode!
-Click on the `Run and Debug` vscode tab, and then choose `Javascript Debug Terminal`, then run `yarn dev` in there and the debugger will automatically connect.
+Click on the `Run and Debug` vscode tab, and then choose `Javascript Debug Terminal`, then run `npm run dev` in there and the debugger will automatically connect.
 Then, just add breakpoints by clicking on the line number of your code.
 
 # How to Test your code
@@ -159,13 +159,13 @@ Then, just add breakpoints by clicking on the line number of your code.
 1. Start the Docker container:
 
 ```sh
-yarn test:dockerstart
+npm run test:dockerstart
 ```
 
 2. Run the tests:
 
 ```sh
-yarn test
+npm run test
 ```
 
 </details>
@@ -173,8 +173,8 @@ yarn test
 <details>
   <summary>Testing GraphQL</summary>
 
-1. Run `yarn generate` to generate the types locally
-2. Run `yarn dev` to start the local server
+1. Run `npm run generate` to generate the types locally
+2. Run `npm run dev` to start the local server
 3. Open your browser to <http://localhost:3001/>
 4. Navigate to the Explorer section from the menu in the left pane.
 5. Click `query: Query` under "Root Types
