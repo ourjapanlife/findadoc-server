@@ -414,8 +414,9 @@ function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: st
         facility: null,
         healthcareProfessionals: [],
         createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    }
+        updatedDate: new Date().toISOString(),
+        notes: input.notes as string
+    } satisfies dbSchema.Submission
 }
 
 function validateIdInput(id: string): Result<unknown> {
@@ -526,7 +527,8 @@ const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submiss
         isApproved: dbEntity.isApproved,
         isRejected: dbEntity.isRejected,
         createdDate: dbEntity.createdDate,
-        updatedDate: dbEntity.updatedDate
+        updatedDate: dbEntity.updatedDate,
+        notes: dbEntity.notes
     } satisfies gqlTypes.Submission
 
     return gqlEntity
