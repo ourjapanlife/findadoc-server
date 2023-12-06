@@ -100,6 +100,7 @@ type Submission {
   isRejected: Boolean!
   createdDate: String!
   updatedDate: String!
+  notes: String
 }
 
 type FacilitySubmission {
@@ -125,6 +126,7 @@ input CreateSubmissionInput {
   googleMapsUrl: String
   healthcareProfessionalName: String
   spokenLanguages: [Locale!]
+  notes: String
 }
 
 # For updating a submission. This has different fields than the Submission type
@@ -137,6 +139,7 @@ input UpdateSubmissionInput {
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
+  notes: String
 }
 
 # You can search for submissions using any of combination these fields (AND operators)

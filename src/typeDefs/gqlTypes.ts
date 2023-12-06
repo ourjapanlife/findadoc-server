@@ -54,6 +54,7 @@ export type CreateHealthcareProfessionalInput = {
 export type CreateSubmissionInput = {
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
@@ -66,7 +67,6 @@ export enum Degree {
   Do = 'DO',
   Dpm = 'DPM',
   Dpt = 'DPT',
-  DPhil = 'DPhil',
   Dsw = 'DSW',
   DSc = 'DSc',
   Dvm = 'DVM',
@@ -182,7 +182,6 @@ export enum Locale {
   EtEe = 'et_EE',
   FaAf = 'fa_AF',
   FiFi = 'fi_FI',
-  FilPh = 'fil_PH',
   FrFr = 'fr_FR',
   GuzKe = 'guz_KE',
   HeIl = 'he_IL',
@@ -213,6 +212,7 @@ export enum Locale {
   SrCyrl = 'sr_Cyrl',
   SwKe = 'sw_KE',
   ThTh = 'th_TH',
+  TlPh = 'tl_PH',
   TrTr = 'tr_TR',
   ViVn = 'vi_VN',
   ZhCn = 'zh_CN',
@@ -416,6 +416,7 @@ export type Submission = {
   isApproved: Scalars['Boolean']['output'];
   isRejected: Scalars['Boolean']['output'];
   isUnderReview: Scalars['Boolean']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
   spokenLanguages: Array<Locale>;
   updatedDate: Scalars['String']['output'];
 };
@@ -460,6 +461,7 @@ export type UpdateSubmissionInput = {
   isApproved?: InputMaybe<Scalars['Boolean']['input']>;
   isRejected?: InputMaybe<Scalars['Boolean']['input']>;
   isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
@@ -718,6 +720,7 @@ export type SubmissionResolvers<ContextType = any, ParentType extends ResolversP
   isApproved?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isRejected?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isUnderReview?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  notes?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   spokenLanguages?: Resolver<Array<ResolversTypes['Locale']>, ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
