@@ -31,6 +31,16 @@ const resolvers = {
             convertErrorsToGqlErrors(matchingHealthcareProfessionalResult)
             return matchingHealthcareProfessionalResult.data
         },
+        healthcareProfessionals: async (_parent: unknown, args: {
+            filters: gqlType.HealthcareProfessionalSearchFilters
+        })
+            : Promise<gqlType.HealthcareProfessional[]> => {
+            const queryResults =
+                await healthcareProfessionalService.searchProfessionals(args.filters)
+
+            convertErrorsToGqlErrors(queryResults)
+            return queryResults.data
+        },
         submission: async (_parent: unknown, args: { id: string }, context: UserContext)
             : Promise<gqlType.Submission | undefined> => {
             const isAdmin = await hasAdminRole(context)
@@ -81,7 +91,7 @@ const resolvers = {
                     }
                 })
             }
-            
+
             const newFacilityResult = await facilityService.createFacility(args.input)
 
             convertErrorsToGqlErrors(newFacilityResult)
@@ -102,7 +112,7 @@ const resolvers = {
                     }
                 })
             }
-            
+
             const updateFacilityResult = await facilityService.updateFacility(args.id, args.input)
 
             convertErrorsToGqlErrors(updateFacilityResult)
@@ -122,7 +132,7 @@ const resolvers = {
                     }
                 })
             }
-            
+
             const deleteFacilityResult = await facilityService.deleteFacility(args.id)
 
             convertErrorsToGqlErrors(deleteFacilityResult)
@@ -142,7 +152,7 @@ const resolvers = {
                     }
                 })
             }
-            
+
             const createHealthcareProfessionalResult =
                 await healthcareProfessionalService.createHealthcareProfessional(args.input)
 
@@ -164,7 +174,7 @@ const resolvers = {
                     }
                 })
             }
-            
+
             const updateProfessionalResult =
                 await healthcareProfessionalService.updateHealthcareProfessional(args.id, args.input)
 
@@ -185,7 +195,7 @@ const resolvers = {
                     }
                 })
             }
-            
+
             const deleteHealthcareProfessionalResult
                 = await healthcareProfessionalService.deleteHealthcareProfessional(args.id)
 
@@ -206,7 +216,7 @@ const resolvers = {
                     }
                 })
             }
-            
+
             const createSubmissionResult = await submissionService.createSubmission(args.input)
 
             convertErrorsToGqlErrors(createSubmissionResult)
@@ -246,7 +256,7 @@ const resolvers = {
                     }
                 })
             }
-            
+
             const deleteSubmissionResult = await submissionService.deleteSubmission(args.id)
 
             convertErrorsToGqlErrors(deleteSubmissionResult)

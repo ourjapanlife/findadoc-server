@@ -1,9 +1,9 @@
-import { DocumentData, WriteBatch } from 'firebase-admin/firestore'
+import { Query, DocumentData, WriteBatch } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { dbInstance } from '../firebaseDb.js'
-import {validateNames, validateDegrees} from '../validation/validationHealthcareProfessional.js'
+import { validateNames, validateDegrees, validateProfessionalsSearchInput } from '../validation/validationHealthcareProfessional.js'
 import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } from './facilityService.js'
 import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { logger } from '../logger.js'
@@ -47,6 +47,77 @@ export async function getHealthcareProfessionalById(id: string)
             hasErrors: true,
             errors: [{
                 field: 'getHealthcareProfessionalById',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+/**
+* This is a search function that will return a list of Healthcare Professionals that match the filters. 
+* - At the moment, filters have to match exactly, and there is no fuzzy search.
+* @param filters All the optional filters that can be applied to the search.
+* @returns The matching Healthcare Professionals.
+*/
+export async function searchProfessionals(filters: gqlTypes.HealthcareProfessionalSearchFilters = {}):
+    Promise<Result<gqlTypes.HealthcareProfessional[]>> {
+    try {
+        const validationResult = validateProfessionalsSearchInput(filters)
+
+        if (validationResult.hasErrors) {
+            return validationResult as Result<gqlTypes.HealthcareProfessional[]>
+        }
+
+        let searchRef: Query<DocumentData> = dbInstance.collection('healthcareProfessionals')
+
+        if (filters.specialties && filters.specialties.length > 0) {
+            searchRef = searchRef.where('specialties', 'array-contains-any', filters.specialties)
+        }
+
+        if (filters.spokenLanguages) {
+            searchRef = searchRef.where('spokenLanguages', 'array-contains-any', filters.spokenLanguages)
+        }
+
+        if (filters.createdDate) {
+            searchRef = searchRef.where('createdDate', '==', filters.createdDate)
+        }
+
+        if (filters.updatedDate) {
+            searchRef = searchRef.where('updatedDate', '==', filters.updatedDate)
+        }
+
+        if (filters.orderBy && Array.isArray(filters.orderBy)) {
+            filters.orderBy.forEach(order => {
+                if (order) {
+                    searchRef = searchRef.orderBy(order.fieldToOrder as string,
+                        order.orderDirection as gqlTypes.OrderDirection)
+                }
+            })
+        } else {
+            searchRef = searchRef.orderBy('createdDate', gqlTypes.OrderDirection.Desc)
+        }
+
+        searchRef = searchRef.limit(filters.limit || 20)
+        searchRef = searchRef.offset(filters.offset || 0)
+
+        const dbDocument = await searchRef.get()
+        const dbProfessionals = dbDocument.docs
+        const gqlProfessionals = dbProfessionals.map(dbProfessional =>
+            mapDbEntityTogqlEntity(dbProfessional.data() as dbSchema.HealthcareProfessional))
+
+        return {
+            data: gqlProfessionals,
+            hasErrors: false
+        }
+    } catch (error) {
+        logger.error(`ERROR: Error retrieving healthcare professionals by filters ${JSON.stringify(filters)}: ${error}`)
+
+        return {
+            data: [],
+            hasErrors: true,
+            errors: [{
+                field: 'searchHealthcareProfessionals',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]
