@@ -9,6 +9,7 @@ config({ path: dotEnvFileToLoad })
 const envVariables = {
     isProduction: () => process.env.NODE_ENV === 'production',
     isLocal: () => !envVariables.isProduction(),
+    serverHost: () => process.env.SERVER_HOST as string,
     serverPort: () => process.env.SERVER_PORT as string,
     apiURL: () => process.env.API_URL as string,
     websiteURL: () => process.env.WEBSITE_URL as string,
