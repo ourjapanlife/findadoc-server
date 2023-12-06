@@ -185,7 +185,6 @@ enum Locale {
   es_ES # Spanish (Spain)
   et_EE # Estonian (Estonia)
   fa_AF # Persian (Afghanistan)
-  fil_PH # Filipino (Philippines)
   fi_FI # Finnish (Finland)
   fr_FR # French (France)
   guz_KE # Gusii (Kenya)
@@ -217,6 +216,7 @@ enum Locale {
   sr_Cyrl # Serbian (Cyrillic)
   sw_KE # Swahili (Kenya)
   th_TH # Thai (Thailand)
+  tl_PH # Tagalog (Philippines)
   tr_TR # Turkish (Turkey)
   vi_VN # Vietnamese (Vietnam)
   zh_CN # Chinese (Simplified, China)
@@ -299,25 +299,24 @@ enum Specialty {
 }
 
 enum Degree {
-  MD
-  DO
-  DPM
-  DMD
-  DDS
-  DVM
-  DC
-  DPT
-  DNP
-  PA
-  NP
-  CNM
-  DSW
-  PhD
-  PsyD
-  EdD
-  PharmD
-  DSc
-  DPhil
+  MD # Medical Doctor
+  DO # Doctor of Osteopathic Medicine
+  DPM # Doctor of Podiatric Medicine
+  DMD # Doctor of Dental Medicine
+  DDS # Doctor of Dental Surgery
+  DVM # Doctor of Veterinary Medicine
+  DC # Doctor of Chiropractic
+  DPT # Doctor of Physical Therapy
+  DNP # Doctor of Nursing Practice
+  PA # Physician Assistant
+  NP # Nurse Practitioner
+  CNM # Certified Nurse Midwife
+  DSW # Doctor of Social Work
+  PhD # Doctor of Philosophy
+  PsyD # Doctor of Psychology
+  EdD # Doctor of Education
+  PharmD # Doctor of Pharmacy
+  DSc # Doctor of Science
 }
 
 enum Insurance {
