@@ -11,7 +11,7 @@
         "test:dockerstart": "docker-compose -f 'docker/docker-compose-test.yml' up -d --build",
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
         "prod": "npm run prod:dockerstop && npm run prod:dockerstart",
-        "prod:build": "echo '🧶 Installing npm dependencies...🧶' && npm install --immutable --immutable-cache && echo '🧹 cleaning dist folder...' && rimraf dist/ && echo '➡ ➡ copying files...' && copyfiles -a -V src/typeDefs/schema.graphql .env.prod dist && echo '💻✨ compiling code..' && tsc && echo '💻✨ successfully built!'",
+        "prod:build": "echo '🧶 Installing npm dependencies...🧶' && npm install --immutable --immutable-cache && echo '🧹 cleaning dist folder...' && npx rimraf dist/ && echo '➡ ➡ copying files...' && npx copyfiles -a -V src/typeDefs/schema.graphql .env.prod dist && echo '💻✨ compiling code..' && tsc && echo '💻✨ successfully built!'",
         "prod:startserver": "echo '💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production PIDUSAGE_USE_PS=true pm2 start dist/src/index.js --no-daemon && pm2 logs --lines 100",
         "prod:stopserver": "echo '💻 💻 💻✨ Stopping prod server...' && pm2 stop all && pm2 delete all",
         "prod:monitor": "pm2 monitor",
