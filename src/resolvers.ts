@@ -205,18 +205,7 @@ const resolvers = {
 
         createSubmission: async (_parent: unknown, args: {
             input: gqlType.CreateSubmissionInput
-        }, context: UserContext): Promise<gqlType.Submission> => {
-            const isAdmin = await hasAdminRole(context)
-
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
-                    extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
-                    }
-                })
-            }
-
+        }): Promise<gqlType.Submission> => {
             const createSubmissionResult = await submissionService.createSubmission(args.input)
 
             convertErrorsToGqlErrors(createSubmissionResult)
