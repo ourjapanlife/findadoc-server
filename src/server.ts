@@ -87,7 +87,10 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
     })
 
     //start the actual fastify http server
-    const serverUrl = await fastify.listen({ port: customPort ?? parseInt(envVariables.serverPort()), host: '127.0.0.1' })
+    const serverUrl = await fastify.listen({
+        port: customPort ?? parseInt(envVariables.serverPort()),
+        host: envVariables.serverHost()
+    })
 
     logger.info(`\n🚀 🚀 🚀 Server ready at: ${serverUrl}\n`)
 
