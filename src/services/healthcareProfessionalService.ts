@@ -79,6 +79,10 @@ export async function searchProfessionals(filters: gqlTypes.HealthcareProfession
             searchRef = searchRef.where('spokenLanguages', 'array-contains-any', filters.spokenLanguages)
         }
 
+        if (filters.degrees) {
+            searchRef = searchRef.where('spokenLanguages', 'array-contains-any', filters.degrees)
+        }
+
         if (filters.createdDate) {
             searchRef = searchRef.where('createdDate', '==', filters.createdDate)
         }
@@ -583,7 +587,7 @@ function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfess
 }
 
 function validateSpecialties(
-    specialties: gqlTypes.SpecialtyInput[] | undefined | null,
+    specialties: gqlTypes.Specialty[] | undefined | null,
     validationResults: Result<unknown>
 ): void {
     if (!specialties) {

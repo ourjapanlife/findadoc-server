@@ -5,6 +5,8 @@ type Facility {
   nameEn: String!
   nameJa: String!
   contact: Contact!
+  mapLatitude: Float!
+  mapLongitude: Float!
   healthcareProfessionalIds: [ID!]!
   createdDate: String!
   updatedDate: String!
@@ -14,6 +16,8 @@ input CreateFacilityInput {
   nameEn: String!
   nameJa: String!
   contact: ContactInput!
+  mapLatitude: Float!
+  mapLongitude: Float!
   healthcareProfessionalIds: [ID!]
 }
 
@@ -21,6 +25,8 @@ input UpdateFacilityInput {
   nameEn: String
   nameJa: String
   contact: ContactInput
+  mapLatitude: Float
+  mapLongitude: Float
   healthcareProfessionalIds: [Relationship!]
 }
 
@@ -53,8 +59,8 @@ type HealthcareProfessional {
 input CreateHealthcareProfessionalInput {
   names: [LocalizedNameInput!]!
   spokenLanguages: [Locale!]
-  degrees: [DegreeInput!]
-  specialties: [SpecialtyInput!]
+  degrees: [Degree!]
+  specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   facilityIds: [ID!]!
 }
@@ -62,8 +68,8 @@ input CreateHealthcareProfessionalInput {
 input UpdateHealthcareProfessionalInput {
   names: [LocalizedNameInput!]
   spokenLanguages: [Locale!]
-  degrees: [DegreeInput!]
-  specialties: [SpecialtyInput!]
+  degrees: [Degree!]
+  specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   facilityIds: [Relationship!]
 }
@@ -72,8 +78,8 @@ input UpdateHealthcareProfessionalInput {
 input HealthcareProfessionalSearchFilters {
   names: [LocalizedNameInput!]
   spokenLanguages: [Locale!]
-  degrees: [DegreeInput!]
-  specialties: [SpecialtyInput!]
+  degrees: [Degree!]
+  specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   createdDate: String
   updatedDate: String
@@ -269,31 +275,49 @@ input PhysicalAddressInput {
   addressLine2Ja: String!
 }
 
-type Specialty {
-  names: [SpecialtyName!]!
-}
-input SpecialtyInput {
-  names: [SpecialtyNameInput!]!
+enum Specialty {
+  ALLERGY_AND_IMMUNOLOGY
+  ANESTHESIOLOGY
+  DERMATOLOGY
+  DIAGNOSTIC_RADIOLOGY
+  EMERGENCY_MEDICINE
+  FAMILY_MEDICINE
+  INTERNAL_MEDICINE
+  MEDICAL_GENETICS
+  NEUROLOGY
+  NUCLEAR_MEDICINE
+  OBSTETRICS_AND_GYNECOLOGY
+  OPHTHALMOLOGY
+  PATHOLOGY
+  PEDIATRICS
+  PHYSICAL_MEDICINE_AND_REHABILITATION
+  PREVENTIVE_MEDICINE
+  PSYCHIATRY
+  RADIATION_ONCOLOGY
+  SURGERY
+  UROLOGY
 }
 
-type SpecialtyName {
-  name: String!
-  locale: Locale!
-}
-input SpecialtyNameInput {
-  name: String!
-  locale: Locale!
-}
-
-type Degree {
-  nameJa: String!
-  nameEn: String!
-  abbreviation: String!
-}
-input DegreeInput {
-  nameJa: String!
-  nameEn: String!
-  abbreviation: String!
+enum Degree {
+  MD
+  DO
+  DPM
+  DMD
+  DDS
+  DVM
+  DC
+  DPT
+  DNP
+  PA
+  NP
+  CNM
+  DSW
+  PhD
+  PsyD
+  EdD
+  PharmD
+  DSc
+  DPhil
 }
 
 enum Insurance {

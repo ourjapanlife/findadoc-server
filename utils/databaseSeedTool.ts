@@ -13,7 +13,6 @@ export const seedDatabase = async () => {
 
         const facilities = generateRandomCreateFacilityInputArray()
         const healthcareProfessionals = generateRandomCreateHealthcareProfessionalInputArray()
-
         const facilityIds: string[] = []
 
         for await (const facility of facilities) {

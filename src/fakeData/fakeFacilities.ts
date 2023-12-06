@@ -15,6 +15,8 @@ export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: st
     return {
         nameEn: fullEnglishName,
         nameJa: fullJapaneseName,
+        mapLatitude: faker.location.latitude(), 
+        mapLongitude: faker.location.longitude(),
         healthcareProfessionalIds: healthcareProfessionalIds ?? [],
         contact: {
             googleMapsUrl: faker.internet.url(),

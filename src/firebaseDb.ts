@@ -24,7 +24,7 @@ const testFirestoreIsInitialized = async (shouldSeedDatabase: boolean) => {
 
         // if we don't have any data, we should seed the database
         if (!hasExistingData && shouldSeedDatabase) {
-            logger.info('\n🌱 Seeding firebase emulator data... 🌱\n')
+            logger.info('🌱 Seeding firebase emulator data... 🌱\n')
             await seedDatabase()
         }
     } catch (ex) {
