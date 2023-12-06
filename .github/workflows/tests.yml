@@ -21,18 +21,18 @@ jobs:
       with:
         node-version: 21.3.0
 
-    - name: Yarn Install
-      run: yarn install
+    - name: Npm Install
+      run: npm install
 
     - name: Generate GQL types
-      run: yarn generate
+      run: npm run generate
 
     - name: Start containers
-      run: yarn test:dockerstart
+      run: npm run test:dockerstart
 
     - name: Run tests
-      run: yarn test
+      run: npm run test
 
     - name: Stop containers
       if: always()
-      run: yarn test:dockerstop
+      run: npm run test:dockerstop

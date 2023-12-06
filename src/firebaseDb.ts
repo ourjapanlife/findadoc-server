@@ -63,7 +63,7 @@ export const initiatilizeFirebaseInstance = async () => {
     } else if (isNotProduction) {
         logger.info('🔥 Connecting to firebase emulator...\n')
         logger.info('TIP: if it doesn\'t connect after 10 secs,' +
-            ' make sure you have the firebase emulator running using the "yarn dev:startlocaldb" command')
+            ' make sure you have the firebase emulator running using the "npm run dev:startlocaldb" command')
     }
 
     await testFirestoreIsInitialized(isNotProduction)
