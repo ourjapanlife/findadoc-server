@@ -90,7 +90,7 @@ export async function searchProfessionals(filters: gqlTypes.HealthcareProfession
         }
 
         if (shouldFilterByDegrees) {
-            searchRef = searchRef.where('spokenLanguages', 'array-contains-any', filters.degrees)
+            searchRef = searchRef.where('degrees', 'array-contains-any', filters.degrees)
         }
 
         if (filters.createdDate) {
