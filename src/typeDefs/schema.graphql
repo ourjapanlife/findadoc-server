@@ -231,7 +231,7 @@ type LocalizedName {
   firstName: String!
   middleName: String
   lastName: String!
-  locale: Locale! 
+  locale: Locale!
 }
 input LocalizedNameInput {
   firstName: String!
@@ -326,6 +326,7 @@ enum Insurance {
   JAPANESE_HEALTH_INSURANCE
   INTERNATIONAL_HEALTH_INSURANCE
   INSURANCE_NOT_ACCEPTED
+  UNINSURED
 }
 
 input OrderBy {
@@ -339,8 +340,8 @@ enum OrderDirection {
 }
 
 type DeleteResult {
-    isSuccessful: Boolean!
-  }
+  isSuccessful: Boolean!
+}
 
 # ======== Queries =========
 
@@ -348,7 +349,9 @@ type Query {
   facility(id: ID!): Facility
   facilities(filters: FacilitySearchFilters!): [Facility]
   healthcareProfessional(id: ID!): HealthcareProfessional
-  healthcareProfessionals(filters: HealthcareProfessionalSearchFilters!): [HealthcareProfessional]
+  healthcareProfessionals(
+    filters: HealthcareProfessionalSearchFilters!
+  ): [HealthcareProfessional]
   submission(id: ID!): Submission
   submissions(filters: SubmissionSearchFilters!): [Submission]
 }
@@ -356,30 +359,26 @@ type Query {
 #======== Mutations ========
 
 type Mutation {
-  createHealthcareProfessional(input: CreateHealthcareProfessionalInput!) : HealthcareProfessional
+  createHealthcareProfessional(
+    input: CreateHealthcareProfessionalInput!
+  ): HealthcareProfessional
 
   updateHealthcareProfessional(
     id: ID!
     input: UpdateHealthcareProfessionalInput!
-  ) : HealthcareProfessional
+  ): HealthcareProfessional
 
-  deleteHealthcareProfessional(id: ID!) : DeleteResult
+  deleteHealthcareProfessional(id: ID!): DeleteResult
 
   createFacility(input: CreateFacilityInput!): Facility
 
-  updateFacility(
-    id: ID!
-    input: UpdateFacilityInput!
-  ): Facility
+  updateFacility(id: ID!, input: UpdateFacilityInput!): Facility
 
-  deleteFacility(id: ID!) : DeleteResult
+  deleteFacility(id: ID!): DeleteResult
 
   createSubmission(input: CreateSubmissionInput!): Submission
 
-  updateSubmission(
-    id: ID!
-    input: UpdateSubmissionInput!
-  ): Submission
+  updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission
 
-  deleteSubmission(id: ID!) : DeleteResult
+  deleteSubmission(id: ID!): DeleteResult
 }
