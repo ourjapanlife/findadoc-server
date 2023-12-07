@@ -415,7 +415,7 @@ function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: st
         healthcareProfessionals: [],
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString(),
-        notes: input.notes as string
+        notes: input.notes ?? ''
     } satisfies dbSchema.Submission
 }
 

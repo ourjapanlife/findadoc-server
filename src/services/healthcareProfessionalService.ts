@@ -71,15 +71,25 @@ export async function searchProfessionals(filters: gqlTypes.HealthcareProfession
 
         let searchRef: Query<DocumentData> = dbInstance.collection('healthcareProfessionals')
 
-        if (filters.specialties && filters.specialties.length > 0) {
+        //firebase restriction: we can't do more than 1 'array-contains-any' filter in a single query, so we have to do this after the query
+        const hasSpecialtiesFilter = filters.specialties && filters.specialties.length > 0
+        const hasSpokenLanguagesFilter = filters.spokenLanguages && filters.spokenLanguages.length > 0
+        const hasDegreesFilter = filters.degrees && filters.degrees.length > 0
+
+        const shouldFilterBySpecialties = hasSpecialtiesFilter
+        const shouldFilterBySpokenLanguages = hasSpokenLanguagesFilter && !hasSpecialtiesFilter
+        const shouldFilterByDegrees = hasDegreesFilter && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
+
+        //specialties will likely return the smallest result set, so this should be the most performant.
+        if (shouldFilterBySpecialties) {
             searchRef = searchRef.where('specialties', 'array-contains-any', filters.specialties)
         }
 
-        if (filters.spokenLanguages) {
+        if (shouldFilterBySpokenLanguages) {
             searchRef = searchRef.where('spokenLanguages', 'array-contains-any', filters.spokenLanguages)
         }
 
-        if (filters.degrees) {
+        if (shouldFilterByDegrees) {
             searchRef = searchRef.where('spokenLanguages', 'array-contains-any', filters.degrees)
         }
 
@@ -110,8 +120,36 @@ export async function searchProfessionals(filters: gqlTypes.HealthcareProfession
         const gqlProfessionals = dbProfessionals.map(dbProfessional =>
             mapDbEntityTogqlEntity(dbProfessional.data() as dbSchema.HealthcareProfessional))
 
+        let filteredResults = gqlProfessionals
+
+        //if we queried by specialties, we still need to filter the remaining results by the other array-based filters
+        //tip: they are mutually exclusive, so we don't need to check for every combination
+        if (shouldFilterBySpecialties) {
+            const professionalsFilteredBySpokenLanguages = hasSpokenLanguagesFilter
+                ? filteredResults.filter(professional =>
+                    professional.spokenLanguages.some(db => filters.spokenLanguages?.some(filter => filter == db)))
+                : filteredResults ?? []
+
+            const professionalsFilteredByDegrees = hasDegreesFilter
+                ? professionalsFilteredBySpokenLanguages.filter(professional =>
+                    professional.degrees.some(db => filters.degrees?.some(filter => filter == db)))
+                : professionalsFilteredBySpokenLanguages ?? []
+
+            filteredResults = professionalsFilteredByDegrees
+        }
+
+        //if we queried by spoken languages, we still need to filter the remaining results by the other array-based filters
+        if (shouldFilterBySpokenLanguages) {
+            const professionalsFilteredByDegrees = hasDegreesFilter
+                ? filteredResults.filter(professional =>
+                    professional.degrees.some(db => filters.degrees?.some(filter => filter == db)))
+                : filteredResults ?? []
+
+            filteredResults = professionalsFilteredByDegrees
+        }
+
         return {
-            data: gqlProfessionals,
+            data: filteredResults,
             hasErrors: false
         }
     } catch (error) {

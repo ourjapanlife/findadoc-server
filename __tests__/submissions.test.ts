@@ -58,6 +58,7 @@ describe('createSubmission', () => {
         expect(foundSubmissions.isRejected).toBe(false)
         expect(foundSubmissions.isUnderReview).toBe(false)
         expect(foundSubmissions.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(foundSubmissions.notes).toEqual(originalInputValues.notes)
     })
 })
 
