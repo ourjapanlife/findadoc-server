@@ -299,6 +299,7 @@ enum Specialty {
   RADIATION_ONCOLOGY
   SURGERY
   UROLOGY
+  INFECTIOUS_DISEASES
 }
 
 enum Degree {
@@ -320,6 +321,7 @@ enum Degree {
   EdD # Doctor of Education
   PharmD # Doctor of Pharmacy
   DSc # Doctor of Science
+  MPH # Master of Public Health
 }
 
 enum Insurance {
