@@ -6,8 +6,8 @@ import { ErrorCode, Result } from '../result.js'
 import { hasSpecialCharacters } from '../../utils/stringUtils.js'
 import { createFacility } from './facilityService.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService.js'
-import { validateSubmissionSearchFilters } from '../validation/validateSubmissions.js'
-import { logger } from '../logger.js'
+import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
+import { logger } from '../../src/logger.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -85,10 +85,12 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
         let subRef: Query<DocumentData> = dbInstance.collection('submissions')
 
         if (filters.googleMapsUrl) {
+            //subRef = subRef.where('googleMapsUrl', '==', filters.googleMapsUrl.toLowerCase())
             subRef = subRef.where('googleMapsUrl', '==', filters.googleMapsUrl)
         }
 
         if (filters.healthcareProfessionalName) {
+            //subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName.toLowerCase())
             subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
         }
 
@@ -161,22 +163,19 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
 export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
     Promise<Result<gqlTypes.Submission>> => {
     try {
-        const validationResults = validateSubmissionInputFields(submissionInput)
+        const validationResults = validateCreateSubmissionInputs(submissionInput)
         
         if (validationResults.hasErrors) {
-            return validationResults as Result<gqlTypes.Submission>
-        }
-        
-        const spokenLanguagesResult = validateSpokenLanguages(submissionInput.spokenLanguages)
-        
-        if (spokenLanguagesResult.hasErrors) {
-            return {
+            return { 
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
-                errors: spokenLanguagesResult.errors
+                errors: validationResults.errors
             }
         }
         
+        //submissionInput.healthcareProfessionalName = submissionInput.healthcareProfessionalName?.toLowerCase()
+        //submissionInput.googleMapsUrl = submissionInput.googleMapsUrl?.toLowerCase()
+
         const submissionRef = dbInstance.collection('submissions').doc()
         const newSubmissionId = submissionRef.id
         const newSubmission = mapGqlEntityToDbEntity(submissionInput, newSubmissionId)
@@ -438,83 +437,6 @@ function validateIdInput(id: string): Result<unknown> {
     return validationResults
 }
 
-const validateSubmissionInputFields = (input: gqlTypes.CreateSubmissionInput): Result<unknown> => {
-    const validatedSubmissionResult: Result<unknown> = {
-        data: undefined,
-        hasErrors: false,
-        errors: []
-    }
-
-    if (!input.googleMapsUrl?.trim()) {
-        validatedSubmissionResult.hasErrors = true
-        validatedSubmissionResult.errors?.push({
-            field: 'googleMapsUrl',
-            errorCode: ErrorCode.MISSING_INPUT,
-            httpStatus: 400
-        })
-    }
-
-    if (input.googleMapsUrl && input.googleMapsUrl.length > 1028) {
-        validatedSubmissionResult.hasErrors = true
-        validatedSubmissionResult.errors?.push({
-            field: 'googleMapsUrl',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.healthcareProfessionalName || !input.healthcareProfessionalName.trim()) {
-        validatedSubmissionResult.hasErrors = true
-        validatedSubmissionResult.errors?.push({
-            field: 'healthcareProfessionalName',
-            errorCode: ErrorCode.MISSING_INPUT,
-            httpStatus: 400
-        })
-    }
-
-    if (input.healthcareProfessionalName && input.healthcareProfessionalName.length > 128) {
-        validatedSubmissionResult.hasErrors = true
-        validatedSubmissionResult.errors?.push({
-            field: 'healthcareProfessionalName',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    return validatedSubmissionResult
-}
-
-export const validateSpokenLanguages = (spokenLanguages: gqlTypes.Locale[] | undefined | null): Result<unknown> => {
-    const validatedSpokenLanguagesResults: Result<unknown> = {
-        data: [],
-        hasErrors: false,
-        errors: []
-    }
-
-    if (!spokenLanguages) {
-        validatedSpokenLanguagesResults.hasErrors = true
-        validatedSpokenLanguagesResults.errors?.push({
-            field: 'spokenLanguages',
-            errorCode: ErrorCode.MISSING_INPUT,
-            httpStatus: 400
-        })
-        return validatedSpokenLanguagesResults
-    }
-
-    if (spokenLanguages.length < 1) {
-        validatedSpokenLanguagesResults.hasErrors = true
-        validatedSpokenLanguagesResults.errors?.push({
-            field: 'spokenLanguages',
-            errorCode: ErrorCode.MIN_LIMIT,
-            httpStatus: 400
-        })
-
-        return validatedSpokenLanguagesResults
-    }
-
-    return validatedSpokenLanguagesResults
-}
-
 const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submission => {
     const gqlEntity = {
         id: dbEntity.id,
@@ -533,4 +455,3 @@ const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submiss
 
     return gqlEntity
 }
-
