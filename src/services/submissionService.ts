@@ -85,12 +85,10 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
         let subRef: Query<DocumentData> = dbInstance.collection('submissions')
 
         if (filters.googleMapsUrl) {
-            //subRef = subRef.where('googleMapsUrl', '==', filters.googleMapsUrl.toLowerCase())
             subRef = subRef.where('googleMapsUrl', '==', filters.googleMapsUrl)
         }
 
         if (filters.healthcareProfessionalName) {
-            //subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName.toLowerCase())
             subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
         }
 
@@ -172,9 +170,6 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
                 errors: validationResults.errors
             }
         }
-        
-        //submissionInput.healthcareProfessionalName = submissionInput.healthcareProfessionalName?.toLowerCase()
-        //submissionInput.googleMapsUrl = submissionInput.googleMapsUrl?.toLowerCase()
 
         const submissionRef = dbInstance.collection('submissions').doc()
         const newSubmissionId = submissionRef.id
