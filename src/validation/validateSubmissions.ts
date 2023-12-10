@@ -61,7 +61,7 @@ function validateSubmissionOrderBy(
     }
 }
 
-function validateSubmissionSearchBySpokenLanguage(
+function validateSubmissionSpokenLanguage(
     filters: gqlTypes.SubmissionSearchFilters,
     validateSearchResults: Result<unknown>
 ): void {
@@ -106,28 +106,32 @@ function validateSubmissionSearchBySpokenLanguage(
     }
 }
 
-function validateSearchByName(
+function validateSubmissionName(
     filters: gqlTypes.SubmissionSearchFilters,
-    validateSearchResults: Result<unknown>
+    validateNameResults: Result<unknown>
 ): void {
     const name = filters.healthcareProfessionalName
 
-    if (!name) {
+    // Check if "healthcareProfessionalName" is provided in the search filters.
+    // If not included (undefined), exit the function as this filter is optional.
+    if (name === undefined) {
         return
     }
 
-    if (name.trim() === '') {
-        validateSearchResults.hasErrors = true
-        validateSearchResults.errors?.push({
+    // If "healthcareProfessionalName" is provided, reject empty or null values.
+    if (name === null || name.trim() === '') {
+        validateNameResults.hasErrors = true
+        validateNameResults.errors?.push({
             field: 'healthcareProfessionalName',
             errorCode: ErrorCode.MISSING_INPUT,
             httpStatus: 400
         })
+        return
     }
 
     if (name.length > 128) {
-        validateSearchResults.hasErrors = true
-        validateSearchResults.errors?.push({
+        validateNameResults.hasErrors = true
+        validateNameResults.errors?.push({
             field: 'healthcareProfessionalName',
             errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
             httpStatus: 400
@@ -135,8 +139,8 @@ function validateSearchByName(
     }
 
     if (hasScriptTags(name)) {
-        validateSearchResults.hasErrors = true
-        validateSearchResults.errors?.push({
+        validateNameResults.hasErrors = true
+        validateNameResults.errors?.push({
             field: 'healthcareProfessionalName',
             errorCode: ErrorCode.INVALID_INPUT,
             httpStatus: 400
@@ -144,8 +148,8 @@ function validateSearchByName(
     }
 
     if (isInvalidName(name)) {
-        validateSearchResults.hasErrors = true
-        validateSearchResults.errors?.push({
+        validateNameResults.hasErrors = true
+        validateNameResults.errors?.push({
             field: 'healthcareProfessionalName',
             errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
             httpStatus: 400
@@ -153,23 +157,27 @@ function validateSearchByName(
     }
 }
 
-function validateSearchByGoogleMapsUrl(
+function validateSubmissionGoogleMapsUrl(
     filters: gqlTypes.SubmissionSearchFilters,
     validateSearchResults: Result<unknown>
 ): void {
     const mapUrl = filters.googleMapsUrl
 
-    if (!mapUrl) {
+    // Check if "googleMapsUrl" is provided in the search filters.
+    // If not included (undefined), exit the function as this filter is optional.
+    if (mapUrl === undefined) {
         return
     }
 
-    if (mapUrl.trim() === '') {
+    // If "googleMapsUrl" is provided, reject empty or null values.
+    if (mapUrl === null || mapUrl.trim() === '') {
         validateSearchResults.hasErrors = true
         validateSearchResults.errors?.push({
             field: 'googleMapsUrl',
             errorCode: ErrorCode.MISSING_INPUT,
             httpStatus: 400
         })
+        return
     }
 
     if (mapUrl.length > 1028) {
@@ -245,11 +253,25 @@ export function validateSubmissionSearchFilters(filters: gqlTypes.SubmissionSear
     }
 
     validateSubmissionOrderBy(filters, validateSearchResults)
-    validateSubmissionSearchBySpokenLanguage(filters, validateSearchResults)
-    validateSearchByName(filters, validateSearchResults)
-    validateSearchByGoogleMapsUrl(filters, validateSearchResults)
+    validateSubmissionSpokenLanguage(filters, validateSearchResults)
+    validateSubmissionName(filters, validateSearchResults)
+    validateSubmissionGoogleMapsUrl(filters, validateSearchResults)
     validateSearchLimit(filters, validateSearchResults)
     validateSearchOffset(filters, validateSearchResults)
 
     return validateSearchResults
+}
+
+export function validateCreateSubmissionInputs(input:gqlTypes.CreateSubmissionInput): Result<unknown> {
+    const validateSubmissionInputs: Result<unknown> = {
+        data: undefined,
+        hasErrors: false,
+        errors: []
+    }
+
+    validateSubmissionName(input, validateSubmissionInputs)
+    validateSubmissionGoogleMapsUrl(input, validateSubmissionInputs)
+    validateSubmissionSpokenLanguage(input, validateSubmissionInputs)
+
+    return validateSubmissionInputs
 }
