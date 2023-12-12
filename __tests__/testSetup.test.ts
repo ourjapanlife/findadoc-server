@@ -32,7 +32,7 @@ beforeAll(async () => {
     await initiatilizeFirebaseInstance()
     await initializeAuth()
     serverUrl = await createApolloFastifyServer(testPort)
-    gqlApiUrl = `${serverUrl}/api`
+    gqlApiUrl = `${serverUrl}/`
 
     //this sets up the firebase test environment
     await initializeTestEnvironment({
