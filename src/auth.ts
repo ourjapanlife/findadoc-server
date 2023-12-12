@@ -51,8 +51,8 @@ export const initializeAuth = async () => {
                         }
                     }],
                     signUpForm: {
-                        termsOfServiceLink: 'https://findadoc.jp/terms-of-service',
-                        privacyPolicyLink: 'https://findadoc.jp/privacy-policy'
+                        termsOfServiceLink: 'https://www.findadoc.jp/terms-of-service',
+                        privacyPolicyLink: 'https://www.findadoc.jp/privacy-policy'
                     }
                 }
             }),
