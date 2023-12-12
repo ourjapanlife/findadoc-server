@@ -77,7 +77,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
     //this adds the apollo server to fastify. 
     //Instead of using fastifyApolloHandler(apollo), we use the handler so we can choose the url 
     await fastify.route({
-        url: '/api',
+        url: '/',
         method: ['GET', 'POST', 'OPTIONS'],
         // preHandler: verifySession(),
         handler: fastifyApolloHandler(apolloServer, {
