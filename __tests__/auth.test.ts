@@ -45,7 +45,7 @@ describe('auth', () => {
     })
 })
 
-export async function createTestUser() : Promise<{response: request.Response, testUserId: string}> {
+export async function createTestUser() : Promise<{ response: request.Response, testUserId: string }> {
     const requestData = {
         formFields: [{
             id: 'email',
