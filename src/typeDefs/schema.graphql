@@ -1,5 +1,6 @@
 # The base types are what is stored in the database, returned from queries, and after mutations are executed
 # The input types are what is used to create and update the base types
+
 type Facility {
   id: ID!
   nameEn: String!
@@ -157,6 +158,41 @@ input SubmissionSearchFilters {
   orderBy: [OrderBy!]
   limit: Int
   offset: Int
+}
+
+type AuditLogs {
+  id: ID!
+  actionType: ActionType!
+  tableName: TableName!
+  schemaVersion: SchemaVersion!
+  jsonData: String!
+  updatedBy: String!
+  updatedDate: String!
+}
+
+input CreateAuditLog {
+  actionType: ActionType!
+  tableName: TableName!
+  schemaVersion: SchemaVersion!
+  jsonData: String!
+  updatedBy: String!
+}
+
+# When we are storing the audit logs, we want to keep track of the actions used
+enum ActionType {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum TableName {
+  Facility
+  HealthcareProfessional
+  Submission
+}
+
+enum SchemaVersion {
+  V1
 }
 
 # This is used for id lists, but also has an action that lets the API understand if the id is being created, updated, or deleted
@@ -359,6 +395,7 @@ type Query {
   ): [HealthcareProfessional]
   submission(id: ID!): Submission
   submissions(filters: SubmissionSearchFilters!): [Submission]
+  auditLogs(id: ID): AuditLogs
 }
 
 #======== Mutations ========
@@ -386,4 +423,6 @@ type Mutation {
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission
 
   deleteSubmission(id: ID!): DeleteResult
+
+  createAuditLog(input: CreateAuditLog!): AuditLogs
 }
