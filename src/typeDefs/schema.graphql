@@ -1,5 +1,14 @@
 # The base types are what is stored in the database, returned from queries, and after mutations are executed
 # The input types are what is used to create and update the base types
+type AuditLogs {
+  id: ID!
+  actionType: String!
+}
+
+input CreateAuditLog {
+  actionType: String!
+}
+
 type Facility {
   id: ID!
   nameEn: String!
@@ -357,6 +366,7 @@ type Query {
   ): [HealthcareProfessional]
   submission(id: ID!): Submission
   submissions(filters: SubmissionSearchFilters!): [Submission]
+  auditLogs(id: ID): AuditLogs
 }
 
 #======== Mutations ========
@@ -384,4 +394,6 @@ type Mutation {
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission
 
   deleteSubmission(id: ID!): DeleteResult
+
+  createAuditLog(input: CreateAuditLog!): AuditLogs
 }

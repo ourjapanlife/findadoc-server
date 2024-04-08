@@ -26,6 +26,8 @@ export type Submission = Omit<gqlType.Submission, 'facility' | 'healthcareProfes
     healthcareProfessionals: gqlType.HealthcareProfessionalSubmission[]
 }
 
+export type AuditLogs = Omit<gqlType.AuditLogs, 'AuditLogs'>
+
 export type Contact = gqlType.Contact
 export type LocalizedName = gqlType.LocalizedName
 export type Specialty = gqlType.Specialty
