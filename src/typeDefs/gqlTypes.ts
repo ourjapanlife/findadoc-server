@@ -16,10 +16,20 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export enum ActionType {
+  Delete = 'DELETE',
+  Update = 'UPDATE'
+}
+
 export type AuditLogs = {
   __typename?: 'AuditLogs';
-  actionType: Scalars['String']['output'];
+  actionType: ActionType;
   id: Scalars['ID']['output'];
+  jsonData: Scalars['String']['output'];
+  schemaVersion: Scalars['Float']['output'];
+  tableName: TableName;
+  updatedBy: Scalars['String']['output'];
+  updatedDate: Scalars['String']['output'];
 };
 
 export type Contact = {
@@ -40,7 +50,11 @@ export type ContactInput = {
 };
 
 export type CreateAuditLog = {
-  actionType: Scalars['String']['input'];
+  actionType: ActionType;
+  jsonData: Scalars['String']['input'];
+  schemaVersion: Scalars['Float']['input'];
+  tableName: TableName;
+  updatedBy: Scalars['String']['input'];
 };
 
 export type CreateFacilityInput = {
@@ -461,6 +475,11 @@ export type SubmissionSearchFilters = {
   updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
 
+export enum TableName {
+  Facility = 'Facility',
+  HealthcareProfessional = 'HealthcareProfessional'
+}
+
 export type UpdateFacilityInput = {
   contact?: InputMaybe<ContactInput>;
   healthcareProfessionalIds?: InputMaybe<Array<Relationship>>;
@@ -562,6 +581,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  ActionType: ActionType;
   AuditLogs: ResolverTypeWrapper<AuditLogs>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Contact: ResolverTypeWrapper<Contact>;
@@ -597,6 +617,7 @@ export type ResolversTypes = {
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
   SubmissionSearchFilters: SubmissionSearchFilters;
+  TableName: TableName;
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
   UpdateSubmissionInput: UpdateSubmissionInput;
@@ -639,8 +660,13 @@ export type ResolversParentTypes = {
 };
 
 export type AuditLogsResolvers<ContextType = any, ParentType extends ResolversParentTypes['AuditLogs'] = ResolversParentTypes['AuditLogs']> = {
-  actionType?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  actionType?: Resolver<ResolversTypes['ActionType'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  jsonData?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  schemaVersion?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  tableName?: Resolver<ResolversTypes['TableName'], ParentType, ContextType>;
+  updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

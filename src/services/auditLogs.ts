@@ -79,14 +79,25 @@ export const createAuditLog = async (auditLogInput: gqlTypes.CreateAuditLog): Pr
 function mapGqlEntityToDbEntity(input: gqlTypes.CreateAuditLog, newId: string): dbSchema.AuditLogs {
     return {
         id: newId,
-        actionType: input.actionType
+        actionType: input.actionType,
+        tableName: input.tableName,
+        schemaVersion: input.schemaVersion,
+        jsonData: input.jsonData,
+        updatedBy: input.updatedBy,
+        //business rule: updatedDate is updated on every change.
+        updatedDate: new Date().toISOString()
     } satisfies dbSchema.AuditLogs
 }
 
 const mapDbEntityTogqlEntity = (dbEntity: dbSchema.AuditLogs): gqlTypes.AuditLogs => {
     const gqlEntity = {
         id: dbEntity.id,
-        actionType: dbEntity.actionType
+        actionType: dbEntity.actionType,
+        tableName: dbEntity.tableName,
+        schemaVersion: dbEntity.schemaVersion,
+        jsonData: dbEntity.jsonData,
+        updatedBy: dbEntity.updatedBy,
+        updatedDate: dbEntity.updatedDate
     } satisfies gqlTypes.AuditLogs
 
     return gqlEntity
