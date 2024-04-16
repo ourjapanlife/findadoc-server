@@ -26,7 +26,7 @@ export type AuditLogs = {
   actionType: ActionType;
   id: Scalars['ID']['output'];
   jsonData: Scalars['String']['output'];
-  schemaVersion: Scalars['Float']['output'];
+  schemaVersion: SchemaVersion;
   tableName: TableName;
   updatedBy: Scalars['String']['output'];
   updatedDate: Scalars['String']['output'];
@@ -52,7 +52,7 @@ export type ContactInput = {
 export type CreateAuditLog = {
   actionType: ActionType;
   jsonData: Scalars['String']['input'];
-  schemaVersion: Scalars['Float']['input'];
+  schemaVersion: SchemaVersion;
   tableName: TableName;
   updatedBy: Scalars['String']['input'];
 };
@@ -420,6 +420,10 @@ export enum RelationshipAction {
   Update = 'UPDATE'
 }
 
+export enum SchemaVersion {
+  V1 = 'V1'
+}
+
 export enum Specialty {
   AllergyAndImmunology = 'ALLERGY_AND_IMMUNOLOGY',
   Anesthesiology = 'ANESTHESIOLOGY',
@@ -613,6 +617,7 @@ export type ResolversTypes = {
   Query: ResolverTypeWrapper<{}>;
   Relationship: Relationship;
   RelationshipAction: RelationshipAction;
+  SchemaVersion: SchemaVersion;
   Specialty: Specialty;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
@@ -663,7 +668,7 @@ export type AuditLogsResolvers<ContextType = any, ParentType extends ResolversPa
   actionType?: Resolver<ResolversTypes['ActionType'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   jsonData?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  schemaVersion?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  schemaVersion?: Resolver<ResolversTypes['SchemaVersion'], ParentType, ContextType>;
   tableName?: Resolver<ResolversTypes['TableName'], ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
