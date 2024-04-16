@@ -162,7 +162,7 @@ type AuditLogs {
   id: ID!
   actionType: ActionType!
   tableName: TableName!
-  schemaVersion: Float!
+  schemaVersion: SchemaVersion!
   jsonData: String!
   updatedBy: String!
   updatedDate: String!
@@ -185,6 +185,10 @@ enum ActionType {
 enum TableName {
   Facility
   HealthcareProfessional
+}
+
+enum SchemaVersion {
+  1.1
 }
 
 # This is used for id lists, but also has an action that lets the API understand if the id is being created, updated, or deleted
