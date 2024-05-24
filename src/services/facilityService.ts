@@ -14,7 +14,7 @@ import { logger } from '../logger.js'
  * @returns A Facility object.
  */
 export const getFacilityById = async (id: string)
-    : Promise<Result<gqlTypes.Facility>> => {
+: Promise<Result<gqlTypes.Facility>> => {
     try {
         const validationResult = validateIdInput(id)
 
@@ -61,7 +61,7 @@ export const getFacilityById = async (id: string)
  * @returns The matching Facilities.
  */
 export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters = {}):
-    Promise<Result<gqlTypes.Facility[]>> {
+Promise<Result<gqlTypes.Facility[]>> {
     try {
         const validationResult = validateFacilitiesSearchInput(filters)
 
@@ -95,7 +95,7 @@ export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters =
             filters.orderBy.forEach(order => {
                 if (order) {
                     searchRef = searchRef.orderBy(order.fieldToOrder as string,
-                        order.orderDirection as gqlTypes.OrderDirection)
+                                                  order.orderDirection as gqlTypes.OrderDirection)
                 }
             })
         } else {
@@ -206,7 +206,7 @@ export async function createFacility(facilityInput: gqlTypes.CreateFacilityInput
  * @returns The updated Facility.
  */
 export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial<gqlTypes.UpdateFacilityInput>)
-    : Promise<Result<gqlTypes.Facility>> => {
+: Promise<Result<gqlTypes.Facility>> => {
     try {
         const validationResult = validateUpdateFacilityInput(fieldsToUpdate)
 

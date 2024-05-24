@@ -159,7 +159,7 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
  * @returns The submission that was created.
  */
 export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
-    Promise<Result<gqlTypes.Submission>> => {
+Promise<Result<gqlTypes.Submission>> => {
     try {
         const validationResults = validateCreateSubmissionInputs(submissionInput)
         
@@ -212,7 +212,7 @@ export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissio
  * @returns The submission that was updated.
  */
 export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>):
-    Promise<Result<gqlTypes.Submission>> => {
+Promise<Result<gqlTypes.Submission>> => {
     try {
         //business logic: a submission can't be updated or unapproved once it's approved.
         //business logic: you can't approve and update at the same time. 

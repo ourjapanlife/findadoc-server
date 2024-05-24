@@ -61,7 +61,7 @@ export async function getHealthcareProfessionalById(id: string)
 * @returns The matching Healthcare Professionals.
 */
 export async function searchProfessionals(filters: gqlTypes.HealthcareProfessionalSearchFilters = {}):
-    Promise<Result<gqlTypes.HealthcareProfessional[]>> {
+Promise<Result<gqlTypes.HealthcareProfessional[]>> {
     try {
         const validationResult = validateProfessionalsSearchInput(filters)
 
@@ -105,7 +105,7 @@ export async function searchProfessionals(filters: gqlTypes.HealthcareProfession
             filters.orderBy.forEach(order => {
                 if (order) {
                     searchRef = searchRef.orderBy(order.fieldToOrder as string,
-                        order.orderDirection as gqlTypes.OrderDirection)
+                                                  order.orderDirection as gqlTypes.OrderDirection)
                 }
             })
         } else {
