@@ -37,7 +37,7 @@
     "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
     "engines": {
         "node": "21.3.0",
-        "npm": "10.2.4"
+        "npm": "10.8.0"
     },
     "devDependencies": {
         "@firebase/rules-unit-testing": "^3.0.1",
