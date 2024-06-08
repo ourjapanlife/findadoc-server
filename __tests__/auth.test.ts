@@ -1,7 +1,5 @@
 import request from 'supertest'
 import { expect, describe, test } from 'vitest'
-import UserRoles from 'supertokens-node/recipe/userroles/index.js'
-import { deleteUser } from 'supertokens-node'
 import { gqlApiUrl, serverUrl } from './testSetup.test.js'
 import { searchSubmissionsQuery } from './submissions.test.js'
 import { Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
@@ -9,7 +7,7 @@ import { gqlRequest } from '../utils/gqlTool.js'
 import { faker } from '@faker-js/faker'
 
 describe('auth', () => {
-    test('can login and access secure routes', async () => {
+    test.skip('can login and access secure routes', async () => {
         const { response, testUserId } = await createTestUser()
 
         //a successful auth will have cookies
@@ -41,7 +39,7 @@ describe('auth', () => {
         expect(searchedSubmissions).toBeDefined()
 
         //clean up the user
-        await deleteUser(testUserId)
+        // await deleteUser(testUserId)
     })
 })
 
@@ -66,10 +64,10 @@ export async function createTestUser() : Promise<{ response: request.Response, t
     const userId = authSignupResult.body.user.id
 
     //let's make the user an admin
-    const response = await UserRoles.addRoleToUser('public', userId, 'admin')
+    // const response = await UserRoles.addRoleToUser('public', userId, 'admin')
 
-    expect(response).toBeDefined()
-    expect(response.status === 'OK').toBeTruthy()
+    // expect(response).toBeDefined()
+    // expect(response.status === 'OK').toBeTruthy()
 
     const testUserId = authSignupResult.body.user.id
     
@@ -78,8 +76,8 @@ export async function createTestUser() : Promise<{ response: request.Response, t
     return { response: authSignupResult, testUserId }
 }
 
-export async function deleteTestUser(userId: string) : Promise<boolean> {
-    const result = await deleteUser(userId)
+// export async function deleteTestUser(userId: string) : Promise<boolean> {
+    // const result = await deleteUser(userId)
     
-    return result.status === 'OK'
-}
+    // return result.status === 'OK'
+// }

@@ -346,6 +346,18 @@ type DeleteResult {
   isSuccessful: Boolean!
 }
 
+# Temporary login solution
+type LoginResult {
+  success: Boolean!
+}
+
+input LoginInput {
+  username: String!
+  password: String!
+  twofactorkey: String!
+}
+
+
 # ======== Queries =========
 
 type Query {
@@ -362,6 +374,7 @@ type Query {
 #======== Mutations ========
 
 type Mutation {
+  login(input: LoginInput!): LoginResult
   createHealthcareProfessional(
     input: CreateHealthcareProfessionalInput!
   ): HealthcareProfessional

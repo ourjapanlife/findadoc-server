@@ -1,11 +1,14 @@
 import { GraphQLError } from 'graphql'
+import * as authService from './services/authService.js'
 import * as facilityService from './services/facilityService.js'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService.js'
 import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService.js'
 import { Result } from './result.js'
-import { UserContext, hasAdminRole } from './auth.js'
+import { AuthContext, hasAdminRole } from './auth.js'
 import { logger } from './logger.js'
+import { envVariables } from '../utils/environmentVariables.js'
+import jwt from 'jsonwebtoken'
 
 const resolvers = {
     Query: {
@@ -41,9 +44,9 @@ const resolvers = {
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
-        submission: async (_parent: unknown, args: { id: string }, context: UserContext)
+        submission: async (_parent: unknown, args: { id: string }, context: AuthContext)
         : Promise<gqlType.Submission | undefined> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -58,9 +61,9 @@ const resolvers = {
             convertErrorsToGqlErrors(matchingSubmissionResult)
             return matchingSubmissionResult.data
         },
-        submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: UserContext)
+        submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: AuthContext)
         : Promise<gqlType.Submission[]> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -78,10 +81,34 @@ const resolvers = {
         }
     },
     Mutation: {
+        login: async (_parent: unknown, args: {
+            input: gqlType.LoginInput
+        }, context: AuthContext): Promise<gqlType.LoginResult> => {
+            // check if the user is already authenticated
+            if(context.isAuthenticated) {
+                return {
+                    success: true
+                }
+            }
+
+            const loginResult = await authService.login(args.input)
+
+            if (loginResult.data.success) {
+                console.log('trying to make a cookie now')
+                const jwtToken = jwt.sign({ username: args.input.username }, envVariables.authSupertokensAPIKey())
+                
+                // context.response.setCookie('authorization', jwtToken)
+                context.response.setCookie('authorization', jwtToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + 900000)})
+                console.log('successfully made a cookie')
+            }
+
+            convertErrorsToGqlErrors(loginResult)
+            return loginResult.data
+        },
         createFacility: async (_parent: unknown, args: {
             input: gqlType.CreateFacilityInput
-        }, context: UserContext): Promise<gqlType.Facility> => {
-            const isAdmin = await hasAdminRole(context)
+        }, context: AuthContext): Promise<gqlType.Facility> => {
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -101,8 +128,8 @@ const resolvers = {
         updateFacility: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateFacilityInput
-        }, context: UserContext): Promise<gqlType.Facility> => {
-            const isAdmin = await hasAdminRole(context)
+        }, context: AuthContext): Promise<gqlType.Facility> => {
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -121,8 +148,8 @@ const resolvers = {
 
         deleteFacility: async (_parent: unknown, args: {
             id: string
-        }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAdmin = await hasAdminRole(context)
+        }, context: AuthContext): Promise<gqlType.DeleteResult> => {
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -141,8 +168,8 @@ const resolvers = {
 
         createHealthcareProfessional: async (_parent: unknown, args: {
             input: gqlType.CreateHealthcareProfessionalInput
-        }, context: UserContext): Promise<gqlType.HealthcareProfessional> => {
-            const isAdmin = await hasAdminRole(context)
+        }, context: AuthContext): Promise<gqlType.HealthcareProfessional> => {
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -163,8 +190,8 @@ const resolvers = {
         updateHealthcareProfessional: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateHealthcareProfessionalInput
-        }, context: UserContext): Promise<gqlType.HealthcareProfessional> => {
-            const isAdmin = await hasAdminRole(context)
+        }, context: AuthContext): Promise<gqlType.HealthcareProfessional> => {
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -184,8 +211,8 @@ const resolvers = {
 
         deleteHealthcareProfessional: async (_parent: unknown, args: {
             id: string
-        }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAdmin = await hasAdminRole(context)
+        }, context: AuthContext): Promise<gqlType.DeleteResult> => {
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -215,8 +242,8 @@ const resolvers = {
         updateSubmission: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateSubmissionInput
-        }, context: UserContext): Promise<gqlType.Submission> => {
-            const isAdmin = await hasAdminRole(context)
+        }, context: AuthContext): Promise<gqlType.Submission> => {
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
@@ -234,8 +261,8 @@ const resolvers = {
 
         deleteSubmission: async (_parent: unknown, args: {
             id: string
-        }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAdmin = await hasAdminRole(context)
+        }, context: AuthContext): Promise<gqlType.DeleteResult> => {
+            const isAdmin = context.isAdmin
 
             if (!isAdmin) {
                 throw new GraphQLError('User is not authenticated', {
