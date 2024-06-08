@@ -1,18 +1,17 @@
 
 import Fastify from 'fastify'
 import { fastifyApolloDrainPlugin, fastifyApolloHandler } from '@as-integrations/fastify'
+import cookiePlugin from '@fastify/cookie'
 import corsPlugin from '@fastify/cors'
 import rateLimitPlugin from '@fastify/rate-limit'
 import compressionPlugin from '@fastify/compress'
-import supertokens from 'supertokens-node'
 import healthcheck from 'fastify-healthcheck'
-import { plugin as superTokensPlugin, errorHandler as superTokensErrorHandler } from 'supertokens-node/framework/fastify/index.js'
 import { ApolloServer, BaseContext, GraphQLRequestContext } from '@apollo/server'
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
 import loadSchema from './schema.js'
 import resolvers from './resolvers.js'
 import { envVariables } from '../utils/environmentVariables.js'
-import { buildUserContext } from './auth.js'
+import { buildAuthContext } from './auth.js'
 import { logger } from './logger.js'
 
 export const createApolloFastifyServer = async (customPort?: number): Promise<string> => {
@@ -23,8 +22,8 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
 
     //cors is a middleware that allows us to make requests from the a different url (findadoc.jp) to our server (api.findadoc.jp)
     await fastify.register(corsPlugin, {
-        origin: [envVariables.websiteURL(), 'localhost', 'http://localhost:3000', '*findadoc.netlify.app', 'https://www.findadoc.jp'],
-        allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
+        origin: [envVariables.websiteURL(), 'localhost', 'http://localhost:3000', '*findadoc.netlify.app', 'https://www.findadoc.jp', 'https://studio.apollographql.com', 'https://sandbox.embed.apollographql.com'],
+        allowedHeaders: ['content-type', 'authorization', 'Authorization'],
         // methods: ['GET', 'POST', 'OPTIONS'],
         credentials: true
     })
@@ -43,9 +42,8 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
         healthcheckUrl: '/health'
     })
 
-    //supertokens auth integration
-    await fastify.register(superTokensPlugin)
-    await fastify.setErrorHandler(superTokensErrorHandler())
+    //add cookie parsing to the server
+    await fastify.register(cookiePlugin)
 
     //set up the apollo graphql server
     const apolloServer = new ApolloServer<BaseContext>({
@@ -56,8 +54,11 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
         plugins: [
             fastifyApolloDrainPlugin(fastify),
             //enables the apollo sandbox as the landing page
-            ApolloServerPluginLandingPageLocalDefault(),
+            ApolloServerPluginLandingPageLocalDefault({
+                includeCookies: true
+            }),
             {
+                //this is a plugin that logs all the graphql queries to the console
                 async requestDidStart(requestContext: GraphQLRequestContext<BaseContext>) {
                     //we want to skip logging requests from the apollo query explorer internal introspection query
                     const isApolloIntrospectionQuery = requestContext.request.query?.includes('IntrospectionQuery')
@@ -82,7 +83,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
         // preHandler: verifySession(),
         handler: fastifyApolloHandler(apolloServer, {
             //this is where we add the supertokens user authentication to the context. We can access this context in the resolvers
-            context: buildUserContext
+            context: buildAuthContext
         })
     })
 
