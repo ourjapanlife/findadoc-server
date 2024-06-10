@@ -62,7 +62,7 @@
         "eslint-config-airbnb-typescript": "^17.1.0",
         "eslint-plugin-import": "^2.29.0",
         "firebase-tools": "^13.1.0",
-        "globals": "^13.23.0",
+        "globals": "^15.0.0",
         "husky": "^8.0.3",
         "rimraf": "^5.0.1",
         "typescript": "^5.2.2",
