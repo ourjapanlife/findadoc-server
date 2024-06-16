@@ -118,6 +118,8 @@ export type FacilitySubmission = {
   id?: Maybe<Scalars['ID']['output']>;
   nameEn?: Maybe<Scalars['String']['output']>;
   nameJa?: Maybe<Scalars['String']['output']>;
+  mapLatitude?: Scalars['Float']['output'];
+  mapLongitude?: Scalars['Float']['output'];
 };
 
 export type HealthcareProfessional = {
