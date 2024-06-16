@@ -52,6 +52,8 @@ describe('createFacility', () => {
         expect(searchedFacility.updatedDate).toBeDefined()
         expect(searchedFacility.nameEn).toBe(originalInputValues.nameEn)
         expect(searchedFacility.nameJa).toBe(originalInputValues.nameJa)
+        expect(searchedFacility.mapLatitude).toBe(originalInputValues.mapLatitude)
+        expect(searchedFacility.mapLongitude).toBe(originalInputValues.mapLongitude)
     })
 
     test('facility/healthcareprofessional associations: Creating healthcareprofessional updates facility\'s healthcareProfessionalIds', async () => {
