@@ -109,6 +109,8 @@ type FacilitySubmission {
   nameJa: String
   contact: Contact
   healthcareProfessionalIds: [ID!]!
+  mapLatitude: Float
+  mapLongitude: Float
 }
 
 type HealthcareProfessionalSubmission {
