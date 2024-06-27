@@ -35,7 +35,7 @@ export type AuditLogs = {
 export type Contact = {
   __typename?: 'Contact';
   address: PhysicalAddress;
-  email: Scalars['String']['output'];
+  email?: Maybe<Scalars['String']['output']>;
   googleMapsUrl: Scalars['String']['output'];
   phone: Scalars['String']['output'];
   website?: Maybe<Scalars['String']['output']>;
@@ -43,7 +43,7 @@ export type Contact = {
 
 export type ContactInput = {
   address: PhysicalAddressInput;
-  email: Scalars['String']['input'];
+  email?: InputMaybe<Scalars['String']['input']>;
   googleMapsUrl: Scalars['String']['input'];
   phone: Scalars['String']['input'];
   website?: InputMaybe<Scalars['String']['input']>;
@@ -142,6 +142,8 @@ export type FacilitySubmission = {
   id?: Maybe<Scalars['ID']['output']>;
   nameEn?: Maybe<Scalars['String']['output']>;
   nameJa?: Maybe<Scalars['String']['output']>;
+  mapLatitude?: Scalars['Float']['output'];
+  mapLongitude?: Scalars['Float']['output'];
 };
 
 export type HealthcareProfessional = {
@@ -677,7 +679,7 @@ export type AuditLogsResolvers<ContextType = any, ParentType extends ResolversPa
 
 export type ContactResolvers<ContextType = any, ParentType extends ResolversParentTypes['Contact'] = ResolversParentTypes['Contact']> = {
   address?: Resolver<ResolversTypes['PhysicalAddress'], ParentType, ContextType>;
-  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   googleMapsUrl?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   phone?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   website?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;

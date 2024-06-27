@@ -72,33 +72,29 @@ For security, we run a local database so we don't break production!
 npm -g i firebase-tools
 ```
 
+**To be able to run the firestore emulator you need to have Java version 11 or later installed. If not installed, please follow the next step (a.2).**
+
 #### a.2 Install Java
 
 on a mac, we recommend using [homebrew](https://brew.sh/)
 
 ```sh
-brew install java
+brew install openjdk
 ```
 
 on a windows pc, we recommend using [chocolatey](https://chocolatey.org/)
 
 ```sh
-choco install java
+choco install openjdk
 ```
+
+**You might have to restart vs code for step a.2 and a.3 all of these to take effect in the project**
 
 #### a.3 Log into Firebase CLI:
 
 ```sh
 firebase login
 ```
-
-#### a.4 Set the CLI to use the project:
-
-```sh
-firebase use --add
-```
-
-Select "Use an existing project"
 
 ### 3.b Running the database locally
 
@@ -130,7 +126,7 @@ To set up the Firebase Service Account for this project, follow these steps:
 ## 4. Run the API
 
 ```sh
-npm run dev
+npm run dev:startserver
 ```
 
 That's it!

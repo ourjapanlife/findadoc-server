@@ -110,6 +110,8 @@ type FacilitySubmission {
   nameJa: String
   contact: Contact
   healthcareProfessionalIds: [ID!]!
+  mapLatitude: Float
+  mapLongitude: Float
 }
 
 type HealthcareProfessionalSubmission {
@@ -276,14 +278,14 @@ input LocalizedNameInput {
 
 type Contact {
   googleMapsUrl: String!
-  email: String!
+  email: String
   phone: String!
   website: String
   address: PhysicalAddress!
 }
 input ContactInput {
   googleMapsUrl: String!
-  email: String!
+  email: String
   phone: String!
   website: String
   address: PhysicalAddressInput!

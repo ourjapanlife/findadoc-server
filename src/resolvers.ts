@@ -11,21 +11,21 @@ import { logger } from './logger.js'
 const resolvers = {
     Query: {
         facility: async (_parent: gqlType.Facility, args: { id: string; })
-            : Promise<gqlType.Facility> => {
+        : Promise<gqlType.Facility> => {
             const queryResults = await facilityService.getFacilityById(args.id)
 
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
         facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters })
-            : Promise<gqlType.Facility[]> => {
+        : Promise<gqlType.Facility[]> => {
             const queryResults = await facilityService.searchFacilities(args.filters)
 
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
         healthcareProfessional: async (_parent: unknown, args: { id: string; })
-            : Promise<gqlType.HealthcareProfessional> => {
+        : Promise<gqlType.HealthcareProfessional> => {
             const matchingHealthcareProfessionalResult =
                 await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
 
@@ -35,7 +35,7 @@ const resolvers = {
         healthcareProfessionals: async (_parent: unknown, args: {
             filters: gqlType.HealthcareProfessionalSearchFilters
         })
-            : Promise<gqlType.HealthcareProfessional[]> => {
+        : Promise<gqlType.HealthcareProfessional[]> => {
             const queryResults =
                 await healthcareProfessionalService.searchProfessionals(args.filters)
 
@@ -43,7 +43,7 @@ const resolvers = {
             return queryResults.data
         },
         submission: async (_parent: unknown, args: { id: string }, context: UserContext)
-            : Promise<gqlType.Submission | undefined> => {
+        : Promise<gqlType.Submission | undefined> => {
             const isAdmin = await hasAdminRole(context)
 
             if (!isAdmin) {
@@ -60,7 +60,7 @@ const resolvers = {
             return matchingSubmissionResult.data
         },
         submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: UserContext)
-            : Promise<gqlType.Submission[]> => {
+        : Promise<gqlType.Submission[]> => {
             const isAdmin = await hasAdminRole(context)
 
             if (!isAdmin) {

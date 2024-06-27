@@ -10,6 +10,7 @@
         "test": "echo '🧶 Installing npm dependencies...🧶' && npm install && vitest",
         "test:dockerstart": "docker-compose -f 'docker/docker-compose-test.yml' up -d --build",
         "test:dockerstop": "docker-compose -f 'docker/docker-compose-test.yml' down",
+        "prepare": "husky install",
         "prod": "npm run prod:dockerstop && npm run prod:dockerstart",
         "prod:build": "echo '🧶 Installing npm dependencies...🧶' && npm install --immutable --immutable-cache && echo '🧹 cleaning dist folder...' && npx rimraf dist/ && echo '➡ ➡ copying files...' && npx copyfiles -a -V src/typeDefs/schema.graphql .env.prod dist && echo '💻✨ compiling code..' && tsc && echo '💻✨ successfully built!'",
         "prod:startserver": "echo '💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production PIDUSAGE_USE_PS=true pm2 start dist/src/index.js --no-daemon && pm2 logs --lines 100",
@@ -19,7 +20,7 @@
         "prod:dockerstop": "echo '🐳 🐳 🐳✨ Stopping docker compose...' && docker compose -f docker/docker-compose-api.yml down",
         "prod:logs": "docker logs findadoc-api -f",
         "generate": "echo '➡ ➡ ➡ Generating types from graphql schema ➡ ➡ ➡' && graphql-codegen --config ./typesgeneratorconfig.ts",
-        "lint": "ESLINT_USE_FLAT_CONFIG=true eslint -c eslint.config.js --fix .",
+        "lint": "cross-env ESLINT_USE_FLAT_CONFIG=true eslint -c eslint.config.js .",
         "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint ."
     },
     "repository": {
@@ -47,6 +48,8 @@
         "@graphql-eslint/eslint-plugin": "^3.20.1",
         "@graphql-tools/mock": "^9.0.0",
         "@graphql-tools/schema": "^10.0.0",
+        "@stylistic/eslint-plugin": "^1.5.4",
+        "@stylistic/eslint-plugin-migrate": "^1.5.4",
         "@swc/core": "^1.3.95",
         "@types/node": "^20.8.10",
         "@types/supertest": "^2.0.12",
