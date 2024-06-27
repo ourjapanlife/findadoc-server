@@ -3,6 +3,7 @@ import * as facilityService from './services/facilityService.js'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService.js'
 import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService.js'
+import * as auditLogsService from './services/auditLogs.js'
 import { Result } from './result.js'
 import { UserContext, hasAdminRole } from './auth.js'
 import { logger } from './logger.js'
@@ -75,6 +76,13 @@ const resolvers = {
 
             convertErrorsToGqlErrors(matchingSubmissionsResult)
             return matchingSubmissionsResult.data
+        }, 
+        auditLogs: async (_parent: unknown, args: {id: string}) => {
+            const matchingAuditlogResult =
+                await auditLogsService.getAuditLogById(args.id)
+
+            convertErrorsToGqlErrors(matchingAuditlogResult)
+            return matchingAuditlogResult.data
         }
     },
     Mutation: {
@@ -250,6 +258,15 @@ const resolvers = {
 
             convertErrorsToGqlErrors(deleteSubmissionResult)
             return deleteSubmissionResult.data
+        },
+
+        createAuditLog: async (_parent: unknown, args: {
+            input: gqlType.CreateAuditLog
+        }): Promise<gqlType.AuditLogs> => {
+            const createAuditLogResult = await auditLogsService.createAuditLog(args.input)
+
+            convertErrorsToGqlErrors(createAuditLogResult)
+            return createAuditLogResult.data
         }
     }
 }
