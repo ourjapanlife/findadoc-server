@@ -1,6 +1,6 @@
 import { expect, describe, test } from 'vitest'
 import request from 'supertest'
-import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions.js'
+import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
 import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
 import { Error, ErrorCode } from '../src/result.js'
 import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'

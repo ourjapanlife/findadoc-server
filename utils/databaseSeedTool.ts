@@ -3,7 +3,7 @@ import { createFacility } from '../src/services/facilityService.js'
 
 import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { generateRandomCreateFacilityInputArray } from '../src/fakeData/fakeFacilities.js'
-import { generateRandomCreateSubmissionInputArray, generateRandomUpdateSubmissionInput } from '../src/fakeData/submissions.js'
+import { generateRandomCreateSubmissionInputArray, generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
 import { logger } from '../src/logger.js'
 import { createSubmission, updateSubmission } from '../src/services/submissionService.js'
 
