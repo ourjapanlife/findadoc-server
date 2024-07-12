@@ -12,7 +12,7 @@ export function generateRandomCreateSubmissionInput(): gqlTypes.CreateSubmission
     }
 }
 
-export function generateRandomCreateSubmissionInputArray({ count = 5 }): gqlTypes.CreateSubmissionInput[] {
+export function generateRandomCreateSubmissionInputArray({ count = 5 } = {}): gqlTypes.CreateSubmissionInput[] {
     return faker.helpers.multiple(generateRandomCreateSubmissionInput, {
         count: count
     })
