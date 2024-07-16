@@ -102,12 +102,6 @@ firebase login
 npm run dev:startlocaldb
 ```
 
-### 3.c Starting the dev server and seeding the emulator
-
-```sh
-npm run dev
-```
-
 This will run until you shut down the instance hitting `ctrl^+C`
 
 ### (Optional) Connecting to Production database
@@ -125,11 +119,13 @@ To set up the Firebase Service Account for this project, follow these steps:
 
 ## 4. Run the API
 
+Before running the following command, make sure that your local database is running
+
 ```sh
-npm run dev:startserver
+npm run dev
 ```
 
-That's it!
+That's it! This command will start the API, seed your database, install dependencies, and generate our GraphQL types.
 
 ### (Optional) Running in production mode
 
