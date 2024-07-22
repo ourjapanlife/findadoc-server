@@ -163,7 +163,7 @@ input SubmissionSearchFilters {
 type AuditLogs {
   id: ID!
   actionType: ActionType!
-  tableName: TableName!
+  objectType: ObjectType!
   schemaVersion: SchemaVersion!
   jsonData: String!
   updatedBy: String!
@@ -172,7 +172,7 @@ type AuditLogs {
 
 input CreateAuditLog {
   actionType: ActionType!
-  tableName: TableName!
+  objectType: ObjectType!
   schemaVersion: SchemaVersion!
   jsonData: String!
   updatedBy: String!
@@ -185,7 +185,7 @@ enum ActionType {
   DELETE
 }
 
-enum TableName {
+enum ObjectType {
   Facility
   HealthcareProfessional
   Submission
