@@ -27,8 +27,8 @@ export type AuditLogs = {
   actionType: ActionType;
   id: Scalars['ID']['output'];
   jsonData: Scalars['String']['output'];
+  objectType: ObjectType;
   schemaVersion: SchemaVersion;
-  tableName: TableName;
   updatedBy: Scalars['String']['output'];
   updatedDate: Scalars['String']['output'];
 };
@@ -53,8 +53,8 @@ export type ContactInput = {
 export type CreateAuditLog = {
   actionType: ActionType;
   jsonData: Scalars['String']['input'];
+  objectType: ObjectType;
   schemaVersion: SchemaVersion;
-  tableName: TableName;
   updatedBy: Scalars['String']['input'];
 };
 
@@ -331,6 +331,12 @@ export type MutationUpdateSubmissionArgs = {
   input: UpdateSubmissionInput;
 };
 
+export enum ObjectType {
+  Facility = 'Facility',
+  HealthcareProfessional = 'HealthcareProfessional',
+  Submission = 'Submission'
+}
+
 export type OrderBy = {
   fieldToOrder: Scalars['String']['input'];
   orderDirection: OrderDirection;
@@ -482,12 +488,6 @@ export type SubmissionSearchFilters = {
   updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
 
-export enum TableName {
-  Facility = 'Facility',
-  HealthcareProfessional = 'HealthcareProfessional',
-  Submission = 'Submission'
-}
-
 export type UpdateFacilityInput = {
   contact?: InputMaybe<ContactInput>;
   healthcareProfessionalIds?: InputMaybe<Array<Relationship>>;
@@ -614,6 +614,7 @@ export type ResolversTypes = {
   LocalizedName: ResolverTypeWrapper<LocalizedName>;
   LocalizedNameInput: LocalizedNameInput;
   Mutation: ResolverTypeWrapper<{}>;
+  ObjectType: ObjectType;
   OrderBy: OrderBy;
   OrderDirection: OrderDirection;
   PhysicalAddress: ResolverTypeWrapper<PhysicalAddress>;
@@ -626,7 +627,6 @@ export type ResolversTypes = {
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
   SubmissionSearchFilters: SubmissionSearchFilters;
-  TableName: TableName;
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
   UpdateSubmissionInput: UpdateSubmissionInput;
@@ -672,8 +672,8 @@ export type AuditLogsResolvers<ContextType = any, ParentType extends ResolversPa
   actionType?: Resolver<ResolversTypes['ActionType'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   jsonData?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  objectType?: Resolver<ResolversTypes['ObjectType'], ParentType, ContextType>;
   schemaVersion?: Resolver<ResolversTypes['SchemaVersion'], ParentType, ContextType>;
-  tableName?: Resolver<ResolversTypes['TableName'], ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
