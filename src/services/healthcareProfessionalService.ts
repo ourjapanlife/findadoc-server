@@ -75,10 +75,13 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
         const hasSpecialtiesFilter = filters.specialties && filters.specialties.length > 0
         const hasSpokenLanguagesFilter = filters.spokenLanguages && filters.spokenLanguages.length > 0
         const hasDegreesFilter = filters.degrees && filters.degrees.length > 0
+        const hasNamesFilter = filters.names && filters.names.length > 0
 
         const shouldFilterBySpecialties = hasSpecialtiesFilter
         const shouldFilterBySpokenLanguages = hasSpokenLanguagesFilter && !hasSpecialtiesFilter
         const shouldFilterByDegrees = hasDegreesFilter && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
+        const shouldFilterByNames = hasNamesFilter && !hasDegreesFilter 
+                                    && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
 
         //specialties will likely return the smallest result set, so this should be the most performant.
         if (shouldFilterBySpecialties) {
@@ -91,6 +94,14 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
 
         if (shouldFilterByDegrees) {
             searchRef = searchRef.where('degrees', 'array-contains-any', filters.degrees)
+        }
+
+        if (shouldFilterByNames) {
+            // Extra check is needed to get the first index of names array filter.
+            // Could not reuse hasNamesFilter due to TypeScript syntax error.
+            if (filters.names && filters.names?.length > 0) {
+                searchRef = searchRef.where('names', 'array-contains', filters.names[0])
+            }
         }
 
         if (filters.createdDate) {
@@ -114,14 +125,15 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
 
         searchRef = searchRef.limit(filters.limit || 20)
         searchRef = searchRef.offset(filters.offset || 0)
-
+        
         const dbDocument = await searchRef.get()
         const dbProfessionals = dbDocument.docs
+
         const gqlProfessionals = dbProfessionals.map(dbProfessional =>
             mapDbEntityTogqlEntity(dbProfessional.data() as dbSchema.HealthcareProfessional))
 
         let filteredResults = gqlProfessionals
-
+        
         //if we queried by specialties, we still need to filter the remaining results by the other array-based filters
         //tip: they are mutually exclusive, so we don't need to check for every combination
         if (shouldFilterBySpecialties) {
@@ -134,8 +146,22 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
                 ? professionalsFilteredBySpokenLanguages.filter(professional =>
                     professional.degrees.some(db => filters.degrees?.some(filter => filter == db)))
                 : professionalsFilteredBySpokenLanguages ?? []
+            
+            const professionalsFilteredByName = hasNamesFilter
+                ? professionalsFilteredByDegrees.filter(professionals => {
+                    const filterName = filters.names ? filters.names[0] : false
 
-            filteredResults = professionalsFilteredByDegrees
+                    if (!filterName) {
+                        return professionalsFilteredByDegrees ?? []
+                    }
+
+                    return professionals.names.some(db => db.firstName == filterName.firstName 
+                        && db.lastName == filterName.lastName
+                        && db.locale == filterName.locale)
+                })
+                : professionalsFilteredByDegrees ?? []
+
+            filteredResults = professionalsFilteredByName
         }
 
         //if we queried by spoken languages, we still need to filter the remaining results by the other array-based filters
@@ -145,7 +171,21 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
                     professional.degrees.some(db => filters.degrees?.some(filter => filter == db)))
                 : filteredResults ?? []
 
-            filteredResults = professionalsFilteredByDegrees
+            const professionalsFilteredByName = hasNamesFilter
+                ? professionalsFilteredByDegrees.filter(professionals => {
+                    const filterName = filters.names ? filters.names[0] : false
+
+                    if (!filterName) {
+                        return professionalsFilteredByDegrees ?? []
+                    }
+
+                    return professionals.names.some(db => db.firstName == filterName.firstName 
+                        && db.lastName == filterName.lastName
+                        && db.locale == filterName.locale)
+                })
+                : professionalsFilteredByDegrees ?? []
+
+            filteredResults = professionalsFilteredByName
         }
 
         return {
