@@ -191,5 +191,3 @@ const parseAddressForUpdatedSubmission = (englishAddressForSubmission: any, addr
     extractedMapLongitude
   }
 }
-
-getFacilityDetailsForSubmission('https://maps.app.goo.gl/JwogYMa2dEzX248EA?g_st=iw')
