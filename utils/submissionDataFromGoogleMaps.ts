@@ -1,48 +1,70 @@
 import puppeteer from 'puppeteer'
-import dotenv from 'dotenv'
+import axios from 'axios'
 
-//Load the api key for google maps
-dotenv.config()
 
-// This function ensures that we can redirect in a headerless browser using puppeteer to extract url once it has coordinates
-const extractRedirectedUrl = async (initialUrl: string): Promise<string> => {
+// This uses all the helper functions in order to get the data we want
+export const getFacilityDetailsForSubmission = async (submittedURL: string, apiKey: string): Promise<any | null> => {
+  try {
+    const coordinatesFromUrl = {
+      latitude: "",
+      longitude: ""
+    }
+
+    const redirectedUrl = await extractRedirectedUrl(submittedURL)
+    
+    if(redirectedUrl){
+    validateGoogleMapsUrl(redirectedUrl)
+    } else {
+      return
+    }
+    
+    // regex to extract the full coordinates from url
+    const regexToExtractGoogleMapsCoordinates = /@(-?\d+\.\d+),(-?\d+\.\d+),/
+    const match = redirectedUrl ? redirectedUrl.match(regexToExtractGoogleMapsCoordinates) : null
+
+    if (match) {
+    coordinatesFromUrl.latitude = match[1]
+    coordinatesFromUrl.longitude = match[2]
+    } else {
+    console.error('No coordinates found in the URL.')
+    return null
+    }
+    if (coordinatesFromUrl) {
+      const addressDetails = await getGoogleMapUrlLocationDetails(coordinatesFromUrl.latitude, coordinatesFromUrl.longitude, apiKey)
+      return addressDetails
+    } else {
+      throw new Error('Could not extract coordinates.')
+    }
+  } catch (error) {
+    console.error('Error in getFacilityDetailsForSubmission:', error)
+    throw error
+  }
+}
+
+/** 
+*Extracts the desktop URL from all submissions due to the variety of google map url formats. They are different on iPhone, Android, and desktop and only the dekstop URL has the coordinates
+* @param {string} submittedURL - the submitted URL from the user
+* @returns {string} returns the desktop url
+*/
+const extractRedirectedUrl = async (submittedURL: string): Promise<string | void> => {
   const browser = await puppeteer.launch({ headless: true }) // ensures it doesn't open an actual browser
 
   try {
-    const page = await browser.newPage()
-    await page.goto(initialUrl, {
-      waitUntil: 'networkidle0', // Ensures that the network page has loaded to have coordinates
+    const desktopPage = await browser.newPage()
+    await desktopPage.goto(submittedURL, {
+      waitUntil: 'networkidle0', // Ensures that the network desktopPage has loaded to have coordinates
       timeout: 120000, // long timeout so that it has time to redirect. Google redirects twice from mobile links
     })
-    return page.url()
+    return desktopPage.url()
   } catch (error) {
     console.error('Error extracting redirected URL:', error)
-    throw error
   } finally {
     await browser.close()
   }
 }
 
-// Extract the coordinates from the extracted google maps url
-const extractCoordinatesFromRedirectedUrl = (url: string): { latitude: string, longitude: string } | null => {
-  // regex to extract the full coordinates from url
-  const regex = /@(-?\d+\.\d+),(-?\d+\.\d+),/
-  const match = url.match(regex)
-
-  if (match) {
-    const latitude = match[1]
-    const longitude = match[2]
-    return { latitude, longitude }
-  } else {
-    console.error('No coordinates found in the URL.')
-    return null
-  }
-}
-
-
-
 // This function uses the places api to get the closest clinic to the coordinates in the url
-const getNearbyLocationsFromCoordinates = async (latitude: string, longitude: string, apiKey: string): Promise<any | null> => {
+const getGoogleMapUrlLocationDetails = async (latitude: string, longitude: string, apiKey: string): Promise<any | null> => {
   const url = 'https://places.googleapis.com/v1/places:searchText'
 
   // body that gives parameters to the google places API
@@ -73,18 +95,12 @@ const getNearbyLocationsFromCoordinates = async (latitude: string, longitude: st
   }
 
   try {
-    const response = await fetch(url, fetchOptions)
+    const responseFromGooglePlacesAPI = await axios.post(url, fetchOptions)
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`HTTP error! Status: ${response.status} - ${errorText}`)
-    }
+    const placeDataForSubmission = responseFromGooglePlacesAPI.data.places || []
 
-    const data = await response.json()
-    const results = data.places || []
-
-    if (results.length) {
-      return results
+    if (placeDataForSubmission.length) {
+      return placeDataForSubmission
     } else {
       console.error('No hospitals or clinics found for the given coordinates.')
       return null
@@ -95,30 +111,22 @@ const getNearbyLocationsFromCoordinates = async (latitude: string, longitude: st
   }
 }
 
-
-// This uses all the helper functions in order to get the data we want
-const getFacilityDetailsForSubmission = async (initialUrl: string, apiKey: string): Promise<any | null> => {
+const validateGoogleMapsUrl = async (redirectedUrl:string) => {
   try {
-    const redirectedUrl = await extractRedirectedUrl(initialUrl)
-    const coordinates = extractCoordinatesFromRedirectedUrl(redirectedUrl)
-    if (coordinates) {
-      const addressDetails = await getNearbyLocationsFromCoordinates(coordinates.latitude, coordinates.longitude, apiKey)
-      console.log(addressDetails)
-      return addressDetails
-    } else {
-      throw new Error('Could not extract coordinates.')
+    const regexToValidateGoogleMapsUrl = /^(http(s?)\:\/\/)?((maps\.google\.[a-z]+\/)|((www\.)?google\.[a-z]+\/maps\/)|(goo\.gl\/maps\/)).*/
+
+    if (!redirectedUrl.match(regexToValidateGoogleMapsUrl)) {
+      console.error(`${redirectedUrl} is not a valid Google Maps URL`);
+      return;
     }
   } catch (error) {
-    console.error('Error in getFacilityDetailsForSubmission:', error)
-    throw error
+    console.error('Error during URL validation:', error);
   }
-}
+};
 
-// Exporting the function to the files where it needs to be used
-export { getFacilityDetailsForSubmission }
 
 // Testing the code above using an apple link for Tokyo Midtown Clinic. You must enter your api key if you want to test it
-const initialUrl = 'https://maps.app.goo.gl/JwogYMa2dEzX248EA?g_st=iw'
-const apiKey = process.env.GOOGLE_MAPS_API_KEY
+const submittedURL = 'https://maps.app.goo.gl/JwogYMa2dEzX248EA?g_st=iw'
+const apiKey = process.env.GOOGLE_API_KEY
 
-getFacilityDetailsForSubmission(initialUrl, apiKey as string)
+getFacilityDetailsForSubmission(submittedURL, apiKey as string)
