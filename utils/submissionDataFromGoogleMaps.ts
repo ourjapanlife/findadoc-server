@@ -35,13 +35,21 @@ export const getFacilityDetailsForSubmission = async (submittedURL: string): Pro
     }
     if (coordinatesFromUrl) {
       const addressDetails = await getGoogleMapUrlLocationDetails(coordinatesFromUrl.latitude, coordinatesFromUrl.longitude, apiKey as string)
-      if (!addressDetails || addressDetails.length === 0) {
+      if (!addressDetails || !addressDetails.length) {
         throw new Error('No address details found.')
       }
 
-      const parsedAddressFromGooglePlacesAPI = parseAddressForUpdatedSubmission(addressDetails[0].formattedAddress, addressDetails)
+      const englishAddressForSubmission = addressDetails[0].addressComponents ? addressDetails[0].addressComponents : []
 
-      return parsedAddressFromGooglePlacesAPI
+      if (!englishAddressForSubmission.length) {
+        throw new Error('Address information is incomplete.')
+      }
+
+      const parsedGooglePlacesInfo = parseAddressForUpdatedSubmission(englishAddressForSubmission, addressDetails)
+
+      console.log(parsedGooglePlacesInfo)
+
+      return parsedGooglePlacesInfo
     } else {
       throw new Error('Could not extract coordinates.')
     }
@@ -131,46 +139,39 @@ const validateGoogleMapsUrl = async (redirectedUrl:string) => {
   }
 }
 
-const extractPostalCode = (addressParts: string[]): string => {
-  for (const part of addressParts) {
-    const match = part.match(/(\d{3}-\d{4})/)
-    if (match) return match[1]
-  }
-  return ''
+const extractPostalCode = (addressComponents: any) => {
+  const extractedPostalCodeFromComponents = addressComponents.filter((component: any) => component.types.includes('postal_code')
+  )
+
+  return extractedPostalCodeFromComponents[0].longText || ''
 }
 
-const extractPrefecture = (addressParts: string[]): string => {
-  const prefectures = ['Hokkaido', 'Aomori', 'Iwate', 'Miyagi', 'Akita', 'Yamagata', 'Fukushima', 'Ibaraki', 'Tochigi', 'Gumma', 'Saitama', 'Chiba', 'Tokyo', 'Kanagawa', 'Niigata', 'Toyama', 'Ishikawa', 'Fukui', 'Yamanashi', 'Nagano', 'Gifu', 'Shizuoka', 'Aichi', 'Mie', 'Shiga', 'Kyoto', 'Osaka', 'Hyogo', 'Nara', 'Wakayama', 'Tottori', 'Shimane', 'Okayama', 'Hiroshima', 'Yamaguchi', 'Tokushima', 'Kagawa', 'Ehime', 'Kochi', 'Fukuoka', 'Saga', 'Nagasaki', 'Kumamoto', 'Oita', 'Miyazaki', 'Kagoshima', 'Okinawa']
-  for (const part of addressParts) {
-    if (prefectures.includes(part.trim())) return part.trim()
-  }
-  return ''
+const extractPrefecture = (addressComponents: any) => {
+  const extractedPrefectureFromComponents
+  = addressComponents.filter((component: any) => component.types.includes('administrative_area_level_1'))
+
+  return extractedPrefectureFromComponents[0].longText || ''
 }
 
-const extractAddressLines = (addressParts: string[]): { line1: string, line2: string } => {
-  let line1 = ''
-  let line2 = ''
+const extractAddressLinesEnOne = (addressComponents: any) => {
+  const premise
+  = addressComponents.filter((component: any) => component.types.includes('premise'))
+  const sublocalityFour
+  = addressComponents.filter((component: any) => component.types.includes('sublocality_level_4'))
+  const sublocalityThree
+  = addressComponents.filter((component: any) => component.types.includes('sublocality_level_3'))
+
+  const concatenatedEnglishLineOne = `${premise[0].longText}-${sublocalityFour[0].longText}-${sublocalityThree[0].longText}`
+
+  return concatenatedEnglishLineOne 
+}
+
+const parseAddressForUpdatedSubmission = (englishAddressForSubmission: any, addressDetails: any) => {
   
-  for (let i = 0; i < addressParts.length; i++) {
-    if (addressParts[i].match(/\d{1,2} Chome/)) {
-      line1 = addressParts.slice(i, i + 2).join(', ')
-      line2 = addressParts.slice(i + 2).join(', ')
-      break
-    }
-  }
+  const extractedPostalCodeFromInformation = extractPostalCode(englishAddressForSubmission)
+  const extractPrefectureEnFromInformation = extractPrefecture(englishAddressForSubmission)
 
-  return { line1, line2 }
-}
-
-const parseAddressForUpdatedSubmission = (formattedAddress: string, addressDetails: any) => {
-  const addressParts = formattedAddress.split(',').map(part => part.trim())
-
-  console.log('parts', addressParts)
-
-  const extractedPostalCodeFromInformation = extractPostalCode(addressParts)
-  const extractPrefectureEnFromInformation = extractPrefecture(addressParts)
-  
-  const extractedAddressLineEn = extractAddressLines(addressParts)
+  const extractedAddressLine1En = extractAddressLinesEnOne(englishAddressForSubmission)
 
   const extractedNameEn = addressDetails[0].displayName?.text || ''
   const extractedPhoneNumber = `81-${addressDetails[0].nationalPhoneNumber}` || ''
@@ -185,10 +186,11 @@ const parseAddressForUpdatedSubmission = (formattedAddress: string, addressDetai
     extractedNameEn,
     extractedPhoneNumber,
     extractedWebsite,
-    extractedAddressLine1En: extractedAddressLineEn.line1 || '',
-    extractedAddressLine2En: extractedAddressLineEn.line2 || '',
+    extractedAddressLine1En,
     extractedGoogleMapsURI,
     extractedMapLatitude,
     extractedMapLongitude
   }
 }
+
+getFacilityDetailsForSubmission('https://maps.app.goo.gl/JwogYMa2dEzX248EA?g_st=iw')

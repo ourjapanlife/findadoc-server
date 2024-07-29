@@ -259,8 +259,6 @@ const resolvers = {
                     = autofillPlacesInformation.extractPrefectureEnFromInformation
                     facility.contact.address.addressLine1En
                     = autofillPlacesInformation.extractedAddressLine1En
-                    facility.contact.address.addressLine2En
-                    = autofillPlacesInformation.extractedAddressLine2En
                     facility.mapLatitude = autofillPlacesInformation.extractedMapLatitude
                     facility.mapLongitude = autofillPlacesInformation.extractedMapLongitude
                 }
