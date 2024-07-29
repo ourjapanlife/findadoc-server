@@ -6,6 +6,7 @@ import * as submissionService from './services/submissionService.js'
 import { Result } from './result.js'
 import { UserContext, hasAdminRole } from './auth.js'
 import { logger } from './logger.js'
+import { getFacilityDetailsForSubmission } from '../utils/submissionDataFromGoogleMaps.js'
 
 const resolvers = {
     Query: {
@@ -207,6 +208,61 @@ const resolvers = {
             input: gqlType.CreateSubmissionInput
         }): Promise<gqlType.Submission> => {
             const createSubmissionResult = await submissionService.createSubmission(args.input)
+
+            const submissionLocationInformation: gqlType.UpdateSubmissionInput = {
+                facility: {
+                    contact: {  
+                        phone: '', 
+                        website: null,
+                        googleMapsUrl: '',
+                        address: {
+                            postalCode: '',
+                            prefectureEn: '',
+                            addressLine1En: '',
+                            addressLine2En: '',
+                            cityEn: '',
+                            prefectureJa: '',
+                            addressLine1Ja: '',
+                            addressLine2Ja: '',
+                            cityJa: ''
+                        }
+                    },
+                    nameEn: '',
+                    nameJa: '',
+                    mapLatitude: 0,
+                    mapLongitude: 0,
+                    healthcareProfessionalIds: []
+                }             
+            }
+
+            const autofillPlacesInformation
+            = await getFacilityDetailsForSubmission(args.input.googleMapsUrl as string)
+
+            if (autofillPlacesInformation) {
+                const { facility } = submissionLocationInformation
+                
+                if (facility) {
+                    facility.nameEn = autofillPlacesInformation.extractedNameEn
+                    facility.contact.phone = autofillPlacesInformation.extractedPhoneNumber
+                    facility.contact.website = autofillPlacesInformation.extractedWebsite
+                    facility.contact.googleMapsUrl = autofillPlacesInformation.extractedGoogleMapsURI
+                    facility.contact.address.postalCode
+                    = autofillPlacesInformation.extractedPostalCodeFromInformation
+                    facility.contact.address.prefectureEn
+                    = autofillPlacesInformation.extractPrefectureEnFromInformation
+                    facility.contact.address.addressLine1En
+                    = autofillPlacesInformation.extractedAddressLine1En
+                    facility.contact.address.addressLine2En
+                    = autofillPlacesInformation.extractedAddressLine2En
+                    facility.mapLatitude = autofillPlacesInformation.extractedMapLatitude
+                    facility.mapLongitude = autofillPlacesInformation.extractedMapLongitude
+                    
+                    await submissionService.updateSubmission(
+                        createSubmissionResult.data.id,
+                        submissionLocationInformation
+                    )
+                }
+            }
 
             convertErrorsToGqlErrors(createSubmissionResult)
             return createSubmissionResult.data
