@@ -209,6 +209,13 @@ const resolvers = {
         }): Promise<gqlType.Submission> => {
             const createSubmissionResult = await submissionService.createSubmission(args.input)
 
+            convertErrorsToGqlErrors(createSubmissionResult)
+            return createSubmissionResult.data
+        },
+
+        moderationPanelUpdateSubmission: async (_parent: unknown, args: {
+            input: gqlType.ModerationAutofillDatabaseSubmissionInput
+        }): Promise<gqlType.Submission> => {
             const submissionLocationInformation: gqlType.UpdateSubmissionInput = {
                 facility: {
                     contact: {  
@@ -240,7 +247,7 @@ const resolvers = {
 
             if (autofillPlacesInformation) {
                 const { facility } = submissionLocationInformation
-                
+
                 if (facility) {
                     facility.nameEn = autofillPlacesInformation.extractedNameEn
                     facility.contact.phone = autofillPlacesInformation.extractedPhoneNumber
@@ -256,16 +263,16 @@ const resolvers = {
                     = autofillPlacesInformation.extractedAddressLine2En
                     facility.mapLatitude = autofillPlacesInformation.extractedMapLatitude
                     facility.mapLongitude = autofillPlacesInformation.extractedMapLongitude
-                    
-                    await submissionService.updateSubmission(
-                        createSubmissionResult.data.id,
-                        submissionLocationInformation
-                    )
                 }
             }
 
-            convertErrorsToGqlErrors(createSubmissionResult)
-            return createSubmissionResult.data
+            const updatedSubmissionResult = await submissionService.updateSubmission(
+                args.input.id as string,
+                submissionLocationInformation
+            )
+
+            convertErrorsToGqlErrors(updatedSubmissionResult)
+            return updatedSubmissionResult.data
         },
 
         updateSubmission: async (_parent: unknown, args: {
