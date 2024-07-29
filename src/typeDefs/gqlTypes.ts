@@ -495,6 +495,7 @@ export type UpdateHealthcareProfessionalInput = {
 };
 
 export type UpdateSubmissionInput = {
+  autofillPlaceFromSubmissionUrl?: InputMaybe<Scalars['Boolean']['input']>;
   facility?: InputMaybe<CreateFacilityInput>;
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;

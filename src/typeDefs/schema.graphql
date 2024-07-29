@@ -142,6 +142,7 @@ input UpdateSubmissionInput {
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
+  autofillPlaceFromSubmissionUrl: Boolean
   notes: String
 }
 
