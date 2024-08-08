@@ -8,13 +8,14 @@ import { createFacility } from './facilityService.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService.js'
 import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
 import { logger } from '../../src/logger.js'
+import { createAuditLog } from './auditLogService.js'
 
 /**
  * Gets the Submission from the database that matches the id.
  * @param id A string that matches the id of the Firestore Document for the Submission.
  * @returns A Submission object.
  */
-export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Submission | undefined>> => {
+export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Submission>> => {
     try {
         const validationResult = validateIdInput(id)
 
@@ -28,7 +29,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
 
         if (!dbDocument.exists) {
             return {
-                data: undefined,
+                data: {} as gqlTypes.Submission,
                 hasErrors: true,
                 errors: [{
                     field: 'id',
@@ -51,7 +52,7 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
         logger.error(`ERROR: Error retrieving submission by id ${id}: ${error}`)
 
         return {
-            data: undefined,
+            data: {} as gqlTypes.Submission,
             hasErrors: true,
             errors: [{
                 field: 'getSubmissionById',
@@ -171,11 +172,28 @@ Promise<Result<gqlTypes.Submission>> => {
             }
         }
 
+        // TO DO: After it's validated we should send already an okay request to the user
+
         const submissionRef = dbInstance.collection('submissions').doc()
         const newSubmissionId = submissionRef.id
         const newSubmission = mapGqlEntityToDbEntity(submissionInput, newSubmissionId)
-        
-        await submissionRef.set(newSubmission)
+
+        // We want to wrap everyting in a transaction, so when one of the transactions fails we can roll-back
+        await dbInstance.runTransaction(async t => {
+            await t.set(submissionRef, newSubmission)
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Create, 
+                gqlTypes.ObjectType.Submission, 
+                '', 
+                newSubmission,
+                null,
+                t
+            )
+
+            if (!createdAuditLog.isSuccesful) {
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Create}`) 
+            }
+        })
 
         const createdSubmission = await getSubmissionById(newSubmissionId)
 
@@ -211,7 +229,8 @@ Promise<Result<gqlTypes.Submission>> => {
  * @param fieldsToUpdate the fields to update
  * @returns The submission that was updated.
  */
-export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>):
+export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>,
+    updatedBy: string):
 Promise<Result<gqlTypes.Submission>> => {
     try {
         //business logic: a submission can't be updated or unapproved once it's approved.
@@ -234,11 +253,26 @@ Promise<Result<gqlTypes.Submission>> => {
             updatedDate: new Date().toISOString()
         }
 
-        await submissionRef.set(updatedSubmissionValues, { merge: true })
+        let updatedSubmission: Result<gqlTypes.Submission> = {} as Result<gqlTypes.Submission>
+
+        await dbInstance.runTransaction(async t => {
+            await t.update(submissionRef, updatedSubmissionValues)
+            updatedSubmission = await getSubmissionById(submissionId)
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Update, 
+                gqlTypes.ObjectType.Submission, 
+                updatedBy,
+                updatedSubmission.data,
+                submissionToUpdate,
+                t
+            )
+
+            if (!createdAuditLog.isSuccesful) {
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            }
+        })
 
         logger.info(`\nDB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
-
-        const updatedSubmission = await getSubmissionById(submissionId)
 
         if (updatedSubmission.hasErrors || !updatedSubmission.data) {
             throw new Error(`ERROR: Error creating submission: ${JSON.stringify(updatedSubmission.errors)}`)
@@ -349,11 +383,11 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
  * This deletes a submission from the database. If the submission doesn't exist, it will return a validation error.
  * @param id The ID of the submission in the database to delete.
  */
-export async function deleteSubmission(id: string)
+export async function deleteSubmission(id: string, updatedBy: string)
     : Promise<Result<gqlTypes.DeleteResult>> {
     try {
-        const dbRef = dbInstance.collection('submissions').doc(id)
-        const dbDocument = await dbRef.get()
+        const submissionRef = dbInstance.collection('submissions').doc(id)
+        const dbDocument = await submissionRef.get()
 
         if (!dbDocument.exists) {
             logger.warn(`Validation Error: User tried deleting non-existant submission: ${id}`)
@@ -371,7 +405,25 @@ export async function deleteSubmission(id: string)
             }
         }
 
-        await dbRef.delete()
+        const submissionToDelete = dbDocument.data() as dbSchema.Submission
+        const convertedEntity = mapDbEntityTogqlEntity(submissionToDelete)
+
+        await dbInstance.runTransaction(async t => {
+            await t.delete(submissionRef)
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Update, 
+                gqlTypes.ObjectType.Submission, 
+                updatedBy,
+                convertedEntity,
+                null,
+                t
+            )
+
+            if (!createdAuditLog.isSuccesful) {
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`) 
+            }
+        })
+        
         logger.info(`\nDB-DELETE: Submission ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
 
         return {

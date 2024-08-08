@@ -26,8 +26,9 @@ export type AuditLog = {
   __typename?: 'AuditLog';
   actionType: ActionType;
   id: Scalars['ID']['output'];
-  jsonData: Scalars['String']['output'];
+  newValue: Scalars['String']['output'];
   objectType: ObjectType;
+  oldValue?: Maybe<Scalars['String']['output']>;
   schemaVersion: SchemaVersion;
   updatedBy: Scalars['String']['output'];
   updatedDate: Scalars['String']['output'];
@@ -655,8 +656,9 @@ export type ResolversParentTypes = {
 export type AuditLogResolvers<ContextType = any, ParentType extends ResolversParentTypes['AuditLog'] = ResolversParentTypes['AuditLog']> = {
   actionType?: Resolver<ResolversTypes['ActionType'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  jsonData?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  newValue?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   objectType?: Resolver<ResolversTypes['ObjectType'], ParentType, ContextType>;
+  oldValue?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   schemaVersion?: Resolver<ResolversTypes['SchemaVersion'], ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

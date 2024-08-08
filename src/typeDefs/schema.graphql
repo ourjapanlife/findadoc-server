@@ -165,7 +165,8 @@ type AuditLog {
   actionType: ActionType!
   objectType: ObjectType!
   schemaVersion: SchemaVersion!
-  jsonData: String!
+  newValue: String!
+  oldValue: String
   updatedBy: String!
   updatedDate: String!
 }
