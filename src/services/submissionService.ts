@@ -8,6 +8,7 @@ import { createFacility } from './facilityService.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService.js'
 import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
 import { logger } from '../../src/logger.js'
+import { createAuditLog } from './auditLogService.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -175,17 +176,38 @@ Promise<Result<gqlTypes.Submission>> => {
         const newSubmissionId = submissionRef.id
         const newSubmission = mapGqlEntityToDbEntity(submissionInput, newSubmissionId)
         
-        await submissionRef.set(newSubmission)
+        const batch = dbInstance.batch()
+        
+        batch.set(submissionRef, newSubmission)
 
-        const createdSubmission = await getSubmissionById(newSubmissionId)
-
-        // if we didn't get it back or have errors, this is an actual error.
-        if (createdSubmission.hasErrors || !createdSubmission.data) {
-            throw new Error(`${JSON.stringify(createdSubmission.errors)}`)
+        const audit: dbSchema.AuditLog = {
+            actionType: gqlTypes.ActionType.Create,
+            objectType: gqlTypes.ObjectType.Submission,
+            schemaVersion: gqlTypes.SchemaVersion.V1,
+            updatedBy: 'client',
+            jsonData: JSON.stringify(newSubmission)
         }
 
+        const createdAuditLog = await createAuditLog(audit)
+
+        if (!createdAuditLog.isSuccesful) {
+            // I should add more specific errors
+            throw new Error('Error adding audit log')
+        }
+
+        await batch.commit()
+
+        const createdSubmission = mapDbEntityTogqlEntity(newSubmission)
+
+        // const createdSubmission = await getSubmissionById(newSubmissionId)
+
+        // // if we didn't get it back or have errors, this is an actual error.
+        // if (createdSubmission.hasErrors || !createdSubmission.data) {
+        //     throw new Error(`${JSON.stringify(createdSubmission.errors)}`)
+        // }
+
         return {
-            data: createdSubmission.data,
+            data: createdSubmission,
             hasErrors: false
         }
     } catch (error) {
