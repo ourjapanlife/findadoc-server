@@ -48,14 +48,6 @@ export const seedDatabase = async () => {
             if (createSubmissionResult.hasErrors) {
                 throw new Error(`${JSON.stringify(createSubmissionResult.errors)}`)
             }
-
-            const updateSubmissionData = generateRandomUpdateSubmissionInput()
-            const updatedSubmissionResult = await updateSubmission(createSubmissionResult.data.id, updateSubmissionData)
-
-            //we should fail here if we have errors
-            if (updatedSubmissionResult.hasErrors) {
-                throw new Error(`${JSON.stringify(updatedSubmissionResult.errors)}`)
-            }
         }
     } catch (error) {
         logger.error(`❌ Error seeding database: ${JSON.stringify(error)} ❌`)
