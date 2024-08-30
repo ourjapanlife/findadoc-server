@@ -304,6 +304,7 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
 
         //update the submission to approved
         currentSubmission.isApproved = true
+        currentSubmission.isUnderReview = false
         currentSubmission.updatedDate = new Date().toISOString()
 
         await submissionRef.set(currentSubmission, { merge: true })
