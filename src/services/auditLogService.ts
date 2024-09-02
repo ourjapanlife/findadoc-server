@@ -9,25 +9,18 @@ export async function createAuditLog(
     action: gqlTypes.ActionType, 
     objectType: gqlTypes.ObjectType, 
     updatedBy: string, 
-    newData: Partial<dbSchema.Submission> | gqlTypes.Submission,
+    newData: Partial<dbSchema.Submission> | gqlTypes.Submission | null,
     oldData: Partial<dbSchema.Submission> | gqlTypes.Submission | null,
     t: Transaction
 ): Promise<AuditLogResult> {
-    try {
-        let oldValue: string | null = null
-
-        // For some actions this will be null so need to check first before we use JSON.stringify
-        if (oldData) {
-            oldValue = JSON.stringify(oldData)
-        }
-        
+    try {       
         const audit: dbSchema.AuditLog = {
             actionType: action,
             objectType: objectType,
             schemaVersion: gqlTypes.SchemaVersion.V1,
             updatedBy: updatedBy,
             newValue: JSON.stringify(newData),
-            oldValue: oldValue
+            oldValue: JSON.stringify(oldData)
         }
 
         const auditLogRef = dbInstance.collection('auditLogs').doc()

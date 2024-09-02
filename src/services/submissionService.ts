@@ -236,7 +236,7 @@ Promise<Result<gqlTypes.Submission>> => {
         //business logic: a submission can't be updated or unapproved once it's approved.
         //business logic: you can't approve and update at the same time. 
         if (fieldsToUpdate.isApproved) {
-            const approvalResult = await approveSubmission(submissionId)
+            const approvalResult = await approveSubmission(submissionId, updatedBy)
 
             return approvalResult
         }
@@ -253,17 +253,19 @@ Promise<Result<gqlTypes.Submission>> => {
             updatedDate: new Date().toISOString()
         }
 
-        let updatedSubmission: Result<gqlTypes.Submission> = {} as Result<gqlTypes.Submission>
-
         await dbInstance.runTransaction(async t => {
+            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
+            const doc = await t.get(submissionRef)
+            const oldSubmission = doc.data() as dbSchema.Submission
+            
             await t.update(submissionRef, updatedSubmissionValues)
-            updatedSubmission = await getSubmissionById(submissionId)
+            
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Update, 
                 gqlTypes.ObjectType.Submission, 
                 updatedBy,
-                updatedSubmission.data,
-                submissionToUpdate,
+                updatedSubmissionValues,
+                oldSubmission,
                 t
             )
 
@@ -273,6 +275,7 @@ Promise<Result<gqlTypes.Submission>> => {
         })
 
         logger.info(`\nDB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
+        const updatedSubmission = await getSubmissionById(submissionId)
 
         if (updatedSubmission.hasErrors || !updatedSubmission.data) {
             throw new Error(`ERROR: Error creating submission: ${JSON.stringify(updatedSubmission.errors)}`)
@@ -303,7 +306,8 @@ Promise<Result<gqlTypes.Submission>> => {
  * @param submissionId the submission to approve
  * @returns The submission that was approved.
  */
-export const approveSubmission = async (submissionId: string): Promise<Result<gqlTypes.Submission>> => {
+export const approveSubmission = async (submissionId: string, updatedBy: string): 
+Promise<Result<gqlTypes.Submission>> => {
     const approveResult: Result<gqlTypes.Submission> = {
         data: {} as gqlTypes.Submission,
         hasErrors: false,
@@ -341,7 +345,26 @@ export const approveSubmission = async (submissionId: string): Promise<Result<gq
         currentSubmission.isUnderReview = false
         currentSubmission.updatedDate = new Date().toISOString()
 
-        await submissionRef.set(currentSubmission, { merge: true })
+        await dbInstance.runTransaction(async t => {
+            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
+            const doc = await t.get(submissionRef)
+            const oldSubmission = doc.data() as dbSchema.Submission
+            
+            await t.set(submissionRef, currentSubmission, { merge: true })
+            
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Update, 
+                gqlTypes.ObjectType.Submission, 
+                updatedBy,
+                currentSubmission,
+                oldSubmission,
+                t
+            )
+
+            if (!createdAuditLog.isSuccesful) {
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            }
+        })
 
         logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
 
@@ -411,11 +434,11 @@ export async function deleteSubmission(id: string, updatedBy: string)
         await dbInstance.runTransaction(async t => {
             await t.delete(submissionRef)
             const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Update, 
+                gqlTypes.ActionType.Delete, 
                 gqlTypes.ObjectType.Submission, 
                 updatedBy,
-                convertedEntity,
                 null,
+                convertedEntity,
                 t
             )
 
