@@ -339,8 +339,32 @@ Promise<Result<gqlTypes.Submission>> => {
 
             return approveResult
         }
+    
+        logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
+        
+        //try creating the facility
+        const createFacilityResult = await createFacility(currentSubmission.facility as gqlTypes.CreateFacilityInput)
+        
+        if (createFacilityResult.hasErrors) {
+            approveResult.errors?.concat(createFacilityResult.errors!)
+            return approveResult
+        }
+        
+        //try creating healthcare professional(s)
+        for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
+            const healthcareProfessionalInput
+            = healthcareProfessional satisfies gqlTypes.CreateHealthcareProfessionalInput
+            
+            healthcareProfessionalInput.facilityIds.push(createFacilityResult.data.id)
+            const createHealthcareProfessionalResult = await createHealthcareProfessional(healthcareProfessionalInput)
+            
+            if (createHealthcareProfessionalResult.hasErrors) {
+                approveResult.errors?.concat(createHealthcareProfessionalResult.errors!)
+                return approveResult
+            }
+        }
 
-        //update the submission to approved
+        //update the submission to approved only if creating the facility and healthcare professionals succeeds
         currentSubmission.isApproved = true
         currentSubmission.isUnderReview = false
         currentSubmission.updatedDate = new Date().toISOString()
@@ -366,29 +390,8 @@ Promise<Result<gqlTypes.Submission>> => {
             }
         })
 
-        logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
-
-        //try creating the facility
-        const createFacilityResult = await createFacility(currentSubmission.facility as dbSchema.Facility)
-
-        if (createFacilityResult.hasErrors) {
-            approveResult.errors?.concat(createFacilityResult.errors!)
-            return approveResult
-        }
-
-        //try creating healthcare professional(s)
-        for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
-            const healthcareProfessionalInput
-                = healthcareProfessional satisfies gqlTypes.CreateHealthcareProfessionalInput
-
-            healthcareProfessionalInput.facilityIds.push(createFacilityResult.data.id)
-            const createHealthcareProfessionalResult = await createHealthcareProfessional(healthcareProfessionalInput)
-        
-            if (createHealthcareProfessionalResult.hasErrors) {
-                approveResult.errors?.concat(createHealthcareProfessionalResult.errors!)
-                return approveResult
-            }
-        }
+        //set the data to return to the approveResult object
+        approveResult.data = currentSubmission
 
         return approveResult
     } catch (error) {
