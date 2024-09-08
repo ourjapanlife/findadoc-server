@@ -226,7 +226,12 @@ const resolvers = {
                     }
                 })
             }
-            const updatedSubmissionResult = await submissionService.updateSubmission(args.id, args.input)
+            
+            const updatedSubmissionResult = await submissionService.updateSubmission(
+                args.id, 
+                args.input,
+                context.userId
+            )
 
             convertErrorsToGqlErrors(updatedSubmissionResult)
             return updatedSubmissionResult.data
@@ -246,7 +251,7 @@ const resolvers = {
                 })
             }
 
-            const deleteSubmissionResult = await submissionService.deleteSubmission(args.id)
+            const deleteSubmissionResult = await submissionService.deleteSubmission(args.id, context.userId)
 
             convertErrorsToGqlErrors(deleteSubmissionResult)
             return deleteSubmissionResult.data
