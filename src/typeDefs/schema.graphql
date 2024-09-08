@@ -165,22 +165,15 @@ input SubmissionSearchFilters {
   offset: Int
 }
 
-type AuditLogs {
+type AuditLog {
   id: ID!
   actionType: ActionType!
   objectType: ObjectType!
   schemaVersion: SchemaVersion!
-  jsonData: String!
+  newValue: String!
+  oldValue: String
   updatedBy: String!
   updatedDate: String!
-}
-
-input CreateAuditLog {
-  actionType: ActionType!
-  objectType: ObjectType!
-  schemaVersion: SchemaVersion!
-  jsonData: String!
-  updatedBy: String!
 }
 
 # When we are storing the audit logs, we want to keep track of the actions used
@@ -400,7 +393,7 @@ type Query {
   ): [HealthcareProfessional]
   submission(id: ID!): Submission
   submissions(filters: SubmissionSearchFilters!): [Submission]
-  auditLogs(id: ID): AuditLogs
+  auditLog(id: ID): AuditLog
 }
 
 #======== Mutations ========
@@ -430,6 +423,4 @@ type Mutation {
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission
 
   deleteSubmission(id: ID!): DeleteResult
-
-  createAuditLog(input: CreateAuditLog!): AuditLogs
 }

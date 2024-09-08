@@ -26,6 +26,12 @@ export type Submission = Omit<gqlType.Submission, 'facility' | 'healthcareProfes
     healthcareProfessionals: gqlType.HealthcareProfessionalSubmission[]
 }
 
+export type AuditLog = Omit<gqlType.AuditLog, 'id' | 'updatedDate'>
+
+export type AuditLogResult = {
+    isSuccesful: boolean
+}
+
 export type Contact = gqlType.Contact
 export type LocalizedName = gqlType.LocalizedName
 export type Specialty = gqlType.Specialty

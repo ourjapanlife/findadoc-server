@@ -22,12 +22,13 @@ export enum ActionType {
   Update = 'UPDATE'
 }
 
-export type AuditLogs = {
-  __typename?: 'AuditLogs';
+export type AuditLog = {
+  __typename?: 'AuditLog';
   actionType: ActionType;
   id: Scalars['ID']['output'];
-  jsonData: Scalars['String']['output'];
+  newValue: Scalars['String']['output'];
   objectType: ObjectType;
+  oldValue?: Maybe<Scalars['String']['output']>;
   schemaVersion: SchemaVersion;
   updatedBy: Scalars['String']['output'];
   updatedDate: Scalars['String']['output'];
@@ -48,14 +49,6 @@ export type ContactInput = {
   googleMapsUrl: Scalars['String']['input'];
   phone: Scalars['String']['input'];
   website?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type CreateAuditLog = {
-  actionType: ActionType;
-  jsonData: Scalars['String']['input'];
-  objectType: ObjectType;
-  schemaVersion: SchemaVersion;
-  updatedBy: Scalars['String']['input'];
 };
 
 export type CreateFacilityInput = {
@@ -271,7 +264,6 @@ export type ModerationAutofillDatabaseSubmissionInput = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createAuditLog?: Maybe<AuditLogs>;
   createFacility?: Maybe<Facility>;
   createHealthcareProfessional?: Maybe<HealthcareProfessional>;
   createSubmission?: Maybe<Submission>;
@@ -282,11 +274,6 @@ export type Mutation = {
   updateFacility?: Maybe<Facility>;
   updateHealthcareProfessional?: Maybe<HealthcareProfessional>;
   updateSubmission?: Maybe<Submission>;
-};
-
-
-export type MutationCreateAuditLogArgs = {
-  input: CreateAuditLog;
 };
 
 
@@ -385,7 +372,7 @@ export type PhysicalAddressInput = {
 
 export type Query = {
   __typename?: 'Query';
-  auditLogs?: Maybe<AuditLogs>;
+  auditLog?: Maybe<AuditLog>;
   facilities?: Maybe<Array<Maybe<Facility>>>;
   facility?: Maybe<Facility>;
   healthcareProfessional?: Maybe<HealthcareProfessional>;
@@ -395,7 +382,7 @@ export type Query = {
 };
 
 
-export type QueryAuditLogsArgs = {
+export type QueryAuditLogArgs = {
   id?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -601,11 +588,10 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
   ActionType: ActionType;
-  AuditLogs: ResolverTypeWrapper<AuditLogs>;
+  AuditLog: ResolverTypeWrapper<AuditLog>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Contact: ResolverTypeWrapper<Contact>;
   ContactInput: ContactInput;
-  CreateAuditLog: CreateAuditLog;
   CreateFacilityInput: CreateFacilityInput;
   CreateHealthcareProfessionalInput: CreateHealthcareProfessionalInput;
   CreateSubmissionInput: CreateSubmissionInput;
@@ -646,11 +632,10 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
-  AuditLogs: AuditLogs;
+  AuditLog: AuditLog;
   Boolean: Scalars['Boolean']['output'];
   Contact: Contact;
   ContactInput: ContactInput;
-  CreateAuditLog: CreateAuditLog;
   CreateFacilityInput: CreateFacilityInput;
   CreateHealthcareProfessionalInput: CreateHealthcareProfessionalInput;
   CreateSubmissionInput: CreateSubmissionInput;
@@ -681,11 +666,12 @@ export type ResolversParentTypes = {
   UpdateSubmissionInput: UpdateSubmissionInput;
 };
 
-export type AuditLogsResolvers<ContextType = any, ParentType extends ResolversParentTypes['AuditLogs'] = ResolversParentTypes['AuditLogs']> = {
+export type AuditLogResolvers<ContextType = any, ParentType extends ResolversParentTypes['AuditLog'] = ResolversParentTypes['AuditLog']> = {
   actionType?: Resolver<ResolversTypes['ActionType'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  jsonData?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  newValue?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   objectType?: Resolver<ResolversTypes['ObjectType'], ParentType, ContextType>;
+  oldValue?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   schemaVersion?: Resolver<ResolversTypes['SchemaVersion'], ParentType, ContextType>;
   updatedBy?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -763,7 +749,6 @@ export type LocalizedNameResolvers<ContextType = any, ParentType extends Resolve
 };
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
-  createAuditLog?: Resolver<Maybe<ResolversTypes['AuditLogs']>, ParentType, ContextType, RequireFields<MutationCreateAuditLogArgs, 'input'>>;
   createFacility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<MutationCreateFacilityArgs, 'input'>>;
   createHealthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<MutationCreateHealthcareProfessionalArgs, 'input'>>;
   createSubmission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<MutationCreateSubmissionArgs, 'input'>>;
@@ -790,7 +775,7 @@ export type PhysicalAddressResolvers<ContextType = any, ParentType extends Resol
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  auditLogs?: Resolver<Maybe<ResolversTypes['AuditLogs']>, ParentType, ContextType, Partial<QueryAuditLogsArgs>>;
+  auditLog?: Resolver<Maybe<ResolversTypes['AuditLog']>, ParentType, ContextType, Partial<QueryAuditLogArgs>>;
   facilities?: Resolver<Maybe<Array<Maybe<ResolversTypes['Facility']>>>, ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
@@ -816,7 +801,7 @@ export type SubmissionResolvers<ContextType = any, ParentType extends ResolversP
 };
 
 export type Resolvers<ContextType = any> = {
-  AuditLogs?: AuditLogsResolvers<ContextType>;
+  AuditLog?: AuditLogResolvers<ContextType>;
   Contact?: ContactResolvers<ContextType>;
   DeleteResult?: DeleteResultResolvers<ContextType>;
   Facility?: FacilityResolvers<ContextType>;
