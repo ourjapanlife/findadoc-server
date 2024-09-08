@@ -11,7 +11,7 @@ import { logger } from '../logger.js'
 /**
  * Gets the Healthcare Professional from the database that matches on the id.
  * @param id A string that matches the id of the Firestore Document for the professional.
- * @param firestoreRef An optional reference to the Firestore database within a transaction. If we don't use this during a transaction, we might not get the latest saved data. 
+ * @param firestoreRef An optional reference to the Firestore database within a transaction. If we don't use this during a transaction, we might not get the latest saved data.
  * @returns A Healthcare Professional object.
  */
 export async function getHealthcareProfessionalById(id: string)
@@ -55,7 +55,7 @@ export async function getHealthcareProfessionalById(id: string)
 }
 
 /**
-* This is a search function that will return a list of Healthcare Professionals that match the filters. 
+* This is a search function that will return a list of Healthcare Professionals that match the filters.
 * - At the moment, filters have to match exactly, and there is no fuzzy search.
 * @param filters All the optional filters that can be applied to the search.
 * @returns The matching Healthcare Professionals.
@@ -75,10 +75,13 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
         const hasSpecialtiesFilter = filters.specialties && filters.specialties.length > 0
         const hasSpokenLanguagesFilter = filters.spokenLanguages && filters.spokenLanguages.length > 0
         const hasDegreesFilter = filters.degrees && filters.degrees.length > 0
+        const hasNamesFilter = filters.names && filters.names.length
 
         const shouldFilterBySpecialties = hasSpecialtiesFilter
         const shouldFilterBySpokenLanguages = hasSpokenLanguagesFilter && !hasSpecialtiesFilter
         const shouldFilterByDegrees = hasDegreesFilter && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
+        const shouldFilterByNames = hasNamesFilter && !hasDegreesFilter
+                                    && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
 
         //specialties will likely return the smallest result set, so this should be the most performant.
         if (shouldFilterBySpecialties) {
@@ -91,6 +94,14 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
 
         if (shouldFilterByDegrees) {
             searchRef = searchRef.where('degrees', 'array-contains-any', filters.degrees)
+        }
+
+        if (shouldFilterByNames) {
+            // Extra check is needed to get the first index of names array filter.
+            // Could not reuse hasNamesFilter due to TypeScript syntax error.
+            if (filters.names && filters.names?.length > 0) {
+                searchRef = searchRef.where('names', 'array-contains', filters.names[0])
+            }
         }
 
         if (filters.createdDate) {
@@ -117,6 +128,7 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
 
         const dbDocument = await searchRef.get()
         const dbProfessionals = dbDocument.docs
+
         const gqlProfessionals = dbProfessionals.map(dbProfessional =>
             mapDbEntityTogqlEntity(dbProfessional.data() as dbSchema.HealthcareProfessional))
 
@@ -135,7 +147,21 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
                     professional.degrees.some(db => filters.degrees?.some(filter => filter == db)))
                 : professionalsFilteredBySpokenLanguages ?? []
 
-            filteredResults = professionalsFilteredByDegrees
+            const professionalsFilteredByName = hasNamesFilter
+                ? professionalsFilteredByDegrees.filter(professionals => {
+                    const filterName = filters.names?.length ? filters.names[0] : false
+
+                    if (!filterName) {
+                        return professionalsFilteredByDegrees ?? []
+                    }
+
+                    return professionals.names.some(db => db.firstName == filterName.firstName
+                        && db.lastName == filterName.lastName
+                        && db.locale == filterName.locale)
+                })
+                : professionalsFilteredByDegrees ?? []
+
+            filteredResults = professionalsFilteredByName
         }
 
         //if we queried by spoken languages, we still need to filter the remaining results by the other array-based filters
@@ -145,7 +171,21 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
                     professional.degrees.some(db => filters.degrees?.some(filter => filter == db)))
                 : filteredResults ?? []
 
-            filteredResults = professionalsFilteredByDegrees
+            const professionalsFilteredByName = hasNamesFilter
+                ? professionalsFilteredByDegrees.filter(professionals => {
+                    const filterName = filters.names?.length ? filters.names[0] : false
+
+                    if (!filterName) {
+                        return professionalsFilteredByDegrees ?? []
+                    }
+
+                    return professionals.names.some(db => db.firstName == filterName.firstName
+                        && db.lastName == filterName.lastName
+                        && db.locale == filterName.locale)
+                })
+                : professionalsFilteredByDegrees ?? []
+
+            filteredResults = professionalsFilteredByName
         }
 
         return {
@@ -194,7 +234,7 @@ export async function createHealthcareProfessional(
 
         batch.set(healthcareProfessionalRef, newHealthcareProfessional)
 
-        //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array 
+        //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array
         if (newHealthcareProfessional.facilityIds && newHealthcareProfessional.facilityIds.length > 0) {
             const facilityUpdateResults = await processFacilityRelationshipChanges(
                 newHealthcareProfessional.id,
@@ -217,7 +257,7 @@ export async function createHealthcareProfessional(
 
         await batch.commit()
 
-        //let's return the newly created professional. Since we have the full entity, no need to do a new query. 
+        //let's return the newly created professional. Since we have the full entity, no need to do a new query.
         const createdHealthcareProfessionalResult = mapDbEntityTogqlEntity(newHealthcareProfessional)
 
         return {
@@ -240,11 +280,11 @@ export async function createHealthcareProfessional(
 }
 
 /**
- * Updates a Healthcare Professional in the database based on the id. 
+ * Updates a Healthcare Professional in the database based on the id.
  * - It will only update the fields that are provided and are not undefined.
  * - If you want to create a new HealthcareProfessional, you need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
- * - If you want to link an existing HealthcareProfessional to a Facility, add the healthcareprofessionalId to the `healthcareProfessionalIds` array. 
-     Use the action to add or remove the association. If an id isn't in the list, no change will occur. 
+ * - If you want to link an existing HealthcareProfessional to a Facility, add the healthcareprofessionalId to the `healthcareProfessionalIds` array.
+     Use the action to add or remove the association. If an id isn't in the list, no change will occur.
  * @param facilityId The ID of the facility in the database.
  * @param fieldsToUpdate The values that should be updated. They will be created if they don't exist.
  * @returns The updated Facility.
@@ -272,7 +312,7 @@ export const updateHealthcareProfessional = async (
         //Business rule: always timestamp when the entity was updated.
         dbProfessionalToUpdate.updatedDate = new Date().toISOString()
 
-        //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array 
+        //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array
         if (fieldsToUpdate.facilityIds && fieldsToUpdate.facilityIds.length > 0) {
             const facilityUpdateResults = await processFacilityRelationshipChanges(
                 dbProfessionalToUpdate.id,
@@ -414,8 +454,8 @@ export async function deleteHealthcareProfessional(id: string)
     }
 }
 
-/** 
- * Updates all the facilities that have an id in the facilityIds array. It will add or delete based on the action provided. 
+/**
+ * Updates all the facilities that have an id in the facilityIds array. It will add or delete based on the action provided.
  * @param healthcareProfessionalId The ID of the healthcare professional in the database.
  * @param facilityRelationshipChanges The changes to the facility relationships.
  * @param batch - The batch that we add the db writes to. The parent controls when the batch is committed.
@@ -459,10 +499,10 @@ async function processFacilityRelationshipChanges(healthcareProfessionalId: stri
 }
 
 /**
-    * This function updates the facilityIds list for each healthcare professional listed. 
+    * This function updates the facilityIds list for each healthcare professional listed.
     * Based on the action, it will add or remove the facility id from the existing list of facilityIds.
-    * @param professionalRelationshipsToUpdate - The list of healthcare professionals to update. 
-    * @param facilityId - The id of the facility that is being added or removed. 
+    * @param professionalRelationshipsToUpdate - The list of healthcare professionals to update.
+    * @param facilityId - The id of the facility that is being added or removed.
     * @param batch - The batch that we add the db writes to. The parent controls when the batch is committed.
     * @returns Result containing any errors that occurred.
 */
