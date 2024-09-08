@@ -191,7 +191,7 @@ Promise<Result<gqlTypes.Submission>> => {
             )
 
             if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Create}`) 
+                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Create}`) 
             }
         })
 
