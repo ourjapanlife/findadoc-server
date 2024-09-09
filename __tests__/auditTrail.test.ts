@@ -9,7 +9,7 @@ describe('createAuditLog', () => {
     it('should create an audit log successfully', async () => {        
         const newSubmission: gqlTypes.CreateSubmissionInput = generateRandomCreateSubmissionInput()
         const newAuditLog: gqlTypes.Submission = mapGqlEntityToDbEntity(newSubmission, '1')
-
+        
         const auditLogResult = await dbInstance.runTransaction(async t => {
             const result = await createAuditLog(
                 gqlTypes.ActionType.Create, 
