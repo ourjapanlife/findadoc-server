@@ -472,7 +472,7 @@ export async function deleteSubmission(id: string, updatedBy: string)
     }
 }
 
-function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
+export function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
     return {
         id: newId,
         googleMapsUrl: input.googleMapsUrl as string,
