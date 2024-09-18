@@ -236,6 +236,7 @@ export enum Locale {
   ThTh = 'th_TH',
   TlPh = 'tl_PH',
   TrTr = 'tr_TR',
+  Und = 'und',
   ViVn = 'vi_VN',
   ZhCn = 'zh_CN',
   ZhHk = 'zh_HK',
