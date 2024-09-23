@@ -71,7 +71,7 @@
     "dependencies": {
         "@apollo/server": "^4.9.3",
         "@as-integrations/fastify": "^2.1.1",
-        "@faker-js/faker": "^8.2.0",
+        "@faker-js/faker": "^9.0.0",
         "@fastify/compress": "^6.5.0",
         "@fastify/cors": "^8.4.1",
         "@fastify/rate-limit": "^9.0.1",
