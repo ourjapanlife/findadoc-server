@@ -256,6 +256,7 @@ enum Locale {
   zh_CN # Chinese (Simplified, China)
   zh_HK # Chinese (Traditional, Hong Kong SAR China)
   zh_TW # Chinese (Traditional, Taiwan)
+  und # Unspecified Language (Undefined)
 }
 
 type LocalizedName {
