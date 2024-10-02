@@ -1,12 +1,13 @@
 import { expect, describe, test } from 'vitest'
 import request from 'supertest'
 import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
-import { CreateSubmissionInput, Submission, SubmissionSearchFilters } from '../src/typeDefs/gqlTypes.js'
+import { CreateSubmissionInput, Submission, SubmissionSearchFilters, UpdateSubmissionInput } from '../src/typeDefs/gqlTypes.js'
 import { Error, ErrorCode } from '../src/result.js'
-import { generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
+import { generateRandomCreateHealthcareProfessionalInputArray, generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { gqlApiUrl } from './testSetup.test.js'
 import { logger } from '../src/logger.js'
+import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
 
 describe('createSubmission', () => {
     test('creates a new Submission', async () => {
@@ -106,6 +107,98 @@ describe('updateSubmission', () => {
         expect(updatedSubmission.isApproved).toBe(originalInputValues.isApproved)
         expect(updatedSubmission.isUnderReview).toBe(originalInputValues.isUnderReview)
         expect(updatedSubmission.isRejected).toBe(originalInputValues.isRejected)
+    })
+})
+
+describe('approveSubmission', () => {
+    test('updates a Submission with the fields included in the input and then approves it', async () => {
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: {
+                input: generateRandomCreateSubmissionInput()
+            }
+        } satisfies gqlRequest
+
+        // Create a new Submission
+        const newSubmissionResult = await request(gqlApiUrl).post('').send(createSubmissionRequest)
+
+        //should not have errors
+        expect(newSubmissionResult.body.errors).toBeUndefined()
+
+        // Get the ID of the new Submission
+        const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
+
+        // Mutation to update the Submission
+        const updateSubmissionRequest = {
+            query: updateSubmissionMutation,
+            variables: {
+                id: newSubmission.id,
+                input: generateRandomUpdateSubmissionInput({ isUnderReview: true })
+            }
+        } satisfies gqlRequest
+
+        // Update the submission
+        const updateSubmissionResult = await request(gqlApiUrl).post('').send(updateSubmissionRequest)
+
+        //should not have errors
+        expect(updateSubmissionResult.body?.errors).toBeUndefined()
+
+        // Compare the data returned in the response to the updated fields that were sent
+        const updatedSubmission = updateSubmissionResult.body.data.updateSubmission as Submission
+        const originalInputValues = updateSubmissionRequest.variables.input
+
+        expect(updatedSubmission.id).toBe(newSubmission.id)
+        expect(updatedSubmission.googleMapsUrl).toBe(originalInputValues.googleMapsUrl)
+        expect(updatedSubmission.healthcareProfessionalName).toBe(originalInputValues.healthcareProfessionalName)
+        expect(updatedSubmission.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
+        expect(updatedSubmission.isApproved).toBe(originalInputValues.isApproved)
+        expect(updatedSubmission.isUnderReview).toBe(originalInputValues.isUnderReview)
+        expect(updatedSubmission.isRejected).toBe(originalInputValues.isRejected)
+
+        const updatedSubmissionWithNewApprovalValues: UpdateSubmissionInput = {}
+
+        updatedSubmissionWithNewApprovalValues.facility = generateRandomCreateFacilityInput()
+        updatedSubmissionWithNewApprovalValues.healthcareProfessionals
+        = generateRandomCreateHealthcareProfessionalInputArray()
+
+        // Mutation to update the Submission to get ready for approval
+        const updateSubmissionRequestWithNewApprovalValues = {
+            query: updateSubmissionMutation,
+            variables: {
+                id: updatedSubmission.id,
+                input: updatedSubmissionWithNewApprovalValues
+            }
+        } satisfies gqlRequest
+
+        // Update the submission to get ready for approval
+        const updateSubmissionReadyForApprovalResult = await request(gqlApiUrl).post('').send(updateSubmissionRequestWithNewApprovalValues)
+
+        //should not have errors
+        expect(updateSubmissionReadyForApprovalResult.body?.errors).toBeUndefined()
+
+        const updateSubmissionReadyForApproval = updateSubmissionReadyForApprovalResult.body.data.updateSubmission
+
+        //expect the updated approval submission to have the values of the updated submission
+        expect(updateSubmissionReadyForApproval.id).toBe(updatedSubmission.id)
+        expect(updateSubmissionReadyForApproval.healthcareProfessionals)
+            .toStrictEqual(updatedSubmission.healthcareProfessionals)
+        expect(updateSubmissionReadyForApproval.facility)
+            .toStrictEqual(updatedSubmission.facility)
+
+        // send the facility to be approved with is approved to be true
+        const approveSubmissionRequest = {
+            query: updateSubmissionMutation,
+            variables: {
+                id: updateSubmissionReadyForApproval.id,
+                input: { isApproved: true }
+            }
+        } satisfies gqlRequest
+
+        // approve the submission
+        const approveSubmissionResult = await request(gqlApiUrl).post('').send(approveSubmissionRequest)
+
+        //should not have errors
+        expect(approveSubmissionResult.body?.errors).toBeUndefined()
     })
 })
 
