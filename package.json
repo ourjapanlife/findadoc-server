@@ -41,7 +41,7 @@
         "npm": "10.2.4"
     },
     "devDependencies": {
-        "@firebase/rules-unit-testing": "^3.0.1",
+        "@firebase/rules-unit-testing": "^4.0.0",
         "@graphql-codegen/cli": "^5.0.0",
         "@graphql-codegen/typescript": "^4.0.1",
         "@graphql-codegen/typescript-resolvers": "^4.0.1",
