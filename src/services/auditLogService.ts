@@ -9,8 +9,8 @@ export async function createAuditLog(
     action: gqlTypes.ActionType, 
     objectType: gqlTypes.ObjectType, 
     updatedBy: string, 
-    newData: Partial<dbSchema.Submission> | gqlTypes.Submission | null,
-    oldData: Partial<dbSchema.Submission> | gqlTypes.Submission | null,
+    newData: Partial<dbSchema.Submission> | gqlTypes.Submission | string | null,
+    oldData: Partial<dbSchema.Submission> | gqlTypes.Submission | string | null,
     t: Transaction
 ): Promise<AuditLogResult> {
     try {       
