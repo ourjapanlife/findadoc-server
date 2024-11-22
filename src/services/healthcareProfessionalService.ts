@@ -523,13 +523,16 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
         const professionalsQuery = dbInstance.collection('healthcareProfessionals').where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first.
         const allProfessionalDocuments = await professionalsQuery.get()
-        const dbProfessionalsToUpdate = allProfessionalDocuments.docs?.map(d => d.data()) ?? []
+        const dbProfessionalsToUpdate = allProfessionalDocuments.docs.map(d => ({
+            ref: d.ref,
+            data: d.data()
+        }))
 
-        dbProfessionalsToUpdate.forEach(dbProfessional => {
+        dbProfessionalsToUpdate.forEach(({ ref, data: dbProfessional }) => {
             const matchingRelationship
                 = professionalRelationshipsToUpdate.find(f => f.otherEntityId === dbProfessional.id)
             const dbProfessionalData = dbProfessional as dbSchema.HealthcareProfessional
-
+            
             if (!matchingRelationship) {
                 throw new Error(`ERROR: updating professional facilityId list for ${dbProfessional.id}. Could not find matching relationship.`)
             }
@@ -550,9 +553,8 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
 
             //business rule: we always timestamp when the entity was updated.
             dbProfessionalData.updatedDate = new Date().toISOString()
-
             //This will add the record update to the batch, but we don't want to commit until later when all changes are done
-            batch.set(dbProfessional.ref, dbProfessionalData, { merge: true })
+            batch.set(ref, dbProfessionalData, { merge: true })
             logger.info(`\nDB-UPDATE: Updated healthcare professional ${dbProfessionalData.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalData)}`)
         })
 

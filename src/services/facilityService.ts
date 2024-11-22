@@ -220,6 +220,8 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
         const dbDocument = await facilityRef.get()
         const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
 
+        const originalHealthcareProfessionalIdsForFacility = dbFacilityToUpdate.healthcareProfessionalIds
+
         //let's update the fields that were provided
         MapDefinedFields(fieldsToUpdate, dbFacilityToUpdate)
 
@@ -232,14 +234,13 @@ export const updateFacility = async (facilityId: string, fieldsToUpdate: Partial
                 dbFacilityToUpdate.id,
                 fieldsToUpdate.healthcareProfessionalIds,
                 batch,
-                dbFacilityToUpdate.healthcareProfessionalIds ?? []
+                originalHealthcareProfessionalIdsForFacility ?? []
             )
 
             // if we didn't get it back or have errors, this is an actual error.
             if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
                 throw new Error(`Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
             }
-
             //let's update the professional with the new facility ids
             dbFacilityToUpdate.healthcareProfessionalIds = healthcareProfessionalUpdateResults.data
         }
@@ -350,6 +351,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             // await Promise.all(dbFacilitiesToUpdate.map(async dbFacility => {
             // for await (const dbFacility of dbFacilitiesToUpdate) {
             const matchingRelationship = facilitiesToUpdate.find(f => f.otherEntityId === dbFacility.id)
+            const dbFacilityRef = dbFacility.ref
             const dbFacilityData = dbFacility.data() as dbSchema.Facility
 
             if (!matchingRelationship) {
@@ -374,7 +376,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             dbFacilityData.updatedDate = new Date().toISOString()
 
             //This will add the record update to the batch, but we don't want to commit at this point. 
-            batch.set(dbFacility.ref, dbFacilityData, { merge: true })
+            batch.set(dbFacilityRef, dbFacilityData, { merge: true })
             logger.info(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
         })
 
