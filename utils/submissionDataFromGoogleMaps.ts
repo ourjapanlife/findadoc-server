@@ -1,10 +1,9 @@
 import puppeteer from 'puppeteer'
 import axios from 'axios'
-import dotenv from 'dotenv'
+import { envVariables } from './environmentVariables'
 
 //Load the api key for google maps
-dotenv.config()
-const apiKey = process.env.GOOGLE_API_KEY
+const apiKey = envVariables.googleAPIKey()
 
 // This uses all the helper functions in order to get the data we want
 export const getFacilityDetailsForSubmission = async (submittedURL: string): Promise<any | null> => {
