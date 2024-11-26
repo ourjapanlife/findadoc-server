@@ -33,7 +33,8 @@ export const seedDatabase = async () => {
             //build the association 
             hp.facilityIds = facilityIds
 
-            const createProfessionalResult = await createHealthcareProfessional(hp)
+            // for seeding we can just pass a fake userId
+            const createProfessionalResult = await createHealthcareProfessional(hp, 'userId')
 
             //we should fail here if we have errors
             if (createProfessionalResult.hasErrors) {

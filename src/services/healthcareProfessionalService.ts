@@ -231,8 +231,10 @@ export async function createHealthcareProfessional(
         const newHealthcareProfessionalId = healthcareProfessionalRef.id
         const newHealthcareProfessional = mapGqlEntityToDbEntity(newHealthcareProfessionalId, input)
 
-        //let's wrap all of our updates in a batch so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        
+        /*
+        let's wrap all of our updates in a transaction so we can roll back if anything fails. 
+        (for example we don't want to update the professional if updating the associated facility updates fail)
+        */
         await dbInstance.runTransaction(async t => {
             //this will update only the fields that are provided and are not undefined.
             await t.set(healthcareProfessionalRef, newHealthcareProfessional, {merge: true})
@@ -315,12 +317,11 @@ export const updateHealthcareProfessional = async (
             return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
-        // //let's wrap all of our updates in a batch so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        // const batch = dbInstance.batch()
+        const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
         
-        await dbInstance.runTransaction(async t => {
-            const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
-            const dbDocument = await professionalRef.get()
+        // //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        const updatedProfessional = await dbInstance.runTransaction(async t => {
+            const dbDocument = await t.get(professionalRef)
             const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
             const oldHealthcareProfessional = JSON.stringify(dbProfessionalToUpdate)
             
@@ -347,6 +348,7 @@ export const updateHealthcareProfessional = async (
                 //let's update the professional with the new facility ids
                 dbProfessionalToUpdate.facilityIds = facilityUpdateResults.data
             }
+
             t.set(professionalRef, dbProfessionalToUpdate, { merge: true })
 
             const createdAuditLog = await createAuditLog(
@@ -362,10 +364,10 @@ export const updateHealthcareProfessional = async (
                 throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
             }
 
-            //this will update only the fields that are provided and are not undefined.
-            logger.info(`\nDB-UPDATE: Updated healthcare professional ${id}.\nEntity: ${JSON.stringify(dbProfessionalToUpdate)}`)
+            return dbProfessionalToUpdate
         })
-
+        
+        logger.info(`\nDB-UPDATE: Updated healthcare professional ${id}.\nEntity: ${JSON.stringify(updatedProfessional)}`)
         const updatedProfessionalResult = await getHealthcareProfessionalById(id)
 
         // if we didn't get it back or have errors, this is an actual error.
@@ -462,7 +464,7 @@ export async function deleteHealthcareProfessional(id: string, updatedBy: string
                 gqlTypes.ObjectType.HealthcareProfessional, 
                 updatedBy,
                 null,
-                JSON.stringify(dbDocument),
+                JSON.stringify(professional),
                 t
             )
 
