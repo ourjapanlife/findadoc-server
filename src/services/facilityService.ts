@@ -376,7 +376,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             dbFacilityData.updatedDate = new Date().toISOString()
 
             //This will add the record update to the batch, but we don't want to commit at this point. 
-            t.set(dbFacility.ref, dbFacilityData, { merge: true })
+            t.set(dbFacilityRef, dbFacilityData, { merge: true })
             logger.info(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
         })
 
