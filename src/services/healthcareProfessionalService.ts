@@ -256,11 +256,14 @@ export async function createHealthcareProfessional(
                 }
             }
 
+            // Make sure we store a more readable object in our audit log
+            const newHealthcareProfessionalAuditLogEntity = mapDbEntityTogqlEntity(newHealthcareProfessional)
+
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Create, 
                 gqlTypes.ObjectType.HealthcareProfessional, 
                 updatedBy, 
-                JSON.stringify(newHealthcareProfessional),
+                JSON.stringify(newHealthcareProfessionalAuditLogEntity),
                 null,
                 t
             )
@@ -323,7 +326,9 @@ export const updateHealthcareProfessional = async (
         const updatedProfessional = await dbInstance.runTransaction(async t => {
             const dbDocument = await t.get(professionalRef)
             const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
-            const oldHealthcareProfessional = JSON.stringify(dbProfessionalToUpdate)
+            const oldHealthcareProfessionalDataAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(dbProfessionalToUpdate)
+            )
             
             //let's update the fields that were provided
             MapDefinedFields(fieldsToUpdate, dbProfessionalToUpdate)
@@ -351,12 +356,17 @@ export const updateHealthcareProfessional = async (
 
             t.set(professionalRef, dbProfessionalToUpdate, { merge: true })
 
+            // Make sure we store a more readable object in our audit log
+            const updatedHealthcareProfessionalAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(dbProfessionalToUpdate)
+            )
+
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Update, 
                 gqlTypes.ObjectType.HealthcareProfessional, 
                 updatedBy,
-                JSON.stringify(dbProfessionalToUpdate),
-                oldHealthcareProfessional,
+                updatedHealthcareProfessionalAuditLogEntity,
+                oldHealthcareProfessionalDataAuditLogEntity,
                 t
             )
 
@@ -438,7 +448,10 @@ export async function deleteHealthcareProfessional(id: string, updatedBy: string
         
         const professional = dbDocument.docs[0].data() as dbSchema.HealthcareProfessional
         
-        //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        /*
+        let's wrap all of our updates in a transaction so we can roll back if anything fails. 
+        (for example we don't want to update the professional if updating the associated facility updates fail)
+        */
         await dbInstance.runTransaction(async t => {
             //let's update all the facilities that should remove this healthcareProfessionalId from their healthcareProfessionalIds array
             const facilityUpdateResults = await processFacilityRelationshipChanges(
@@ -459,12 +472,17 @@ export async function deleteHealthcareProfessional(id: string, updatedBy: string
 
             t.delete(dbDocument.docs[0].ref)
 
+            // Make sure we store a more readable object in our audit log
+            const oldHealthcareProfessionalDataAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(professional)
+            )
+
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Delete, 
                 gqlTypes.ObjectType.HealthcareProfessional, 
                 updatedBy,
                 null,
-                JSON.stringify(professional),
+                JSON.stringify(oldHealthcareProfessionalDataAuditLogEntity),
                 t
             )
 
