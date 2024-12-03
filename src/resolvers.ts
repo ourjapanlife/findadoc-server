@@ -207,11 +207,11 @@ const resolvers = {
             input: gqlType.CreateSubmissionInput
         }): Promise<gqlType.Submission> => {
             const createSubmissionResult = await submissionService.createSubmission(args.input)
-
+    
             convertErrorsToGqlErrors(createSubmissionResult)
             return createSubmissionResult.data
         },
-
+    
         updateSubmission: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateSubmissionInput

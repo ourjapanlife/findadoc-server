@@ -22,6 +22,11 @@ input CreateFacilityInput {
   healthcareProfessionalIds: [ID!]
 }
 
+input ModerationAutofillDatabaseSubmissionInput {
+  id: String
+  googleMapsUrl: String
+}
+
 input UpdateFacilityInput {
   nameEn: String
   nameJa: String
@@ -142,6 +147,7 @@ input UpdateSubmissionInput {
   isUnderReview: Boolean
   isApproved: Boolean
   isRejected: Boolean
+  autofillPlaceFromSubmissionUrl: Boolean
   notes: String
 }
 
@@ -413,6 +419,8 @@ type Mutation {
   deleteFacility(id: ID!): DeleteResult
 
   createSubmission(input: CreateSubmissionInput!): Submission
+
+  moderationPanelUpdateSubmission(input: ModerationAutofillDatabaseSubmissionInput!): Submission
 
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission
 

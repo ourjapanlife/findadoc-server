@@ -9,6 +9,7 @@ import { createHealthcareProfessional } from './healthcareProfessionalService.js
 import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
 import { logger } from '../../src/logger.js'
 import { createAuditLog } from './auditLogService.js'
+import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -241,6 +242,13 @@ Promise<Result<gqlTypes.Submission>> => {
             return approvalResult
         }
 
+        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl) {
+            const updatedResultFromAutofill =
+            await autoFillPlacesInformation(submissionId, fieldsToUpdate.googleMapsUrl)
+
+            return updatedResultFromAutofill
+        }
+
         const submissionRef = dbInstance.collection('submissions').doc(submissionId)
         const dbDocument = await submissionRef.get()
         const submissionToUpdate = dbDocument.data() as dbSchema.Submission
@@ -297,6 +305,118 @@ Promise<Result<gqlTypes.Submission>> => {
                 httpStatus: 500
             }]
         }
+    }
+}
+
+export const autoFillPlacesInformation = async (submissionId: string, googleMapsUrl: gqlTypes.InputMaybe<string> | undefined, updatedBy: string = ''): 
+Promise<Result<gqlTypes.Submission>> => {
+    const updatedResultFromAutofill: Result<gqlTypes.Submission> = {
+        data: {} as gqlTypes.Submission,
+        hasErrors: false,
+        errors: []
+    }
+
+    try {
+        const submissionRef = dbInstance.collection('submissions').doc(submissionId)
+        const dbDocument = await submissionRef.get()
+        const currentSubmission = dbDocument.data() as dbSchema.Submission
+
+        if (!currentSubmission) {
+            updatedResultFromAutofill.errors?.push({
+                field: 'submissionId',
+                errorCode: ErrorCode.NOT_FOUND,
+                httpStatus: 400
+            })
+
+            return updatedResultFromAutofill
+        }
+
+        const googlePlacesSearchResult
+        = await getFacilityDetailsForSubmission(googleMapsUrl as string)
+
+        if (!googlePlacesSearchResult) {
+            updatedResultFromAutofill.errors?.push({
+                field: 'googleMapsUrl',
+                errorCode: ErrorCode.AUTOFILL_FAILURE,
+                httpStatus: 400
+            })
+
+            return updatedResultFromAutofill
+        }
+       
+        const facilityInformation = currentSubmission.facility as gqlTypes.FacilitySubmission
+        const contact: gqlTypes.Contact = {  
+            phone: '', 
+            website: null,
+            googleMapsUrl: '',
+            address: {
+                postalCode: '',
+                prefectureEn: '',
+                addressLine1En: '',
+                addressLine2En: '',
+                cityEn: '',
+                prefectureJa: '',
+                addressLine1Ja: '',
+                addressLine2Ja: '',
+                cityJa: ''
+            }
+        }
+
+        if (facilityInformation) {
+            facilityInformation.nameEn = googlePlacesSearchResult.extractedNameEn
+            contact.phone = googlePlacesSearchResult.extractedPhoneNumber
+            contact.website = googlePlacesSearchResult.extractedWebsite
+            contact.googleMapsUrl = googlePlacesSearchResult.extractedGoogleMapsURI
+            contact.address.postalCode
+                = googlePlacesSearchResult.extractedPostalCodeFromInformation
+            contact.address.prefectureEn
+                = googlePlacesSearchResult.extractPrefectureEnFromInformation
+            contact.address.addressLine1En
+                = googlePlacesSearchResult.extractedAddressLine1En
+            facilityInformation.mapLatitude = googlePlacesSearchResult.extractedMapLatitude
+            facilityInformation.mapLongitude = googlePlacesSearchResult.extractedMapLongitude
+        }
+
+        //update the submission to under review with the new updated date and autofill information
+        currentSubmission.facility = facilityInformation
+        currentSubmission.isUnderReview = true
+        currentSubmission.updatedDate = new Date().toISOString()
+
+        await dbInstance.runTransaction(async t => {
+            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
+            const doc = await t.get(submissionRef)
+            const oldSubmission = doc.data() as dbSchema.Submission
+            
+            t.set(submissionRef, currentSubmission, { merge: true })
+            
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Update, 
+                gqlTypes.ObjectType.Submission, 
+                updatedBy,
+                currentSubmission,
+                oldSubmission,
+                t
+            )
+
+            if (!createdAuditLog.isSuccesful) {
+                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            }
+        })
+
+        //set the data to return to the approveResult object
+        updatedResultFromAutofill.data = currentSubmission
+
+        return updatedResultFromAutofill
+    } catch (error) {
+        logger.error(`Error updating submission ${submissionId}: ${error}`)
+
+        updatedResultFromAutofill.errors?.push({
+            field: 'autofillPlaceFromSubmissionUrl',
+            errorCode: ErrorCode.SERVER_ERROR,
+            httpStatus: 500
+        })
+
+        return updatedResultFromAutofill
     }
 }
 
@@ -388,7 +508,7 @@ Promise<Result<gqlTypes.Submission>> => {
             )
 
             if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
+                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Update}`) 
             }
         })
 

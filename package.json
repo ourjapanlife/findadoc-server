@@ -64,6 +64,7 @@
         "firebase-tools": "^13.1.0",
         "globals": "^13.23.0",
         "husky": "^8.0.3",
+        "puppeteer": "^22.12.1",
         "rimraf": "^5.0.1",
         "typescript": "^5.2.2",
         "vitest": "^0.34.6"
@@ -75,6 +76,7 @@
         "@fastify/compress": "^6.5.0",
         "@fastify/cors": "^8.4.1",
         "@fastify/rate-limit": "^9.0.1",
+        "@types/googlemaps": "^3.43.3",
         "cross-env": "^7.0.3",
         "csv-parse": "^5.3.3",
         "dotenv": "^16.3.1",
