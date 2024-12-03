@@ -25,10 +25,10 @@ export const getFacilityDetailsForSubmission = async (submittedURL: string): Pro
     const match = redirectedUrl ? redirectedUrl.match(regexToExtractGoogleMapsCoordinates) : null
 
     if (!match) {
+      console.error('No coordinates found in the URL.')
       return null
     }
 
-    console.error('No coordinates found in the URL.')
     coordinatesFromUrl.latitude = match[1]
     coordinatesFromUrl.longitude = match[2]
     
