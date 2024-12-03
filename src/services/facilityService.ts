@@ -1,4 +1,4 @@
-import { DocumentData, Query, WriteBatch } from 'firebase-admin/firestore'
+import { DocumentData, Query, Transaction, WriteBatch } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
@@ -332,7 +332,7 @@ async function processHealthcareProfessionalRelationshipChanges(facilityId: stri
 export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
     facilitiesToUpdate: gqlTypes.Relationship[],
     healthcareProfessionalId: string,
-    batch: WriteBatch
+    t: Transaction
 ): Promise<Result<void>> {
     try {
         if (!facilitiesToUpdate || facilitiesToUpdate.length === 0) {
@@ -376,7 +376,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             dbFacilityData.updatedDate = new Date().toISOString()
 
             //This will add the record update to the batch, but we don't want to commit at this point. 
-            batch.set(dbFacilityRef, dbFacilityData, { merge: true })
+            t.set(dbFacilityRef, dbFacilityData, { merge: true })
             logger.info(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
         })
 

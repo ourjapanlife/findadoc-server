@@ -356,7 +356,9 @@ Promise<Result<gqlTypes.Submission>> => {
             = healthcareProfessional satisfies gqlTypes.CreateHealthcareProfessionalInput
             
             healthcareProfessionalInput.facilityIds.push(createFacilityResult.data.id)
-            const createHealthcareProfessionalResult = await createHealthcareProfessional(healthcareProfessionalInput)
+            const createHealthcareProfessionalResult = await createHealthcareProfessional(
+                healthcareProfessionalInput, updatedBy
+            )
             
             if (createHealthcareProfessionalResult.hasErrors) {
                 approveResult.errors?.concat(createHealthcareProfessionalResult.errors!)

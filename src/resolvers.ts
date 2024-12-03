@@ -154,7 +154,7 @@ const resolvers = {
             }
 
             const createHealthcareProfessionalResult =
-                await healthcareProfessionalService.createHealthcareProfessional(args.input)
+                await healthcareProfessionalService.createHealthcareProfessional(args.input, context.userId)
 
             convertErrorsToGqlErrors(createHealthcareProfessionalResult)
             return createHealthcareProfessionalResult.data
@@ -176,7 +176,7 @@ const resolvers = {
             }
 
             const updateProfessionalResult =
-                await healthcareProfessionalService.updateHealthcareProfessional(args.id, args.input)
+                await healthcareProfessionalService.updateHealthcareProfessional(args.id, args.input, context.userId)
 
             convertErrorsToGqlErrors(updateProfessionalResult)
             return updateProfessionalResult.data
@@ -197,7 +197,7 @@ const resolvers = {
             }
 
             const deleteHealthcareProfessionalResult
-                = await healthcareProfessionalService.deleteHealthcareProfessional(args.id)
+                = await healthcareProfessionalService.deleteHealthcareProfessional(args.id, context.userId)
 
             convertErrorsToGqlErrors(deleteHealthcareProfessionalResult)
             return deleteHealthcareProfessionalResult.data
