@@ -273,7 +273,6 @@ export async function createHealthcareProfessional(
             }
         })
         
-        // batch.set(healthcareProfessionalRef, newHealthcareProfessional, { merge: true })
         logger.info(`\nDB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
 
         //let's return the newly created professional. Since we have the full entity, no need to do a new query.
