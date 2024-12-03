@@ -258,6 +258,17 @@ export type LocalizedNameInput = {
   middleName?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type LoginInput = {
+  password: Scalars['String']['input'];
+  twofactorkey: Scalars['String']['input'];
+  username: Scalars['String']['input'];
+};
+
+export type LoginResult = {
+  __typename?: 'LoginResult';
+  success: Scalars['Boolean']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   createFacility?: Maybe<Facility>;
@@ -266,6 +277,7 @@ export type Mutation = {
   deleteFacility?: Maybe<DeleteResult>;
   deleteHealthcareProfessional?: Maybe<DeleteResult>;
   deleteSubmission?: Maybe<DeleteResult>;
+  login?: Maybe<LoginResult>;
   updateFacility?: Maybe<Facility>;
   updateHealthcareProfessional?: Maybe<HealthcareProfessional>;
   updateSubmission?: Maybe<Submission>;
@@ -299,6 +311,11 @@ export type MutationDeleteHealthcareProfessionalArgs = {
 
 export type MutationDeleteSubmissionArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationLoginArgs = {
+  input: LoginInput;
 };
 
 
@@ -600,6 +617,8 @@ export type ResolversTypes = {
   Locale: Locale;
   LocalizedName: ResolverTypeWrapper<LocalizedName>;
   LocalizedNameInput: LocalizedNameInput;
+  LoginInput: LoginInput;
+  LoginResult: ResolverTypeWrapper<LoginResult>;
   Mutation: ResolverTypeWrapper<{}>;
   ObjectType: ObjectType;
   OrderBy: OrderBy;
@@ -640,6 +659,8 @@ export type ResolversParentTypes = {
   Int: Scalars['Int']['output'];
   LocalizedName: LocalizedName;
   LocalizedNameInput: LocalizedNameInput;
+  LoginInput: LoginInput;
+  LoginResult: LoginResult;
   Mutation: {};
   OrderBy: OrderBy;
   PhysicalAddress: PhysicalAddress;
@@ -736,6 +757,11 @@ export type LocalizedNameResolvers<ContextType = any, ParentType extends Resolve
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type LoginResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['LoginResult'] = ResolversParentTypes['LoginResult']> = {
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   createFacility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<MutationCreateFacilityArgs, 'input'>>;
   createHealthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<MutationCreateHealthcareProfessionalArgs, 'input'>>;
@@ -743,6 +769,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteFacility?: Resolver<Maybe<ResolversTypes['DeleteResult']>, ParentType, ContextType, RequireFields<MutationDeleteFacilityArgs, 'id'>>;
   deleteHealthcareProfessional?: Resolver<Maybe<ResolversTypes['DeleteResult']>, ParentType, ContextType, RequireFields<MutationDeleteHealthcareProfessionalArgs, 'id'>>;
   deleteSubmission?: Resolver<Maybe<ResolversTypes['DeleteResult']>, ParentType, ContextType, RequireFields<MutationDeleteSubmissionArgs, 'id'>>;
+  login?: Resolver<Maybe<ResolversTypes['LoginResult']>, ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
   updateFacility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<MutationUpdateFacilityArgs, 'id' | 'input'>>;
   updateHealthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<MutationUpdateHealthcareProfessionalArgs, 'id' | 'input'>>;
   updateSubmission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<MutationUpdateSubmissionArgs, 'id' | 'input'>>;
@@ -796,6 +823,7 @@ export type Resolvers<ContextType = any> = {
   HealthcareProfessional?: HealthcareProfessionalResolvers<ContextType>;
   HealthcareProfessionalSubmission?: HealthcareProfessionalSubmissionResolvers<ContextType>;
   LocalizedName?: LocalizedNameResolvers<ContextType>;
+  LoginResult?: LoginResultResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   PhysicalAddress?: PhysicalAddressResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;

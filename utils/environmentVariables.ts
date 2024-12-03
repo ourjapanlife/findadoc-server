@@ -7,6 +7,9 @@ const dotEnvFileToLoad = process.env.NODE_ENV === 'production' ? './.env.prod' :
 config({ path: dotEnvFileToLoad })
 
 const envVariables = {
+    authUsername: () => process.env.AUTH_USERNAME as string,
+    authPassword: () => process.env.AUTH_PASSWORD as string ,
+    authTwoFactor: () => process.env.AUTH_TWOFACTOR as string,
     isProduction: () => process.env.NODE_ENV === 'production',
     isLocal: () => !envVariables.isProduction(),
     serverHost: () => process.env.SERVER_HOST as string,
