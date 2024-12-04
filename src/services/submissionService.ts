@@ -186,7 +186,7 @@ Promise<Result<gqlTypes.Submission>> => {
                 gqlTypes.ActionType.Create, 
                 gqlTypes.ObjectType.Submission, 
                 '', 
-                newSubmission,
+                JSON.stringify(newSubmission),
                 null,
                 t
             )
@@ -272,8 +272,8 @@ Promise<Result<gqlTypes.Submission>> => {
                 gqlTypes.ActionType.Update, 
                 gqlTypes.ObjectType.Submission, 
                 updatedBy,
-                updatedSubmissionValues,
-                oldSubmission,
+                JSON.stringify(updatedSubmissionValues),
+                JSON.stringify(oldSubmission),
                 t
             )
 
@@ -393,8 +393,8 @@ Promise<Result<gqlTypes.Submission>> => {
                 gqlTypes.ActionType.Update, 
                 gqlTypes.ObjectType.Submission, 
                 updatedBy,
-                currentSubmission,
-                oldSubmission,
+                JSON.stringify(currentSubmission),
+                JSON.stringify(oldSubmission),
                 t
             )
 
@@ -502,8 +502,8 @@ Promise<Result<gqlTypes.Submission>> => {
                 gqlTypes.ActionType.Update, 
                 gqlTypes.ObjectType.Submission, 
                 updatedBy,
-                currentSubmission,
-                oldSubmission,
+                JSON.stringify(currentSubmission),
+                JSON.stringify(oldSubmission),
                 t
             )
 
@@ -565,7 +565,7 @@ export async function deleteSubmission(id: string, updatedBy: string)
                 gqlTypes.ObjectType.Submission, 
                 updatedBy,
                 null,
-                convertedEntity,
+                JSON.stringify(convertedEntity),
                 t
             )
 

@@ -9,8 +9,8 @@ export async function createAuditLog(
     action: gqlTypes.ActionType, 
     objectType: gqlTypes.ObjectType, 
     updatedBy: string, 
-    newData: Partial<dbSchema.Submission> | gqlTypes.Submission | string | null,
-    oldData: Partial<dbSchema.Submission> | gqlTypes.Submission | string | null,
+    newData: string | null,
+    oldData: string | null,
     t: Transaction
 ): Promise<AuditLogResult> {
     try {       
@@ -19,8 +19,8 @@ export async function createAuditLog(
             objectType: objectType,
             schemaVersion: gqlTypes.SchemaVersion.V1,
             updatedBy: updatedBy,
-            newValue: JSON.stringify(newData),
-            oldValue: JSON.stringify(oldData)
+            newValue: newData,
+            oldValue: oldData
         }
 
         const auditLogRef = dbInstance.collection('auditLogs').doc()
