@@ -691,16 +691,6 @@ function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcar
         return validationResults
     }
 
-    //business rule: at least one facility id is required
-    if (input.facilityIds && input.facilityIds.length < 1) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'facilityIds',
-            errorCode: ErrorCode.UPDATEPROFFESIONAL_FACILITYIDS_REQUIRED,
-            httpStatus: 400
-        })
-    }
-
     if (input.names) {
         validateNames(input.names, validationResults)
     }
