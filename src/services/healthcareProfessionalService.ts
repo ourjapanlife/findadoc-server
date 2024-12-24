@@ -1,4 +1,4 @@
-import { Query, DocumentData, WriteBatch, Transaction } from 'firebase-admin/firestore'
+import { Query, DocumentData, Transaction } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
@@ -571,7 +571,7 @@ async function processFacilityRelationshipChanges(healthcareProfessionalId: stri
 export async function updateHealthcareProfessionalsWithFacilityIdChanges(
     professionalRelationshipsToUpdate: gqlTypes.Relationship[],
     facilityId: string,
-    batch: WriteBatch
+    t: Transaction
 ): Promise<Result<void>> {
     try {
         if (!professionalRelationshipsToUpdate || professionalRelationshipsToUpdate.length < 1) {
@@ -614,8 +614,8 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
 
             //business rule: we always timestamp when the entity was updated.
             dbProfessionalData.updatedDate = new Date().toISOString()
-            //This will add the record update to the batch, but we don't want to commit until later when all changes are done
-            batch.set(ref, dbProfessionalData, { merge: true })
+            //This will add the record update to the transaction, but we don't want to commit until later when all changes are done
+            t.set(ref, dbProfessionalData, { merge: true })
             logger.info(`\nDB-UPDATE: Updated healthcare professional ${dbProfessionalData.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalData)}`)
         })
 
