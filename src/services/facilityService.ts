@@ -1,4 +1,4 @@
-import { DocumentData, Query, Transaction, WriteBatch } from 'firebase-admin/firestore'
+import { DocumentData, Query, Transaction } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
@@ -7,7 +7,7 @@ import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite 
 import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { updateHealthcareProfessionalsWithFacilityIdChanges } from './healthcareProfessionalService.js'
 import { logger } from '../logger.js'
-import { createAuditLog, createAuditLog } from './auditLogService.js'
+import { createAuditLog } from './auditLogService.js'
 
 /**
  * Gets the Facility from the database that matches on the id.
@@ -175,7 +175,7 @@ export async function createFacility(
             
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Create, 
-                gqlTypes.ObjectType.HealthcareProfessional, 
+                gqlTypes.ObjectType.Facility, 
                 updatedBy, 
                 JSON.stringify(newDbFacility),
                 null,
@@ -445,11 +445,11 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
  * This deletes a Facility from the database. If the Facility doesn't exist, it will return a validation error.
  * @param id The ID of the facility in the database to delete.
  */
-export async function deleteFacility(id: string)
-    : Promise<Result<gqlTypes.DeleteResult>> {
+export async function deleteFacility(
+    id: string,
+    updatedBy: string
+): Promise<Result<gqlTypes.DeleteResult>> {
     try {
-        //let's wrap all of our updates in a batch so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        const batch = dbInstance.batch()
         const facilityRef = dbInstance.collection('facilities').where('id', '==', id)
         const dbDocument = await facilityRef.get()
 
@@ -487,28 +487,49 @@ export async function deleteFacility(id: string)
 
         const facility = dbDocument.docs[0].data() as dbSchema.Facility
 
-        //let's update all the healthcareProfessionals that should remove this facilityId from their facilityIds array
-        const professionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
-            id,
-            facility.healthcareProfessionalIds.map(
-                professionalId => ({
-                    otherEntityId: professionalId,
-                    action: gqlTypes.RelationshipAction.Delete
-                } satisfies gqlTypes.Relationship)
-            ),
-            batch
-        )
+        /*
+        let's wrap all of our updates in a batch so we can roll back if anything fails. 
+        (for example we don't want to update the professional if updating the associated facility updates fail)
+        */
+        await dbInstance.runTransaction(async t => {
+            //let's update all the healthcareProfessionals that should remove this facilityId from their facilityIds array
+            const professionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
+                id,
+                facility.healthcareProfessionalIds.map(
+                    professionalId => ({
+                        otherEntityId: professionalId,
+                        action: gqlTypes.RelationshipAction.Delete
+                    } satisfies gqlTypes.Relationship)
+                ),
+                t
+            )
+    
+            // if we have errors, this is an actual error.
+            if (professionalUpdateResults.hasErrors) {
+                throw new Error(`ERROR: Error updating associated facility's healthcareProfessionalIds: ${JSON.stringify(professionalUpdateResults.errors)}`)
+            }
+    
+            t.delete(dbDocument.docs[0].ref)
 
-        // if we have errors, this is an actual error.
-        if (professionalUpdateResults.hasErrors) {
-            throw new Error(`ERROR: Error updating associated facility's healthcareProfessionalIds: ${JSON.stringify(professionalUpdateResults.errors)}`)
-        }
+            const oldFacilityDataAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(facility)
+            )
 
-        batch.delete(dbDocument.docs[0].ref)
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Delete, 
+                gqlTypes.ObjectType.Facility, 
+                updatedBy,
+                null,
+                JSON.stringify(oldFacilityDataAuditLogEntity),
+                t
+            )
+
+            if (!createdAuditLog.isSuccesful) {
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`) 
+            }
+        })
+
         logger.info(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
-
-        // This will commit all the changes across the facility and the associated professionals.
-        await batch.commit()
 
         return {
             data: {

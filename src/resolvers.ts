@@ -133,7 +133,7 @@ const resolvers = {
                 })
             }
 
-            const deleteFacilityResult = await facilityService.deleteFacility(args.id)
+            const deleteFacilityResult = await facilityService.deleteFacility(args.id, context.userId)
 
             convertErrorsToGqlErrors(deleteFacilityResult)
             return deleteFacilityResult.data

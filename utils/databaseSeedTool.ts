@@ -19,7 +19,7 @@ export const seedDatabase = async () => {
         const facilityIds: string[] = []
 
         for await (const facility of facilities) {
-            const createdFacilityResult = await createFacility(facility)
+            const createdFacilityResult = await createFacility(facility, 'userId')
 
             //we should fail here if we have errors
             if (createdFacilityResult.hasErrors) {
