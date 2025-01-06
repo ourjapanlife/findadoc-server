@@ -92,7 +92,7 @@ const resolvers = {
                 })
             }
 
-            const newFacilityResult = await facilityService.createFacility(args.input)
+            const newFacilityResult = await facilityService.createFacility(args.input, context.userId)
 
             convertErrorsToGqlErrors(newFacilityResult)
             return newFacilityResult.data
@@ -113,7 +113,7 @@ const resolvers = {
                 })
             }
 
-            const updateFacilityResult = await facilityService.updateFacility(args.id, args.input)
+            const updateFacilityResult = await facilityService.updateFacility(args.id, args.input, context.userId)
 
             convertErrorsToGqlErrors(updateFacilityResult)
             return updateFacilityResult.data
@@ -133,7 +133,7 @@ const resolvers = {
                 })
             }
 
-            const deleteFacilityResult = await facilityService.deleteFacility(args.id)
+            const deleteFacilityResult = await facilityService.deleteFacility(args.id, context.userId)
 
             convertErrorsToGqlErrors(deleteFacilityResult)
             return deleteFacilityResult.data

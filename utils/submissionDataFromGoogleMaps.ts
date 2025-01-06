@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer'
 import axios from 'axios'
-import { envVariables } from './environmentVariables'
+import { envVariables } from './environmentVariables.js'
 
 //Load the api key for google maps
 const apiKey = envVariables.googleAPIKey()

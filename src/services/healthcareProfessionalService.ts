@@ -1,4 +1,4 @@
-import { Query, DocumentData, WriteBatch, Transaction } from 'firebase-admin/firestore'
+import { Query, DocumentData, Transaction } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
@@ -571,7 +571,7 @@ async function processFacilityRelationshipChanges(healthcareProfessionalId: stri
 export async function updateHealthcareProfessionalsWithFacilityIdChanges(
     professionalRelationshipsToUpdate: gqlTypes.Relationship[],
     facilityId: string,
-    batch: WriteBatch
+    t: Transaction
 ): Promise<Result<void>> {
     try {
         if (!professionalRelationshipsToUpdate || professionalRelationshipsToUpdate.length < 1) {
@@ -614,8 +614,8 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
 
             //business rule: we always timestamp when the entity was updated.
             dbProfessionalData.updatedDate = new Date().toISOString()
-            //This will add the record update to the batch, but we don't want to commit until later when all changes are done
-            batch.set(ref, dbProfessionalData, { merge: true })
+            //This will add the record update to the transaction, but we don't want to commit until later when all changes are done
+            t.set(ref, dbProfessionalData, { merge: true })
             logger.info(`\nDB-UPDATE: Updated healthcare professional ${dbProfessionalData.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalData)}`)
         })
 
@@ -681,21 +681,34 @@ function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcar
         errors: []
     }
 
-    //business rule: at least one facility id is required
-    if (!input.facilityIds || input.facilityIds.length < 1) {
+    if (Object.keys(input).length < 1) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
-            field: 'facilityIds',
-            errorCode: ErrorCode.UPDATEPROFFESIONAL_FACILITYIDS_REQUIRED,
+            field: 'input',
+            errorCode: ErrorCode.MISSING_INPUT,
             httpStatus: 400
         })
+        return validationResults
     }
 
-    validateNames(input.names, validationResults)
-    validateDegrees(input.degrees, validationResults)
-    validateSpecialties(input.specialties, validationResults)
-    validateInsurance(input.acceptedInsurance, validationResults)
-    validateSpokenLanguages(input.spokenLanguages, validationResults)
+    if (input.names) {
+        validateNames(input.names, validationResults)
+    }
+    if (input.degrees) {
+        validateDegrees(input.degrees, validationResults)
+    }
+
+    if (input.specialties) {
+        validateSpecialties(input.specialties, validationResults)
+    }
+
+    if (input.acceptedInsurance) {
+        validateInsurance(input.acceptedInsurance, validationResults)
+    }
+
+    if (input.spokenLanguages) {
+        validateSpokenLanguages(input.spokenLanguages, validationResults)
+    }
 
     return validationResults
 }

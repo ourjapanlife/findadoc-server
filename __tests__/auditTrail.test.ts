@@ -15,7 +15,7 @@ describe('createAuditLog', () => {
                 gqlTypes.ActionType.Create, 
                 gqlTypes.ObjectType.Submission, 
                 'user123', 
-                newAuditLog, 
+                JSON.stringify(newAuditLog), 
                 null,
                 t
             )
