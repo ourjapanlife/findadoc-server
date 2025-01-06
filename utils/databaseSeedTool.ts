@@ -19,7 +19,7 @@ export const seedDatabase = async () => {
         const facilityIds: string[] = []
 
         for await (const facility of facilities) {
-            const createdFacilityResult = await createFacility(facility)
+            const createdFacilityResult = await createFacility(facility, 'db seed tool')
 
             //we should fail here if we have errors
             if (createdFacilityResult.hasErrors) {
@@ -34,7 +34,7 @@ export const seedDatabase = async () => {
             hp.facilityIds = facilityIds
 
             // for seeding we can just pass a fake userId
-            const createProfessionalResult = await createHealthcareProfessional(hp, 'userId')
+            const createProfessionalResult = await createHealthcareProfessional(hp, 'db seed tool')
 
             //we should fail here if we have errors
             if (createProfessionalResult.hasErrors) {

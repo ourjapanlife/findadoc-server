@@ -463,7 +463,9 @@ Promise<Result<gqlTypes.Submission>> => {
         logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
         
         //try creating the facility
-        const createFacilityResult = await createFacility(currentSubmission.facility as gqlTypes.CreateFacilityInput)
+        const createFacilityResult = await createFacility(
+            currentSubmission.facility as gqlTypes.CreateFacilityInput, updatedBy
+        )
         
         if (createFacilityResult.hasErrors) {
             approveResult.errors?.concat(createFacilityResult.errors!)
