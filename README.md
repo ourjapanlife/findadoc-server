@@ -45,7 +45,7 @@ We love and welcome contributions to our front-end repository which can be found
 ## 1. Install dependencies
 
 ```sh
-npm install
+yarn
 ```
 
 ## 2. Set up Husky Hooks 🐕️
@@ -53,7 +53,7 @@ npm install
 This will automatically run linting before commits and reduce common contributor mistakes.
 
 ```sh
-npm run prepare
+yarn prepare
 ```
 
 ## 3. Setting up the Database 🐘
@@ -69,7 +69,7 @@ For security, we run a local database so we don't break production!
 #### a.1 Install the Firebase CLI if you do not have it installed on your machine:
 
 ```sh
-npm -g i firebase-tools
+yarn dlx firebase-tools
 ```
 
 **To be able to run the firestore emulator you need to have Java version 11 or later installed. If not installed, please follow the next step (a.2).**
@@ -99,7 +99,7 @@ firebase login
 ### 3.b Running the database locally
 
 ```sh
-npm run dev:startlocaldb
+yarn dev:startlocaldb
 ```
 
 This will run until you shut down the instance hitting `ctrl^+C`
@@ -122,7 +122,7 @@ To set up the Firebase Service Account for this project, follow these steps:
 Before running the following command, make sure that your local database is running
 
 ```sh
-npm run dev
+yarn run dev
 ```
 
 That's it! This command will start the API, seed your database, install dependencies, and generate our GraphQL types.
@@ -133,14 +133,14 @@ In production, we use docker to run the app. You can validate your code works in
 Make sure that you have docker running beforehand.
 
 ```sh
-npm run prod:build
-npm run prod
+yarn prod:build
+yarn prod
 ```
 
 # How to Debug your code
 
 This runs locally and can easily be debugged with vscode!
-Click on the `Run and Debug` vscode tab, and then choose `Javascript Debug Terminal`, then run `npm run dev` in there and the debugger will automatically connect.
+Click on the `Run and Debug` vscode tab, and then choose `Javascript Debug Terminal`, then run `yarn dev` in there and the debugger will automatically connect.
 Then, just add breakpoints by clicking on the line number of your code.
 
 # How to Test your code
@@ -151,13 +151,13 @@ Then, just add breakpoints by clicking on the line number of your code.
 1. Start the Docker container:
 
 ```sh
-npm run test:dockerstart
+yarn test:dockerstart
 ```
 
 2. Run the tests:
 
 ```sh
-npm run test
+yarn test
 ```
 
 </details>
@@ -165,8 +165,8 @@ npm run test
 <details>
   <summary>Testing GraphQL</summary>
 
-1. Run `npm run generate` to generate the types locally
-2. Run `npm run dev` to start the local server
+1. Run `yarn generate` to generate the types locally
+2. Run `yarn dev` to start the local server
 3. Open your browser to <http://localhost:3001/>
 4. Navigate to the Explorer section from the menu in the left pane.
 5. Click `query: Query` under "Root Types
