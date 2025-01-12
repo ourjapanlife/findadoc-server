@@ -22,7 +22,7 @@ jobs:
         node-version: 21.3.0
 
     - name: Yarn Install
-      run: yarn --immutable --immutable-cache --check-cache
+      run: yarn
 
     - name: Generate GQL types
       run: yarn generate

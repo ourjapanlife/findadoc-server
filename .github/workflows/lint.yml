@@ -35,7 +35,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - name: Install Dependencies
-        run: yarn --immutable --immutable-cache --check-cache
+        run: yarn
       - name: Run ESLint
         run: yarn lint:ci
       - name: Check Lint Status
