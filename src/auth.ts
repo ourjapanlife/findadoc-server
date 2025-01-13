@@ -31,7 +31,7 @@ export async function getRolesForUser(userId: string, tenantId: string): Promise
 }
 
 export async function hasAdminRole(context: UserContext): Promise<boolean> {
-    //TODO: this is function temporary and being reworked. 
+    //TODO: this function is temporary and being reworked. 
     const skipAuth = envVariables.isTestingEnvironment() || envVariables.isLocal()
     
     if (skipAuth) {
@@ -50,7 +50,7 @@ export async function hasAdminRole(context: UserContext): Promise<boolean> {
 }
 
 export async function buildUserContext(req: FastifyRequest): Promise<UserContext> {
-    //TODO: this is function temporary and being reworked. 
+    //TODO: this function is temporary and being reworked. 
     const userId = req ? '' : ''
     const tenantId = req ? '' : ''
 
