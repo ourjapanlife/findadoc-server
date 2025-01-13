@@ -18,7 +18,7 @@ export const initializeAuth = async () => {
 }
 
 export async function getRolesForUser(userId: string, tenantId: string): Promise<string[]> {
-    //TODO: this is function temporary and being reworked. 
+    //TODO: this function is temporary and being reworked. 
     const response = await Promise.resolve(
         logger.debug(`🔐 todo: ${userId} ${tenantId}`)
     )
