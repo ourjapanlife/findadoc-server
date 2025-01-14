@@ -13,6 +13,11 @@ type Facility {
   updatedDate: String!
 }
 
+type ResultFacilities {
+  facilities: [Facility]
+  resultCount: Int
+}
+
 input CreateFacilityInput {
   nameEn: String!
   nameJa: String!
@@ -388,7 +393,7 @@ type DeleteResult {
 
 type Query {
   facility(id: ID!): Facility
-  facilities(filters: FacilitySearchFilters!): [Facility]
+  facilities(filters: FacilitySearchFilters!): ResultFacilities
   healthcareProfessional(id: ID!): HealthcareProfessional
   healthcareProfessionals(
     filters: HealthcareProfessionalSearchFilters!

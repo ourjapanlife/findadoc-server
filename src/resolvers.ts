@@ -17,7 +17,7 @@ const resolvers = {
             return queryResults.data
         },
         facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters })
-        : Promise<gqlType.Facility[]> => {
+        : Promise<gqlType.ResultFacilities> => {
             const queryResults = await facilityService.searchFacilities(args.filters)
 
             convertErrorsToGqlErrors(queryResults)
