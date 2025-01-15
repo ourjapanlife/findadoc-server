@@ -29,15 +29,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install NPM/ Node ${{ matrix.node-version }}
+      - name: Install Yarn / Node ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: "yarn"
       - name: Install Dependencies
-        run: npm install --immutable
+        run: yarn
       - name: Run ESLint
-        run: npm run lint:ci
+        run: yarn lint:ci
       - name: Check Lint Status
         if: always()
         run: |
