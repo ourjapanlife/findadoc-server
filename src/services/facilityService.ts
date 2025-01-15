@@ -390,8 +390,6 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
         const dbFacilitiesToUpdate = allFacilityDocuments.docs ?? []
 
         dbFacilitiesToUpdate.forEach(dbFacility => {
-            // await Promise.all(dbFacilitiesToUpdate.map(async dbFacility => {
-            // for await (const dbFacility of dbFacilitiesToUpdate) {
             const matchingRelationship = facilitiesToUpdate.find(f => f.otherEntityId === dbFacility.id)
             const dbFacilityRef = dbFacility.ref
             const dbFacilityData = dbFacility.data() as dbSchema.Facility
