@@ -329,6 +329,9 @@ export const updateHealthcareProfessional = async (
                 mapDbEntityTogqlEntity(dbProfessionalToUpdate)
             )
             
+            const originalFacilityIdsForHealthcareProfessional
+                = dbProfessionalToUpdate.facilityIds
+
             //let's update the fields that were provided
             MapDefinedFields(fieldsToUpdate, dbProfessionalToUpdate)
             
@@ -341,7 +344,7 @@ export const updateHealthcareProfessional = async (
                     dbProfessionalToUpdate.id,
                     fieldsToUpdate.facilityIds,
                     t,
-                    dbProfessionalToUpdate.facilityIds ?? []
+                    originalFacilityIdsForHealthcareProfessional ?? []
                 )
     
                 // if we didn't get it back or have errors, this is an actual error.
