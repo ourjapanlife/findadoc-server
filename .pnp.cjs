@@ -29,6 +29,7 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["@apollo/server", "virtual:bd78e0a7c398449be5db5e770cceed0098e599f5515c96c29ce887780f3c54d927786da4647b8dcfd7f400080ef804d324fb977cb7dc1ee7849c5469bede318e#npm:4.11.3"],\
           ["@as-integrations/fastify", "virtual:bd78e0a7c398449be5db5e770cceed0098e599f5515c96c29ce887780f3c54d927786da4647b8dcfd7f400080ef804d324fb977cb7dc1ee7849c5469bede318e#npm:2.1.1"],\
+          ["@eslint/js", "npm:9.18.0"],\
           ["@faker-js/faker", "npm:8.4.1"],\
           ["@fastify/compress", "npm:6.5.0"],\
           ["@fastify/cors", "npm:8.5.0"],\
@@ -1850,6 +1851,13 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../../AppData/Local/Yarn/Berry/cache/@eslint-js-npm-8.57.1-dec269f278-10.zip/node_modules/@eslint/js/",\
         "packageDependencies": [\
           ["@eslint/js", "npm:8.57.1"]\
+        ],\
+        "linkType": "HARD"\
+      }],\
+      ["npm:9.18.0", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/@eslint-js-npm-9.18.0-a952cf1b19-10.zip/node_modules/@eslint/js/",\
+        "packageDependencies": [\
+          ["@eslint/js", "npm:9.18.0"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -10619,6 +10627,7 @@ const RAW_RUNTIME_STATE =
           ["findadoc-server", "workspace:."],\
           ["@apollo/server", "virtual:bd78e0a7c398449be5db5e770cceed0098e599f5515c96c29ce887780f3c54d927786da4647b8dcfd7f400080ef804d324fb977cb7dc1ee7849c5469bede318e#npm:4.11.3"],\
           ["@as-integrations/fastify", "virtual:bd78e0a7c398449be5db5e770cceed0098e599f5515c96c29ce887780f3c54d927786da4647b8dcfd7f400080ef804d324fb977cb7dc1ee7849c5469bede318e#npm:2.1.1"],\
+          ["@eslint/js", "npm:9.18.0"],\
           ["@faker-js/faker", "npm:8.4.1"],\
           ["@fastify/compress", "npm:6.5.0"],\
           ["@fastify/cors", "npm:8.5.0"],\

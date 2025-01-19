@@ -1113,6 +1113,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@eslint/js@npm:^9.18.0":
+  version: 9.18.0
+  resolution: "@eslint/js@npm:9.18.0"
+  checksum: 10/364a7d030dad9dbda1458d8dbcea0199fe7d48bcfefe4b49389df6c45cdc5a2449f70e5d8a794e46ed9fb34af3fe5a3f53e30020d306b6ee791e2a1b2b9fa25f
+  languageName: node
+  linkType: hard
+
 "@faker-js/faker@npm:^8.2.0":
   version: 8.4.1
   resolution: "@faker-js/faker@npm:8.4.1"
@@ -7703,6 +7710,7 @@ __metadata:
   dependencies:
     "@apollo/server": "npm:^4.9.3"
     "@as-integrations/fastify": "npm:^2.1.1"
+    "@eslint/js": "npm:^9.18.0"
     "@faker-js/faker": "npm:^8.2.0"
     "@fastify/compress": "npm:^6.5.0"
     "@fastify/cors": "npm:^8.4.1"
