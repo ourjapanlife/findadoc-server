@@ -74,6 +74,7 @@ const RAW_RUNTIME_STATE =
           ["puppeteer", "npm:22.15.0"],\
           ["rimraf", "npm:5.0.10"],\
           ["supertest", "npm:6.3.4"],\
+          ["triple-beam", "npm:1.4.1"],\
           ["ts-node", "virtual:bd78e0a7c398449be5db5e770cceed0098e599f5515c96c29ce887780f3c54d927786da4647b8dcfd7f400080ef804d324fb977cb7dc1ee7849c5469bede318e#npm:10.9.2"],\
           ["typescript", "patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=379a07"],\
           ["vite", "virtual:bd78e0a7c398449be5db5e770cceed0098e599f5515c96c29ce887780f3c54d927786da4647b8dcfd7f400080ef804d324fb977cb7dc1ee7849c5469bede318e#npm:2.9.18"],\
@@ -10888,6 +10889,7 @@ const RAW_RUNTIME_STATE =
           ["puppeteer", "npm:22.15.0"],\
           ["rimraf", "npm:5.0.10"],\
           ["supertest", "npm:6.3.4"],\
+          ["triple-beam", "npm:1.4.1"],\
           ["ts-node", "virtual:bd78e0a7c398449be5db5e770cceed0098e599f5515c96c29ce887780f3c54d927786da4647b8dcfd7f400080ef804d324fb977cb7dc1ee7849c5469bede318e#npm:10.9.2"],\
           ["typescript", "patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=379a07"],\
           ["vite", "virtual:bd78e0a7c398449be5db5e770cceed0098e599f5515c96c29ce887780f3c54d927786da4647b8dcfd7f400080ef804d324fb977cb7dc1ee7849c5469bede318e#npm:2.9.18"],\
