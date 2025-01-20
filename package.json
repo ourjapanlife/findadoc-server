@@ -38,9 +38,9 @@
     "homepage": "https://github.com/ourjapanlife/findadoc-server#readme",
     "engines": {
         "node": "21.3.0",
-        "yarn": "4.3.1"
+        "yarn": "4.6.0"
     },
-    "packageManager": "yarn@4.3.1",
+    "packageManager": "yarn@4.6.0",
     "devDependencies": {
         "@eslint/js": "^9.18.0",
         "@firebase/rules-unit-testing": "^3.0.1",
