@@ -12,7 +12,7 @@
         "test:dockerstop": "docker compose -f docker/docker-compose-test.yml down",
         "prepare": "husky install",
         "prod": "yarn prod:dockerstop && yarn prod:dockerstart",
-        "prod:build": "echo '🧶 Installing yarn dependencies...🧶' && yarn --immutable --immutable-cache --check-cache && echo '🧹 cleaning dist folder...' && npx rimraf dist/ && echo '➡ ➡ copying files...' && npx copyfiles -a -V src/typeDefs/schema.graphql .env.prod dist && echo '💻✨ compiling code..' && tsc && echo '💻✨ successfully built!'",
+        "prod:build": "echo '🧶 Installing yarn dependencies...🧶' && yarn --immutable-cache --check-cache && echo '🧹 cleaning dist folder...' && npx rimraf dist/ && echo '➡ ➡ copying files...' && npx copyfiles -a -V src/typeDefs/schema.graphql .env.prod dist && echo '💻✨ compiling code..' && tsc && echo '💻✨ successfully built!'",
         "prod:startserver": "echo '💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production PIDUSAGE_USE_PS=true pm2 start dist/src/index.js --no-daemon && pm2 logs --lines 100",
         "prod:stopserver": "echo '💻 💻 💻✨ Stopping prod server...' && pm2 stop all && pm2 delete all",
         "prod:monitor": "pm2 monitor",
@@ -40,7 +40,9 @@
         "node": "21.3.0",
         "yarn": "4.3.1"
     },
+    "packageManager": "yarn@4.3.1",
     "devDependencies": {
+        "@eslint/js": "^9.18.0",
         "@firebase/rules-unit-testing": "^3.0.1",
         "@graphql-codegen/cli": "^5.0.0",
         "@graphql-codegen/typescript": "^4.0.1",
@@ -68,6 +70,7 @@
         "puppeteer": "^22.12.1",
         "rimraf": "^5.0.1",
         "typescript": "^5.2.2",
+        "vite": "^6.0.7",
         "vitest": "^2.1.8"
     },
     "dependencies": {
@@ -77,6 +80,8 @@
         "@fastify/compress": "^6.5.0",
         "@fastify/cors": "^8.4.1",
         "@fastify/rate-limit": "^9.0.1",
+        "@firebase/app": "^0.10.18",
+        "@firebase/app-compat": "^0.2.48",
         "@types/googlemaps": "^3.43.3",
         "cross-env": "^7.0.3",
         "csv-parse": "^5.3.3",
@@ -91,6 +96,7 @@
         "nodemon": "^3.0.1",
         "pm2": "^5.3.0",
         "supertest": "^6.3.3",
+        "triple-beam": "^1.4.1",
         "ts-node": "^10.9.1",
         "winston": "^3.11.0",
         "winston-loki": "^6.0.8"
