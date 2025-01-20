@@ -62,12 +62,12 @@ export const getFacilityById = async (id: string)
  * @returns The matching Facilities.
  */
 export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters = {}):
-Promise<Result<gqlTypes.ResultFacilities>> {
+Promise<Result<gqlTypes.SearchResultsFacilities>> {
     try {
         const validationResult = validateFacilitiesSearchInput(filters)
 
         if (validationResult.hasErrors) {
-            return validationResult as Result<gqlTypes.ResultFacilities>
+            return validationResult as Result<gqlTypes.SearchResultsFacilities>
         }
 
         let searchRef: Query<DocumentData> = dbInstance.collection('facilities')
