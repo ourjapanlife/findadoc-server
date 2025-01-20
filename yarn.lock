@@ -1526,7 +1526,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@firebase/app@npm:0.10.18":
+"@firebase/app@npm:0.10.18, @firebase/app@npm:^0.10.18":
   version: 0.10.18
   resolution: "@firebase/app@npm:0.10.18"
   dependencies:
@@ -8163,6 +8163,7 @@ __metadata:
     "@fastify/compress": "npm:^6.5.0"
     "@fastify/cors": "npm:^8.4.1"
     "@fastify/rate-limit": "npm:^9.0.1"
+    "@firebase/app": "npm:^0.10.18"
     "@firebase/app-compat": "npm:^0.2.48"
     "@firebase/rules-unit-testing": "npm:^3.0.1"
     "@graphql-codegen/cli": "npm:^5.0.0"
