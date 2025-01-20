@@ -15,7 +15,7 @@ type Facility {
 
 type SearchResultsFacilities {
   facilities: [Facility]
-  resultCount: Int
+  resultsCount: Int
 }
 
 input CreateFacilityInput {

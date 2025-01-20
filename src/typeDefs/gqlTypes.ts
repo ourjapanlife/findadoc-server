@@ -435,7 +435,7 @@ export enum SchemaVersion {
 export type SearchResultsFacilities = {
   __typename?: 'SearchResultsFacilities';
   facilities?: Maybe<Array<Maybe<Facility>>>;
-  resultCount?: Maybe<Scalars['Int']['output']>;
+  resultsCount?: Maybe<Scalars['Int']['output']>;
 };
 
 export enum Specialty {
@@ -796,7 +796,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
 
 export type SearchResultsFacilitiesResolvers<ContextType = any, ParentType extends ResolversParentTypes['SearchResultsFacilities'] = ResolversParentTypes['SearchResultsFacilities']> = {
   facilities?: Resolver<Maybe<Array<Maybe<ResolversTypes['Facility']>>>, ParentType, ContextType>;
-  resultCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  resultsCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
