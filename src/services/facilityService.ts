@@ -117,7 +117,7 @@ Promise<Result<gqlTypes.SearchResultsFacilities>> {
         return {
             data: {
                 facilities: gqlFacilities,
-                resultCount: totalFilteredDocuments
+                resultsCount: totalFilteredDocuments
             },
             hasErrors: false
         }
