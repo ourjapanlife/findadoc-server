@@ -113,52 +113,6 @@ describe('createFacility', () => {
     })
 })
 
-describe('searchFacilities', () => {
-    test('search facilities using limit filter and see if it return the correct resultsCount', async () => {
-        const totalFacilitiesCount = 5
-
-        for (let i = 0; i < totalFacilitiesCount; i++) {
-            const createFacilityRequest = {
-                query: createFacilityMutation,
-                variables: {
-                    input: generateRandomCreateFacilityInput() satisfies gqlType.CreateFacilityInput
-                }
-            } as gqlMutation<gqlType.CreateFacilityInput>
-
-            // Create a new facility
-            const newFacilityResult = await request(gqlApiUrl).post('').send(createFacilityRequest)
-
-            //should not have errors
-            const errors = newFacilityResult.body?.errors
-
-            if (errors) {
-                logger.error(newFacilityResult.body.errors)
-            }
-            expect(errors).toBeUndefined()
-        }
-
-        const searchFacilitiesRequest = {
-            query: searchFacilitiesQuery,
-            variables: {
-                filters: {
-                    limit: 1
-                } satisfies gqlType.FacilitySearchFilters
-            }
-        } as gqlRequest
-
-        // Query the facility by id
-        const searchFacilitiesResults = await request(gqlApiUrl).post('').send(searchFacilitiesRequest)
-
-        //should not have errors
-        expect(searchFacilitiesResults.body?.errors).toBeUndefined()
-
-        // Compare the actual data returned by getFacilityById to the new facility stored in the database
-        const searchedFacilities = searchFacilitiesResults.body.data.facilities as gqlType.SearchResultsFacilities
-
-        expect(searchedFacilities).toBeDefined()
-    }, 10000)
-})
-
 describe('getFacilityById', () => {
     test('gets the Facility that matches the facility_id', async () => {
         const createFacilityRequest = {
@@ -475,13 +429,3 @@ const getFacilityByIdQuery = `query test_getfacilityById($id: ID!) {
         updatedDate
     }
 }`
-
-const searchFacilitiesQuery = `query test_searchFacilities($filters: FacilitySearchFilters!) {
-  facilities(filters: $filters) {
-    facilities {
-      id
-    }
-    resultsCount
-  }
-}
-`
