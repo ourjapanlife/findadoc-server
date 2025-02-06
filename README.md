@@ -6,9 +6,12 @@
 
 Welcome to the back-end repository for Find a Doc, Japan! We're not currently looking for contributors in this particular repo, but you're free to have a look around. If you want to provide any suggestions or feedback, come have a chat with us in the [#backend-team channel on Slack](https://join.slack.com/t/find-a-doc/shared_invite/zt-s4744a6o-MGaGHzLN5wB9aXeha3vdsQ)!
 
+### How to contribute
+
+We love and welcome contributions to our front-end repository which can be found [here](https://github.com/ourjapanlife/findadoc-web)!
+
 ### Documentation:
 - [📒 **Welcome to Find a Doc, Japan!**](https://documentation.findadoc.jp/development)
-- [🔧 **Tech Stack and Code Style**](https://documentation.findadoc.jp/development/start-coding/overview)
 - [🚅 **Quickstart the API**](https://app.gitbook.com/o/Hmir5Cugknp7uJaXBpz1/s/8SwzLo8dTmkYT8nK5WXz/start-coding/quickstart-the-frontend-and-backend)
 - [🚀 **Run the API**](https://app.gitbook.com/o/Hmir5Cugknp7uJaXBpz1/s/8SwzLo8dTmkYT8nK5WXz/start-coding/quickstart-the-frontend-and-backend/running-the-api-locally)
 
