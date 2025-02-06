@@ -8,8 +8,6 @@ Welcome to the back-end repository for Find a Doc, Japan! We're not currently lo
 
 ### Documentation:
 - [📒 **Welcome to Find a Doc, Japan!**](https://documentation.findadoc.jp/development)
-- [❤️ **Code of Conduct**](./CODE_OF_CONDUCT.md)
-- [🤝 **Contributing Guidelines**](./CONTRIBUTING.md)
 - [🔧 **Tech Stack and Code Style**](https://documentation.findadoc.jp/development/start-coding/overview)
 - [🚅 **Quickstart the API**](https://app.gitbook.com/o/Hmir5Cugknp7uJaXBpz1/s/8SwzLo8dTmkYT8nK5WXz/start-coding/quickstart-the-frontend-and-backend)
 - [🚀 **Run the API**](https://app.gitbook.com/o/Hmir5Cugknp7uJaXBpz1/s/8SwzLo8dTmkYT8nK5WXz/start-coding/quickstart-the-frontend-and-backend/running-the-api-locally)
