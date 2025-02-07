@@ -374,7 +374,7 @@ export type PhysicalAddressInput = {
 export type Query = {
   __typename?: 'Query';
   auditLog?: Maybe<AuditLog>;
-  facilities?: Maybe<Array<Maybe<Facility>>>;
+  facilities?: Maybe<SearchResultsFacilities>;
   facility?: Maybe<Facility>;
   healthcareProfessional?: Maybe<HealthcareProfessional>;
   healthcareProfessionals?: Maybe<Array<Maybe<HealthcareProfessional>>>;
@@ -431,6 +431,12 @@ export enum RelationshipAction {
 export enum SchemaVersion {
   V1 = 'V1'
 }
+
+export type SearchResultsFacilities = {
+  __typename?: 'SearchResultsFacilities';
+  facilities?: Maybe<Array<Maybe<Facility>>>;
+  resultsCount?: Maybe<Scalars['Int']['output']>;
+};
 
 export enum Specialty {
   AllergyAndImmunology = 'ALLERGY_AND_IMMUNOLOGY',
@@ -623,6 +629,7 @@ export type ResolversTypes = {
   Relationship: Relationship;
   RelationshipAction: RelationshipAction;
   SchemaVersion: SchemaVersion;
+  SearchResultsFacilities: ResolverTypeWrapper<SearchResultsFacilities>;
   Specialty: Specialty;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
@@ -660,6 +667,7 @@ export type ResolversParentTypes = {
   PhysicalAddressInput: PhysicalAddressInput;
   Query: {};
   Relationship: Relationship;
+  SearchResultsFacilities: SearchResultsFacilities;
   String: Scalars['String']['output'];
   Submission: Submission;
   SubmissionSearchFilters: SubmissionSearchFilters;
@@ -778,12 +786,18 @@ export type PhysicalAddressResolvers<ContextType = any, ParentType extends Resol
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   auditLog?: Resolver<Maybe<ResolversTypes['AuditLog']>, ParentType, ContextType, Partial<QueryAuditLogArgs>>;
-  facilities?: Resolver<Maybe<Array<Maybe<ResolversTypes['Facility']>>>, ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
+  facilities?: Resolver<Maybe<ResolversTypes['SearchResultsFacilities']>, ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
   healthcareProfessionals?: Resolver<Maybe<Array<Maybe<ResolversTypes['HealthcareProfessional']>>>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;
   submissions?: Resolver<Maybe<Array<Maybe<ResolversTypes['Submission']>>>, ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
+};
+
+export type SearchResultsFacilitiesResolvers<ContextType = any, ParentType extends ResolversParentTypes['SearchResultsFacilities'] = ResolversParentTypes['SearchResultsFacilities']> = {
+  facilities?: Resolver<Maybe<Array<Maybe<ResolversTypes['Facility']>>>, ParentType, ContextType>;
+  resultsCount?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type SubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Submission'] = ResolversParentTypes['Submission']> = {
@@ -814,6 +828,7 @@ export type Resolvers<ContextType = any> = {
   Mutation?: MutationResolvers<ContextType>;
   PhysicalAddress?: PhysicalAddressResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  SearchResultsFacilities?: SearchResultsFacilitiesResolvers<ContextType>;
   Submission?: SubmissionResolvers<ContextType>;
 };
 
