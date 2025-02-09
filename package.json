@@ -4,8 +4,9 @@
     "description": "Backend for Find a Doc, Japan",
     "main": "index.js",
     "scripts": {
-        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && yarn dev:startserver",
-        "dev:startserver": "echo '💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon --exec 'node --inspect --loader ts-node/esm src/index.ts'",
+        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && concurrently 'yarn dev:build' 'yarn dev:startserver'",
+        "dev:build": "echo '💻 💻 💻✨ Compiling...' && cross-env NODE_ENV=development esbuild src/index.ts --outfile=dist/index.js --bundle  --conditions=node --packages=external --platform=node --format=esm --loader:.node=file --watch",
+        "dev:startserver": "echo '💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon dist/index.js",
         "dev:startlocaldb": "firebase login && firebase emulators:start --project=find-a-doc-japan --only firestore",
         "test": "echo '🧶 Installing yarn dependencies...🧶' && yarn && vitest",
         "test:dockerstart": "docker compose -f docker/docker-compose-test.yml up -d --build",
@@ -39,7 +40,7 @@
     "engines": {
         "node": "22.5.1"
     },
-    "packageManager": "yarn@4.3.1",
+    "packageManager": "yarn@4.6.0",
     "devDependencies": {
         "@eslint/js": "^9.18.0",
         "@firebase/rules-unit-testing": "^3.0.1",
@@ -52,13 +53,15 @@
         "@stylistic/eslint-plugin": "^1.5.4",
         "@stylistic/eslint-plugin-migrate": "^1.5.4",
         "@swc/core": "^1.3.95",
-        "@types/node": "^22.10.7",
+        "@types/node": "^22.13.1",
         "@types/supertest": "^6.0.2",
         "@typescript-eslint/eslint-plugin": "^6.9.1",
         "@typescript-eslint/parser": "^6.9.1",
         "all-contributors-cli": "^6.24.0",
         "axios": "^1.7.9",
+        "concurrently": "^9.1.2",
         "copyfiles": "^2.4.1",
+        "esbuild": "^0.25.0",
         "eslint": "^8.53.0",
         "eslint-config-airbnb-base": "^15.0.0",
         "eslint-config-airbnb-typescript": "^17.1.0",
