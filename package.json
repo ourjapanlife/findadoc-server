@@ -11,6 +11,7 @@
         "test:dockerstart": "docker compose -f docker/docker-compose-test.yml up -d --build",
         "test:dockerstop": "docker compose -f docker/docker-compose-test.yml down",
         "prepare": "husky install",
+        "build": "echo 'ⓘ Note ⓘ: This build is intended for production, not dev' && yarn prod:build",
         "prod": "yarn prod:dockerstop && yarn prod:dockerstart",
         "prod:build": "echo '🧶 Installing yarn dependencies...🧶' && cross-env NODE_ENV=production && yarn --immutable-cache --check-cache && echo '🧹 cleaning dist folder...' && yarn dlx rimraf dist/ && echo '➡ ➡ copying files...' && yarn dlx copyfiles -a -V src/typeDefs/schema.graphql .env.prod dist && echo '💻✨ compiling code..' && tsc && echo '💻✨ successfully built!'",
         "prod:startserver": "echo '💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production PIDUSAGE_USE_PS=true pm2 start dist/src/index.js --no-daemon && pm2 logs --lines 100",
