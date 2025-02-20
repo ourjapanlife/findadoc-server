@@ -1,0 +1,11 @@
+services:
+  findadoc-dev-server:
+    image: findadoc-dev-server
+    build:
+      context: ../
+      dockerfile: docker/development/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../src:/usr/src/app/src
+      - ../yarn.lock:/usr/src/app/yarn.lock
