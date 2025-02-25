@@ -20,6 +20,6 @@ RUN yarn install --immutable --frozen-lockfile
 COPY . .
 
 # Run 
-EXPOSE 8080
+EXPOSE 3000
 
 CMD [ "yarn", "dev" ]
