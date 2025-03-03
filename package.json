@@ -80,7 +80,7 @@
         "@fastify/compress": "^6.5.0",
         "@fastify/cors": "^8.4.1",
         "@fastify/rate-limit": "^9.0.1",
-        "@firebase/app": "^0.10.18",
+        "@firebase/app": "^0.11.0",
         "@firebase/app-compat": "^0.2.48",
         "@types/googlemaps": "^3.43.3",
         "cross-env": "^7.0.3",
