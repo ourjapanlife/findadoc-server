@@ -1494,15 +1494,15 @@ __metadata:
   linkType: hard
 
 "@firebase/app-compat@npm:^0.2.48":
-  version: 0.2.48
-  resolution: "@firebase/app-compat@npm:0.2.48"
+  version: 0.2.51
+  resolution: "@firebase/app-compat@npm:0.2.51"
   dependencies:
-    "@firebase/app": "npm:0.10.18"
-    "@firebase/component": "npm:0.6.12"
+    "@firebase/app": "npm:0.11.2"
+    "@firebase/component": "npm:0.6.13"
     "@firebase/logger": "npm:0.4.4"
-    "@firebase/util": "npm:1.10.3"
+    "@firebase/util": "npm:1.11.0"
     tslib: "npm:^2.1.0"
-  checksum: 10/b74598b960ebb0a773b04e04d45dd59dbc8e09d1ae46c8ee7fd950632c95d357e8edab353df7032b798f2613884c96f3201eb5fbcdbfba67cb23757d66e63586
+  checksum: 10/f73c846bda96322a8c45a626704a1e15987aa545e71a1ff0f59af0ec19bac168f086b3fc2f9b6d4b6ac65b4ece3afba91d676ba7fa0eb27fa2a331358cf1a24a
   languageName: node
   linkType: hard
 
@@ -1526,7 +1526,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@firebase/app@npm:0.10.18, @firebase/app@npm:^0.10.18":
+"@firebase/app@npm:0.11.2":
+  version: 0.11.2
+  resolution: "@firebase/app@npm:0.11.2"
+  dependencies:
+    "@firebase/component": "npm:0.6.13"
+    "@firebase/logger": "npm:0.4.4"
+    "@firebase/util": "npm:1.11.0"
+    idb: "npm:7.1.1"
+    tslib: "npm:^2.1.0"
+  checksum: 10/32cffde76e20be7c9a8031d936e6fc8254f39122d0c35ee0f2fd97abed97f18aef4d660f6234f3e2f6e2f98e80671244f0a96d2dad4842d64afd1e0bd6c5f8fb
+  languageName: node
+  linkType: hard
+
+"@firebase/app@npm:^0.10.18":
   version: 0.10.18
   resolution: "@firebase/app@npm:0.10.18"
   dependencies:
@@ -1598,6 +1611,16 @@ __metadata:
     "@firebase/util": "npm:1.10.3"
     tslib: "npm:^2.1.0"
   checksum: 10/4dfd201d3709ef5eed477e13d399611a78a186ca8911846e24361f9848c3b4eecc14c295a8f78ec40c88816329fde0ba6cc30dce9a444fa43a619b7ea744f0dc
+  languageName: node
+  linkType: hard
+
+"@firebase/component@npm:0.6.13":
+  version: 0.6.13
+  resolution: "@firebase/component@npm:0.6.13"
+  dependencies:
+    "@firebase/util": "npm:1.11.0"
+    tslib: "npm:^2.1.0"
+  checksum: 10/b428fdaa1f8f24d5a2099a0361bc7cd3cd25cd00968fd4c0458dab463f52ae4ff1274214e99d3a42ce22a4ee6af7b5c9875444245f60a8790f6cee223f9cf5aa
   languageName: node
   linkType: hard
 
@@ -1982,6 +2005,15 @@ __metadata:
   dependencies:
     tslib: "npm:^2.1.0"
   checksum: 10/8e5e1664a09798348abfa0cd138157943f8ee9c6e3804e6cb1dcff004b351a03f14f4b2711338133bb89f7f824546664af2c2aa98e229becbc9294cdddeecc99
+  languageName: node
+  linkType: hard
+
+"@firebase/util@npm:1.11.0":
+  version: 1.11.0
+  resolution: "@firebase/util@npm:1.11.0"
+  dependencies:
+    tslib: "npm:^2.1.0"
+  checksum: 10/09e3be4405d7fac641c82d55cfd11916ef45a858502a0389846ad147bc00c4b67afad08ced56e0d0019ebe55742d59645bfa75bf519337c38bddce4a71acce24
   languageName: node
   linkType: hard
 
