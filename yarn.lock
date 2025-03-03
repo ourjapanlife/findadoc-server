@@ -2832,7 +2832,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/merge@npm:^9.0.0, @graphql-tools/merge@npm:^9.0.17":
+"@graphql-tools/merge@npm:^9.0.0":
   version: 9.0.17
   resolution: "@graphql-tools/merge@npm:9.0.17"
   dependencies:
@@ -2844,17 +2844,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/mock@npm:^9.0.0":
-  version: 9.0.15
-  resolution: "@graphql-tools/mock@npm:9.0.15"
+"@graphql-tools/merge@npm:^9.0.21":
+  version: 9.0.21
+  resolution: "@graphql-tools/merge@npm:9.0.21"
   dependencies:
-    "@graphql-tools/schema": "npm:^10.0.16"
-    "@graphql-tools/utils": "npm:^10.7.2"
+    "@graphql-tools/utils": "npm:^10.8.3"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+  checksum: 10/90a81730a62f945e5ab8c9602c7bff8c3d4d8fb39a21c28c1686a4e775c1487042fd54594e5a883d0454d2fe0985a8cb777d6d04aa21622fcd1b8432815e3de1
+  languageName: node
+  linkType: hard
+
+"@graphql-tools/mock@npm:^9.0.0":
+  version: 9.0.19
+  resolution: "@graphql-tools/mock@npm:9.0.19"
+  dependencies:
+    "@graphql-tools/schema": "npm:^10.0.20"
+    "@graphql-tools/utils": "npm:^10.8.3"
     fast-json-stable-stringify: "npm:^2.1.0"
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10/1615cd06a285f6d5744a4c9f8496eaa79cd2f374ee19de6b1275c0590c893b14b51068dd2df307fd9762e95bd13341f731220d7567505bdd7db5f0e7fc6b2643
+  checksum: 10/f50d4ecd87ca918a92e28c801056132b72c70c45cb6098e0c79b1a8c501c3154e4d48bd78d9e759a15b1a5f885b2beb777ee52d8d2ce1900d64339b93a6bb157
   languageName: node
   linkType: hard
 
@@ -2908,17 +2920,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/schema@npm:^10.0.0, @graphql-tools/schema@npm:^10.0.11, @graphql-tools/schema@npm:^10.0.16":
-  version: 10.0.16
-  resolution: "@graphql-tools/schema@npm:10.0.16"
+"@graphql-tools/schema@npm:^10.0.0, @graphql-tools/schema@npm:^10.0.11, @graphql-tools/schema@npm:^10.0.16, @graphql-tools/schema@npm:^10.0.20":
+  version: 10.0.20
+  resolution: "@graphql-tools/schema@npm:10.0.20"
   dependencies:
-    "@graphql-tools/merge": "npm:^9.0.17"
-    "@graphql-tools/utils": "npm:^10.7.2"
+    "@graphql-tools/merge": "npm:^9.0.21"
+    "@graphql-tools/utils": "npm:^10.8.3"
     tslib: "npm:^2.4.0"
-    value-or-promise: "npm:^1.0.12"
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10/842a46bda349dbe3b694f7fc23d9e4d3488526a68b5ce4e323c84e05da837b9308717817ed0df486b7e7d380ec7534abb7728c2134ff500b1a3590b96627594e
+  checksum: 10/b8ac48131780bcc58953ea03d05fbe0e50cff4dad4aa0d20abec44c12a85ec813f767307f315c8ba5a6d9746d882efeeea9016a524972398782d7b69e4c6c301
   languageName: node
   linkType: hard
 
@@ -2992,6 +3003,21 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10/b4725b081e5ff5c1441036db76ce907a6fe9b4c94aa9ceb070f75541b2297c3cccaa182f91d214f9abe6d89df33d8df51e055afbc4e382b01e8d8fb7c2f6edf6
+  languageName: node
+  linkType: hard
+
+"@graphql-tools/utils@npm:^10.8.3":
+  version: 10.8.3
+  resolution: "@graphql-tools/utils@npm:10.8.3"
+  dependencies:
+    "@graphql-typed-document-node/core": "npm:^3.1.1"
+    "@whatwg-node/promise-helpers": "npm:^1.0.0"
+    cross-inspect: "npm:1.0.1"
+    dset: "npm:^3.1.4"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+  checksum: 10/5b23bb39557135ee1d9cbce0addaf81c563aff630523949705073393bd98d993a669ab9c241dd7c97b9f8e39c984265b64e215e6da077d7fe85951648114d1b9
   languageName: node
   linkType: hard
 
@@ -4716,6 +4742,15 @@ __metadata:
     busboy: "npm:^1.6.0"
     tslib: "npm:^2.6.3"
   checksum: 10/fe88c2766fc6cbe33c5bf58fb1ce5230f499d083a154643f0c46edfa3db679e173ae13ceb20cb89087252176c42b5e9ad7b540c6979f407b0c2444cf488121d1
+  languageName: node
+  linkType: hard
+
+"@whatwg-node/promise-helpers@npm:^1.0.0":
+  version: 1.2.2
+  resolution: "@whatwg-node/promise-helpers@npm:1.2.2"
+  dependencies:
+    tslib: "npm:^2.6.3"
+  checksum: 10/430ab63c938c53ac2c927a2e2a97a3e76332a40e2d58990dad4c8e3970ca9e2effe709a7b6b82a7ac5af777f226ea5628ddb867b5d29b91f619b92049781edcc
   languageName: node
   linkType: hard
 
