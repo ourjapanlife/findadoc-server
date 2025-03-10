@@ -8186,7 +8186,7 @@ __metadata:
     firebase: "npm:^10.8.0"
     firebase-admin: "npm:^12.0.0"
     firebase-tools: "npm:^13.1.0"
-    globals: "npm:^13.23.0"
+    globals: "npm:^16.0.0"
     graphql: "npm:^16.8.1"
     graphql-import-node: "npm:^0.0.5"
     graphql-tag: "npm:^2.12.6"
@@ -8788,12 +8788,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"globals@npm:^13.19.0, globals@npm:^13.23.0":
+"globals@npm:^13.19.0":
   version: 13.24.0
   resolution: "globals@npm:13.24.0"
   dependencies:
     type-fest: "npm:^0.20.2"
   checksum: 10/62c5b1997d06674fc7191d3e01e324d3eda4d65ac9cc4e78329fa3b5c4fd42a0e1c8722822497a6964eee075255ce21ccf1eec2d83f92ef3f06653af4d0ee28e
+  languageName: node
+  linkType: hard
+
+"globals@npm:^16.0.0":
+  version: 16.0.0
+  resolution: "globals@npm:16.0.0"
+  checksum: 10/aa05d569af9c763d9982e6885f3ac6d21c84cd54c9a12eeace55b3334d0631128f189902d34ae2a924694311f92d700dbd3e8e62e8a9e1094a882f9f8897149a
   languageName: node
   linkType: hard
 
