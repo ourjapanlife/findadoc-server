@@ -7,9 +7,10 @@ services:
     environment:
       - FIRESTORE_EMULATOR_HOST=db:3004
       - FIRESTORE_PROJECT_ID=find-a-doc-japan
-      - SERVER_PORT=3000
+      - SERVER_PORT=4500
+      - SERVER_HOST=0.0.0.0
     ports:
-      - "3000:3000"
+      - "4500:4500"
     depends_on:
       db:
         condition: service_started
