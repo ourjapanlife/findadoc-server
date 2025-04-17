@@ -1,34 +1,37 @@
 import { FastifyInstance, FastifyRequest } from 'fastify'
-import FastifyJWT from '@fastify/jwt'
+import fastifyJwt from '@fastify/jwt'
+import buildGetJwks from 'get-jwks'
 
 import { logger } from './logger.js'
-import { envVariables } from '../utils/environmentVariables.js'
+// import { envVariables } from '../utils/environmentVariables.js'
 
 // These are the different roles that a user can have in the system. 
 // A role comes with a set of permissions or scopes to save having to define them every time. 
 export enum Role {
-    Admin = 'admin',
-    Moderator = 'moderator',
-    User = 'user'
+    Admin = 'Admin',
+    Moderator = 'Moderator',
+    User = 'User'
 }
 
 // These are the different scopes or permissions that are available in the system.
 // For example, a user with the `read:facilities` scope can read facilities data.
 export enum Scope {
-    ReadHealthcareProfessionals = 'read:healthcareprofessionals',
-    WriteHealthcareProfessionals = 'write:healthcareprofessionals',
-    DeleteHealthcareProfessionals = 'delete:healthcareprofessionals',
-    ReadFacilities = 'read:facilities',
-    WriteFacilities = 'write:facilities',
-    DeleteFacilities = 'delete:facilities',
-    ReadSubmissions = 'read:submissions',
-    WriteSubmissions = 'write:submissions',
-    DeleteSubmissions = 'delete:submissions',
-    ReadLogs = 'read:logs',
-    WriteLogs = 'write:logs',
-    ReadProfile = 'read:profile',
-    WritePosts = 'write:posts',
-    DeleteComments = 'delete:comments'
+    'read:healthcareprofessionals' = 'read:healthcareprofessionals',
+    'write:healthcareprofessionals' = 'write:healthcareprofessionals',
+    'delete:healthcareprofessionals' = 'delete:healthcareprofessionals',
+    'read:facilities' = 'read:facilities',
+    'write:facilities' = 'write:facilities',
+    'delete:facilities' = 'delete:facilities',
+    'read:submissions' = 'read:submissions',
+    'write:submissions' = 'write:submissions',
+    'delete:submissions' = 'delete:submissions',
+    'read:logs' = 'read:logs',
+    'write:logs' = 'write:logs',
+    'read:profile' = 'read:profile',
+    'write:posts' = 'write:posts',
+    'read:users' = 'read:users',
+    'write:users' = 'write:users',
+    'delete:users' = 'delete:users'
 }
 
 // These are the different permissions or "scopes" that are associated with each role.
@@ -37,30 +40,40 @@ export enum Scope {
 // A user can have separate scopes from their roles, so we need to check both.
 const roleScopes: Record<Role, Scope[]> = {
     [Role.Admin]: [
-        Scope.ReadHealthcareProfessionals, Scope.WriteHealthcareProfessionals, Scope.DeleteHealthcareProfessionals,
-        Scope.ReadFacilities, Scope.WriteFacilities, Scope.DeleteFacilities,
-        Scope.ReadSubmissions, Scope.WriteSubmissions, Scope.DeleteSubmissions,
-        Scope.ReadLogs, Scope.WriteLogs
+        Scope['read:healthcareprofessionals'], Scope['write:healthcareprofessionals'], Scope['delete:healthcareprofessionals'],
+        Scope['read:facilities'], Scope['write:facilities'], Scope['delete:facilities'],
+        Scope['read:submissions'], Scope['write:submissions'], Scope['delete:submissions'],
+        Scope['read:users'], Scope['write:users'], Scope['delete:users'],
+        Scope['read:profile'], 
+        Scope['write:posts'],
+        Scope['read:logs'], Scope['write:logs']
     ],
     [Role.Moderator]: [
-        Scope.ReadProfile, Scope.WritePosts, Scope.DeleteComments
+        Scope['read:healthcareprofessionals'], Scope['write:healthcareprofessionals'], Scope['delete:healthcareprofessionals'],
+        Scope['read:facilities'], Scope['write:facilities'], Scope['delete:facilities'],
+        Scope['read:submissions'], Scope['write:submissions'], Scope['delete:submissions'],
+        Scope['read:profile'], 
+        Scope['write:posts']
     ],
     [Role.User]: [
-        Scope.ReadProfile, Scope.ReadHealthcareProfessionals, Scope.ReadFacilities, Scope.WriteSubmissions
+        Scope['read:healthcareprofessionals'], 
+        Scope['read:facilities'], 
+        Scope['write:submissions'],
+        Scope['read:profile']
     ]
-}
-
-export interface UserContext {
-    user: User
 }
 
 interface User {
     sub: string
     name: string
     email: string
-    roles: string[]
+    roles: Role[]
     scope: string
     [key: string]: unknown // Allow additional properties
+}
+
+export interface UserContext {
+    user: User
 }
 
 /**
@@ -76,23 +89,25 @@ export function authorize(user: User, requiredScopes: Scope[]): boolean {
             return false
         }
         
-        const currentUserScopes = user.scope?.split(' ') || []
-        const currentUserRoles = user.roles as Role[] || []
-        const currentUserScopesFromRoles = currentUserRoles.flatMap(role => roleScopes[role] || [])
+        //This will fail if we change auth0 roles and forget to update our mapping.
+        const currentUserScopes = user.scope?.split(' ') as unknown as Scope[] || []
+        const currentUserRoles = user.roles as unknown as Role[] || []
+        const currentUserScopesFromRoles = currentUserRoles.flatMap(role => roleScopes[role] as Scope[])
         // We want to combine the user's explicit scopes with the scopes derived from their roles.
         const allUserScopes = [...currentUserScopes, ...currentUserScopesFromRoles]
 
-        const hasRequiredScopes = requiredScopes.every((scope: string) => allUserScopes.includes(scope))
+        const hasRequiredScopes = requiredScopes.every((scope: Scope) => allUserScopes.includes(scope))
 
         if (!hasRequiredScopes) {
             logger.warn(`Auth: ❌ User ${user.sub} is NOT authorized for the required scopes: ${requiredScopes.join(', ')}`)
+            logger.warn(`Auth: User's current roles ${currentUserRoles.join(', ')} and scopes: ${allUserScopes.join(', ')}.`)
         } else {
             logger.info(`Auth: ✅ User ${user.sub} is authorized for the required scopes: ${requiredScopes.join(', ')}`)
         }
 
         return hasRequiredScopes
     } catch (err) {
-        logger.error('Error authorizing user:', err)
+        logger.error('Error parsing user object. Have we updated roles in Auth0 that don\'t match our mapping above?:', err)
         return false
     }
 }
@@ -106,8 +121,10 @@ export async function buildUserContext(req: FastifyRequest): Promise<UserContext
             sub: userFromRequest?.sub,
             name: userFromRequest?.name,
             email: userFromRequest?.email,
-            roles: userFromRequest?.roles || [],
-            scope: userFromRequest?.scope || ''
+            scope: userFromRequest?.scope || '',
+            // These are custom roles defined in the Auth0 dashboard
+            // They are JWT recommended prefixes with https://findadoc.jp/roles to avoid conflicts with standard JWT claims
+            roles: userFromRequest['https://findadoc.jp/roles'] as Role[] || userFromRequest?.roles as Role[] || []
         } satisfies User
     } satisfies UserContext
 }
@@ -118,10 +135,25 @@ export async function initializeAuth(fastify: FastifyInstance) {
     logger.debug('🔓 Initializing Auth system...')
 
     // Register the JWT plugin with the secret key used by Auth0
-    await fastify.register(FastifyJWT, {
-        secret: envVariables.authAuth0APIKey()
+
+    const getJwks = buildGetJwks()
+
+    await fastify.register(fastifyJwt, {
+        decode: { complete: true },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        secret: async (request: any, token: any) => {
+            const { kid, alg } = token.header
+
+            return getJwks.getPublicKey({kid, 
+                domain: 'https://findadoc.jp.auth0.com', 
+                alg})
+        },
+        // Correcting the 'algorithm' property
+        sign: {
+            algorithm: 'RS256'
+        }
     })
-            
+
     //We want the user to be authenticated for every request. This hook will verify the JWT token on every request
     //This also allows us to retrive the user object from the JWT token
     fastify.addHook('preHandler', async (request: FastifyRequest) => {
@@ -129,12 +161,8 @@ export async function initializeAuth(fastify: FastifyInstance) {
         const authHeader = request.headers.authorization
         const tokenExists = !!authHeader
         
-        logger.debug(`Auth: Token exists: ${tokenExists} - ${authHeader}`)
-            
         if (tokenExists) {
             try {
-                logger.debug('token exists! Verifying...`')
-    
                 // If token exists, verify it
                 await request.jwtVerify()
                 // Token is valid, request.user is now available
@@ -143,17 +171,18 @@ export async function initializeAuth(fastify: FastifyInstance) {
             } catch (err) {
                 // Token is invalid
                 logger.error('Invalid token:', err) 
+                return
             }
         }
             
         // If no token, continue without authentication (as anonymous user)
         request.user = {
             sub: 'Anonymous User',
-            name: '',
+            name: 'Anonymous',
             email: '',
             roles: [Role.User],
             scope: ''
-        }
+        } satisfies User
     })
 
     logger.debug('🔐 Initialized Auth system')

@@ -92,6 +92,7 @@
         "fastify-healthcheck": "^5.1.0",
         "firebase": "^10.8.0",
         "firebase-admin": "^12.0.0",
+        "get-jwks": "^11.0.0",
         "graphql": "^16.8.1",
         "graphql-import-node": "^0.0.5",
         "graphql-tag": "^2.12.6",

@@ -11,7 +11,7 @@ const resolvers = {
     Query: {
         facility: async (_parent: gqlType.Facility, args: { id: string; }, context: UserContext)
         : Promise<gqlType.Facility> => {
-            const isAuthorized = authorize(context.user, [Scope.ReadFacilities])
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
             
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -29,7 +29,7 @@ const resolvers = {
         },
         facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters }, context: UserContext)
         : Promise<gqlType.Facility[]> => {
-            const isAuthorized = authorize(context.user, [Scope.ReadFacilities])
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
             
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -47,7 +47,7 @@ const resolvers = {
         },
         healthcareProfessional: async (_parent: unknown, args: { id: string; }, context: UserContext)
         : Promise<gqlType.HealthcareProfessional> => {
-            const isAuthorized = authorize(context.user, [Scope.ReadHealthcareProfessionals])
+            const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
             
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -68,7 +68,7 @@ const resolvers = {
             filters: gqlType.HealthcareProfessionalSearchFilters
         }, context: UserContext)
         : Promise<gqlType.HealthcareProfessional[]> => {
-            const isAuthorized = authorize(context.user, [Scope.ReadHealthcareProfessionals])
+            const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
             
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -87,7 +87,7 @@ const resolvers = {
         },
         submission: async (_parent: unknown, args: { id: string }, context: UserContext)
         : Promise<gqlType.Submission | undefined> => {
-            const isAuthorized = authorize(context.user, [Scope.ReadSubmissions])
+            const isAuthorized = authorize(context.user, [Scope['read:submissions']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -105,7 +105,7 @@ const resolvers = {
         },
         submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: UserContext)
         : Promise<gqlType.Submission[]> => {
-            const isAuthorized = authorize(context.user, [Scope.ReadSubmissions])
+            const isAuthorized = authorize(context.user, [Scope['read:submissions']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -126,7 +126,7 @@ const resolvers = {
         createFacility: async (_parent: unknown, args: {
             input: gqlType.CreateFacilityInput
         }, context: UserContext): Promise<gqlType.Facility> => {
-            const isAuthorized = authorize(context.user, [Scope.WriteFacilities])
+            const isAuthorized = authorize(context.user, [Scope['write:facilities']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -147,7 +147,7 @@ const resolvers = {
             id: string,
             input: gqlType.UpdateFacilityInput
         }, context: UserContext): Promise<gqlType.Facility> => {
-            const isAuthorized = authorize(context.user, [Scope.WriteFacilities])
+            const isAuthorized = authorize(context.user, [Scope['write:facilities']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -167,7 +167,7 @@ const resolvers = {
         deleteFacility: async (_parent: unknown, args: {
             id: string
         }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAuthorized = authorize(context.user, [Scope.DeleteFacilities])
+            const isAuthorized = authorize(context.user, [Scope['delete:facilities']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -187,7 +187,7 @@ const resolvers = {
         createHealthcareProfessional: async (_parent: unknown, args: {
             input: gqlType.CreateHealthcareProfessionalInput
         }, context: UserContext): Promise<gqlType.HealthcareProfessional> => {
-            const isAuthorized = authorize(context.user, [Scope.WriteHealthcareProfessionals])
+            const isAuthorized = authorize(context.user, [Scope['write:healthcareprofessionals']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -209,7 +209,7 @@ const resolvers = {
             id: string,
             input: gqlType.UpdateHealthcareProfessionalInput
         }, context: UserContext): Promise<gqlType.HealthcareProfessional> => {
-            const isAuthorized = authorize(context.user, [Scope.WriteHealthcareProfessionals])
+            const isAuthorized = authorize(context.user, [Scope['write:healthcareprofessionals']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -230,7 +230,7 @@ const resolvers = {
         deleteHealthcareProfessional: async (_parent: unknown, args: {
             id: string
         }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAuthorized = authorize(context.user, [Scope.DeleteHealthcareProfessionals])
+            const isAuthorized = authorize(context.user, [Scope['delete:healthcareprofessionals']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -251,7 +251,7 @@ const resolvers = {
         createSubmission: async (_parent: unknown, args: {
             input: gqlType.CreateSubmissionInput
         }, context: UserContext): Promise<gqlType.Submission> => {
-            const isAuthorized = authorize(context.user, [Scope.WriteSubmissions])
+            const isAuthorized = authorize(context.user, [Scope['write:submissions']])
             
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -272,7 +272,7 @@ const resolvers = {
             id: string,
             input: gqlType.UpdateSubmissionInput
         }, context: UserContext): Promise<gqlType.Submission> => {
-            const isAuthorized = authorize(context.user, [Scope.WriteSubmissions])
+            const isAuthorized = authorize(context.user, [Scope['write:submissions']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
@@ -296,7 +296,7 @@ const resolvers = {
         deleteSubmission: async (_parent: unknown, args: {
             id: string
         }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAuthorized = authorize(context.user, [Scope.DeleteSubmissions])
+            const isAuthorized = authorize(context.user, [Scope['delete:submissions']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {

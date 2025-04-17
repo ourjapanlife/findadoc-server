@@ -8,7 +8,6 @@ import { CreateFacilityInput, Facility } from '../src/typeDefs/gqlTypes.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
 import { createFacilityMutation } from './facilities.test.js'
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
-import { initializeAuth } from '../src/auth.js'
 import { createApolloFastifyServer } from '../src/server.js'
 import { initializeLogger, logger } from '../src/logger.js'
 // import { createTestUser, deleteTestUser } from './auth.test.js'
@@ -30,7 +29,6 @@ beforeAll(async () => {
     //this initializes a shared firebase instance for all the tests.
     initializeLogger()
     await initiatilizeFirebaseInstance()
-    await initializeAuth()
     serverUrl = await createApolloFastifyServer(testPort)
     gqlApiUrl = `${serverUrl}/`
 
