@@ -30,7 +30,7 @@ describe('error path: validations healthcare professionals', () => {
 
             const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
             const createdProfessional
-                         = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                         = createProfessionalResult.body.data as HealthcareProfessional
 
             expect(createdProfessional).toBeFalsy()
             expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -72,7 +72,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -103,7 +103,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -144,7 +144,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -185,7 +185,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -226,7 +226,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -257,7 +257,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -288,7 +288,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -319,7 +319,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()
@@ -350,7 +350,7 @@ describe('error path: validations healthcare professionals', () => {
 
         const createProfessionalResult = await request(gqlApiUrl).post('').send(createFailingHealthcareProfessional)
         const createdProfessional
-                     = createProfessionalResult.body.data.createHealthcareProfessional as HealthcareProfessional
+                     = createProfessionalResult.body.data as HealthcareProfessional
 
         expect(createdProfessional).toBeFalsy()
         expect(createProfessionalResult.body?.errors).toBeDefined()

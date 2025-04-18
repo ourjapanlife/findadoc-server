@@ -3,6 +3,7 @@ import fastifyJwt from '@fastify/jwt'
 import buildGetJwks from 'get-jwks'
 
 import { logger } from './logger.js'
+import { envVariables } from '../utils/environmentVariables.js'
 // import { envVariables } from '../utils/environmentVariables.js'
 
 // These are the different roles that a user can have in the system. 
@@ -84,6 +85,12 @@ export interface UserContext {
  */
 export function authorize(user: User, requiredScopes: Scope[]): boolean {
     try {
+        // Check if we're in a testing environment such as CI/CD or local testing
+        // In these cases, we want to skip auth checks to allow for easier testing.
+        if (envVariables.isTestingEnvironment()) {
+            return true
+        }
+
         if (!user) {
             logger.warn('Auth: User is not defined')
             return false
@@ -134,7 +141,9 @@ export async function buildUserContext(req: FastifyRequest): Promise<UserContext
 export async function initializeAuth(fastify: FastifyInstance) {
     logger.debug('🔓 Initializing Auth system...')
 
-    // Register the JWT plugin with the secret key used by Auth0
+    if (envVariables.isTestingEnvironment()) {
+        logger.info('Auth: Testing environment detected! Skipping auth checks.') 
+    }
 
     const getJwks = buildGetJwks()
 

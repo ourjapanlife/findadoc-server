@@ -22,7 +22,8 @@ export let gqlApiUrl: string
 // let sharedTestUserId = ''
 
 beforeAll(async () => {
-    // This enables testing mode in the app. Primarily used for enabling auth restrictions on the api.
+    // This enables testing mode in the app. 
+    // Primarily used for bypassing authentication and authorization checks in the api
     process.env.TEST_ENABLED = 'true'
     const testPort = 0
 
