@@ -40,7 +40,7 @@
     "engines": {
         "node": "22.5.1"
     },
-    "packageManager": "yarn@4.3.1",
+    "packageManager": "yarn@4.8.1",
     "devDependencies": {
         "@eslint/js": "^9.18.0",
         "@firebase/rules-unit-testing": "^3.0.1",
