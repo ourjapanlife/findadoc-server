@@ -194,5 +194,5 @@ export async function initializeAuth(fastify: FastifyInstance) {
         } satisfies User
     })
 
-    logger.debug('🔐 Initialized Auth system')
+    logger.debug('🔐 Initialized Auth system.')
 }
