@@ -114,7 +114,7 @@ export function authorize(user: User, requiredScopes: Scope[]): boolean {
 
         return hasRequiredScopes
     } catch (err) {
-        logger.error('Error parsing user object. Have we updated roles in Auth0 that don\'t match our mapping above?:', err)
+        logger.error('Error parsing user object. Have we updated roles in Auth0 that don\'t match our required scopes above?:', err)
         return false
     }
 }
