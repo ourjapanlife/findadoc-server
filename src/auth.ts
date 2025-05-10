@@ -96,7 +96,7 @@ export function authorize(user: User, requiredScopes: Scope[]): boolean {
             return false
         }
         
-        //This will fail if we change auth0 roles and forget to update our mapping.
+        // This will fail if we change auth0 roles and forget to update our mapping.
         const currentUserScopes = user.scope?.split(' ') as unknown as Scope[] || []
         const currentUserRoles = user.roles as unknown as Role[] || []
         const currentUserScopesFromRoles = currentUserRoles.flatMap(role => roleScopes[role] as Scope[])
