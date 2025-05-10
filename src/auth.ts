@@ -164,7 +164,7 @@ export async function initializeAuth(fastify: FastifyInstance) {
     })
 
     //We want the user to be authenticated for every request. This hook will verify the JWT token on every request
-    //This also allows us to retrive the user object from the JWT token
+    // This also allows us to retrieve the user object from the JWT token
     fastify.addHook('preHandler', async (request: FastifyRequest) => {
         // Check if Authorization header exists
         const authHeader = request.headers.authorization
