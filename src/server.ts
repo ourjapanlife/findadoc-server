@@ -41,7 +41,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
         healthcheckUrl: '/health'
     })
 
-    //Auth integration
+    // Auth integration
     await initializeAuth(fastify)    
 
     //set up the apollo graphql server
