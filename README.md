@@ -12,8 +12,8 @@ We love and welcome contributions to our front-end repository which can be found
 
 ### Documentation:
 - [📒 **Welcome to Find a Doc, Japan!**](https://documentation.findadoc.jp/development)
-- [🚅 **Quickstart the API**](https://app.gitbook.com/o/Hmir5Cugknp7uJaXBpz1/s/8SwzLo8dTmkYT8nK5WXz/start-coding/quickstart-the-frontend-and-backend)
-- [🚀 **Run the API**](https://app.gitbook.com/o/Hmir5Cugknp7uJaXBpz1/s/8SwzLo8dTmkYT8nK5WXz/start-coding/quickstart-the-frontend-and-backend/running-the-api-locally)
+- [🚅 **Quickstart the API**](https://documentation.findadoc.jp/development/start-coding/quickstart-the-frontend-and-backend)
+- [🚀 **Run the API**](https://documentation.findadoc.jp/development/start-coding/quickstart-the-frontend-and-backend/running-the-api-locally)
 
 ## Contributors
 
