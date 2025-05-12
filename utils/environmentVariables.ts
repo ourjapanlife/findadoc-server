@@ -8,6 +8,7 @@ config({ path: dotEnvFileToLoad })
 
 const envVariables = {
     isProduction: () => process.env.NODE_ENV === 'production',
+    isTestingEnvironment: () => process.env.TEST_ENABLED === 'true',
     isLocal: () => !envVariables.isProduction(),
     serverHost: () => process.env.SERVER_HOST as string,
     serverPort: () => process.env.SERVER_PORT as string,
@@ -23,7 +24,6 @@ const envVariables = {
         envVariables.isProduction()
             ? process.env.FIREBASE_DATABASE_URL
             : process.env.FIRESTORE_EMULATOR_HOST,
-    isTestingEnvironment: () => process.env.TEST_ENABLED === 'true',
     firebaseServiceAccount: () => process.env.FIRESTORE_SERVICE_ACCOUNT as string,
     firebaseProjectId: () => process.env.FIRESTORE_PROJECT_ID,
     firebaseDatabaseUrl: () => process.env.FIREBASE_DATABASE_URL,

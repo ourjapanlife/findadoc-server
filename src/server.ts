@@ -7,10 +7,10 @@ import compressionPlugin from '@fastify/compress'
 import healthcheck from 'fastify-healthcheck'
 import { ApolloServer, BaseContext, GraphQLRequestContext } from '@apollo/server'
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
+import { envVariables } from '../utils/environmentVariables.js'
+import { buildUserContext, initializeAuth } from './auth.js'
 import loadSchema from './schema.js'
 import resolvers from './resolvers.js'
-import { envVariables } from '../utils/environmentVariables.js'
-import { buildUserContext } from './auth.js'
 import { logger } from './logger.js'
 
 export const createApolloFastifyServer = async (customPort?: number): Promise<string> => {
@@ -22,7 +22,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
     //cors is a middleware that allows us to make requests from the a different url (findadoc.jp) to our server (api.findadoc.jp)
     await fastify.register(corsPlugin, {
         origin: [envVariables.websiteURL(), 'localhost', 'http://localhost:3000', '*findadoc.netlify.app', 'https://www.findadoc.jp'],
-        allowedHeaders: ['content-type'],
+        allowedHeaders: ['content-type', 'authorization'],
         // methods: ['GET', 'POST', 'OPTIONS'],
         credentials: true
     })
@@ -41,7 +41,8 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
         healthcheckUrl: '/health'
     })
 
-    //auth integration
+    // Auth integration
+    await initializeAuth(fastify)    
 
     //set up the apollo graphql server
     const apolloServer = new ApolloServer<BaseContext>({
@@ -75,7 +76,6 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
     await fastify.route({
         url: '/',
         method: ['GET', 'POST', 'OPTIONS'],
-        // preHandler: verifySession(),
         handler: fastifyApolloHandler(apolloServer, {
             //this is where we add the Auth0 user authentication to the context. We can access this context in the resolvers
             context: buildUserContext

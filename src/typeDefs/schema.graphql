@@ -388,13 +388,13 @@ type DeleteResult {
 
 type Query {
   facility(id: ID!): Facility
-  facilities(filters: FacilitySearchFilters!): [Facility]
+  facilities(filters: FacilitySearchFilters!): [Facility!]!
   healthcareProfessional(id: ID!): HealthcareProfessional
   healthcareProfessionals(
     filters: HealthcareProfessionalSearchFilters!
-  ): [HealthcareProfessional]
+  ): [HealthcareProfessional!]!
   submission(id: ID!): Submission
-  submissions(filters: SubmissionSearchFilters!): [Submission]
+  submissions(filters: SubmissionSearchFilters!): [Submission!]!
   auditLog(id: ID): AuditLog
 }
 
@@ -403,26 +403,26 @@ type Query {
 type Mutation {
   createHealthcareProfessional(
     input: CreateHealthcareProfessionalInput!
-  ): HealthcareProfessional
+  ): HealthcareProfessional!
 
   updateHealthcareProfessional(
     id: ID!
     input: UpdateHealthcareProfessionalInput!
-  ): HealthcareProfessional
+  ): HealthcareProfessional!
 
-  deleteHealthcareProfessional(id: ID!): DeleteResult
+  deleteHealthcareProfessional(id: ID!): DeleteResult!
 
-  createFacility(input: CreateFacilityInput!): Facility
+  createFacility(input: CreateFacilityInput!): Facility!
 
-  updateFacility(id: ID!, input: UpdateFacilityInput!): Facility
+  updateFacility(id: ID!, input: UpdateFacilityInput!): Facility!
 
-  deleteFacility(id: ID!): DeleteResult
+  deleteFacility(id: ID!): DeleteResult!
 
-  createSubmission(input: CreateSubmissionInput!): Submission
+  createSubmission(input: CreateSubmissionInput!): Submission!
 
-  moderationPanelUpdateSubmission(input: ModerationAutofillDatabaseSubmissionInput!): Submission
+  moderationPanelUpdateSubmission(input: ModerationAutofillDatabaseSubmissionInput!): Submission!
 
-  updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission
+  updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission!
 
-  deleteSubmission(id: ID!): DeleteResult
+  deleteSubmission(id: ID!): DeleteResult!
 }

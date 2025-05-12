@@ -1,30 +1,63 @@
 import { GraphQLError } from 'graphql'
+import { authorize, UserContext, Scope } from './auth.js'
 import * as facilityService from './services/facilityService.js'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService.js'
 import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService.js'
 import { Result } from './result.js'
-import { UserContext, hasAdminRole } from './auth.js'
 import { logger } from './logger.js'
 
 const resolvers = {
     Query: {
-        facility: async (_parent: gqlType.Facility, args: { id: string; })
+        facility: async (_parent: gqlType.Facility, args: { id: string; }, context: UserContext)
         : Promise<gqlType.Facility> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+            
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+
             const queryResults = await facilityService.getFacilityById(args.id)
 
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
-        facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters })
+        facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters }, context: UserContext)
         : Promise<gqlType.Facility[]> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+            
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+            
             const queryResults = await facilityService.searchFacilities(args.filters)
 
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
-        healthcareProfessional: async (_parent: unknown, args: { id: string; })
+        healthcareProfessional: async (_parent: unknown, args: { id: string; }, context: UserContext)
         : Promise<gqlType.HealthcareProfessional> => {
+            const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
+            
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+
             const matchingHealthcareProfessionalResult =
                 await healthcareProfessionalService.getHealthcareProfessionalById(args.id)
 
@@ -33,8 +66,19 @@ const resolvers = {
         },
         healthcareProfessionals: async (_parent: unknown, args: {
             filters: gqlType.HealthcareProfessionalSearchFilters
-        })
+        }, context: UserContext)
         : Promise<gqlType.HealthcareProfessional[]> => {
+            const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
+            
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+
             const queryResults =
                 await healthcareProfessionalService.searchProfessionals(args.filters)
 
@@ -43,16 +87,17 @@ const resolvers = {
         },
         submission: async (_parent: unknown, args: { id: string }, context: UserContext)
         : Promise<gqlType.Submission | undefined> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['read:submissions']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
+
             const matchingSubmissionResult = await submissionService.getSubmissionById(args.id)
 
             convertErrorsToGqlErrors(matchingSubmissionResult)
@@ -60,13 +105,13 @@ const resolvers = {
         },
         submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: UserContext)
         : Promise<gqlType.Submission[]> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['read:submissions']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
@@ -81,18 +126,18 @@ const resolvers = {
         createFacility: async (_parent: unknown, args: {
             input: gqlType.CreateFacilityInput
         }, context: UserContext): Promise<gqlType.Facility> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['write:facilities']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
 
-            const newFacilityResult = await facilityService.createFacility(args.input, context.userId)
+            const newFacilityResult = await facilityService.createFacility(args.input, context.user.sub)
 
             convertErrorsToGqlErrors(newFacilityResult)
             return newFacilityResult.data
@@ -102,18 +147,18 @@ const resolvers = {
             id: string,
             input: gqlType.UpdateFacilityInput
         }, context: UserContext): Promise<gqlType.Facility> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['write:facilities']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
 
-            const updateFacilityResult = await facilityService.updateFacility(args.id, args.input, context.userId)
+            const updateFacilityResult = await facilityService.updateFacility(args.id, args.input, context.user.sub)
 
             convertErrorsToGqlErrors(updateFacilityResult)
             return updateFacilityResult.data
@@ -122,18 +167,18 @@ const resolvers = {
         deleteFacility: async (_parent: unknown, args: {
             id: string
         }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['delete:facilities']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
 
-            const deleteFacilityResult = await facilityService.deleteFacility(args.id, context.userId)
+            const deleteFacilityResult = await facilityService.deleteFacility(args.id, context.user.sub)
 
             convertErrorsToGqlErrors(deleteFacilityResult)
             return deleteFacilityResult.data
@@ -142,62 +187,62 @@ const resolvers = {
         createHealthcareProfessional: async (_parent: unknown, args: {
             input: gqlType.CreateHealthcareProfessionalInput
         }, context: UserContext): Promise<gqlType.HealthcareProfessional> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['write:healthcareprofessionals']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
 
-            const createHealthcareProfessionalResult =
-                await healthcareProfessionalService.createHealthcareProfessional(args.input, context.userId)
+            const newHealthcareProfessionalResult = await healthcareProfessionalService
+                .createHealthcareProfessional(args.input, context.user.sub)
 
-            convertErrorsToGqlErrors(createHealthcareProfessionalResult)
-            return createHealthcareProfessionalResult.data
+            convertErrorsToGqlErrors(newHealthcareProfessionalResult)
+            return newHealthcareProfessionalResult.data
         },
 
         updateHealthcareProfessional: async (_parent: unknown, args: {
             id: string,
             input: gqlType.UpdateHealthcareProfessionalInput
         }, context: UserContext): Promise<gqlType.HealthcareProfessional> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['write:healthcareprofessionals']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
 
-            const updateProfessionalResult =
-                await healthcareProfessionalService.updateHealthcareProfessional(args.id, args.input, context.userId)
+            const updateHealthcareProfessionalResult = await healthcareProfessionalService
+                .updateHealthcareProfessional(args.id, args.input, context.user.sub)
 
-            convertErrorsToGqlErrors(updateProfessionalResult)
-            return updateProfessionalResult.data
+            convertErrorsToGqlErrors(updateHealthcareProfessionalResult)
+            return updateHealthcareProfessionalResult.data
         },
 
         deleteHealthcareProfessional: async (_parent: unknown, args: {
             id: string
         }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['delete:healthcareprofessionals']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
 
-            const deleteHealthcareProfessionalResult
-                = await healthcareProfessionalService.deleteHealthcareProfessional(args.id, context.userId)
+            const deleteHealthcareProfessionalResult = await healthcareProfessionalService
+                .deleteHealthcareProfessional(args.id, context.user.sub)
 
             convertErrorsToGqlErrors(deleteHealthcareProfessionalResult)
             return deleteHealthcareProfessionalResult.data
@@ -205,7 +250,18 @@ const resolvers = {
 
         createSubmission: async (_parent: unknown, args: {
             input: gqlType.CreateSubmissionInput
-        }): Promise<gqlType.Submission> => {
+        }, context: UserContext): Promise<gqlType.Submission> => {
+            const isAuthorized = authorize(context.user, [Scope['write:submissions']])
+            
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+
             const createSubmissionResult = await submissionService.createSubmission(args.input)
     
             convertErrorsToGqlErrors(createSubmissionResult)
@@ -216,13 +272,13 @@ const resolvers = {
             id: string,
             input: gqlType.UpdateSubmissionInput
         }, context: UserContext): Promise<gqlType.Submission> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['write:submissions']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
@@ -230,7 +286,7 @@ const resolvers = {
             const updatedSubmissionResult = await submissionService.updateSubmission(
                 args.id, 
                 args.input,
-                context.userId
+                context.user.sub
             )
 
             convertErrorsToGqlErrors(updatedSubmissionResult)
@@ -240,18 +296,18 @@ const resolvers = {
         deleteSubmission: async (_parent: unknown, args: {
             id: string
         }, context: UserContext): Promise<gqlType.DeleteResult> => {
-            const isAdmin = await hasAdminRole(context)
+            const isAuthorized = authorize(context.user, [Scope['delete:submissions']])
 
-            if (!isAdmin) {
-                throw new GraphQLError('User is not authenticated', {
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
                     extensions: {
-                        code: 'UNAUTHENTICATED',
-                        http: { status: 401 }
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
                     }
                 })
             }
 
-            const deleteSubmissionResult = await submissionService.deleteSubmission(args.id, context.userId)
+            const deleteSubmissionResult = await submissionService.deleteSubmission(args.id, context.user.sub)
 
             convertErrorsToGqlErrors(deleteSubmissionResult)
             return deleteSubmissionResult.data
