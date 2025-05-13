@@ -21,7 +21,19 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
 
     //cors is a middleware that allows us to make requests from the a different url (findadoc.jp) to our server (api.findadoc.jp)
     await fastify.register(corsPlugin, {
-        origin: [envVariables.websiteURL(), 'localhost', 'http://localhost:3000', '*findadoc.netlify.app', 'https://www.findadoc.jp'],
+        origin: (origin: string | undefined, cb: (err: Error | null, allow: boolean) => void): void => {
+            const allowedOrigins = [
+                envVariables.websiteURL(),
+                'http://localhost:3000',
+                'https://www.findadoc.jp'
+            ]
+
+            const isAllowed =
+      allowedOrigins.includes(origin as string) ||
+      /^https:\/\/deploy-preview-\d+--findadoc\.netlify\.app$/.test(origin)
+
+            cb(null, isAllowed)
+        },
         allowedHeaders: ['content-type', 'authorization'],
         // methods: ['GET', 'POST', 'OPTIONS'],
         credentials: true
