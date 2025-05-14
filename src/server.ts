@@ -30,7 +30,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
 
             const isAllowed =
       allowedOrigins.includes(origin as string) ||
-      /^https:\/\/deploy-preview-\d+--findadoc\.netlify\.app$/.test(origin)
+      /^https:\/\/deploy-preview-\d+--findadoc\.netlify\.app$/.test(origin as string)
 
             cb(null, isAllowed)
         },
