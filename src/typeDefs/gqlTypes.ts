@@ -16,12 +16,17 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+/** When we store the audit logs, we want to keep track of the actions used */
 export enum ActionType {
+  /** When an authorized user creates something */
   Create = 'CREATE',
+  /** When an authorized user deletes something */
   Delete = 'DELETE',
+  /** When an authorized user updates something */
   Update = 'UPDATE'
 }
 
+/** For logging the actions performed by authorized users */
 export type AuditLog = {
   __typename?: 'AuditLog';
   actionType: ActionType;
@@ -51,6 +56,7 @@ export type ContactInput = {
   website?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** For creating a facility. This has different fields than the Facility type */
 export type CreateFacilityInput = {
   contact: ContactInput;
   healthcareProfessionalIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -60,6 +66,7 @@ export type CreateFacilityInput = {
   nameJa: Scalars['String']['input'];
 };
 
+/** For creating a healthcare professional. This has different fields than the HealthcareProfessional type */
 export type CreateHealthcareProfessionalInput = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
   degrees?: InputMaybe<Array<Degree>>;
@@ -69,6 +76,7 @@ export type CreateHealthcareProfessionalInput = {
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
+/** For creating a submission. This has different fields than the Submission type */
 export type CreateSubmissionInput = {
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   healthcareProfessionalName?: InputMaybe<Scalars['String']['input']>;
@@ -103,6 +111,7 @@ export type DeleteResult = {
   isSuccessful: Scalars['Boolean']['output'];
 };
 
+/** The facility that a healthcare professional works at */
 export type Facility = {
   __typename?: 'Facility';
   contact: Contact;
@@ -116,6 +125,7 @@ export type Facility = {
   updatedDate: Scalars['String']['output'];
 };
 
+/** You can search for facilities using any of combination these fields (AND operators) */
 export type FacilitySearchFilters = {
   contact?: InputMaybe<ContactInput>;
   createdDate?: InputMaybe<Scalars['String']['input']>;
@@ -129,6 +139,7 @@ export type FacilitySearchFilters = {
   updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** A facility that belongs to a submission */
 export type FacilitySubmission = {
   __typename?: 'FacilitySubmission';
   contact?: Maybe<Contact>;
@@ -140,6 +151,7 @@ export type FacilitySubmission = {
   nameJa?: Maybe<Scalars['String']['output']>;
 };
 
+/** A licensed healthcare professional that speaks multiple languages */
 export type HealthcareProfessional = {
   __typename?: 'HealthcareProfessional';
   acceptedInsurance: Array<Insurance>;
@@ -153,6 +165,7 @@ export type HealthcareProfessional = {
   updatedDate: Scalars['String']['output'];
 };
 
+/** You can search for a healthcare professional using any of combination these fields (AND operators) */
 export type HealthcareProfessionalSearchFilters = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
   createdDate?: InputMaybe<Scalars['String']['input']>;
@@ -166,6 +179,7 @@ export type HealthcareProfessionalSearchFilters = {
   updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** A healthcare professional that belongs to a submission */
 export type HealthcareProfessionalSubmission = {
   __typename?: 'HealthcareProfessionalSubmission';
   acceptedInsurance?: Maybe<Array<Insurance>>;
@@ -184,6 +198,7 @@ export enum Insurance {
   Uninsured = 'UNINSURED'
 }
 
+/** The locales that are used for supported languages */
 export enum Locale {
   AkGh = 'ak_GH',
   AmEt = 'am_ET',
@@ -243,6 +258,7 @@ export enum Locale {
   ZhTw = 'zh_TW'
 }
 
+/** The name of a healthcare professional written in the specified locale */
 export type LocalizedName = {
   __typename?: 'LocalizedName';
   firstName: Scalars['String']['output'];
@@ -251,6 +267,7 @@ export type LocalizedName = {
   middleName?: Maybe<Scalars['String']['output']>;
 };
 
+/** For creating a localized name. This is different from the LocalizedName type */
 export type LocalizedNameInput = {
   firstName: Scalars['String']['input'];
   lastName: Scalars['String']['input'];
@@ -258,6 +275,7 @@ export type LocalizedNameInput = {
   middleName?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** For autofilling a submission in the moderation panel based on initial user-submitted information */
 export type ModerationAutofillDatabaseSubmissionInput = {
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['String']['input']>;
@@ -417,17 +435,20 @@ export type QuerySubmissionsArgs = {
   filters: SubmissionSearchFilters;
 };
 
+/** This is used for id lists, but also has an action that lets the API understand if the id is being created, updated, or deleted */
 export type Relationship = {
   action: RelationshipAction;
   otherEntityId: Scalars['ID']['input'];
 };
 
+/** Actions related to relationships. For example, when a healthcare professional is removed from a facility. */
 export enum RelationshipAction {
   Create = 'CREATE',
   Delete = 'DELETE',
   Update = 'UPDATE'
 }
 
+/** The current version of the schema */
 export enum SchemaVersion {
   V1 = 'V1'
 }
@@ -458,6 +479,10 @@ export enum Specialty {
   Urology = 'UROLOGY'
 }
 
+/**
+ * A submission that contains user-submitted data and is awaiting moderation.
+ * Submissions do not appear on the site unless they have been approved
+ */
 export type Submission = {
   __typename?: 'Submission';
   createdDate: Scalars['String']['output'];
@@ -488,6 +513,7 @@ export type SubmissionSearchFilters = {
   updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** For updated a facility. This has different fields than the Facility type */
 export type UpdateFacilityInput = {
   contact?: InputMaybe<ContactInput>;
   healthcareProfessionalIds?: InputMaybe<Array<Relationship>>;
@@ -497,6 +523,7 @@ export type UpdateFacilityInput = {
   nameJa?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** For updating a healthcare professional. This has different fields than the HealthcareProfessional type */
 export type UpdateHealthcareProfessionalInput = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
   degrees?: InputMaybe<Array<Degree>>;
@@ -506,6 +533,7 @@ export type UpdateHealthcareProfessionalInput = {
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
+/** For updating a submission. This has different fields than the Submission type */
 export type UpdateSubmissionInput = {
   autofillPlaceFromSubmissionUrl?: InputMaybe<Scalars['Boolean']['input']>;
   facility?: InputMaybe<CreateFacilityInput>;
