@@ -3463,30 +3463,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pm2/agent@npm:~2.0.0":
-  version: 2.0.4
-  resolution: "@pm2/agent@npm:2.0.4"
+"@pm2/agent@npm:~2.1.1":
+  version: 2.1.1
+  resolution: "@pm2/agent@npm:2.1.1"
   dependencies:
     async: "npm:~3.2.0"
     chalk: "npm:~3.0.0"
     dayjs: "npm:~1.8.24"
     debug: "npm:~4.3.1"
     eventemitter2: "npm:~5.0.1"
-    fast-json-patch: "npm:^3.0.0-1"
+    fast-json-patch: "npm:^3.1.0"
     fclone: "npm:~1.0.11"
-    nssocket: "npm:0.6.0"
     pm2-axon: "npm:~4.0.1"
     pm2-axon-rpc: "npm:~0.7.0"
-    proxy-agent: "npm:~6.3.0"
+    proxy-agent: "npm:~6.4.0"
     semver: "npm:~7.5.0"
     ws: "npm:~7.5.10"
-  checksum: 10/e7d5a48637ce78850bdb4c60dc0e2c763c0ce0eace716f16c6f50a7431b616acea5ae0901d4cf31f281a5bac4d59de92729ea52eee4a6b23178155294ae40532
+  checksum: 10/8adc4e087bb69c609e98d1895cf4185483f14d8a6ea25cc3b62e9c13c6aa974582709fe51909ee3580976306ab14f84546b8e0156fd19c562dcf4548297671f8
   languageName: node
   linkType: hard
 
-"@pm2/io@npm:~6.0.1":
-  version: 6.0.1
-  resolution: "@pm2/io@npm:6.0.1"
+"@pm2/io@npm:~6.1.0":
+  version: 6.1.0
+  resolution: "@pm2/io@npm:6.1.0"
   dependencies:
     async: "npm:~2.6.1"
     debug: "npm:~4.3.1"
@@ -3496,7 +3495,7 @@ __metadata:
     shimmer: "npm:^1.2.0"
     signal-exit: "npm:^3.0.3"
     tslib: "npm:1.9.3"
-  checksum: 10/b0763b7204bb4609d3b09411c5d2b7184de0a93747f033dfbbb07e7fd158c7ffe0cfd15e5728a131b93d38c21f9e34f361e2bc2bdddf1bd48638e401e6c98587
+  checksum: 10/c95a1b4cf0b16877a503ed4eddcb94353db7f0dcfb39f59cac70cbad5c530a05a0d337602d38a7d38ffc185b142ec99f2ddf714a48ab9e1ec62f39a5760c9d74
   languageName: node
   linkType: hard
 
@@ -5001,6 +5000,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ansis@npm:4.0.0":
+  version: 4.0.0
+  resolution: "ansis@npm:4.0.0"
+  checksum: 10/8ee418efb7e5aa27caa01ee4125fe05eaeddb7781fb3cd38e6031ff091d51bf6a405dfb2388eb91fbbfc0096cd5303608f33f9d01f46764e17b2af596dbe284e
+  languageName: node
+  linkType: hard
+
 "any-promise@npm:^1.0.0":
   version: 1.3.0
   resolution: "any-promise@npm:1.3.0"
@@ -5275,7 +5281,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async@npm:^3.1.0, async@npm:^3.2.0, async@npm:^3.2.3, async@npm:^3.2.4, async@npm:~3.2.0":
+"async@npm:^3.1.0, async@npm:^3.2.0, async@npm:^3.2.3, async@npm:^3.2.4, async@npm:~3.2.0, async@npm:~3.2.6":
   version: 3.2.6
   resolution: "async@npm:3.2.6"
   checksum: 10/cb6e0561a3c01c4b56a799cc8bab6ea5fef45f069ab32500b6e19508db270ef2dffa55e5aed5865c5526e9907b1f8be61b27530823b411ffafb5e1538c86c368
@@ -6657,7 +6663,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dayjs@npm:~1.11.5":
+"dayjs@npm:~1.11.13":
   version: 1.11.13
   resolution: "dayjs@npm:1.11.13"
   checksum: 10/7374d63ab179b8d909a95e74790def25c8986e329ae989840bacb8b1888be116d20e1c4eee75a69ea0dfbae13172efc50ef85619d304ee7ca3c01d5878b704f5
@@ -7714,13 +7720,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventemitter2@npm:~0.4.14":
-  version: 0.4.14
-  resolution: "eventemitter2@npm:0.4.14"
-  checksum: 10/5dc7b4903700f603226b69c7c33b55ce0dda85c1d57aba99ede5afa8ce97e22099102dbbcc6917d7fd754328e579e71dea1949a510ec9eaf712bb41358d914ac
-  languageName: node
-  linkType: hard
-
 "events-listener@npm:^1.1.0":
   version: 1.1.0
   resolution: "events-listener@npm:1.1.0"
@@ -7914,7 +7913,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-json-patch@npm:^3.0.0-1":
+"fast-json-patch@npm:^3.1.0":
   version: 3.1.1
   resolution: "fast-json-patch@npm:3.1.1"
   checksum: 10/3e56304e1c95ad1862a50e5b3f557a74c65c0ff2ba5b15caab983b43e70e86ddbc5bc887e9f7064f0aacfd0f0435a29ab2f000fe463379e72b906486345e6671
@@ -8331,7 +8330,7 @@ __metadata:
     graphql-tag: "npm:^2.12.6"
     husky: "npm:^8.0.3"
     nodemon: "npm:^3.1.9"
-    pm2: "npm:^5.3.0"
+    pm2: "npm:^6.0.0"
     puppeteer: "npm:^22.12.1"
     rimraf: "npm:^6.0.1"
     supertest: "npm:^6.3.3"
@@ -9352,7 +9351,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"https-proxy-agent@npm:^7.0.0, https-proxy-agent@npm:^7.0.1, https-proxy-agent@npm:^7.0.2, https-proxy-agent@npm:^7.0.6":
+"https-proxy-agent@npm:^7.0.0, https-proxy-agent@npm:^7.0.1, https-proxy-agent@npm:^7.0.3, https-proxy-agent@npm:^7.0.6":
   version: 7.0.6
   resolution: "https-proxy-agent@npm:7.0.6"
   dependencies:
@@ -10489,13 +10488,6 @@ __metadata:
   version: 2.0.0
   resolution: "kuler@npm:2.0.0"
   checksum: 10/9e10b5a1659f9ed8761d38df3c35effabffbd19fc6107324095238e4ef0ff044392cae9ac64a1c2dda26e532426485342226b93806bd97504b174b0dcf04ed81
-  languageName: node
-  linkType: hard
-
-"lazy@npm:~1.0.11":
-  version: 1.0.11
-  resolution: "lazy@npm:1.0.11"
-  checksum: 10/12ebb4db919a7cab3d780fdc1eada2985cd07f7cef0df18b8f40f23ceb9dcb2684d924d768f8c1cf603c641df7305f5b77ca9039716e235043e4f25bdba3e886
   languageName: node
   linkType: hard
 
@@ -11687,16 +11679,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nssocket@npm:0.6.0":
-  version: 0.6.0
-  resolution: "nssocket@npm:0.6.0"
-  dependencies:
-    eventemitter2: "npm:~0.4.14"
-    lazy: "npm:~1.0.11"
-  checksum: 10/9559f50385b2f586721a6053e3d9a9f0cb9fc28d14d0284725c073362c2f96b438895b3164ccae1837795acccedcc34615a96e9c3590a4db493d3221f323f81e
-  languageName: node
-  linkType: hard
-
 "nullthrows@npm:^1.1.1":
   version: 1.1.1
   resolution: "nullthrows@npm:1.1.1"
@@ -12489,23 +12471,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pm2@npm:^5.3.0":
-  version: 5.4.3
-  resolution: "pm2@npm:5.4.3"
+"pm2@npm:^6.0.0":
+  version: 6.0.6
+  resolution: "pm2@npm:6.0.6"
   dependencies:
-    "@pm2/agent": "npm:~2.0.0"
-    "@pm2/io": "npm:~6.0.1"
+    "@pm2/agent": "npm:~2.1.1"
+    "@pm2/io": "npm:~6.1.0"
     "@pm2/js-api": "npm:~0.8.0"
     "@pm2/pm2-version-check": "npm:latest"
-    async: "npm:~3.2.0"
+    ansis: "npm:4.0.0"
+    async: "npm:~3.2.6"
     blessed: "npm:0.1.81"
-    chalk: "npm:3.0.0"
     chokidar: "npm:^3.5.3"
     cli-tableau: "npm:^2.0.0"
     commander: "npm:2.15.1"
     croner: "npm:~4.1.92"
-    dayjs: "npm:~1.11.5"
-    debug: "npm:^4.3.1"
+    dayjs: "npm:~1.11.13"
+    debug: "npm:^4.3.7"
     enquirer: "npm:2.3.6"
     eventemitter2: "npm:5.0.1"
     fclone: "npm:1.0.11"
@@ -12519,7 +12501,7 @@ __metadata:
     pm2-multimeter: "npm:^0.1.2"
     pm2-sysmonit: "npm:^1.2.8"
     promptly: "npm:^2"
-    semver: "npm:^7.2"
+    semver: "npm:^7.6.2"
     source-map-support: "npm:0.5.21"
     sprintf-js: "npm:1.1.2"
     vizion: "npm:~2.2.1"
@@ -12531,7 +12513,7 @@ __metadata:
     pm2-dev: bin/pm2-dev
     pm2-docker: bin/pm2-docker
     pm2-runtime: bin/pm2-runtime
-  checksum: 10/58b08c23285058d8dd0d44a2ba2f84fe183e7b7c323f8efb70ef293067e190c5ab4b22a4f58e7676b4df8635bbcc66f0921970ebc7962df56f7bc105ca63d835
+  checksum: 10/6cb858750bfec137f611c7228f751a5fdb977694f06129efeb782b2db03e785efd001c9b53c69f476882ff34716ee5b966327a2856690ba3cf4539ff45c31c20
   languageName: node
   linkType: hard
 
@@ -12749,19 +12731,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proxy-agent@npm:~6.3.0":
-  version: 6.3.1
-  resolution: "proxy-agent@npm:6.3.1"
+"proxy-agent@npm:~6.4.0":
+  version: 6.4.0
+  resolution: "proxy-agent@npm:6.4.0"
   dependencies:
     agent-base: "npm:^7.0.2"
     debug: "npm:^4.3.4"
-    http-proxy-agent: "npm:^7.0.0"
-    https-proxy-agent: "npm:^7.0.2"
+    http-proxy-agent: "npm:^7.0.1"
+    https-proxy-agent: "npm:^7.0.3"
     lru-cache: "npm:^7.14.1"
     pac-proxy-agent: "npm:^7.0.1"
     proxy-from-env: "npm:^1.1.0"
     socks-proxy-agent: "npm:^8.0.2"
-  checksum: 10/547e6ebd7359cc37608cfb7ba58c97faaa33f29fcff25c2933552917bec234cfbbd8bade0f8acccab1bd0aae489082dce5ee63f644f05f824890084a70919dea
+  checksum: 10/a22f202b74cc52f093efd9bfe52de8db08eda8bbc16b9d3d73acda2acc1b40223966e5521b1706788b06adf9265f093ed554d989b354e81b2d6ad482e5bd4d23
   languageName: node
   linkType: hard
 
@@ -13633,7 +13615,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.0.0, semver@npm:^7.2, semver@npm:^7.3.5, semver@npm:^7.3.7, semver@npm:^7.3.8, semver@npm:^7.5.2, semver@npm:^7.5.3, semver@npm:^7.5.4, semver@npm:^7.6.3":
+"semver@npm:^7.0.0, semver@npm:^7.3.5, semver@npm:^7.3.7, semver@npm:^7.3.8, semver@npm:^7.5.2, semver@npm:^7.5.3, semver@npm:^7.5.4, semver@npm:^7.6.3":
   version: 7.6.3
   resolution: "semver@npm:7.6.3"
   bin:
@@ -13648,6 +13630,15 @@ __metadata:
   bin:
     semver: bin/semver.js
   checksum: 10/4cfa1eb91ef3751e20fc52e47a935a0118d56d6f15a837ab814da0c150778ba2ca4f1a4d9068b33070ea4273629e615066664c2cfcd7c272caf7a8a0f6518b2c
+  languageName: node
+  linkType: hard
+
+"semver@npm:^7.6.2":
+  version: 7.7.2
+  resolution: "semver@npm:7.7.2"
+  bin:
+    semver: bin/semver.js
+  checksum: 10/7a24cffcaa13f53c09ce55e05efe25cd41328730b2308678624f8b9f5fc3093fc4d189f47950f0b811ff8f3c3039c24a2c36717ba7961615c682045bf03e1dda
   languageName: node
   linkType: hard
 
