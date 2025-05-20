@@ -10,6 +10,7 @@ import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from 
 import { logger } from '../../src/logger.js'
 import { createAuditLog } from './auditLogService.js'
 import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
+import { MapDefinedFields } from '../../utils/objectUtils.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -125,11 +126,10 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
                 }
             })
         } else {
-            //default
             subRef = subRef.orderBy('createdDate', 'desc')
         }
 
-        //default is 20
+        // Default is 20
         subRef = subRef.limit(filters.limit ?? 20)
 
         const dbDocument = await subRef.get()
@@ -179,9 +179,9 @@ Promise<Result<gqlTypes.Submission>> => {
         const newSubmissionId = submissionRef.id
         const newSubmission = mapGqlEntityToDbEntity(submissionInput, newSubmissionId)
 
-        // We want to wrap everyting in a transaction, so when one of the transactions fails we can roll-back
+        // Wrap everything in a transaction so we can roll back if anything fails
         await dbInstance.runTransaction(async t => {
-            await t.set(submissionRef, newSubmission)
+            t.set(submissionRef, newSubmission)
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Create, 
                 gqlTypes.ObjectType.Submission, 
@@ -191,14 +191,13 @@ Promise<Result<gqlTypes.Submission>> => {
                 t
             )
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Create}`) 
+            if (!createdAuditLog.isSuccessful) {
+                throw new Error(`Failed to create an audit log for ${gqlTypes.ActionType.Create}`) 
             }
         })
 
         const createdSubmission = await getSubmissionById(newSubmissionId)
 
-        // if we didn't get it back or have errors, this is an actual error.
         if (createdSubmission.hasErrors || !createdSubmission.data) {
             throw new Error(`${JSON.stringify(createdSubmission.errors)}`)
         }
@@ -234,8 +233,8 @@ export const updateSubmission = async (submissionId: string, fieldsToUpdate: Par
     updatedBy: string):
 Promise<Result<gqlTypes.Submission>> => {
     try {
-        //business logic: a submission can't be updated or unapproved once it's approved.
-        //business logic: you can't approve and update at the same time. 
+        // Business logic: a submission can't be updated or unapproved once it's approved
+        // Business logic: you can't approve and update at the same time
         if (fieldsToUpdate.isApproved) {
             const approvalResult = await approveSubmission(submissionId, updatedBy)
 
@@ -250,47 +249,50 @@ Promise<Result<gqlTypes.Submission>> => {
         }
 
         const submissionRef = dbInstance.collection('submissions').doc(submissionId)
-        const dbDocument = await submissionRef.get()
-        const submissionToUpdate = dbDocument.data() as dbSchema.Submission
-
-        const updatedSubmissionValues: Partial<dbSchema.Submission> = {
-            //TODO: guarantee the fields in updatesubmissioninput match submission so this doesn't break. maybe a test?
-            ...fieldsToUpdate as Partial<dbSchema.Submission>,
-            //business logic: don't allow updating approval status after the previous check
-            isApproved: submissionToUpdate.isApproved,
-            updatedDate: new Date().toISOString()
-        }
-
-        await dbInstance.runTransaction(async t => {
-            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
-            const doc = await t.get(submissionRef)
-            const oldSubmission = doc.data() as dbSchema.Submission
             
-            await t.update(submissionRef, updatedSubmissionValues)
+        const updatedSubmission = await dbInstance.runTransaction(async t => {
+            const dbDocument = await t.get(submissionRef)
+            const dbSubmissionToUpdate = dbDocument.data() as dbSchema.Submission
+            const oldSubmissionDataAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(dbSubmissionToUpdate)
+            )
+                
+            MapDefinedFields(fieldsToUpdate, dbSubmissionToUpdate)
+        
+            dbSubmissionToUpdate.updatedDate = new Date().toISOString()
+
+            t.set(submissionRef, dbSubmissionToUpdate, { merge: true })
             
+            const updatedSubmissionAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(dbSubmissionToUpdate)
+            )
+
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Update, 
                 gqlTypes.ObjectType.Submission, 
                 updatedBy,
-                JSON.stringify(updatedSubmissionValues),
-                JSON.stringify(oldSubmission),
+                JSON.stringify(updatedSubmissionAuditLogEntity),
+                JSON.stringify(oldSubmissionDataAuditLogEntity),
                 t
             )
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            if (!createdAuditLog.isSuccessful) {
+                throw new Error(`Failed to create an audit log for ${gqlTypes.ActionType.Update}`) 
             }
+
+            return dbSubmissionToUpdate
         })
 
-        logger.info(`\nDB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
-        const updatedSubmission = await getSubmissionById(submissionId)
+        logger.info(`\nDB-UPDATE: Updated submission ${submissionId}.\nEntity: ${JSON.stringify(updatedSubmission)}`)
+        
+        const updatedSubmissionResult = await getSubmissionById(submissionId)
 
-        if (updatedSubmission.hasErrors || !updatedSubmission.data) {
-            throw new Error(`ERROR: Error creating submission: ${JSON.stringify(updatedSubmission.errors)}`)
+        if (updatedSubmissionResult.hasErrors || !updatedSubmissionResult.data) {
+            throw new Error(`ERROR: Error updating submission: ${JSON.stringify(updatedSubmissionResult.errors)}`)
         }
 
         return {
-            data: updatedSubmission.data,
+            data: updatedSubmissionResult.data,
             hasErrors: false
         }
     } catch (error) {
@@ -377,13 +379,12 @@ Promise<Result<gqlTypes.Submission>> => {
             facilityInformation.mapLongitude = googlePlacesSearchResult.extractedMapLongitude
         }
 
-        //update the submission to under review with the new updated date and autofill information
+        // Update the submission to under review with the new updated date and autofill information
         currentSubmission.facility = facilityInformation
         currentSubmission.isUnderReview = true
         currentSubmission.updatedDate = new Date().toISOString()
 
         await dbInstance.runTransaction(async t => {
-            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
             const doc = await t.get(submissionRef)
             const oldSubmission = doc.data() as dbSchema.Submission
             
@@ -398,12 +399,11 @@ Promise<Result<gqlTypes.Submission>> => {
                 t
             )
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            if (!createdAuditLog.isSuccessful) {
+                throw new Error(`Failed to create an audit log for ${gqlTypes.ActionType.Update}`) 
             }
         })
 
-        //set the data to return to the approveResult object
         updatedResultFromAutofill.data = currentSubmission
 
         return updatedResultFromAutofill
@@ -449,7 +449,7 @@ Promise<Result<gqlTypes.Submission>> => {
             return approveResult
         }
 
-        //business logic: we can't approve a submission that's already approved. let's confirm it was previously not approved. 
+        // Business logic: A submission can only be approved once
         if (currentSubmission?.isApproved) {
             approveResult.errors?.push({
                 field: 'isApproved',
@@ -462,7 +462,7 @@ Promise<Result<gqlTypes.Submission>> => {
     
         logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
         
-        //try creating the facility
+        // Try creating the facility
         const createFacilityResult = await createFacility(
             currentSubmission.facility as gqlTypes.CreateFacilityInput, updatedBy
         )
@@ -472,7 +472,7 @@ Promise<Result<gqlTypes.Submission>> => {
             return approveResult
         }
         
-        //try creating healthcare professional(s)
+        // Try creating the healthcare professional(s)
         for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
             const healthcareProfessionalInput
             = healthcareProfessional satisfies gqlTypes.CreateHealthcareProfessionalInput
@@ -488,17 +488,16 @@ Promise<Result<gqlTypes.Submission>> => {
             }
         }
 
-        //update the submission to approved only if creating the facility and healthcare professionals succeeds
+        // Update the submission to approved only if creating the facility and healthcare professionals succeeds
         currentSubmission.isApproved = true
         currentSubmission.isUnderReview = false
         currentSubmission.updatedDate = new Date().toISOString()
 
         await dbInstance.runTransaction(async t => {
-            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
             const doc = await t.get(submissionRef)
             const oldSubmission = doc.data() as dbSchema.Submission
             
-            await t.set(submissionRef, currentSubmission, { merge: true })
+            t.set(submissionRef, currentSubmission, { merge: true })
             
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Update, 
@@ -509,12 +508,11 @@ Promise<Result<gqlTypes.Submission>> => {
                 t
             )
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            if (!createdAuditLog.isSuccessful) {
+                throw new Error(`Failed to create an audit log for ${gqlTypes.ActionType.Update}`) 
             }
         })
 
-        //set the data to return to the approveResult object
         approveResult.data = currentSubmission
 
         return approveResult
@@ -561,7 +559,7 @@ export async function deleteSubmission(id: string, updatedBy: string)
         const convertedEntity = mapDbEntityTogqlEntity(submissionToDelete)
 
         await dbInstance.runTransaction(async t => {
-            await t.delete(submissionRef)
+            t.delete(submissionRef)
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Delete, 
                 gqlTypes.ObjectType.Submission, 
@@ -571,8 +569,8 @@ export async function deleteSubmission(id: string, updatedBy: string)
                 t
             )
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`) 
+            if (!createdAuditLog.isSuccessful) {
+                throw new Error(`Failed to create an audit log for ${gqlTypes.ActionType.Delete}`) 
             }
         })
         
