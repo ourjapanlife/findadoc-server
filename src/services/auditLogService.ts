@@ -30,13 +30,13 @@ export async function createAuditLog(
         t.set(auditLogRef, newAuditLog)
         
         return {
-            isSuccesful: true
+            isSuccessful: true
         }
     } catch (error) {
         logger.error(`ERROR: Error creating audit log: ${error}`)
 
         return {
-            isSuccesful: false
+            isSuccessful: false
         }
     }
 }
