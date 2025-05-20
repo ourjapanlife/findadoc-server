@@ -24,7 +24,7 @@ export const getFacilityById = async (id: string)
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        //using .doc(id) pulls from a stale cache, so we use a .where() query instead.
+        // Using .doc(id) pulls from a stale cache, so we use a .where() query instead
         const facilityRef = dbInstance.collection('facilities').where('id', '==', id)
         const dbQueryResults = await facilityRef.get()
         const dbDocs = dbQueryResults.docs
@@ -152,8 +152,7 @@ export async function createFacility(
         const newFacilityId = facilityRef.id
         const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
 
-        /*let's wrap all of our updates in a transaction so we can roll back if anything fails. 
-        (for example we don't want to update the professional if updating the associated facility updates fail)*/
+        // Wrap all of our updates in a transaction so we can roll back if anything fails 
         await dbInstance.runTransaction(async t => {
             await t.set(facilityRef, newDbFacility)
             //let's update all the healthcareProfessionals that should add this facilityId to their facilityIds array
@@ -167,7 +166,6 @@ export async function createFacility(
                     t
                 )
     
-                // if we didn't get it back or have errors, this is an actual error.
                 if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
                     throw new Error(`ERROR: Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
                 }
@@ -182,14 +180,13 @@ export async function createFacility(
                 t
             )
             
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Create}`)
+            if (!createdAuditLog.isSuccessful) {
+                throw new Error(`Failed to create an audit log for ${gqlTypes.ActionType.Create}`)
             }
         })
         
         logger.info(`\nDB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
 
-        //let's return the newly created facility. Since we have the full entity, no need to do a new query. 
         const createdGqlEntity = mapDbEntityTogqlEntity(newDbFacility)
 
         return {
@@ -235,7 +232,7 @@ export const updateFacility = async (
 
         const facilityRef = dbInstance.collection('facilities').doc(facilityId)
         
-        //let's wrap all of our updates in a batch so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        // Wrap all of our updates in a transaction so we can roll back if anything fails 
         const updatedFacility = await dbInstance.runTransaction(async t => {
             const dbDocument = await t.get(facilityRef)
             const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
@@ -245,13 +242,13 @@ export const updateFacility = async (
 
             const originalHealthcareProfessionalIdsForFacility = dbFacilityToUpdate.healthcareProfessionalIds
             
-            //let's update the fields that were provided
+            // Update the fields that were provided
             MapDefinedFields(fieldsToUpdate, dbFacilityToUpdate)
     
-            //Business rule: always timestamp when the entity was updated.
+            // Business rule: always timestamp when the entity was updated
             dbFacilityToUpdate.updatedDate = new Date().toISOString()
     
-            //let's update all the healthcareProfessionals that should add or remove this facilityId from their facilityIds array 
+            // Update all the healthcareProfessionals that should add or remove this facilityId from their facilityIds array 
             if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
                 const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
                     dbFacilityToUpdate.id,
@@ -260,17 +257,15 @@ export const updateFacility = async (
                     originalHealthcareProfessionalIdsForFacility ?? []
                 )
     
-                // if we didn't get it back or have errors, this is an actual error.
                 if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
                     throw new Error(`Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
                 }
-                //let's update the professional with the new facility ids
+                // Update the professional with the new facility ids
                 dbFacilityToUpdate.healthcareProfessionalIds = healthcareProfessionalUpdateResults.data
             }
 
             t.set(facilityRef, dbFacilityToUpdate, { merge: true })
 
-            // Make sure we store a more readable object in our audit log
             const updatedFacilityAuditLogEntity: string = JSON.stringify(
                 mapDbEntityTogqlEntity(dbFacilityToUpdate)
             )
@@ -284,8 +279,8 @@ export const updateFacility = async (
                 t
             )
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            if (!createdAuditLog.isSuccessful) {
+                throw new Error(`Failed to create an audit log for ${gqlTypes.ActionType.Update}`) 
             }
 
             return dbFacilityToUpdate
@@ -295,7 +290,6 @@ export const updateFacility = async (
 
         const queriedFacilityResult = await getFacilityById(facilityId)
 
-        // if we didn't get it back or have errors, this is an actual error.
         if (queriedFacilityResult.hasErrors || !queriedFacilityResult.data) {
             throw new Error(`Error updating facility. Couldn't query the updated facility: ${JSON.stringify(queriedFacilityResult.errors)}`)
         }
@@ -332,7 +326,7 @@ async function processHealthcareProfessionalRelationshipChanges(facilityId: stri
     t: Transaction,
     originalHealthcareProfessionalIds: string[] = [])
     : Promise<Result<string[]>> {
-    // deep clone the array so we don't modify the original
+    // Deep clone the array so we don't modify the original
     let updatedProfessionalIdsArray = [...originalHealthcareProfessionalIds]
 
     healthcareProfessionalRelationshipChanges.forEach(change => {
@@ -348,7 +342,7 @@ async function processHealthcareProfessionalRelationshipChanges(facilityId: stri
         }
     })
 
-    //update all the associated healthcare professionals (note: this should be contained within a transaction with the facility so we can roll back if anything fails)
+    // Update the associated healthcare professionals in a transaction so we can roll back if necessary
     const healthcareProfessionalUpdateResults = await updateHealthcareProfessionalsWithFacilityIdChanges(
         healthcareProfessionalRelationshipChanges,
         facilityId,
@@ -356,7 +350,7 @@ async function processHealthcareProfessionalRelationshipChanges(facilityId: stri
     )
 
     return {
-        //let's return the updated healthcareProfessionalIds array so we can update the facility
+        // Return the updated healthcareProfessionalIds array so we can update the facility
         data: updatedProfessionalIdsArray,
         hasErrors: healthcareProfessionalUpdateResults.hasErrors,
         errors: healthcareProfessionalUpdateResults.errors
@@ -385,7 +379,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
         }
 
         const facilityQuery = dbInstance.collection('facilities').where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId))
-        // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first. 
+        // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first
         const allFacilityDocuments = await facilityQuery.get()
         const dbFacilitiesToUpdate = allFacilityDocuments.docs ?? []
 
@@ -398,7 +392,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
                 throw new Error(`updating facility healthcareprofessional id list for ${dbFacility.id}. Could not find matching relationship.`)
             }
 
-            //we want to add or remove the healthcareprofessional id from the list based on the action.
+            // We want to add or remove the healthcareprofessional id from the list based on the action
             switch (matchingRelationship.action) {
                 case gqlTypes.RelationshipAction.Create:
                     dbFacilityData.healthcareProfessionalIds.push(healthcareProfessionalId)
@@ -412,10 +406,10 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
                     break
             }
 
-            //business rule: we always timestamp when the entity was updated.
+            // Business rule: we always timestamp when the entity was updated
             dbFacilityData.updatedDate = new Date().toISOString()
 
-            //This will add the record update to the batch, but we don't want to commit at this point. 
+            // This will add the record update to the batch, but we don't want to commit at this point 
             t.set(dbFacilityRef, dbFacilityData, { merge: true })
             logger.info(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
         })
@@ -485,12 +479,9 @@ export async function deleteFacility(
 
         const facility = dbDocument.docs[0].data() as dbSchema.Facility
 
-        /*
-        let's wrap all of our updates in a batch so we can roll back if anything fails. 
-        (for example we don't want to update the professional if updating the associated facility updates fail)
-        */
+        // Wrap all of our updates in a transaction so we can roll back if anything fails 
         await dbInstance.runTransaction(async t => {
-            //let's update all the healthcareProfessionals that should remove this facilityId from their facilityIds array
+            // Update the healthcareProfessionals that should remove this facilityId from their facilityIds array
             const professionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
                 id,
                 facility.healthcareProfessionalIds.map(
@@ -502,7 +493,6 @@ export async function deleteFacility(
                 t
             )
     
-            // if we have errors, this is an actual error.
             if (professionalUpdateResults.hasErrors) {
                 throw new Error(`ERROR: Error updating associated facility's healthcareProfessionalIds: ${JSON.stringify(professionalUpdateResults.errors)}`)
             }
@@ -522,8 +512,8 @@ export async function deleteFacility(
                 t
             )
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`) 
+            if (!createdAuditLog.isSuccessful) {
+                throw new Error(`Failed to create an audit log for ${gqlTypes.ActionType.Delete}`) 
             }
         })
 
@@ -567,9 +557,9 @@ function mapGqlCreateInputToDbEntity(input: gqlTypes.CreateFacilityInput, newId:
         mapLatitude: input.mapLatitude,
         mapLongitude: input.mapLongitude,
         healthcareProfessionalIds: input.healthcareProfessionalIds as string[],
-        //business rule: createdDate cannot be set by the user.
+        // Business rule: createdDate cannot be set by the user
         createdDate: new Date().toISOString(),
-        //business rule: updatedDate is updated on every change.
+        // Business rule: updatedDate is updated on every change
         updatedDate: new Date().toISOString()
 
     } satisfies dbSchema.Facility
