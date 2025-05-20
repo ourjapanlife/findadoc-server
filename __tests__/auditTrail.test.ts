@@ -23,6 +23,6 @@ describe('createAuditLog', () => {
             return result
         })
 
-        expect(auditLogResult.isSuccesful).toBe(true)
+        expect(auditLogResult.isSuccessful).toBe(true)
     })
 })

@@ -29,7 +29,7 @@ export type Submission = Omit<gqlType.Submission, 'facility' | 'healthcareProfes
 export type AuditLog = Omit<gqlType.AuditLog, 'id' | 'updatedDate'>
 
 export type AuditLogResult = {
-    isSuccesful: boolean
+    isSuccessful: boolean
 }
 
 export type Contact = gqlType.Contact
