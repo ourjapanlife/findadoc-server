@@ -97,8 +97,17 @@ export function authorize(user: User, requiredScopes: Scope[]): boolean {
         }
         
         // This will fail if we change auth0 roles and forget to update our mapping.
-        const currentUserScopes = user.scope?.split(' ') as unknown as Scope[] || []
+        let currentUserScopes = user.scope?.split(' ') as unknown as Scope[] || []
         const currentUserRoles = user.roles as unknown as Role[] || []
+        
+        // In production, restrict permissions unless user is Admin or Moderator
+        if (envVariables.isProduction() &&
+        !currentUserRoles.includes(Role.Admin) &&
+        !currentUserRoles.includes(Role.Moderator)) {
+            // It removes any write or delete permissions from the user's scopes
+            currentUserScopes = currentUserScopes.filter(scope => scope.startsWith('read:'))
+        }
+        
         const currentUserScopesFromRoles = currentUserRoles.flatMap(role => roleScopes[role] as Scope[])
         // We want to combine the user's explicit scopes with the scopes derived from their roles.
         const allUserScopes = [...currentUserScopes, ...currentUserScopesFromRoles]
