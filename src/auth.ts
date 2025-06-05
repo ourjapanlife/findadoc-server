@@ -100,6 +100,10 @@ export function authorize(user: User, requiredScopes: Scope[]): boolean {
         let currentUserScopes = user.scope?.split(' ') as unknown as Scope[] || []
         const currentUserRoles = user.roles as unknown as Role[] || []
         
+        const currentUserScopesFromRoles = currentUserRoles.flatMap(role => roleScopes[role] as Scope[])
+        // We want to combine the user's explicit scopes with the scopes derived from their roles.
+        const allUserScopes = [...currentUserScopes, ...currentUserScopesFromRoles]
+        
         // In production, restrict permissions unless user is Admin or Moderator
         if (envVariables.isProduction() &&
         !currentUserRoles.includes(Role.Admin) &&
@@ -107,10 +111,6 @@ export function authorize(user: User, requiredScopes: Scope[]): boolean {
             // It removes any write or delete permissions from the user's scopes
             currentUserScopes = currentUserScopes.filter(scope => scope.startsWith('read:'))
         }
-        
-        const currentUserScopesFromRoles = currentUserRoles.flatMap(role => roleScopes[role] as Scope[])
-        // We want to combine the user's explicit scopes with the scopes derived from their roles.
-        const allUserScopes = [...currentUserScopes, ...currentUserScopesFromRoles]
 
         const hasRequiredScopes = requiredScopes.every((scope: Scope) => allUserScopes.includes(scope))
 
