@@ -8758,12 +8758,12 @@ __metadata:
   linkType: hard
 
 "get-jwks@npm:^11.0.0":
-  version: 11.0.0
-  resolution: "get-jwks@npm:11.0.0"
+  version: 11.0.1
+  resolution: "get-jwks@npm:11.0.1"
   dependencies:
     jwk-to-pem: "npm:^2.0.7"
-    lru-cache: "npm:^11.0.2"
-  checksum: 10/22acde01cc97abe2040b5e7d700217d28a01b61e7864df75632e678c87f0f2ce237e96c85b390212d4a88fffc3aab35a8ef19cb5287cb4cac7130f3cc1e0e36f
+    lru-cache: "npm:^11.1.0"
+  checksum: 10/adb59eb6ffe2e40b6948dcfa3a3eb4853008fb3ce30bce4c38f18a2903da3d3d1dcd8a0c5c247ea634434c628f6815e16723b90186e62137755f363cf30e876d
   languageName: node
   linkType: hard
 
@@ -10835,7 +10835,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^11.0.2":
+"lru-cache@npm:^11.1.0":
   version: 11.1.0
   resolution: "lru-cache@npm:11.1.0"
   checksum: 10/5011011675ca98428902de774d0963b68c3a193cd959347cb63b781dad4228924124afab82159fd7b8b4db18285d9aff462b877b8f6efd2b41604f806c1d9db4
