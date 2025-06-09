@@ -1419,13 +1419,13 @@ __metadata:
   linkType: hard
 
 "@fastify/rate-limit@npm:^10.2.2":
-  version: 10.2.2
-  resolution: "@fastify/rate-limit@npm:10.2.2"
+  version: 10.3.0
+  resolution: "@fastify/rate-limit@npm:10.3.0"
   dependencies:
     "@lukeed/ms": "npm:^2.0.2"
     fastify-plugin: "npm:^5.0.0"
     toad-cache: "npm:^3.7.0"
-  checksum: 10/36ece40fcda49bd1182f45c5fcd9052d9cf1cc63c7731274d470b374c6d95733e68371f8befae0084f9b5efcde7435b37a93fe1680ceaa24635142bfdcd1d527
+  checksum: 10/aadcf5ab0c80e46a07aa8c59062e56dc9791d93487b2e91fc9a817b599e6df5e7d973d2dd762b2fba0c5f69cef8e5f3764ef877f95c2a542e6c6fd183b042f82
   languageName: node
   linkType: hard
 
