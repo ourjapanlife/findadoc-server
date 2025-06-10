@@ -241,17 +241,21 @@ Promise<Result<gqlTypes.Submission>> => {
 
             return approvalResult
         }
+        
+        const submissionRef = dbInstance.collection('submissions').doc(submissionId)
+        const dbDocument = await submissionRef.get()
+        const submissionToUpdate = dbDocument.data() as dbSchema.Submission
 
-        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl) {
+        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && submissionToUpdate.autofillPlaceFromSubmissionUrl) {
+            throw new Error('This submission has already been autofilled once before')
+        }
+
+        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !submissionToUpdate.autofillPlaceFromSubmissionUrl) {
             const updatedResultFromAutofill =
             await autoFillPlacesInformation(submissionId, fieldsToUpdate.googleMapsUrl)
 
             return updatedResultFromAutofill
         }
-
-        const submissionRef = dbInstance.collection('submissions').doc(submissionId)
-        const dbDocument = await submissionRef.get()
-        const submissionToUpdate = dbDocument.data() as dbSchema.Submission
 
         const updatedSubmissionValues: Partial<dbSchema.Submission> = {
             //TODO: guarantee the fields in updatesubmissioninput match submission so this doesn't break. maybe a test?
@@ -405,6 +409,10 @@ Promise<Result<gqlTypes.Submission>> => {
 
         //set the data to return to the approveResult object
         updatedResultFromAutofill.data = currentSubmission
+
+        //after successful autofilling, set submission field 'autofillPlaceFromSubmissionUrl'
+        //to true so that it will not call autofill a second time for the same submission in the future
+        currentSubmission.autofillPlaceFromSubmissionUrl = true
 
         return updatedResultFromAutofill
     } catch (error) {
@@ -604,6 +612,7 @@ export async function deleteSubmission(id: string, updatedBy: string)
 export function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
     return {
         id: newId,
+        autofillPlaceFromSubmissionUrl: input.autofillPlaceFromSubmissionUrl as boolean,
         googleMapsUrl: input.googleMapsUrl as string,
         healthcareProfessionalName: input.healthcareProfessionalName as string,
         spokenLanguages: input.spokenLanguages as gqlTypes.Locale[],
@@ -640,6 +649,7 @@ function validateIdInput(id: string): Result<unknown> {
 const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submission => {
     const gqlEntity = {
         id: dbEntity.id,
+        autofillPlaceFromSubmissionUrl: dbEntity.autofillPlaceFromSubmissionUrl,
         googleMapsUrl: dbEntity.googleMapsUrl,
         healthcareProfessionalName: dbEntity.healthcareProfessionalName,
         spokenLanguages: dbEntity.spokenLanguages,
