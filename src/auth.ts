@@ -61,8 +61,10 @@ const roleScopes: Record<Role, Scope[]> = {
         Scope['read:healthcareprofessionals'], Scope['write:healthcareprofessionals'], Scope['delete:healthcareprofessionals'],
         Scope['read:facilities'], Scope['write:facilities'], Scope['delete:facilities'],
         Scope['read:submissions'], Scope['write:submissions'], Scope['delete:submissions'],
+        Scope['read:users'], Scope['write:users'], Scope['delete:users'],
         Scope['read:profile'], 
-        Scope['write:posts']
+        Scope['write:posts'],
+        Scope['read:logs'], Scope['write:logs']
     ],
     [Role.User]: [
         Scope['read:healthcareprofessionals'], 
