@@ -470,29 +470,38 @@ Promise<Result<gqlTypes.Submission>> => {
     
         logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
         
+        let createFacilityResult
+
+        if (currentSubmission.facility) {
         //try creating the facility
-        const createFacilityResult = await createFacility(
-            currentSubmission.facility as gqlTypes.CreateFacilityInput, updatedBy
-        )
+            createFacilityResult = await createFacility(
+                currentSubmission.facility as gqlTypes.CreateFacilityInput, updatedBy
+            )
+        }
         
-        if (createFacilityResult.hasErrors) {
+        if (createFacilityResult && createFacilityResult.hasErrors) {
             approveResult.errors?.concat(createFacilityResult.errors!)
             return approveResult
         }
         
+        if (currentSubmission.healthcareProfessionals) {
         //try creating healthcare professional(s)
-        for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
-            const healthcareProfessionalInput
+            for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
+                const healthcareProfessionalInput
             = healthcareProfessional satisfies gqlTypes.CreateHealthcareProfessionalInput
             
-            healthcareProfessionalInput.facilityIds.push(createFacilityResult.data.id)
-            const createHealthcareProfessionalResult = await createHealthcareProfessional(
-                healthcareProfessionalInput, updatedBy
-            )
+                if (createFacilityResult) {
+                    healthcareProfessionalInput.facilityIds.push(createFacilityResult.data.id)
+                }
+
+                const createHealthcareProfessionalResult = await createHealthcareProfessional(
+                    healthcareProfessionalInput, updatedBy
+                )
             
-            if (createHealthcareProfessionalResult.hasErrors) {
-                approveResult.errors?.concat(createHealthcareProfessionalResult.errors!)
-                return approveResult
+                if (createHealthcareProfessionalResult.hasErrors) {
+                    approveResult.errors?.concat(createHealthcareProfessionalResult.errors!)
+                    return approveResult
+                }
             }
         }
 
