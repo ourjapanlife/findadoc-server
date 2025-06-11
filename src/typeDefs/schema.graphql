@@ -96,6 +96,7 @@ input HealthcareProfessionalSearchFilters {
 
 type Submission {
   id: ID!
+  autofillPlaceFromSubmissionUrl: Boolean
   googleMapsUrl: String!
   healthcareProfessionalName: String!
   spokenLanguages: [Locale!]!
@@ -132,6 +133,7 @@ type HealthcareProfessionalSubmission {
 # For creating a submission. This has different fields than the Submission type
 input CreateSubmissionInput {
   googleMapsUrl: String
+  autofillPlaceFromSubmissionUrl: Boolean
   healthcareProfessionalName: String
   spokenLanguages: [Locale!]
   notes: String
