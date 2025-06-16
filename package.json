@@ -82,7 +82,7 @@
         "@fastify/cors": "^11.0.1",
         "@fastify/jwt": "^9.1.0",
         "@fastify/rate-limit": "^10.2.2",
-        "@firebase/app": "^0.10.18",
+        "@firebase/app": "^0.13.0",
         "@firebase/app-compat": "^0.2.48",
         "@types/googlemaps": "^3.43.3",
         "cross-env": "^7.0.3",
