@@ -1533,16 +1533,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@firebase/app-compat@npm:^0.2.48":
-  version: 0.2.48
-  resolution: "@firebase/app-compat@npm:0.2.48"
+"@firebase/app-compat@npm:^0.4.0":
+  version: 0.4.1
+  resolution: "@firebase/app-compat@npm:0.4.1"
   dependencies:
-    "@firebase/app": "npm:0.10.18"
-    "@firebase/component": "npm:0.6.12"
+    "@firebase/app": "npm:0.13.1"
+    "@firebase/component": "npm:0.6.17"
     "@firebase/logger": "npm:0.4.4"
-    "@firebase/util": "npm:1.10.3"
+    "@firebase/util": "npm:1.12.0"
     tslib: "npm:^2.1.0"
-  checksum: 10/b74598b960ebb0a773b04e04d45dd59dbc8e09d1ae46c8ee7fd950632c95d357e8edab353df7032b798f2613884c96f3201eb5fbcdbfba67cb23757d66e63586
+  checksum: 10/e02e9fc8df59210c9861a9bcf65fad8aad2e16e3a2de6cd2ff9076efbb5efd0064a3151c600b1b4b3acbe6245169e0707ae64dc46781b324a0b63cb57fb6c3e4
   languageName: node
   linkType: hard
 
@@ -1566,7 +1566,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@firebase/app@npm:0.10.18, @firebase/app@npm:^0.10.18":
+"@firebase/app@npm:0.13.1":
+  version: 0.13.1
+  resolution: "@firebase/app@npm:0.13.1"
+  dependencies:
+    "@firebase/component": "npm:0.6.17"
+    "@firebase/logger": "npm:0.4.4"
+    "@firebase/util": "npm:1.12.0"
+    idb: "npm:7.1.1"
+    tslib: "npm:^2.1.0"
+  checksum: 10/049fc54b9a45a5f5f31f4751abd27e551a80461331bb0be04d06b81b4d39b452ecc137e0b25fd7015467bf64a989f89f6f91091761555bcc11f8bf41d8e516b1
+  languageName: node
+  linkType: hard
+
+"@firebase/app@npm:^0.10.18":
   version: 0.10.18
   resolution: "@firebase/app@npm:0.10.18"
   dependencies:
@@ -1638,6 +1651,16 @@ __metadata:
     "@firebase/util": "npm:1.10.3"
     tslib: "npm:^2.1.0"
   checksum: 10/4dfd201d3709ef5eed477e13d399611a78a186ca8911846e24361f9848c3b4eecc14c295a8f78ec40c88816329fde0ba6cc30dce9a444fa43a619b7ea744f0dc
+  languageName: node
+  linkType: hard
+
+"@firebase/component@npm:0.6.17":
+  version: 0.6.17
+  resolution: "@firebase/component@npm:0.6.17"
+  dependencies:
+    "@firebase/util": "npm:1.12.0"
+    tslib: "npm:^2.1.0"
+  checksum: 10/cd6af753f049d6d980d019e93a351a8bc4958a816321a0ecc0b7a4005bb7a484f0e59305f26dfa41fa3ed934f56230e797aed19a9fad2a28effbfa364ec6d291
   languageName: node
   linkType: hard
 
@@ -2022,6 +2045,15 @@ __metadata:
   dependencies:
     tslib: "npm:^2.1.0"
   checksum: 10/8e5e1664a09798348abfa0cd138157943f8ee9c6e3804e6cb1dcff004b351a03f14f4b2711338133bb89f7f824546664af2c2aa98e229becbc9294cdddeecc99
+  languageName: node
+  linkType: hard
+
+"@firebase/util@npm:1.12.0":
+  version: 1.12.0
+  resolution: "@firebase/util@npm:1.12.0"
+  dependencies:
+    tslib: "npm:^2.1.0"
+  checksum: 10/5d3d702e30a3acf852078b1dccaea0b5502dbd20984018d851b71f8cb4966c230c16eaefe0c4c5684f1f12515172411ecda864d80e8559ad08b654faef444ed6
   languageName: node
   linkType: hard
 
@@ -8293,7 +8325,7 @@ __metadata:
     "@fastify/jwt": "npm:^9.1.0"
     "@fastify/rate-limit": "npm:^10.2.2"
     "@firebase/app": "npm:^0.10.18"
-    "@firebase/app-compat": "npm:^0.2.48"
+    "@firebase/app-compat": "npm:^0.4.0"
     "@firebase/rules-unit-testing": "npm:^3.0.1"
     "@graphql-codegen/cli": "npm:^5.0.0"
     "@graphql-codegen/typescript": "npm:^4.0.1"
