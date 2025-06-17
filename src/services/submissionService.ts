@@ -270,7 +270,7 @@ Promise<Result<gqlTypes.Submission>> => {
             const doc = await t.get(submissionRef)
             const oldSubmission = doc.data() as dbSchema.Submission
             
-            await t.update(submissionRef, updatedSubmissionValues)
+            t.update(submissionRef, updatedSubmissionValues)
             
             const createdAuditLog = await createAuditLog(
                 gqlTypes.ActionType.Update, 
@@ -470,9 +470,15 @@ Promise<Result<gqlTypes.Submission>> => {
     
         logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
         
-        let createFacilityResult
+        let createFacilityResult: Result<gqlTypes.Facility> | undefined
 
-        if (currentSubmission.facility) {
+        const facilityAlreadyExists = !!currentSubmission.healthcareProfessionals?.[0]?.facilityIds?.length
+
+        /* a submission currently contains one healthcare professional and facility so if we 
+         add any facility ids to the healthcare professional, we should not create the facility
+         as it already exists */
+        if (currentSubmission.facility
+            && !facilityAlreadyExists) {
         //try creating the facility
             createFacilityResult = await createFacility(
                 currentSubmission.facility as gqlTypes.CreateFacilityInput, updatedBy
@@ -483,13 +489,27 @@ Promise<Result<gqlTypes.Submission>> => {
             approveResult.errors?.concat(createFacilityResult.errors!)
             return approveResult
         }
+
+        const healthcareProfessionalAlreadyExists = !!currentSubmission
+            .healthcareProfessionals?.[0]?.facilityIds?.length
         
-        if (currentSubmission.healthcareProfessionals) {
+        if (healthcareProfessionalAlreadyExists && facilityAlreadyExists) {
+            approveResult.errors?.push({
+                field: 'isApproved',
+                errorCode: ErrorCode.INVALID_SUBMISSION_APPROVAL,
+                httpStatus: 400
+            })
+            return approveResult
+        }
+        /* a submission currently contains one healthcare professional so if we add
+        any healthcare professional ids to the facility, we should not create the healthcare professional as they already exists */
+        if (currentSubmission.healthcareProfessionals
+            && !healthcareProfessionalAlreadyExists) {
         //try creating healthcare professional(s)
             for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
                 const healthcareProfessionalInput
             = healthcareProfessional satisfies gqlTypes.CreateHealthcareProfessionalInput
-            
+                
                 if (createFacilityResult) {
                     healthcareProfessionalInput.facilityIds.push(createFacilityResult.data.id)
                 }
