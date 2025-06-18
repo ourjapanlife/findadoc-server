@@ -442,8 +442,10 @@ export enum Specialty {
   DiagnosticRadiology = 'DIAGNOSTIC_RADIOLOGY',
   EmergencyMedicine = 'EMERGENCY_MEDICINE',
   EntSpecialist = 'ENT_SPECIALIST',
-  GeneralPractitioner = 'GENERAL_PRACTITIONER',
+  FamilyMedicine = 'FAMILY_MEDICINE',
+  GeneralMedicine = 'GENERAL_MEDICINE',
   InfectiousDiseases = 'INFECTIOUS_DISEASES',
+  InternalMedicine = 'INTERNAL_MEDICINE',
   MedicalGenetics = 'MEDICAL_GENETICS',
   Neurology = 'NEUROLOGY',
   NuclearMedicine = 'NUCLEAR_MEDICINE',
@@ -459,8 +461,25 @@ export enum Specialty {
   Psychiatry = 'PSYCHIATRY',
   RadiationOncology = 'RADIATION_ONCOLOGY',
   SportsMedicine = 'SPORTS_MEDICINE',
+  Surgery = 'SURGERY',
   Traumatology = 'TRAUMATOLOGY',
   Urology = 'UROLOGY'
+}
+
+export enum SpecialtyCategory {
+  ChildrensHealth = 'CHILDRENS_HEALTH',
+  Dental = 'DENTAL',
+  Diagnostic = 'DIAGNOSTIC',
+  Ent = 'ENT',
+  EyeAndVision = 'EYE_AND_VISION',
+  InternalMedicine = 'INTERNAL_MEDICINE',
+  MentalHealth = 'MENTAL_HEALTH',
+  Musculoskeletal = 'MUSCULOSKELETAL',
+  Other = 'OTHER',
+  PrimaryCare = 'PRIMARY_CARE',
+  SportsAndRehab = 'SPORTS_AND_REHAB',
+  Surgical = 'SURGICAL',
+  WomensHealth = 'WOMENS_HEALTH'
 }
 
 export type Submission = {
@@ -631,6 +650,7 @@ export type ResolversTypes = {
   RelationshipAction: RelationshipAction;
   SchemaVersion: SchemaVersion;
   Specialty: Specialty;
+  SpecialtyCategory: SpecialtyCategory;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
   SubmissionSearchFilters: SubmissionSearchFilters;
