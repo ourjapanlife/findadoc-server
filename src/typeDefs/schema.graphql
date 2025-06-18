@@ -300,11 +300,11 @@ type PhysicalAddress {
   prefectureEn: String!
   cityEn: String!
   addressLine1En: String!
-  addressLine2En: String!
+  addressLine2En: String
   prefectureJa: String!
   cityJa: String!
   addressLine1Ja: String!
-  addressLine2Ja: String!
+  addressLine2Ja: String
 }
 input PhysicalAddressInput {
   postalCode: String!
