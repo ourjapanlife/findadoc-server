@@ -271,6 +271,7 @@ export const createHealthcareProfessionalMutation = `mutation test_createHealthc
         acceptedInsurance
         createdDate
         updatedDate
+        additionalInfoForPatients
     }
 }`
 

@@ -12,7 +12,8 @@ export function generateRandomCreateHealthcareProfessionalInput(
         degrees: generateDegrees(),
         specialties: generateSpecialties(),
         spokenLanguages: generateSpokenLanguages(),
-        acceptedInsurance: [faker.helpers.enumValue(gqlTypes.Insurance)]
+        acceptedInsurance: [faker.helpers.enumValue(gqlTypes.Insurance)],
+        additionalInfoForPatients: ''
     }
 }
 
