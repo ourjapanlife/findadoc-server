@@ -23,7 +23,8 @@ describe('error path: validations healthcare professionals', () => {
                         degrees: testData.generateDegrees(),
                         specialties: testData.generateSpecialties(),
                         spokenLanguages: testData.generateSpokenLanguages(),
-                        acceptedInsurance: [testData.generateAcceptedInsurance()]
+                        acceptedInsurance: [testData.generateAcceptedInsurance()],
+                        additionalInfoForPatients: ''
                     }
                 }
             } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -65,7 +66,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: testData.generateDegrees(),
                     specialties: testData.generateSpecialties(),
                     spokenLanguages: testData.generateSpokenLanguages(),
-                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                    acceptedInsurance: [testData.generateAcceptedInsurance()],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -96,7 +98,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: testData.generateDegrees(),
                     specialties: testData.generateSpecialties(),
                     spokenLanguages: testData.generateSpokenLanguages(),
-                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                    acceptedInsurance: [testData.generateAcceptedInsurance()],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -137,7 +140,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: testData.generateDegrees(),
                     specialties: testData.generateSpecialties(),
                     spokenLanguages: testData.generateSpokenLanguages(),
-                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                    acceptedInsurance: [testData.generateAcceptedInsurance()],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -178,7 +182,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: testData.generateDegrees(),
                     specialties: testData.generateSpecialties(),
                     spokenLanguages: testData.generateSpokenLanguages(),
-                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                    acceptedInsurance: [testData.generateAcceptedInsurance()],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -219,7 +224,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: testData.generateDegrees(),
                     specialties: testData.generateSpecialties(),
                     spokenLanguages: testData.generateSpokenLanguages(),
-                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                    acceptedInsurance: [testData.generateAcceptedInsurance()],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -250,7 +256,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: [],
                     specialties: testData.generateSpecialties(),
                     spokenLanguages: testData.generateSpokenLanguages(),
-                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                    acceptedInsurance: [testData.generateAcceptedInsurance()],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -281,7 +288,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: testData.generateDegrees(),
                     specialties: [],
                     spokenLanguages: testData.generateSpokenLanguages(),
-                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                    acceptedInsurance: [testData.generateAcceptedInsurance()],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -312,7 +320,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: testData.generateDegrees(),
                     specialties: testData.generateSpecialties(),
                     spokenLanguages: [],
-                    acceptedInsurance: [testData.generateAcceptedInsurance()]
+                    acceptedInsurance: [testData.generateAcceptedInsurance()],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
@@ -343,7 +352,8 @@ describe('error path: validations healthcare professionals', () => {
                     degrees: testData.generateDegrees(),
                     specialties: testData.generateSpecialties(),
                     spokenLanguages: testData.generateSpokenLanguages(),
-                    acceptedInsurance: []
+                    acceptedInsurance: [],
+                    additionalInfoForPatients: ''
                 }
             }
         } as gqlMutation<CreateHealthcareProfessionalInput>
