@@ -180,6 +180,7 @@ export type HealthcareProfessionalSubmission = {
 
 export enum Insurance {
   InsuranceNotAccepted = 'INSURANCE_NOT_ACCEPTED',
+  InternationalHealthInsurance = 'INTERNATIONAL_HEALTH_INSURANCE',
   JapaneseHealthInsurance = 'JAPANESE_HEALTH_INSURANCE',
   TravelInsurance = 'TRAVEL_INSURANCE',
   Uninsured = 'UNINSURED'
