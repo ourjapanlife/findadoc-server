@@ -655,7 +655,8 @@ function mapGqlEntityToDbEntity(newHealthcareProfessionalId: string,
         //business rule: createdDate cannot be set by the user.
         createdDate: new Date().toISOString(),
         //business rule: updatedDate is updated on every change.
-        updatedDate: new Date().toISOString()
+        updatedDate: new Date().toISOString(),
+        additionalInfoForPatients: input.additionalInfoForPatients as string
     } satisfies dbSchema.HealthcareProfessional
 }
 
@@ -670,7 +671,8 @@ function mapDbEntityTogqlEntity(dbEntity: DocumentData)
         acceptedInsurance: dbEntity.acceptedInsurance,
         facilityIds: dbEntity.facilityIds,
         createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
+        updatedDate: new Date().toISOString(),
+        additionalInfoForPatients: dbEntity.additionalInfoForPatients
     } satisfies gqlTypes.HealthcareProfessional
 
     return gqlEntity

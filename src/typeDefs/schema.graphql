@@ -60,6 +60,7 @@ type HealthcareProfessional {
   facilityIds: [ID!]!
   createdDate: String!
   updatedDate: String!
+  additionalInfoForPatients: String
 }
 
 input CreateHealthcareProfessionalInput {
@@ -69,6 +70,7 @@ input CreateHealthcareProfessionalInput {
   specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   facilityIds: [ID!]!
+  additionalInfoForPatients: String
 }
 
 input UpdateHealthcareProfessionalInput {
@@ -78,6 +80,7 @@ input UpdateHealthcareProfessionalInput {
   specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
   facilityIds: [Relationship!]
+  additionalInfoForPatients: String
 }
 
 # You can search for healthcare professional using any of combination these fields (AND operators)
