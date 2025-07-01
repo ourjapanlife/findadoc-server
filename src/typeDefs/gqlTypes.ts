@@ -62,6 +62,7 @@ export type CreateFacilityInput = {
 
 export type CreateHealthcareProfessionalInput = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
+  additionalInfoForPatients?: InputMaybe<Scalars['String']['input']>;
   degrees?: InputMaybe<Array<Degree>>;
   facilityIds: Array<Scalars['ID']['input']>;
   names: Array<LocalizedNameInput>;
@@ -144,6 +145,7 @@ export type FacilitySubmission = {
 export type HealthcareProfessional = {
   __typename?: 'HealthcareProfessional';
   acceptedInsurance: Array<Insurance>;
+  additionalInfoForPatients?: Maybe<Scalars['String']['output']>;
   createdDate: Scalars['String']['output'];
   degrees: Array<Degree>;
   facilityIds: Array<Scalars['ID']['output']>;
@@ -528,6 +530,7 @@ export type UpdateFacilityInput = {
 
 export type UpdateHealthcareProfessionalInput = {
   acceptedInsurance?: InputMaybe<Array<Insurance>>;
+  additionalInfoForPatients?: InputMaybe<Scalars['String']['input']>;
   degrees?: InputMaybe<Array<Degree>>;
   facilityIds?: InputMaybe<Array<Relationship>>;
   names?: InputMaybe<Array<LocalizedNameInput>>;
@@ -751,6 +754,7 @@ export type FacilitySubmissionResolvers<ContextType = any, ParentType extends Re
 
 export type HealthcareProfessionalResolvers<ContextType = any, ParentType extends ResolversParentTypes['HealthcareProfessional'] = ResolversParentTypes['HealthcareProfessional']> = {
   acceptedInsurance?: Resolver<Array<ResolversTypes['Insurance']>, ParentType, ContextType>;
+  additionalInfoForPatients?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   degrees?: Resolver<Array<ResolversTypes['Degree']>, ParentType, ContextType>;
   facilityIds?: Resolver<Array<ResolversTypes['ID']>, ParentType, ContextType>;
