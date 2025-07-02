@@ -130,6 +130,7 @@ type HealthcareProfessionalSubmission {
   degrees: [Degree!]
   specialties: [Specialty!]
   acceptedInsurance: [Insurance!]
+  additionalInfoForPatients: String
   facilityIds: [ID!]!
 }
 
