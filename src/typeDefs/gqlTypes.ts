@@ -172,6 +172,7 @@ export type HealthcareProfessionalSearchFilters = {
 export type HealthcareProfessionalSubmission = {
   __typename?: 'HealthcareProfessionalSubmission';
   acceptedInsurance?: Maybe<Array<Insurance>>;
+  additionalInfoForPatients?: Maybe<Scalars['String']['output']>;
   degrees?: Maybe<Array<Degree>>;
   facilityIds: Array<Scalars['ID']['output']>;
   id?: Maybe<Scalars['ID']['output']>;
@@ -768,6 +769,7 @@ export type HealthcareProfessionalResolvers<ContextType = any, ParentType extend
 
 export type HealthcareProfessionalSubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['HealthcareProfessionalSubmission'] = ResolversParentTypes['HealthcareProfessionalSubmission']> = {
   acceptedInsurance?: Resolver<Maybe<Array<ResolversTypes['Insurance']>>, ParentType, ContextType>;
+  additionalInfoForPatients?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   degrees?: Resolver<Maybe<Array<ResolversTypes['Degree']>>, ParentType, ContextType>;
   facilityIds?: Resolver<Array<ResolversTypes['ID']>, ParentType, ContextType>;
   id?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
