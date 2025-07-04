@@ -1,5 +1,6 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { faker, fakerJA } from '@faker-js/faker'
+import { randomPrefecture } from '../../utils/japanesePrefectures.js'
 
 export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: string[])
     : gqlTypes.CreateFacilityInput {
@@ -11,6 +12,8 @@ export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: st
     const firstNameJa = fakerJA.person.lastName()
     const lastNameJa = fakerJA.person.lastName()
     const fullJapaneseName = fakerJA.person.fullName({ firstName: firstNameJa, lastName: lastNameJa, sex })
+
+    const { en: prefectureEn, ja: prefectureJa } = randomPrefecture()
 
     return {
         nameEn: fullEnglishName,
@@ -31,8 +34,8 @@ export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: st
                 cityEn: faker.location.city(),
                 cityJa: fakerJA.location.city(),
                 postalCode: faker.location.zipCode(),
-                prefectureEn: faker.location.state(),
-                prefectureJa: fakerJA.location.state()
+                prefectureEn: prefectureEn,
+                prefectureJa: prefectureJa
             }
         }
     }
