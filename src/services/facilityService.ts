@@ -73,6 +73,8 @@ Promise<Result<gqlTypes.Facility[]>> {
 
         let searchRef: Query<DocumentData> = dbInstance.collection('facilities')
 
+        const results: gqlTypes.Facility[] = []
+
         if (filters.nameEn) {
             searchRef = searchRef.where('nameEn', '==', filters.nameEn)
         }
@@ -82,7 +84,15 @@ Promise<Result<gqlTypes.Facility[]>> {
         }
 
         if (filters.healthcareProfessionalIds && filters.healthcareProfessionalIds.length > 0) {
-            searchRef = searchRef.where('healthcareProfessionalIds', 'array-contains-any', filters.healthcareProfessionalIds)
+            //searchRef = searchRef.where('healthcareProfessionalIds', 'array-contains-any', filters.healthcareProfessionalIds)
+            const chunks = chunkArray(filters.healthcareProfessionalIds!, 30)
+            const snapshots = await Promise.all(chunks.map(chunk =>
+                dbInstance.collection('facilities') 
+                    .where('healthcareProfessionalIds', 'array-contains-any', chunk) 
+                    .get()))
+
+            snapshots.forEach(snap =>
+                snap.forEach(doc => results.push({ ...doc.data(), id: doc.id } as gqlTypes.Facility)))
         }
 
         if (filters.createdDate) {
