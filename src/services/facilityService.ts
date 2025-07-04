@@ -8,6 +8,7 @@ import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { updateHealthcareProfessionalsWithFacilityIdChanges } from './healthcareProfessionalService.js'
 import { logger } from '../logger.js'
 import { createAuditLog } from './auditLogService.js'
+import { chunkArray } from '../../utils/arrayUtils.js'
 
 /**
  * Gets the Facility from the database that matches on the id.
@@ -72,6 +73,8 @@ Promise<Result<gqlTypes.Facility[]>> {
 
         let searchRef: Query<DocumentData> = dbInstance.collection('facilities')
 
+        const results: gqlTypes.Facility[] = []
+
         if (filters.nameEn) {
             searchRef = searchRef.where('nameEn', '==', filters.nameEn)
         }
@@ -81,7 +84,15 @@ Promise<Result<gqlTypes.Facility[]>> {
         }
 
         if (filters.healthcareProfessionalIds && filters.healthcareProfessionalIds.length > 0) {
-            searchRef = searchRef.where('healthcareProfessionalIds', 'array-contains-any', filters.healthcareProfessionalIds)
+            //searchRef = searchRef.where('healthcareProfessionalIds', 'array-contains-any', filters.healthcareProfessionalIds)
+            const chunks = chunkArray(filters.healthcareProfessionalIds!, 30)
+            const snapshots = await Promise.all(chunks.map(chunk =>
+                dbInstance.collection('facilities') 
+                    .where('healthcareProfessionalIds', 'array-contains-any', chunk) 
+                    .get()))
+
+            snapshots.forEach(snap =>
+                snap.forEach(doc => results.push({ ...doc.data(), id: doc.id } as gqlTypes.Facility)))
         }
 
         if (filters.createdDate) {
@@ -384,10 +395,22 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             }
         }
 
-        const facilityQuery = dbInstance.collection('facilities').where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId))
+        const MAX_BATCH_SIZE = 30
+
+        const allFacilitiesIds = facilitiesToUpdate.map(f => f.otherEntityId)
+        const chunks = chunkArray(allFacilitiesIds, MAX_BATCH_SIZE)
+
+        const querySnapshot = await Promise.all(
+            chunks.map(chunk =>
+                dbInstance.collection('facilities').where('id', 'in', chunk).get())
+        )
+
+        const allFacilityDocuments = querySnapshot.flatMap(snapshot => snapshot.docs)
+
+        //const facilityQuery = dbInstance.collection('facilities').where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first. 
-        const allFacilityDocuments = await facilityQuery.get()
-        const dbFacilitiesToUpdate = allFacilityDocuments.docs ?? []
+        //const allFacilityDocuments = await facilityQuery.get()
+        const dbFacilitiesToUpdate = allFacilityDocuments ?? []
 
         dbFacilitiesToUpdate.forEach(dbFacility => {
             const matchingRelationship = facilitiesToUpdate.find(f => f.otherEntityId === dbFacility.id)

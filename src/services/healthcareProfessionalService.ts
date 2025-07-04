@@ -8,6 +8,7 @@ import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } 
 import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { logger } from '../logger.js'
 import { createAuditLog } from './auditLogService.js'
+import { chunkArray } from '../../utils/arrayUtils.js'
 
 /**
  * Gets the Healthcare Professional from the database that matches on the id.
@@ -72,6 +73,8 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
 
         let searchRef: Query<DocumentData> = dbInstance.collection('healthcareProfessionals')
 
+        const results: gqlTypes.HealthcareProfessional[] = []
+
         //firebase restriction: we can't do more than 1 'array-contains-any' filter in a single query, so we have to do this after the query
         const hasSpecialtiesFilter = filters.specialties && filters.specialties.length > 0
         const hasSpokenLanguagesFilter = filters.spokenLanguages && filters.spokenLanguages.length > 0
@@ -85,7 +88,40 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
                                     && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
 
         //specialties will likely return the smallest result set, so this should be the most performant.
+
         if (shouldFilterBySpecialties) {
+            const chunks = chunkArray(filters.specialties!, 30)
+            const snapshots = await Promise.all(chunks.map(chunk =>
+                dbInstance.collection('healthcareProfessionals')
+                    .where('specialties', 'array-contains-any', chunk)
+                    .get()))
+
+            snapshots.forEach(snap =>
+                snap.forEach(doc => results.push({ ...doc.data(), id: doc.id } as gqlTypes.HealthcareProfessional)))
+        }
+      
+        if (shouldFilterBySpokenLanguages) {
+            const chunks = chunkArray(filters.spokenLanguages!, 30)
+            const snapshots = await Promise.all(chunks.map(chunk =>
+                dbInstance.collection('healthcareProfessionals')
+                    .where('spokenLanguages', 'array-contains-any', chunk)
+                    .get()))
+
+            snapshots.forEach(snap =>
+                snap.forEach(doc => results.push({ ...doc.data(), id: doc.id } as gqlTypes.HealthcareProfessional)))
+        }
+
+        if (shouldFilterByDegrees) {
+            const chunks = chunkArray(filters.degrees!, 30)
+            const snapshots = await Promise.all(chunks.map(chunk =>
+                dbInstance.collection('healthcareProfessionals')
+                    .where('degrees', 'array-contains-any', chunk)
+                    .get()))
+
+            snapshots.forEach(snap =>
+                snap.forEach(doc => results.push({ ...doc.data(), id: doc.id } as gqlTypes.HealthcareProfessional)))
+        }
+        /*if (shouldFilterBySpecialties) {
             searchRef = searchRef.where('specialties', 'array-contains-any', filters.specialties)
         }
 
@@ -95,7 +131,7 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
 
         if (shouldFilterByDegrees) {
             searchRef = searchRef.where('degrees', 'array-contains-any', filters.degrees)
-        }
+        }*/
 
         if (shouldFilterByNames) {
             // Extra check is needed to get the first index of names array filter.
@@ -584,12 +620,24 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
         }
 
-        const professionalsQuery = dbInstance.collection('healthcareProfessionals').where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId))
+        const MAX_BATCH_SIZE = 30
+
+        const allProfessionalIds = professionalRelationshipsToUpdate.map(f => f.otherEntityId)
+        const chunks = chunkArray(allProfessionalIds, MAX_BATCH_SIZE)
+
+        // A Firestore transaction requires all reads before any writes — esegui tutte le query prima
+        const querySnapshots = await Promise.all(
+            chunks.map(chunk =>
+                dbInstance.collection('healthcareProfessionals').where('id', 'in', chunk).get())
+        )
+
+        const allProfessionalDocuments = querySnapshots.flatMap(snapshot => snapshot.docs)
+        //const professionalsQuery = dbInstance.collection('healthcareProfessionals').where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first.
-        const allProfessionalDocuments = await professionalsQuery.get()
-        const dbProfessionalsToUpdate = allProfessionalDocuments.docs.map(d => ({
-            ref: d.ref,
-            data: d.data()
+        //const allProfessionalDocuments = await professionalsQuery.get()
+        const dbProfessionalsToUpdate = allProfessionalDocuments.map(document => ({
+            ref: document.ref,
+            data: document.data()
         }))
 
         dbProfessionalsToUpdate.forEach(({ ref, data: dbProfessional }) => {
