@@ -600,9 +600,9 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
         //const professionalsQuery = dbInstance.collection('healthcareProfessionals').where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first.
         //const allProfessionalDocuments = await professionalsQuery.get()
-        const dbProfessionalsToUpdate = allProfessionalDocuments.map(d => ({
-            ref: d.ref,
-            data: d.data()
+        const dbProfessionalsToUpdate = allProfessionalDocuments.map(document => ({
+            ref: document.ref,
+            data: document.data()
         }))
 
         dbProfessionalsToUpdate.forEach(({ ref, data: dbProfessional }) => {
