@@ -8,6 +8,7 @@ import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { updateHealthcareProfessionalsWithFacilityIdChanges } from './healthcareProfessionalService.js'
 import { logger } from '../logger.js'
 import { createAuditLog } from './auditLogService.js'
+import { chunkArray } from '../../utils/arrayUtils.js'
 
 /**
  * Gets the Facility from the database that matches on the id.
@@ -385,11 +386,6 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
         }
 
         const MAX_BATCH_SIZE = 30
-
-        function chunkArray<T>(arr: T[], size: number): T[][] {
-            return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-                arr.slice(i * size, i * size + size))
-        }
 
         const allFacilitiesIds = facilitiesToUpdate.map(f => f.otherEntityId)
         const chunks = chunkArray(allFacilitiesIds, MAX_BATCH_SIZE)

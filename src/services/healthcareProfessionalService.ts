@@ -8,6 +8,7 @@ import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } 
 import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { logger } from '../logger.js'
 import { createAuditLog } from './auditLogService.js'
+import { chunkArray } from '../../utils/arrayUtils.js'
 
 /**
  * Gets the Healthcare Professional from the database that matches on the id.
@@ -585,11 +586,6 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
         }
 
         const MAX_BATCH_SIZE = 30
-
-        function chunkArray<T>(arr: T[], size: number): T[][] {
-            return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-                arr.slice(i * size, i * size + size))
-        }
 
         const allProfessionalIds = professionalRelationshipsToUpdate.map(f => f.otherEntityId)
         const chunks = chunkArray(allProfessionalIds, MAX_BATCH_SIZE)
