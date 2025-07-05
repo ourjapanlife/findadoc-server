@@ -172,6 +172,22 @@ input SubmissionSearchFilters {
   offset: Int
 }
 
+# === (Connection Types) ===
+type FacilityConnection {
+  data: [Facility!]!
+  totalCount: Int!
+}
+
+type HealthcareProfessionalConnection {
+  data: [HealthcareProfessional!]!
+  totalCount: Int!
+}
+
+type SubmissionConnection {
+  data: [Submission!]!
+  totalCount: Int!
+}
+
 type AuditLog {
   id: ID!
   actionType: ActionType!
@@ -424,13 +440,13 @@ type DeleteResult {
 
 type Query {
   facility(id: ID!): Facility
-  facilities(filters: FacilitySearchFilters!): [Facility!]!
+  facilities(filters: FacilitySearchFilters!): FacilityConnection!
   healthcareProfessional(id: ID!): HealthcareProfessional
   healthcareProfessionals(
     filters: HealthcareProfessionalSearchFilters!
-  ): [HealthcareProfessional!]!
+  ): HealthcareProfessionalConnection!
   submission(id: ID!): Submission
-  submissions(filters: SubmissionSearchFilters!): [Submission!]!
+  submissions(filters: SubmissionSearchFilters!): SubmissionConnection!
   auditLog(id: ID): AuditLog
 }
 
