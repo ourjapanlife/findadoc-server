@@ -62,12 +62,19 @@ export const getFacilityById = async (id: string)
  * @returns The matching Facilities.
  */
 export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters = {}):
-Promise<Result<gqlTypes.Facility[]>> {
+Promise<Result<gqlTypes.FacilityConnection>> {
     try {
         const validationResult = validateFacilitiesSearchInput(filters)
 
         if (validationResult.hasErrors) {
-            return validationResult as Result<gqlTypes.Facility[]>
+            //return validationResult as Result<gqlTypes.FacilityConnection>
+            return {
+                ...validationResult,
+                data: {
+                    data: [],
+                    totalCount: 0
+                }
+            }
         }
 
         let searchRef: Query<DocumentData> = dbInstance.collection('facilities')
@@ -92,6 +99,9 @@ Promise<Result<gqlTypes.Facility[]>> {
             searchRef = searchRef.where('updatedDate', '==', filters.updatedDate)
         }
 
+        const countQuery = await searchRef.count().get()
+        const totalCount = countQuery.data().count
+
         if (filters.orderBy && Array.isArray(filters.orderBy)) {
             filters.orderBy.forEach(order => {
                 if (order) {
@@ -112,14 +122,20 @@ Promise<Result<gqlTypes.Facility[]>> {
             mapDbEntityTogqlEntity(dbFacility.data() as dbSchema.Facility))
 
         return {
-            data: gqlFacilities,
+            data: {
+                data: gqlFacilities,
+                totalCount: totalCount
+            },
             hasErrors: false
         }
     } catch (error) {
         logger.error(`ERROR: Error retrieving facilities by filters ${JSON.stringify(filters)}: ${error}`)
 
         return {
-            data: [],
+            data: {
+                data: [],
+                totalCount: 0
+            },
             hasErrors: true,
             errors: [{
                 field: 'searchFacilities',
