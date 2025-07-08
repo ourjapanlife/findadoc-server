@@ -78,6 +78,15 @@ export type CreateSubmissionInput = {
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
+export enum CreditCardOption {
+    Visa,
+    Master,
+    Amex,
+    Jcb,
+    Diners,
+    AmericanExpress
+}
+
 export enum Degree {
   Cnm = 'CNM',
   Dc = 'DC',
