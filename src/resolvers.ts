@@ -28,7 +28,7 @@ const resolvers = {
             return queryResults.data
         },
         facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters }, context: UserContext)
-        : Promise<gqlType.Facility[]> => {
+        : Promise<gqlType.FacilityConnection> => {
             const isAuthorized = authorize(context.user, [Scope['read:facilities']])
             
             if (!isAuthorized) {
@@ -43,7 +43,7 @@ const resolvers = {
             const queryResults = await facilityService.searchFacilities(args.filters)
 
             convertErrorsToGqlErrors(queryResults)
-            return queryResults.data
+            return queryResults.data as gqlType.FacilityConnection
         },
         healthcareProfessional: async (_parent: unknown, args: { id: string; }, context: UserContext)
         : Promise<gqlType.HealthcareProfessional> => {
@@ -67,7 +67,7 @@ const resolvers = {
         healthcareProfessionals: async (_parent: unknown, args: {
             filters: gqlType.HealthcareProfessionalSearchFilters
         }, context: UserContext)
-        : Promise<gqlType.HealthcareProfessional[]> => {
+        : Promise<gqlType.HealthcareProfessionalConnection> => {
             const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
             
             if (!isAuthorized) {

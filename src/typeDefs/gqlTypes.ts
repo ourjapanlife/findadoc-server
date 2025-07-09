@@ -120,7 +120,7 @@ export type Facility = {
 
 export type FacilityConnection = {
   __typename?: 'FacilityConnection';
-  data: Array<Facility>;
+  nodes: Array<Facility>;
   totalCount: Scalars['Int']['output'];
 };
 
@@ -164,7 +164,7 @@ export type HealthcareProfessional = {
 
 export type HealthcareProfessionalConnection = {
   __typename?: 'HealthcareProfessionalConnection';
-  data: Array<HealthcareProfessional>;
+  nodes: Array<HealthcareProfessional>;
   totalCount: Scalars['Int']['output'];
 };
 
@@ -520,7 +520,7 @@ export type Submission = {
 
 export type SubmissionConnection = {
   __typename?: 'SubmissionConnection';
-  data: Array<Submission>;
+  nodes: Array<Submission>;
   totalCount: Scalars['Int']['output'];
 };
 
@@ -767,7 +767,7 @@ export type FacilityResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type FacilityConnectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['FacilityConnection'] = ResolversParentTypes['FacilityConnection']> = {
-  data?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType>;
+  nodes?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -798,7 +798,7 @@ export type HealthcareProfessionalResolvers<ContextType = any, ParentType extend
 };
 
 export type HealthcareProfessionalConnectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['HealthcareProfessionalConnection'] = ResolversParentTypes['HealthcareProfessionalConnection']> = {
-  data?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType>;
+  nodes?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -877,7 +877,7 @@ export type SubmissionResolvers<ContextType = any, ParentType extends ResolversP
 };
 
 export type SubmissionConnectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['SubmissionConnection'] = ResolversParentTypes['SubmissionConnection']> = {
-  data?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType>;
+  nodes?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

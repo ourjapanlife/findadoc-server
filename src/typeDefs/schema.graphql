@@ -174,17 +174,17 @@ input SubmissionSearchFilters {
 
 # === (Connection Types) ===
 type FacilityConnection {
-  data: [Facility!]!
+  nodes: [Facility!]!
   totalCount: Int!
 }
 
 type HealthcareProfessionalConnection {
-  data: [HealthcareProfessional!]!
+  nodes: [HealthcareProfessional!]!
   totalCount: Int!
 }
 
 type SubmissionConnection {
-  data: [Submission!]!
+  nodes: [Submission!]!
   totalCount: Int!
 }
 

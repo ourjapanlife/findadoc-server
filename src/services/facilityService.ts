@@ -74,7 +74,7 @@ Promise<Result<gqlTypes.FacilityConnection>> {
             return {
                 ...validationResult,
                 data: {
-                    data: [],
+                    nodes: [],
                     totalCount: 0
                 }
             }
@@ -172,10 +172,7 @@ Promise<Result<gqlTypes.FacilityConnection>> {
                                 )
                             } else {
                                 //if one of two values are not ad ComparablePrimitive run error
-                                //throw new Error(`Sorting by field '${String(fieldName)}' is not supported. It contains a non-comparable type (e.g., object or array).`)
-                                currentComparison = 0 // Treat not-confrontable like equal
-                                //I'M DOING THIS BECASE BEFORE WITH THROW ERROR THE ENTIRE APP WAS BROKEN
-                                console.warn(`Attempted to sort by non-comparable field '${String(fieldName)}'. Skipping comparison.`)
+                                throw new Error(`Sorting by field '${String(fieldName)}' is not supported. It contains a non-comparable type (e.g., object or array).`)
                             }
                         }
 
@@ -270,7 +267,7 @@ Promise<Result<gqlTypes.FacilityConnection>> {
 
         return {
             data: {
-                data: allGqlFacilities,
+                nodes: allGqlFacilities,
                 totalCount: totalCount
             },
             hasErrors: false
@@ -280,7 +277,7 @@ Promise<Result<gqlTypes.FacilityConnection>> {
 
         return {
             data: {
-                data: [],
+                nodes: [],
                 totalCount: 0
             },
             hasErrors: true,
