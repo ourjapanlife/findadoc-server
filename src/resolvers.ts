@@ -104,7 +104,7 @@ const resolvers = {
             return matchingSubmissionResult.data
         },
         submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: UserContext)
-        : Promise<gqlType.Submission[]> => {
+        : Promise<gqlType.SubmissionConnection> => {
             const isAuthorized = authorize(context.user, [Scope['read:submissions']])
 
             if (!isAuthorized) {

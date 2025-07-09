@@ -10,8 +10,6 @@ import { logger } from '../logger.js'
 import { createAuditLog } from './auditLogService.js'
 import { chunkArray } from '../../utils/arrayUtils.js'
 
-type ComparablePrimitive = string | number | boolean
-
 /**
  * Gets the Facility from the database that matches on the id.
  * @param id A string that matches the id of the Firestore Document for the Facility.
@@ -124,6 +122,8 @@ Promise<Result<gqlTypes.FacilityConnection>> {
             if (filters.updatedDate) {
                 allGqlFacilities = allGqlFacilities.filter(f => f.updatedDate === filters.updatedDate)
             }
+
+            type ComparablePrimitive = string | number | boolean
 
             // Order the results in memoryy
             if (filters.orderBy && Array.isArray(filters.orderBy)) {
