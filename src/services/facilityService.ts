@@ -544,10 +544,20 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             }
         }
 
-        const facilityQuery = dbInstance.collection('facilities').where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId))
+        const allFacilitiesIds = facilitiesToUpdate.map(f => f.otherEntityId)
+        const chunks = chunkArray(allFacilitiesIds, 30)
+
+        const querySnapshot = await Promise.all(
+            chunks.map(chunk =>
+                dbInstance.collection('facilities').where('id', 'in', chunk).get())
+        )
+
+        const allFacilityDocuments = querySnapshot.flatMap(snapshot => snapshot.docs)
+
+        //const facilityQuery = dbInstance.collection('facilities').where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first. 
-        const allFacilityDocuments = await facilityQuery.get()
-        const dbFacilitiesToUpdate = allFacilityDocuments.docs ?? []
+        //const allFacilityDocuments = await facilityQuery.get()
+        const dbFacilitiesToUpdate = allFacilityDocuments ?? []
 
         dbFacilitiesToUpdate.forEach(dbFacility => {
             const matchingRelationship = facilitiesToUpdate.find(f => f.otherEntityId === dbFacility.id)

@@ -810,12 +810,24 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
         }
 
-        const professionalsQuery = dbInstance.collection('healthcareProfessionals').where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId))
+        const MAX_BATCH_SIZE = 30
+
+        const allProfessionalIds = professionalRelationshipsToUpdate.map(f => f.otherEntityId)
+        const chunks = chunkArray(allProfessionalIds, MAX_BATCH_SIZE)
+
+        // A Firestore transaction requires all reads before any writes — esegui tutte le query prima
+        const querySnapshots = await Promise.all(
+            chunks.map(chunk =>
+                dbInstance.collection('healthcareProfessionals').where('id', 'in', chunk).get())
+        )
+
+        const allProfessionalDocuments = querySnapshots.flatMap(snapshot => snapshot.docs)
+        //const professionalsQuery = dbInstance.collection('healthcareProfessionals').where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId))
         // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first.
-        const allProfessionalDocuments = await professionalsQuery.get()
-        const dbProfessionalsToUpdate = allProfessionalDocuments.docs.map(d => ({
-            ref: d.ref,
-            data: d.data()
+        //const allProfessionalDocuments = await professionalsQuery.get()
+        const dbProfessionalsToUpdate = allProfessionalDocuments.map(document => ({
+            ref: document.ref,
+            data: document.data()
         }))
 
         dbProfessionalsToUpdate.forEach(({ ref, data: dbProfessional }) => {
