@@ -78,15 +78,6 @@ export type CreateSubmissionInput = {
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
-export enum CreditCardOption {
-    Visa,
-    Master,
-    Amex,
-    Jcb,
-    Diners,
-    AmericanExpress
-}
-
 export enum Degree {
   Cnm = 'CNM',
   Dc = 'DC',
@@ -124,6 +115,7 @@ export type Facility = {
   mapLongitude: Scalars['Float']['output'];
   nameEn: Scalars['String']['output'];
   nameJa: Scalars['String']['output'];
+  payment: Array<Record<PaymentType, PaymentTypeInfo>>;
   updatedDate: Scalars['String']['output'];
 };
 
@@ -358,6 +350,35 @@ export type OrderBy = {
 export enum OrderDirection {
   Asc = 'asc',
   Desc = 'desc'
+}
+
+export enum PaymentBrand {
+    CASH,
+    VISA,
+    MASTER,
+    AMEX,
+    DinersClub,
+    JCB,
+    PayPay,
+    nanaco,
+    JDEBIT,
+    Suica
+}
+
+export type PaymentBrandInfo = {
+    label: Scalars['String']['output'];
+    icon: Scalars['String']['output'];
+}
+
+export enum PaymentType {
+    CASH,
+    CreditCard,
+    Electronic
+}
+
+export type PaymentTypeInfo = {
+    label: Scalars['String']['output'];
+    brands: Array<Record<PaymentBrand, PaymentBrandInfo>>
 }
 
 export type PhysicalAddress = {
