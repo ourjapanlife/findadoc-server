@@ -280,6 +280,7 @@ export type Mutation = {
   updateFacility: Facility;
   updateHealthcareProfessional: HealthcareProfessional;
   updateSubmission: Submission;
+  updateUserAccount: UserAccountInfo;
 };
 
 
@@ -333,6 +334,11 @@ export type MutationUpdateHealthcareProfessionalArgs = {
 export type MutationUpdateSubmissionArgs = {
   id: Scalars['ID']['input'];
   input: UpdateSubmissionInput;
+};
+
+
+export type MutationUpdateUserAccountArgs = {
+  input: UpdateUserAccountInput;
 };
 
 export enum ObjectType {
@@ -552,6 +558,27 @@ export type UpdateSubmissionInput = {
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
+export type UpdateUserAccountInput = {
+  userMetadata: UserMetadataInput;
+};
+
+export type UserAccountInfo = {
+  __typename?: 'UserAccountInfo';
+  userMetadata: UserMetadata;
+};
+
+export type UserMetadata = {
+  __typename?: 'UserMetadata';
+  displayImage?: Maybe<Scalars['String']['output']>;
+  displayName?: Maybe<Scalars['String']['output']>;
+  lastProfileUpdate?: Maybe<Scalars['String']['output']>;
+};
+
+export type UserMetadataInput = {
+  displayImage?: InputMaybe<Scalars['String']['input']>;
+  displayName?: InputMaybe<Scalars['String']['input']>;
+};
+
 
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -665,6 +692,10 @@ export type ResolversTypes = {
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
   UpdateSubmissionInput: UpdateSubmissionInput;
+  UpdateUserAccountInput: UpdateUserAccountInput;
+  UserAccountInfo: ResolverTypeWrapper<UserAccountInfo>;
+  UserMetadata: ResolverTypeWrapper<UserMetadata>;
+  UserMetadataInput: UserMetadataInput;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -701,6 +732,10 @@ export type ResolversParentTypes = {
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
   UpdateSubmissionInput: UpdateSubmissionInput;
+  UpdateUserAccountInput: UpdateUserAccountInput;
+  UserAccountInfo: UserAccountInfo;
+  UserMetadata: UserMetadata;
+  UserMetadataInput: UserMetadataInput;
 };
 
 export type AuditLogResolvers<ContextType = any, ParentType extends ResolversParentTypes['AuditLog'] = ResolversParentTypes['AuditLog']> = {
@@ -798,6 +833,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateFacility?: Resolver<ResolversTypes['Facility'], ParentType, ContextType, RequireFields<MutationUpdateFacilityArgs, 'id' | 'input'>>;
   updateHealthcareProfessional?: Resolver<ResolversTypes['HealthcareProfessional'], ParentType, ContextType, RequireFields<MutationUpdateHealthcareProfessionalArgs, 'id' | 'input'>>;
   updateSubmission?: Resolver<ResolversTypes['Submission'], ParentType, ContextType, RequireFields<MutationUpdateSubmissionArgs, 'id' | 'input'>>;
+  updateUserAccount?: Resolver<ResolversTypes['UserAccountInfo'], ParentType, ContextType, RequireFields<MutationUpdateUserAccountArgs, 'input'>>;
 };
 
 export type PhysicalAddressResolvers<ContextType = any, ParentType extends ResolversParentTypes['PhysicalAddress'] = ResolversParentTypes['PhysicalAddress']> = {
@@ -840,6 +876,18 @@ export type SubmissionResolvers<ContextType = any, ParentType extends ResolversP
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type UserAccountInfoResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserAccountInfo'] = ResolversParentTypes['UserAccountInfo']> = {
+  userMetadata?: Resolver<ResolversTypes['UserMetadata'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type UserMetadataResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserMetadata'] = ResolversParentTypes['UserMetadata']> = {
+  displayImage?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  displayName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lastProfileUpdate?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = any> = {
   AuditLog?: AuditLogResolvers<ContextType>;
   Contact?: ContactResolvers<ContextType>;
@@ -853,5 +901,7 @@ export type Resolvers<ContextType = any> = {
   PhysicalAddress?: PhysicalAddressResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Submission?: SubmissionResolvers<ContextType>;
+  UserAccountInfo?: UserAccountInfoResolvers<ContextType>;
+  UserMetadata?: UserMetadataResolvers<ContextType>;
 };
 

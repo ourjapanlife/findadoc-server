@@ -420,6 +420,26 @@ type DeleteResult {
   isSuccessful: Boolean!
 }
 
+# ======== User Management ========
+type UserMetadata {
+  lastProfileUpdate: String
+  displayName: String
+  displayImage: String
+}
+
+type UserAccountInfo {
+  userMetadata: UserMetadata!
+}
+
+input UpdateUserAccountInput {
+  userMetadata: UserMetadataInput!
+}
+
+input UserMetadataInput {
+  displayName: String
+  displayImage: String
+}
+
 # ======== Queries =========
 
 type Query {
@@ -461,4 +481,6 @@ type Mutation {
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission!
 
   deleteSubmission(id: ID!): DeleteResult!
+
+  updateUserAccount(input: UpdateUserAccountInput!): UserAccountInfo!
 }
