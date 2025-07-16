@@ -239,10 +239,6 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
                 subRef = subRef.where('updatedDate', '==', filters.updatedDate)
             }
 
-            const countQuerySnapshot = await subRef.count().get()
-
-            totalCount = countQuerySnapshot.data().count
-
             if (filters.orderBy && Array.isArray(filters.orderBy)) {
                 filters.orderBy.forEach(order => {
                     if (order) {
@@ -260,7 +256,12 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
             const dbDocument = await subRef.get()
             const dbSubmissions = dbDocument.docs
 
-            allGqlSubmissions = dbSubmissions.map(dbSubmission =>
+            totalCount = dbSubmissions.length
+
+            const paginatedSubmissions = dbSubmissions.slice(filters.offset || 0, 
+                                                             (filters.offset || 0) + (filters.limit || 20))
+
+            allGqlSubmissions = paginatedSubmissions.map(dbSubmission =>
                 mapDbEntityTogqlEntity(dbSubmission.data() as dbSchema.Submission))
         }
 
