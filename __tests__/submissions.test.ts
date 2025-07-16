@@ -451,7 +451,7 @@ describe('searchSubmissions', () => {
         //should not have errors
         expect(searchResult.body.errors).toBeUndefined()
 
-        const searchedSubmissions = searchResult.body.data.submissions as Submission[]
+        const searchedSubmissions = searchResult.body.data.submissions.nodes as Submission[]
 
         //should not be empty
         expect(searchedSubmissions).toBeDefined()
@@ -575,7 +575,7 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
         expect(errors).toBeUndefined()
     }
 
-    const searchedSubmissions = searchResult.body.data.submissions as Submission[]
+    const searchedSubmissions = searchResult.body.data.submissions.nodes as Submission[]
 
     //should have at least 1 result
     expect(searchedSubmissions).toBeDefined()
@@ -617,20 +617,61 @@ const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
 
 export const searchSubmissionsQuery = /* GraphQL */ `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
     submissions(filters: $filters) {
-        nodes {
-            id
-            googleMapsUrl
-            healthcareProfessionalName
-            isApproved
-            isRejected
-            isUnderReview
-            spokenLanguages
-            createdDate
-            updatedDate
+            nodes {
+                id
+                googleMapsUrl
+                healthcareProfessionalName
+                spokenLanguages
+                facility {
+                    id
+                    mapLatitude
+                    mapLongitude
+                    nameEn
+                    nameJa
+                    contact {
+                        googleMapsUrl
+                        email
+                        phone
+                        website
+                        address {
+                            postalCode
+                            prefectureEn
+                            cityEn
+                            addressLine1En
+                            addressLine2En
+                            prefectureJa
+                            cityJa
+                            addressLine1Ja
+                            addressLine2Ja
+                        }
+                    }
+                    healthcareProfessionalIds
+                }
+                healthcareProfessionals {
+                    id
+                    names {
+                        firstName
+                        middleName
+                        lastName
+                        locale
+                    }
+                    spokenLanguages
+                    degrees
+                    specialties
+                    acceptedInsurance
+                    additionalInfoForPatients
+                    facilityIds
+                }
+                isUnderReview
+                isApproved
+                isRejected
+                createdDate
+                updatedDate
+                notes
+            }
+            totalCount
         }
-        totalCount
-    }
-}`
+    }`
 
 const createSubmissionMutation = `mutation test_createSubmission($input: CreateSubmissionInput!) {
     createSubmission(input: $input) {
