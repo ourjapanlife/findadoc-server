@@ -127,7 +127,13 @@ Promise<Result<gqlTypes.FacilityConnection>> {
 
             // Order the results in memoryy
             if (filters.orderBy && Array.isArray(filters.orderBy)) {
-                // Helper function to compare two defined values.
+                /**
+                 * Compares two primitive values (strings, numbers, or booleans) for sorting.
+                 * It returns:
+                 * - A negative number if 'valA' should come before 'valB'.
+                 * - A positive number if 'valA' should come after 'valB'.
+                 * - 0 if 'valA' and 'valB' are considered equal in terms of sorting order.
+                 */
                 const comparePrimitiveValues = 
                 (valA: ComparablePrimitive, valB: ComparablePrimitive): number => {
                     if (valA < valB) {
