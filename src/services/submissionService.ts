@@ -250,16 +250,17 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
                 subRef = subRef.orderBy('createdDate', gqlTypes.OrderDirection.Desc)
             }
 
-            subRef = subRef.limit(filters.limit || 20)
-            subRef = subRef.offset(filters.offset || 0)
+            // This approach assumes `count().get()` is NOT working due probably an old version of Firestore.
+            const allMatchingDocsSnapshot = await subRef.get()
 
-            const dbDocument = await subRef.get()
-            const dbSubmissions = dbDocument.docs
+            totalCount = allMatchingDocsSnapshot.docs.length
 
-            totalCount = dbSubmissions.length
+            // Calculate start and end indices for in-memory pagination
+            const startIndex = filters.offset || 0
+            const limit = filters.limit || 20
+            const endIndex = startIndex + limit
 
-            const paginatedSubmissions = dbSubmissions.slice(filters.offset || 0, 
-                                                             (filters.offset || 0) + (filters.limit || 20))
+            const paginatedSubmissions = allMatchingDocsSnapshot.docs.slice(startIndex, endIndex)
 
             allGqlSubmissions = paginatedSubmissions.map(dbSubmission =>
                 mapDbEntityTogqlEntity(dbSubmission.data() as dbSchema.Submission))
