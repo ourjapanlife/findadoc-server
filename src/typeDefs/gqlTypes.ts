@@ -132,6 +132,7 @@ export type FacilitySearchFilters = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   nameEn?: InputMaybe<Scalars['String']['input']>;
   nameJa?: InputMaybe<Scalars['String']['input']>;
+  nameOrId?: InputMaybe<Scalars['String']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<OrderBy>>;
   updatedDate?: InputMaybe<Scalars['String']['input']>;
@@ -173,6 +174,7 @@ export type HealthcareProfessionalSearchFilters = {
   createdDate?: InputMaybe<Scalars['String']['input']>;
   degrees?: InputMaybe<Array<Degree>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
+  nameOrId?: InputMaybe<Scalars['String']['input']>;
   names?: InputMaybe<Array<LocalizedNameInput>>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<OrderBy>>;
@@ -532,6 +534,7 @@ export type SubmissionSearchFilters = {
   isRejected?: InputMaybe<Scalars['Boolean']['input']>;
   isUnderReview?: InputMaybe<Scalars['Boolean']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
+  nameOrId?: InputMaybe<Scalars['String']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<OrderBy>>;
   spokenLanguages?: InputMaybe<Array<Locale>>;

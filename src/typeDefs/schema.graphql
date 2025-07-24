@@ -48,6 +48,7 @@ input FacilitySearchFilters {
   orderBy: [OrderBy!]
   limit: Int
   offset: Int
+  nameOrId: String
 }
 
 type HealthcareProfessional {
@@ -95,6 +96,7 @@ input HealthcareProfessionalSearchFilters {
   orderBy: [OrderBy!]
   limit: Int
   offset: Int
+  nameOrId: String
 }
 
 type Submission {
@@ -170,6 +172,7 @@ input SubmissionSearchFilters {
   orderBy: [OrderBy!]
   limit: Int
   offset: Int
+  nameOrId: String
 }
 
 # === (Connection Types) ===

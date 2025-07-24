@@ -25,6 +25,7 @@ function determineFilterPresenceAndDependencies(filters: gqlTypes.HealthcareProf
     const hasSpokenLanguagesFilter = filters.spokenLanguages && filters.spokenLanguages.length > 0
     const hasDegreesFilter = filters.degrees && filters.degrees.length > 0
     const hasNamesFilter = filters.names && filters.names.length > 0
+    const hasNameOrIdFilter = !!filters.nameOrId
 
     // Prioritization for Firestore 'array-contains-any' query.
     // Only one such filter can be directly applied in a single Firestore query.
@@ -33,23 +34,28 @@ function determineFilterPresenceAndDependencies(filters: gqlTypes.HealthcareProf
     const shouldFilterBySpokenLanguages = hasSpokenLanguagesFilter && !hasSpecialtiesFilter
     const shouldFilterByDegrees = hasDegreesFilter && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
     const shouldFilterByNames = hasNamesFilter && !hasDegreesFilter
-                                 && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
+                                && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
+
+    const shouldFilterByNameOrId = hasNameOrIdFilter && !shouldFilterBySpecialties 
+                                && !shouldFilterBySpokenLanguages && !shouldFilterByDegrees && !shouldFilterByNames
 
     // Determines if we need to fetch a broader set of data and perform subsequent filtering/sorting in memory.
     // This is true if any of the array-based filters are used, as they often conflict in Firestore.
-    const needsInMemoryProcessing
-    = shouldFilterBySpecialties || shouldFilterBySpokenLanguages || shouldFilterByDegrees || shouldFilterByNames
+    const needsInMemoryProcessing = shouldFilterBySpecialties || shouldFilterBySpokenLanguages || shouldFilterByDegrees
+                                || shouldFilterByNames || shouldFilterByNameOrId
 
     return {
         hasSpecialtiesFilter, 
         hasSpokenLanguagesFilter, 
         hasDegreesFilter, 
         hasNamesFilter,
+        hasNameOrIdFilter,
         shouldFilterBySpecialties, 
         shouldFilterBySpokenLanguages, 
         shouldFilterByDegrees, 
         shouldFilterByNames,
-        needsInMemoryProcessing
+        needsInMemoryProcessing,
+        shouldFilterByNameOrId
     }
 }
 
@@ -65,7 +71,8 @@ async function fetchInitialProfessionalsIntoMap(
     filterFlags: ReturnType<typeof determineFilterPresenceAndDependencies>
 ): Promise<Map<string, gqlTypes.HealthcareProfessional>> {
     const uniqueProfessionalsMap = new Map<string, gqlTypes.HealthcareProfessional>()
-    const { shouldFilterBySpecialties, shouldFilterBySpokenLanguages, shouldFilterByDegrees, shouldFilterByNames }
+    const { shouldFilterBySpecialties, shouldFilterBySpokenLanguages, 
+        shouldFilterByDegrees, shouldFilterByNames, shouldFilterByNameOrId }
         = filterFlags
 
     // Execute the primary Firestore query based on the determined priority
@@ -106,6 +113,12 @@ async function fetchInitialProfessionalsIntoMap(
 
         snapshot.forEach(doc => 
             uniqueProfessionalsMap.set(doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.HealthcareProfessional)))
+    } else if (shouldFilterByNameOrId) {
+        const snapshot = await dbInstance.collection('healthcareProfessionals').get()
+
+        snapshot.forEach(doc => {
+            uniqueProfessionalsMap.set(doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.HealthcareProfessional))
+        })
     }
     return uniqueProfessionalsMap
 }
@@ -131,6 +144,23 @@ function applyInMemoryFilters(
     }
     if (filters.updatedDate) {
         filteredProfessionals = filteredProfessionals.filter(p => p.updatedDate === filters.updatedDate)
+    }
+
+    if (filterFlags.hasNameOrIdFilter && filters.nameOrId) {
+        const searchTermLower = filters.nameOrId.toLowerCase()
+
+        filteredProfessionals = filteredProfessionals.filter(professional => {
+            if (professional.id.toLowerCase().includes(searchTermLower)) {
+                return true
+            }
+            const matchesName = professional.names.some(name => {
+                const fullName = `${(name.firstName || '')} ${(name.lastName || '')}`.trim().toLowerCase()
+
+                return fullName.includes(searchTermLower)
+            })
+
+            return matchesName
+        })
     }
 
     // Apply secondary array-based filters in memory.

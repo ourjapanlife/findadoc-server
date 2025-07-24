@@ -81,6 +81,12 @@ Promise<Result<gqlTypes.FacilityConnection>> {
         let allGqlFacilities: gqlTypes.Facility[] = []
         let totalCount = 0
 
+        //searchTermLower for find JP/EN name
+        const searchTermLower = filters.nameOrId?.toLowerCase()
+        const isNameOrIdSearch = !!searchTermLower
+
+        type ComparablePrimitive = string | number | boolean
+
         // 2. Determine Query Strategy based on 'healthcareProfessionalIds' filter
         // Firestore has limitations: only one 'array-contains-any' per query.
         // If 'healthcareProfessionalIds' is present, we must use multiple queries (chunking)
@@ -106,24 +112,22 @@ Promise<Result<gqlTypes.FacilityConnection>> {
                 }))
             allGqlFacilities = Array.from(uniqueFacilitiesMap.values())
 
-            // --- Apply other filters in memory ---
-            // These filters (nameEn, nameJa, createdDate, updatedDate) must be applied in memory
-            // because they cannot be combined with the multiple 'array-contains-any' queries in Firestore.
-            if (filters.nameEn) {
-                allGqlFacilities = allGqlFacilities.filter(f => f.nameEn === filters.nameEn)
-            }
-            if (filters.nameJa) {
-                allGqlFacilities = allGqlFacilities.filter(f => f.nameJa === filters.nameJa)
-            }
-            // Assuming createdDate and updatedDate are strings or compatible types for direct comparison.
-            if (filters.createdDate) {
-                allGqlFacilities = allGqlFacilities.filter(f => f.createdDate === filters.createdDate)
-            }
-            if (filters.updatedDate) {
-                allGqlFacilities = allGqlFacilities.filter(f => f.updatedDate === filters.updatedDate)
-            }
+            if (isNameOrIdSearch) {
+                allGqlFacilities = allGqlFacilities.filter(f => {
+                    const idMatch = f.id?.toLowerCase().includes(searchTermLower)
+                    const nameEnMatch = f.nameEn?.toLowerCase().includes(searchTermLower)
+                    const nameJaMatch = f.nameJa?.toLowerCase().includes(searchTermLower)
 
-            type ComparablePrimitive = string | number | boolean
+                    return idMatch || nameEnMatch || nameJaMatch
+                })
+            } else {
+                if (filters.nameEn) {
+                    allGqlFacilities = allGqlFacilities.filter(f => f.nameEn === filters.nameEn)
+                }
+                if (filters.nameJa) {
+                    allGqlFacilities = allGqlFacilities.filter(f => f.nameJa === filters.nameJa)
+                }
+            }
 
             // Order the results in memoryy
             if (filters.orderBy && Array.isArray(filters.orderBy)) {
@@ -221,6 +225,114 @@ Promise<Result<gqlTypes.FacilityConnection>> {
 
             allGqlFacilities = allGqlFacilities.slice(startIndex, endIndex)
         } else {
+            if (isNameOrIdSearch) {
+                const idQuery = dbInstance.collection('facilities').where('id', '==', filters.nameOrId).get()
+                const nameEnQuery = dbInstance.collection('facilities')
+                    .where('nameEn', '>=', searchTermLower)
+                    .where('nameEn', '<=', `${searchTermLower}\uf8ff`)
+                    .get()
+                const nameJaQuery = dbInstance.collection('facilities')
+                    .where('nameJa', '>=', searchTermLower)
+                    .where('nameJa', '<=', `${searchTermLower}\uf8ff`)
+                    .get()
+
+                const [idSnapshot, nameEnSnapshot, nameJaSnapshot] = await Promise.all([
+                    idQuery, nameEnQuery, nameJaQuery
+                ])
+
+                const uniqueFacilitiesMap = new Map<string, gqlTypes.Facility>()
+
+                idSnapshot.forEach(doc => uniqueFacilitiesMap.set(
+                    doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.Facility)
+                ))
+
+                nameEnSnapshot.forEach(doc => uniqueFacilitiesMap.set(
+                    doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.Facility)
+                ))
+                nameJaSnapshot.forEach(doc => uniqueFacilitiesMap.set(
+                    doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.Facility)
+                ))
+
+                allGqlFacilities = Array.from(uniqueFacilitiesMap.values())
+
+                if (filters.createdDate) {
+                    allGqlFacilities = allGqlFacilities.filter(f => f.createdDate === filters.createdDate)
+                }
+                if (filters.updatedDate) {
+                    allGqlFacilities = allGqlFacilities.filter(f => f.updatedDate === filters.updatedDate)
+                }
+
+                if (filters.orderBy && Array.isArray(filters.orderBy)) {
+                    const comparePrimitiveValues =
+                        (valA: ComparablePrimitive, valB: ComparablePrimitive): number => {
+                            if (valA < valB) {
+                                return -1
+                            } else if (valA > valB) {
+                                return 1
+                            }
+                            return 0
+                        }
+
+                    allGqlFacilities.sort((facilityA, facilityB) => {
+                        for (const orderCriterion of filters.orderBy!) {
+                            if (!orderCriterion) {
+                                continue
+                            }
+
+                            const fieldName = orderCriterion.fieldToOrder as keyof gqlTypes.Facility
+                            const valueA = facilityA[fieldName]
+                            const valueB = facilityB[fieldName]
+
+                            let currentComparison = 0
+
+                            if (valueA === undefined || valueA === null) {
+                                if (valueB === undefined || valueB === null) {
+                                    currentComparison = 0
+                                } else {
+                                    currentComparison = -1
+                                }
+                            } else if (valueB === undefined || valueB === null) {
+                                currentComparison = 1
+                            } else {
+                                const isValueAComparable = typeof valueA === 'string' || typeof valueA === 'number' || typeof valueA === 'boolean'
+                                const isValueBComparable = typeof valueB === 'string' || typeof valueB === 'number' || typeof valueB === 'boolean'
+
+                                if (isValueAComparable && isValueBComparable) {
+                                    currentComparison = comparePrimitiveValues(
+                                        valueA as ComparablePrimitive,
+                                        valueB as ComparablePrimitive
+                                    )
+                                } else {
+                                    throw new Error(`Sorting by field '${String(fieldName)}' is not supported. It contains a non-comparable type (e.g., object or array).`)
+                                }
+                            }
+
+                            if (orderCriterion.orderDirection === gqlTypes.OrderDirection.Desc) {
+                                currentComparison *= -1
+                            }
+
+                            if (currentComparison !== 0) {
+                                return currentComparison
+                            }
+                        }
+                        return 0
+                    })
+                } else {
+                    allGqlFacilities.sort((facilityA, facilityB) => {
+                        const createdDateA = new Date(facilityA.createdDate)
+                        const createdDateB = new Date(facilityB.createdDate)
+
+                        return createdDateB.getTime() - createdDateA.getTime()
+                    })
+                }
+
+                totalCount = allGqlFacilities.length
+
+                const startIndex = filters.offset || 0
+                const endIndex = startIndex + (filters.limit || 20)
+
+                allGqlFacilities = allGqlFacilities.slice(startIndex, endIndex)
+            }
             // --- Strategy B: Standard Firestore query (no 'healthcareProfessionalIds' filter) ---
             // This path is more efficient as all operations (filtering, counting, ordering, pagination)
             // can be delegated to Firestore.
