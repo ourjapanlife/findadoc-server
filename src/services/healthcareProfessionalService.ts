@@ -12,13 +12,9 @@ import { chunkArray } from '../../utils/arrayUtils.js'
 
 type ComparablePrimitive = string | number | boolean | Date
 
-// --- Helper Functions to encapsulate specific logic and reduce main function's complexity ---
-
 /**
  * Determines which filters are present and calculates dependencies for processing.
  * This helps centralize the logic for deciding if in-memory processing is required.
- * @param filters The search filters provided by the user.
- * @returns An object containing boolean flags for filter presence and processing strategy.
  */
 function determineFilterPresenceAndDependencies(filters: gqlTypes.HealthcareProfessionalSearchFilters) {
     const hasSpecialtiesFilter = filters.specialties && filters.specialties.length > 0
@@ -27,18 +23,16 @@ function determineFilterPresenceAndDependencies(filters: gqlTypes.HealthcareProf
     const hasNamesFilter = filters.names && filters.names.length > 0
 
     // Prioritization for Firestore 'array-contains-any' query.
-    // Only one such filter can be directly applied in a single Firestore query.
-    // Specialties are often prioritized for being more selective.
     const shouldFilterBySpecialties = hasSpecialtiesFilter
     const shouldFilterBySpokenLanguages = hasSpokenLanguagesFilter && !hasSpecialtiesFilter
     const shouldFilterByDegrees = hasDegreesFilter && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
-    const shouldFilterByNames = hasNamesFilter && !hasDegreesFilter
-                                 && !hasSpecialtiesFilter && !hasSpokenLanguagesFilter
+    const shouldFilterByNames = hasNamesFilter
 
     // Determines if we need to fetch a broader set of data and perform subsequent filtering/sorting in memory.
     // This is true if any of the array-based filters are used, as they often conflict in Firestore.
     const needsInMemoryProcessing
-    = shouldFilterBySpecialties || shouldFilterBySpokenLanguages || shouldFilterByDegrees || shouldFilterByNames
+    = shouldFilterBySpecialties || shouldFilterBySpokenLanguages || shouldFilterByDegrees 
+      || shouldFilterByNames || shouldFilterByNames
 
     return {
         hasSpecialtiesFilter, 
@@ -56,9 +50,6 @@ function determineFilterPresenceAndDependencies(filters: gqlTypes.HealthcareProf
 /**
  * Fetches the initial set of professionals from Firestore into a Map.
  * This function performs the *single* array-based Firestore query allowed.
- * @param filters The search filters.
- * @param filterFlags Flags indicating which filters are active and should be prioritized for the initial fetch.
- * @returns A Map where keys are professional IDs and values are mapped GQL professional objects.
  */
 async function fetchInitialProfessionalsIntoMap(
     filters: gqlTypes.HealthcareProfessionalSearchFilters,
@@ -68,7 +59,14 @@ async function fetchInitialProfessionalsIntoMap(
     const { shouldFilterBySpecialties, shouldFilterBySpokenLanguages, shouldFilterByDegrees, shouldFilterByNames }
         = filterFlags
 
-    // Execute the primary Firestore query based on the determined priority
+    const queryRef: Query<DocumentData> = dbInstance.collection('healthcareProfessionals')
+
+    /*Execute the primary Firestore query based on the determined priority
+    * Note: Firestore only allows one 'array-contains-any' filter per query.
+    * It also does not support 'orderBy' or range queries on nested fields within arrays of objects.
+    * For 'names' filter, we either rely on another compatible Firestore filter,
+    * or fetch all documents (up to a reasonable limit) for in-memory processing.
+    * */
     if (shouldFilterBySpecialties) {
         // Chunking for 'array-contains-any' to adhere to Firestore's 30-item limit for IN queries.
         const chunks = chunkArray(filters.specialties!, 30)
@@ -99,13 +97,37 @@ async function fetchInitialProfessionalsIntoMap(
         snapshots.forEach(snap => snap.forEach(doc => 
             uniqueProfessionalsMap.set(doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.HealthcareProfessional))))
     } else if (shouldFilterByNames) {
-        // Assuming 'names' filter uses 'array-contains' for a single name object match.
-        const snapshot = await dbInstance.collection('healthcareProfessionals')
-            .where('names', 'array-contains', filters.names![0]) // Filters by the first provided name object
-            .get()
+        /* MODIFIED: When filtering by names, and no other Firestore-compatible array filter is present,
+        * we must fetch a broader dataset (potentially all documents) and filter in-memory.
+        * Firestore does NOT support 'orderBy' with 'startAt/endAt' on 'names.firstName'/'names.lastName'
+        * due to 'names' being an array of objects.
+        * The previous attempt with two queries for firstName/lastName was causing issues
+        * because it still tried to use range queries without a proper indexable field.
+        * Fetch all documents up to a certain limit if no other filters are applied
+        * or apply other simple equality filters directly in Firestore.
+        * For simplicity, we'll fetch all here, but for very large collections,
+        * you might want to add a reasonable limit to this initial fetch or
+        * combine it with other direct Firestore filters if available (e.g., by ID range).
+        * Note: For large datasets, fetching all documents is inefficient.
+        * Denormalization is the proper long-term solution.
+        */
+        const snapshot = await queryRef.get()
 
-        snapshot.forEach(doc => 
-            uniqueProfessionalsMap.set(doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.HealthcareProfessional)))
+        snapshot.forEach(doc => {
+            uniqueProfessionalsMap.set(doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.HealthcareProfessional))
+        })
+    } else {
+        // If no array-based filters were explicitly prioritized, fetch all (or apply other basic filters).
+        // This path will be taken for simple pagination or when only `createdDate`/`updatedDate` filters are present
+        // (which are handled by `performFirestoreQuery`).
+        // However, `fetchInitialProfessionalsIntoMap` is primarily for the `needsInMemoryProcessing` path,
+        // which implies one of the array filters or names filter is active.
+        // If it reaches here without any specific filter, it implies a broad fetch is needed.
+        const snapshot = await queryRef.get()
+
+        snapshot.forEach(doc => {
+            uniqueProfessionalsMap.set(doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.HealthcareProfessional))
+        })
     }
     return uniqueProfessionalsMap
 }
@@ -113,10 +135,6 @@ async function fetchInitialProfessionalsIntoMap(
 /**
  * Applies additional filters in memory to a list of healthcare professionals.
  * This is used for filters that could not be applied directly in the Firestore query.
- * @param professionals The list of professionals to filter.
- * @param filters The search filters.
- * @param filterFlags Flags indicating which filters are active.
- * @returns The filtered list of professionals.
  */
 function applyInMemoryFilters(
     professionals: gqlTypes.HealthcareProfessional[],
@@ -138,58 +156,77 @@ function applyInMemoryFilters(
     // 'array-contains-any' filter was used for the Firestore fetch.
     const { hasSpecialtiesFilter, hasSpokenLanguagesFilter, hasDegreesFilter, hasNamesFilter } = filterFlags
 
-    if (hasSpecialtiesFilter) { // If specialties was the primary filter used for initial DB fetch
-        if (hasSpokenLanguagesFilter) {
-            filteredProfessionals = filteredProfessionals.filter(professional =>
-                professional.spokenLanguages.some(lang => filters.spokenLanguages?.includes(lang)))
-        }
-        if (hasDegreesFilter) {
-            filteredProfessionals = filteredProfessionals.filter(professional =>
-                professional.degrees.some(degree => filters.degrees?.includes(degree)))
-        }
-        if (hasNamesFilter) {
-            const filterName = filters.names![0]
-
-            filteredProfessionals = filteredProfessionals.filter(professional =>
-                professional.names.some(dbName =>
-                    dbName.firstName === filterName.firstName &&
-                    dbName.lastName === filterName.lastName &&
-                    dbName.locale === filterName.locale))
-        }
-    } else if (hasSpokenLanguagesFilter) { // If spokenLanguages was the primary filter used for initial DB fetch
-        if (hasDegreesFilter) {
-            filteredProfessionals = filteredProfessionals.filter(professional =>
-                professional.degrees.some(degree => filters.degrees?.includes(degree)))
-        }
-        if (hasNamesFilter) {
-            const filterName = filters.names![0]
-
-            filteredProfessionals = filteredProfessionals.filter(professional =>
-                professional.names.some(dbName =>
-                    dbName.firstName === filterName.firstName &&
-                    dbName.lastName === filterName.lastName &&
-                    dbName.locale === filterName.locale))
-        }
-    } else if (hasDegreesFilter) { // If degrees was the primary filter used for initial DB fetch
-        if (hasNamesFilter) {
-            const filterName = filters.names![0]
-            
-            filteredProfessionals = filteredProfessionals.filter(professional =>
-                professional.names.some(dbName =>
-                    dbName.firstName === filterName.firstName &&
-                    dbName.lastName === filterName.lastName &&
-                    dbName.locale === filterName.locale))
-        }
+    // Apply specialties filter if it was NOT handled by the primary Firestore query and is present
+    if (hasSpecialtiesFilter && !filterFlags.shouldFilterBySpecialties && filterFlags.needsInMemoryProcessing) {
+        filteredProfessionals = filteredProfessionals.filter(professional =>
+            professional.specialties.some(specialty => filters.specialties?.includes(specialty)))
     }
+    // Apply spokenLanguages filter if it was NOT handled by the primary Firestore query and is present
+    if (hasSpokenLanguagesFilter && !filterFlags.shouldFilterBySpokenLanguages && filterFlags.needsInMemoryProcessing) {
+        filteredProfessionals = filteredProfessionals.filter(professional =>
+            professional.spokenLanguages.some(lang => filters.spokenLanguages?.includes(lang)))
+    }
+    // Apply degrees filter if it was NOT handled by the primary Firestore query and is present
+    if (hasDegreesFilter && !filterFlags.shouldFilterByDegrees && filterFlags.needsInMemoryProcessing) {
+        filteredProfessionals = filteredProfessionals.filter(professional =>
+            professional.degrees.some(degree => filters.degrees?.includes(degree)))
+    }
+    // This `hasNamesFilter` block is where the 'names' filtering *always* happens now.
+    // The `shouldFilterByNames` flag will be true if `filters.names` is present.
+    if (hasNamesFilter) {
+        const nameFiltersFromFrontend = filters.names!
+
+        // filteredProfessionals is the result of the initial Firestore fetch or previous in-memory filters.
+        // We need to filter this array using an OR logic for each name filter.
+        // To achieve an OR, we collect a set of IDs of professionals that match at least one filter.
+
+        const matchedProfessionalIds = new Set<string>()
+
+        // Iterate over each name filter object sent from the frontend
+        for (const filterNameInput of nameFiltersFromFrontend) {
+            const searchTerm = (filterNameInput.firstName || filterNameInput.lastName || '').toLowerCase()
+            const searchLocale = filterNameInput.locale
+
+            if (searchTerm) {
+                // Filter the current list of professionals to find those that match the current filter criteria.
+                const currentFilterMatches = filteredProfessionals.filter(professional =>
+                    professional.names.some(dbName => {
+                        const matchesFirstNameStartsWith = dbName.firstName?.toLowerCase().startsWith(searchTerm) 
+                                                           || false
+
+                        const matchesLastNameStartsWith = dbName.lastName?.toLowerCase().startsWith(searchTerm) || false
+
+                        const fullName = `${dbName.firstName || ''} ${dbName.lastName || ''}`.trim().toLowerCase()
+                        const reverseFullName = `${dbName.lastName || ''} ${dbName.firstName || ''}`.trim().toLowerCase()
+                        const matchesAnyPart = fullName.includes(searchTerm) || reverseFullName.includes(searchTerm)
+
+                        // The locale MUST match if it's specified in the current filter entry
+                        const matchesLocale = searchLocale ? dbName.locale === searchLocale : true
+
+                        // A professional's name entry in the DB must match the searchTerm and the locale of the current filter
+                        return (matchesFirstNameStartsWith || matchesLastNameStartsWith || matchesAnyPart)
+                                && matchesLocale
+                    }))
+
+                // Add the IDs of the professionals that matched this specific filterNameInput to the set
+                for (const match of currentFilterMatches) {
+                    matchedProfessionalIds.add(match.id)
+                }
+            }
+        }
+
+        // After checking all filterNameInputs, reduce the list of professionals
+        // to only include those whose IDs are in our matchedProfessionalIds set (OR logic across filter entries).
+        filteredProfessionals = filteredProfessionals.filter(professional =>
+            matchedProfessionalIds.has(professional.id))
+    }
+
     return filteredProfessionals
 }
 
 /**
  * Sorts a list of healthcare professionals based on specified criteria.
  * Supports multiple sorting fields and handles specific data types like names.
- * @param professionals The list of professionals to sort.
- * @param orderBy An array of sorting criteria.
- * @returns The sorted list of professionals.
  */
 function sortProfessionalsInMemory(
     professionals: gqlTypes.HealthcareProfessional[],
@@ -204,7 +241,7 @@ function sortProfessionalsInMemory(
     return professionals.sort((a, b) => {
         for (const orderCriterion of orderBy) {
             if (!orderCriterion) {
-                continue // Skip if criteria is null/undefined
+                continue
             }
 
             const fieldName = orderCriterion.fieldToOrder as keyof gqlTypes.HealthcareProfessional
@@ -265,8 +302,6 @@ function sortProfessionalsInMemory(
 /**
  * Executes a direct Firestore query for healthcare professionals.
  * This path is taken when complex in-memory filtering is not required.
- * @param filters The search filters to apply directly to the Firestore query.
- * @returns An object containing the fetched professionals and their total count.
  */
 async function performFirestoreQuery(
     filters: gqlTypes.HealthcareProfessionalSearchFilters
@@ -282,6 +317,7 @@ async function performFirestoreQuery(
     }
 
     // Get the total count of documents matching the basic filters.
+    // Different to submissionService.ts line 254 i can use .count().get()
     const countQuerySnapshot = await searchRef.count().get()
     const totalCount = countQuerySnapshot.data().count
 
@@ -358,27 +394,16 @@ export async function getHealthcareProfessionalById(id: string)
     }
 }
 
-/**
-* This is a search function that will return a list of Healthcare Professionals that match the filters.
-* - At the moment, filters have to match exactly, and there is no fuzzy search.
-* @param filters All the optional filters that can be applied to the search.
-* @returns The matching Healthcare Professionals.
-*/
-
 // --- Main searchProfessionals function (Refactored for lower complexity) ---
 
 /**
  * Searches for healthcare professionals based on provided filters.
  * This function now acts as an orchestrator, delegating complex logic
  * to smaller, more focused, and testable helper functions.
- * @param filters An object containing various filters for the search.
- * @returns A Promise that resolves to a Result object containing the healthcare professionals and total count,
- * or an error if the operation fails.
  */
 export async function searchProfessionals(filters: gqlTypes.HealthcareProfessionalSearchFilters = {}):
 Promise<Result<gqlTypes.HealthcareProfessionalConnection>> {
     try {
-        // 1. Validate the input filters first.
         const validationResult = validateProfessionalsSearchInput(filters)
 
         if (validationResult.hasErrors) {
@@ -386,7 +411,6 @@ Promise<Result<gqlTypes.HealthcareProfessionalConnection>> {
                 Result<gqlTypes.HealthcareProfessionalConnection>
         }
 
-        // 2. Determine the processing strategy (in-memory vs. direct Firestore query).
         const filterFlags = determineFilterPresenceAndDependencies(filters)
         let finalGqlProfessionalsForNodes: gqlTypes.HealthcareProfessional[] = []
         let finalTotalCount = 0

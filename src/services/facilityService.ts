@@ -58,9 +58,7 @@ export const getFacilityById = async (id: string)
 
 /**
  * This is a search function that will return a list of Facilities that match the filters. 
- * - At the moment, filters have to match exactly, and there is no fuzzy search.
- * @param filters All the optional filters that can be applied to the search.
- * @returns The matching Facilities.
+ * At the moment, filters have to match exactly, and there is no fuzzy search.
  */
 export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters = {}):
 Promise<Result<gqlTypes.FacilityConnection>> {
@@ -68,7 +66,6 @@ Promise<Result<gqlTypes.FacilityConnection>> {
         const validationResult = validateFacilitiesSearchInput(filters)
 
         if (validationResult.hasErrors) {
-            // If validation fails, return the errors along with an empty FacilityConnection structure
             return {
                 ...validationResult,
                 data: {
@@ -80,75 +77,105 @@ Promise<Result<gqlTypes.FacilityConnection>> {
 
         let allGqlFacilities: gqlTypes.Facility[] = []
         let totalCount = 0
+        let docsToProcess: dbSchema.Facility[] = []
 
-        // 2. Determine Query Strategy based on 'healthcareProfessionalIds' filter
-        // Firestore has limitations: only one 'array-contains-any' per query.
-        // If 'healthcareProfessionalIds' is present, we must use multiple queries (chunking)
-        // and process other filters/pagination in memory.
-        if (filters.healthcareProfessionalIds && filters.healthcareProfessionalIds.length > 0) {
-            // Split the healthcareProfessionalIds into chunks (max 30 items per 'array-contains-any' query)
-            const chunks = chunkArray(filters.healthcareProfessionalIds!, 30)
+        // Extract name-related filters to handle them separately for in-memory processing.
+        const searchTermEn = filters.nameEn?.toLowerCase()
+        const searchTermJa = filters.nameJa?.toLowerCase()
 
-            // Execute multiple 'array-contains-any' queries in parallel for each chunk
-            const snapshots = await Promise.all(chunks.map(chunk =>
-                dbInstance.collection('facilities')
-                    .where('healthcareProfessionalIds', 'array-contains-any', chunk)
-                    .get()))
+        /* Create a copy of filters for Firestore queries, removing nameEn and nameJa.
+        * These will be applied in-memory later due to Firestore's limitations with 'OR' and 'contains'.
+        */
+        const firestoreFilters = { ...filters }
 
-            // Collect all results and deduplicate them. A Map is used to ensure uniqueness
-            // because a single facility might be linked to multiple HPs across different chunks,
-            // leading to duplicate results from separate queries.
-            const uniqueFacilitiesMap = new Map<string, gqlTypes.Facility>()
+        delete firestoreFilters.nameEn
+        delete firestoreFilters.nameJa
 
-            snapshots.forEach(snap =>
-                snap.forEach(doc => {
-                    uniqueFacilitiesMap.set(doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.Facility))
-                }))
-            allGqlFacilities = Array.from(uniqueFacilitiesMap.values())
+        /* Determine if in-memory filtering is required.
+        * This is true if 'healthcareProfessionalIds' is present (existing logic)
+        * OR if a name search term (English or Japanese) is provided.
+        * Firestore cannot efficiently handle 'OR' conditions across different fields or 'contains' operations.
+        */
+        const requiresInMemoryFiltering =
+            (filters.healthcareProfessionalIds && filters.healthcareProfessionalIds.length > 0) ||
+            searchTermEn ||
+            searchTermJa
 
-            // --- Apply other filters in memory ---
-            // These filters (nameEn, nameJa, createdDate, updatedDate) must be applied in memory
-            // because they cannot be combined with the multiple 'array-contains-any' queries in Firestore.
-            if (filters.nameEn) {
-                allGqlFacilities = allGqlFacilities.filter(f => f.nameEn === filters.nameEn)
+        if (requiresInMemoryFiltering) {
+            /* --- Strategy A: Mixed Firestore Query + Extensive In-Memory Filtering ---
+            *This path is taken when complex filters (like 'healthcareProfessionalIds' or name 'contains'/'OR')
+            * necessitate fetching a broader dataset from Firestore and then refining it in application memory.
+            */
+            let initialQueryRef: Query<DocumentData> = dbInstance.collection('facilities')
+
+            if (filters.healthcareProfessionalIds && filters.healthcareProfessionalIds.length > 0) {
+                // Existing logic for 'array-contains-any' queries, which require chunking.
+                // This part fetches facilities associated with the provided healthcare professional IDs.
+                const chunks = chunkArray(filters.healthcareProfessionalIds!, 30)
+                const snapshots = await Promise.all(chunks.map(chunk =>
+                    initialQueryRef.where('healthcareProfessionalIds', 'array-contains-any', chunk).get()))
+
+                // Deduplicate results from multiple 'array-contains-any' queries.
+                const uniqueFacilitiesMap = new Map<string, dbSchema.Facility>()
+
+                snapshots.forEach(snap =>
+                    snap.forEach(doc => {
+                        uniqueFacilitiesMap.set(doc.id, doc.data() as dbSchema.Facility)
+                    }))
+                docsToProcess = Array.from(uniqueFacilitiesMap.values())
+            } else {
+                /* If NO 'healthcareProfessionalIds' but a name search term IS present,
+                * we must fetch a broader set of facilities from Firestore.
+                * Firestore exact 'where' clauses for nameEn/nameJa are not applied here,
+                * as we need 'contains' and 'OR' logic which will be handled in-memory.
+                * Apply only other simple, direct-match filters that Firestore supports efficiently.
+                */
+                if (firestoreFilters.createdDate) {
+                    initialQueryRef = initialQueryRef.where('createdDate', '==', firestoreFilters.createdDate)
+                }
+                if (firestoreFilters.updatedDate) {
+                    initialQueryRef = initialQueryRef.where('updatedDate', '==', firestoreFilters.updatedDate)
+                }
+                /* NOTE: 'nameEn' and 'nameJa' are intentionally NOT included in Firestore's .where() clauses
+                * because 'contains' and 'OR' operations are handled in-memory below.
+                * For very large collections, fetching all documents without a strong Firestore filter
+                * might be inefficient. Consider adding a high `limit` here or external full-text search.
+                */
+                const snapshot = await initialQueryRef.get()
+
+                docsToProcess = snapshot.docs.map(doc => doc.data() as dbSchema.Facility)
             }
-            if (filters.nameJa) {
-                allGqlFacilities = allGqlFacilities.filter(f => f.nameJa === filters.nameJa)
-            }
-            // Assuming createdDate and updatedDate are strings or compatible types for direct comparison.
-            if (filters.createdDate) {
-                allGqlFacilities = allGqlFacilities.filter(f => f.createdDate === filters.createdDate)
-            }
-            if (filters.updatedDate) {
-                allGqlFacilities = allGqlFacilities.filter(f => f.updatedDate === filters.updatedDate)
+
+            // Convert raw database entities to GraphQL entities.
+            allGqlFacilities = docsToProcess.map(doc => mapDbEntityTogqlEntity(doc))
+
+            // --- Apply Name Search Filter (OR logic and 'contains') in memory ---
+            if (searchTermEn || searchTermJa) {
+                allGqlFacilities = allGqlFacilities.filter(f =>
+                    // Check if nameEn (if it exists) contains the English search term
+                    (f.nameEn && f.nameEn.toLowerCase().includes(searchTermEn || '')) ||
+                    // OR check if nameJa (if it exists) contains the Japanese search term
+                    (f.nameJa && f.nameJa.toLowerCase().includes(searchTermJa || '')))
             }
 
+            // --- Apply Ordering in memory ---
+            // This sorting logic applies to the `allGqlFacilities` array after all filtering.
             type ComparablePrimitive = string | number | boolean
 
-            // Order the results in memoryy
-            if (filters.orderBy && Array.isArray(filters.orderBy)) {
-                /**
-                 * Compares two primitive values (strings, numbers, or booleans) for sorting.
-                 * It returns:
-                 * - A negative number if 'valA' should come before 'valB'.
-                 * - A positive number if 'valA' should come after 'valB'.
-                 * - 0 if 'valA' and 'valB' are considered equal in terms of sorting order.
-                 */
-                const comparePrimitiveValues = 
+            const comparePrimitiveValues =
                 (valA: ComparablePrimitive, valB: ComparablePrimitive): number => {
                     if (valA < valB) {
                         return -1
                     } else if (valA > valB) {
                         return 1
                     }
-                    return 0 
+                    return 0
                 }
 
+            if (filters.orderBy && Array.isArray(filters.orderBy)) {
                 allGqlFacilities.sort((facilityA, facilityB) => {
-                    // Iterate through each order criterion provided by the user
                     for (const orderCriterion of filters.orderBy!) {
                         if (!orderCriterion) {
-                            // Skip if a specific order criterion object is null/undefined in the array
                             continue
                         }
 
@@ -160,50 +187,42 @@ Promise<Result<gqlTypes.FacilityConnection>> {
 
                         if (valueA === undefined || valueA === null) {
                             if (valueB === undefined || valueB === null) {
-                                currentComparison = 0 // Both are undefined/null, consider them equal
+                                currentComparison = 0
                             } else {
-                                currentComparison = -1 // valueA is undefined/null, valueB is not, so valueA comes first
+                                currentComparison = -1
                             }
                         } else if (valueB === undefined || valueB === null) {
-                            currentComparison = 1 // valueA is defined, valueB is undefined/null, so valueA comes after valueB
+                            currentComparison = 1
                         } else {
                             const isValueAComparable = typeof valueA === 'string' || typeof valueA === 'number' || typeof valueA === 'boolean'
                             const isValueBComparable = typeof valueB === 'string' || typeof valueB === 'number' || typeof valueB === 'boolean'
 
                             if (isValueAComparable && isValueBComparable) {
-                                // If each value are compatible do it
                                 currentComparison = comparePrimitiveValues(
-                                    valueA as ComparablePrimitive, // Assertions are needed here.
+                                    valueA as ComparablePrimitive,
                                     valueB as ComparablePrimitive
                                 )
                             } else {
-                                //if one of two values are not ad ComparablePrimitive run error
-                                throw new Error(`Sorting by field '${String(fieldName)}' is not supported. It contains a non-comparable type (e.g., object or array).`)
+                                logger.error(`Sorting by field '${String(fieldName)}' is not supported. It contains a non-comparable type (e.g., object or array).`)
+                                // If a field cannot be compared, treat them as equal for this criterion
+                                currentComparison = 0
                             }
                         }
 
-                        // Adjust comparison if the order direction is Descending
                         if (orderCriterion.orderDirection === gqlTypes.OrderDirection.Desc) {
-                            currentComparison *= -1 // Invert the comparison result
+                            currentComparison *= -1 // Invert comparison for descending order
                         }
 
-                        // If the current field produces a non-zero comparison, that means these two facilities
-                        // are different based on this field, so we use this comparison and stop.
                         if (currentComparison !== 0) {
-                            return currentComparison
+                            return currentComparison // If a difference is found, use it and stop.
                         }
-                        // If currentComparison is 0, it means the values for this field are equal,
                     }
-                    // If all order criteria fields are equal (or no criteria provided/valid),
-                    // maintain their original relative order (return 0).
-                    return 0
+                    return 0 // If all criteria are equal, maintain original relative order.
                 })
             } else {
                 // Default ordering: if no specific orderBy filters are provided,
                 // sort facilities by 'createdDate' in Descending order (most recent first).
                 allGqlFacilities.sort((facilityA, facilityB) => {
-                    // It's crucial that 'createdDate' is always present and convertible to a Date.
-                    // If 'createdDate' could be optional, similar undefined/null checks would be needed here.
                     const createdDateA = new Date(facilityA.createdDate)
                     const createdDateB = new Date(facilityB.createdDate)
 
@@ -211,28 +230,22 @@ Promise<Result<gqlTypes.FacilityConnection>> {
                 })
             }
 
-            // Calculate the total count AFTER all in-memory filtering and ordering
+            // Calculate the total count AFTER all in-memory filtering and ordering.
             totalCount = allGqlFacilities.length
 
-            // Apply limit and offset (pagination) to the in-memory results
+            // Apply limit and offset (pagination) to the in-memory results.
             const startIndex = filters.offset || 0
-
             const endIndex = startIndex + (filters.limit || 20)
 
             allGqlFacilities = allGqlFacilities.slice(startIndex, endIndex)
         } else {
-            // --- Strategy B: Standard Firestore query (no 'healthcareProfessionalIds' filter) ---
-            // This path is more efficient as all operations (filtering, counting, ordering, pagination)
-            // can be delegated to Firestore.
+            /* --- Strategy B: Standard Firestore query (no 'healthcareProfessionalIds' OR name search filter) ---
+            *This path is more efficient as all operations (filtering, counting, ordering, pagination)
+            * can be delegated directly to Firestore for exact matches on other fields.
+            */
+
             let searchRef: Query<DocumentData> = dbInstance.collection('facilities')
 
-            // Apply direct field filters to the Firestore query reference
-            if (filters.nameEn) {
-                searchRef = searchRef.where('nameEn', '==', filters.nameEn)
-            }
-            if (filters.nameJa) {
-                searchRef = searchRef.where('nameJa', '==', filters.nameJa)
-            }
             if (filters.createdDate) {
                 searchRef = searchRef.where('createdDate', '==', filters.createdDate)
             }
@@ -240,33 +253,33 @@ Promise<Result<gqlTypes.FacilityConnection>> {
                 searchRef = searchRef.where('updatedDate', '==', filters.updatedDate)
             }
 
-            // Get the total count of documents matching the Firestore filters BEFORE applying limit/offset
+            // Get the total count of documents matching the Firestore filters BEFORE applying limit/offset.
             const countQuerySnapshot = await searchRef.count().get()
 
             totalCount = countQuerySnapshot.data().count
 
-            // Apply ordering to the Firestore query
+            // Apply ordering to the Firestore query directly.
             if (filters.orderBy && Array.isArray(filters.orderBy)) {
                 filters.orderBy.forEach(order => {
                     if (order) {
                         searchRef = searchRef.orderBy(order.fieldToOrder as string,
-                                                      order.orderDirection as gqlTypes.OrderDirection)
+                                                      order.orderDirection as 'asc' | 'desc')
                     }
                 })
             } else {
-                // Default ordering by 'createdDate' in Descending order
-                searchRef = searchRef.orderBy('createdDate', gqlTypes.OrderDirection.Desc)
+                // Default ordering by 'createdDate' in Descending order for this strategy.
+                searchRef = searchRef.orderBy('createdDate', 'desc')
             }
 
-            // Apply limit and offset for pagination to the Firestore query
+            // Apply limit and offset for pagination to the Firestore query directly.
             searchRef = searchRef.limit(filters.limit || 20)
             searchRef = searchRef.offset(filters.offset || 0)
 
-            // Execute the paginated Firestore query
+            // Execute the paginated Firestore query.
             const dbDocument = await searchRef.get()
             const dbFacilities = dbDocument.docs
 
-            // Map Firestore documents to GraphQL Facility types
+            // Map Firestore documents to GraphQL Facility types.
             allGqlFacilities = dbFacilities.map(dbFacility =>
                 mapDbEntityTogqlEntity(dbFacility.data() as dbSchema.Facility))
         }
