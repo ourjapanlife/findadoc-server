@@ -1338,8 +1338,8 @@ __metadata:
   linkType: hard
 
 "@fastify/compress@npm:^8.0.1":
-  version: 8.0.1
-  resolution: "@fastify/compress@npm:8.0.1"
+  version: 8.1.0
+  resolution: "@fastify/compress@npm:8.1.0"
   dependencies:
     "@fastify/accept-negotiator": "npm:^2.0.0"
     fastify-plugin: "npm:^5.0.0"
@@ -1349,7 +1349,7 @@ __metadata:
     pump: "npm:^3.0.0"
     pumpify: "npm:^2.0.1"
     readable-stream: "npm:^4.5.2"
-  checksum: 10/4909b6e6df2f0ad4fbf313cdc1154f4b9682d099e3c2877e7e054c2a9bf81c4fb3f1960bae4ed3c25c55b84f3ce8f2f18ae50cc403154c3b59859389aabc5a22
+  checksum: 10/cb30b224d33b8efcfb6d1433dd1ef80c7538fb6157df877beba0c0bd3118983ef65fa72bb8021a9565566358280224be8ff8f3b7ff9f07d1ccc35af9c2574d78
   languageName: node
   linkType: hard
 
