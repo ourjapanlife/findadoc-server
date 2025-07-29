@@ -764,7 +764,7 @@ export async function deleteSubmission(id: string, updatedBy: string)
 export function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
     return {
         id: newId,
-        autofillPlaceFromSubmissionUrl: input.autofillPlaceFromSubmissionUrl as boolean,
+        autofillPlaceFromSubmissionUrl: false,
         googleMapsUrl: input.googleMapsUrl as string,
         healthcareProfessionalName: input.healthcareProfessionalName as string,
         spokenLanguages: input.spokenLanguages as gqlTypes.Locale[],
