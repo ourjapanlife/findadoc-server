@@ -1,4 +1,3 @@
-import { DocumentData, Query } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { dbInstance } from '../firebaseDb.js'
@@ -10,7 +9,7 @@ import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from 
 import { logger } from '../../src/logger.js'
 import { createAuditLog } from './auditLogService.js'
 import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
-import { chunkArray } from '../../utils/arrayUtils.js'
+import { buildBaseSubmissionsQuery } from '../../utils/searchSubmissionsQueryUtils.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -66,224 +65,141 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
 }
 
 /**
- * Get all the submissions in the database when no filters are provided.
- * When there are filters provided it will return all the submissions according to the filters.
- * @param filters An object that contains parameters to filter on. 
- * When no parameters are provided, filters is an empty object.
- * @returns A submissions object
+ * Searches for submissions in the database based on provided filters.
+ * Returns a paginated list of submissions.
+ * This function is designed to serve the GraphQL query that returns only the array of submissions.
+ *
+ * @param filters The search filters to apply.
+ * @returns An object containing `data` (an array of GraphQL Submissions), `hasErrors` flag, and optional `errors` array.
  */
 export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilters)
-    : Promise<Result<gqlTypes.SubmissionConnection>> {
+    : Promise<Result<gqlTypes.Submission[]>> {
     try {
         const validationResults = validateSubmissionSearchFilters(filters)
 
         if (validationResults.hasErrors) {
             return {
-                ...validationResults,
-                data: {
-                    nodes: [],
-                    totalCount: 0
-                }
+                data: [],
+                hasErrors: true,
+                errors: validationResults.errors
             }
         }
-        
+
+        // Initialize an array to hold the final list of GraphQL submissions.
         let allGqlSubmissions: gqlTypes.Submission[] = []
-        let totalCount = 0
 
-        if (filters.spokenLanguages && filters.spokenLanguages.length > 0) {
-            const chunks = chunkArray(filters.spokenLanguages, 30)
+        const baseQueryResult = await buildBaseSubmissionsQuery(filters)
 
-            const snapshots = await Promise.all(chunks.map(chunk =>
-                dbInstance.collection('submissions')
-                    .where('spokenLanguages', 'array-contains-any', chunk)
-                    .get()))
-
-            const uniqueSubmissionsMap = new Map<string, gqlTypes.Submission>()
-
-            snapshots.forEach(snap =>
-                snap.forEach(doc => {
-                    uniqueSubmissionsMap.set(doc.id, mapDbEntityTogqlEntity(doc.data() as dbSchema.Submission))
-                }))
-            allGqlSubmissions = Array.from(uniqueSubmissionsMap.values())
-
-            if (filters.googleMapsUrl) {
-                allGqlSubmissions = allGqlSubmissions.filter(s => s.googleMapsUrl === filters.googleMapsUrl)
+        // Handle errors from the base query building.
+        if (baseQueryResult.hasErrors) {
+            return {
+                data: [],
+                hasErrors: true,
+                errors: baseQueryResult.errors
             }
-            if (filters.healthcareProfessionalName) {
-                allGqlSubmissions = allGqlSubmissions.filter(s => 
-                    s.healthcareProfessionalName === filters.healthcareProfessionalName)
-            }
-            if (filters.isUnderReview !== undefined) {
-                allGqlSubmissions = allGqlSubmissions.filter(s => s.isUnderReview === filters.isUnderReview)
-            }
-            if (filters.isApproved !== undefined) {
-                allGqlSubmissions = allGqlSubmissions.filter(s => s.isApproved === filters.isApproved)
-            }
-            if (filters.isRejected !== undefined) {
-                allGqlSubmissions = allGqlSubmissions.filter(s => s.isRejected === filters.isRejected)
-            }
-            if (filters.createdDate) {
-                allGqlSubmissions = allGqlSubmissions.filter(s => s.createdDate === filters.createdDate)
-            }
-            if (filters.updatedDate) {
-                allGqlSubmissions = allGqlSubmissions.filter(s => s.updatedDate === filters.updatedDate)
-            }
+        }
 
-            type ComparablePrimitive = string | number | boolean
+        /*Process the query results, applying pagination.
+        * The logic branches based on the structure of `baseQueryResult`.
+        * This suggests there might be two different ways to fetch submissions:
+        * 1. In-memory filtering (`baseQueryResult.list`).
+        * 2. Direct database query with pagination (`baseQueryResult.query`)
+        */
+        if (baseQueryResult.list) {
+            const allFilteredAndSorted = baseQueryResult.list
 
-            // Order the results in memoryy
-            if (filters.orderBy && Array.isArray(filters.orderBy)) {
-                // Helper function to compare two defined values.
-                const comparePrimitiveValues = 
-                (valA: ComparablePrimitive, valB: ComparablePrimitive): number => {
-                    if (valA < valB) {
-                        return -1
-                    } else if (valA > valB) {
-                        return 1
-                    }
-                    return 0 
-                }
-
-                allGqlSubmissions.sort((submissionsA, submissionsB) => {
-                    // Iterate through each order criterion provided by the user
-                    for (const orderCriterion of filters.orderBy!) {
-                        if (!orderCriterion) {
-                            // Skip if a specific order criterion object is null/undefined in the array
-                            continue
-                        }
-
-                        const fieldName = orderCriterion.fieldToOrder as keyof gqlTypes.Submission
-                        const valueA = submissionsA[fieldName]
-                        const valueB = submissionsB[fieldName]
-
-                        let currentComparison = 0
-
-                        if (valueA === undefined || valueA === null) {
-                            if (valueB === undefined || valueB === null) {
-                                currentComparison = 0 // Both are undefined/null, consider them equal
-                            } else {
-                                currentComparison = -1 // valueA is undefined/null, valueB is not, so valueA comes first
-                            }
-                        } else if (valueB === undefined || valueB === null) {
-                            currentComparison = 1 // valueA is defined, valueB is undefined/null, so valueA comes after valueB
-                        } else {
-                            const isValueAComparable = typeof valueA === 'string' || typeof valueA === 'number' || typeof valueA === 'boolean'
-                            const isValueBComparable = typeof valueB === 'string' || typeof valueB === 'number' || typeof valueB === 'boolean'
-
-                            if (isValueAComparable && isValueBComparable) {
-                                // If each value are compatible do it
-                                currentComparison = comparePrimitiveValues(
-                                    valueA as ComparablePrimitive, // Assertions are needed here.
-                                    valueB as ComparablePrimitive
-                                )
-                            } else {
-                                //if one of two values are not ad ComparablePrimitive run error
-                                throw new Error(`Sorting by field '${String(fieldName)}' is not supported. It contains a non-comparable type (e.g., object or array).`)
-                            }
-                        }
-
-                        // Adjust comparison if the order direction is Descending
-                        if (orderCriterion.orderDirection === gqlTypes.OrderDirection.Desc) {
-                            currentComparison *= -1 // Invert the comparison result
-                        }
-
-                        // If the current field produces a non-zero comparison, that means these two facilities
-                        // are different based on this field, so we use this comparison and stop.
-                        if (currentComparison !== 0) {
-                            return currentComparison
-                        }
-                        // If currentComparison is 0, it means the values for this field are equal,
-                    }
-                    // If all order criteria fields are equal (or no criteria provided/valid),
-                    // maintain their original relative order (return 0).
-                    return 0
-                })
-            } else {
-                allGqlSubmissions.sort((submissionA, submissionB) => {
-                    const createdDateA = new Date(submissionA.createdDate)
-
-                    const createdDateB = new Date(submissionB.createdDate)
-
-                    return createdDateB.getTime() - createdDateA.getTime()
-                })
-            }
-
-            totalCount = allGqlSubmissions.length
-
-            const startIndex = filters.offset || 0
-            const endIndex = startIndex + (filters.limit || 20)
-
-            allGqlSubmissions = allGqlSubmissions.slice(startIndex, endIndex)
-        } else {
-            let subRef: Query<DocumentData> = dbInstance.collection('submissions')
-
-            if (filters.googleMapsUrl) {
-                subRef = subRef.where('googleMapsUrl', '==', filters.googleMapsUrl)
-            }
-            if (filters.healthcareProfessionalName) {
-                subRef = subRef.where('healthcareProfessionalName', '==', filters.healthcareProfessionalName)
-            }
-            if (filters.isUnderReview !== undefined) {
-                subRef = subRef.where('isUnderReview', '==', filters.isUnderReview)
-            }
-            if (filters.isApproved !== undefined) {
-                subRef = subRef.where('isApproved', '==', filters.isApproved)
-            }
-            if (filters.isRejected !== undefined) {
-                subRef = subRef.where('isRejected', '==', filters.isRejected)
-            }
-            if (filters.createdDate) {
-                subRef = subRef.where('createdDate', '==', filters.createdDate)
-            }
-            if (filters.updatedDate) {
-                subRef = subRef.where('updatedDate', '==', filters.updatedDate)
-            }
-
-            if (filters.orderBy && Array.isArray(filters.orderBy)) {
-                filters.orderBy.forEach(order => {
-                    if (order) {
-                        subRef = subRef.orderBy(order.fieldToOrder as string,
-                                                order.orderDirection as gqlTypes.OrderDirection)
-                    }
-                })
-            } else {
-                subRef = subRef.orderBy('createdDate', gqlTypes.OrderDirection.Desc)
-            }
-
-            // This approach assumes `count().get()` is NOT working due probably an old version of Firestore.
-            const allMatchingDocsSnapshot = await subRef.get()
-
-            totalCount = allMatchingDocsSnapshot.docs.length
-
-            // Calculate start and end indices for in-memory pagination
             const startIndex = filters.offset || 0
             const limit = filters.limit || 20
             const endIndex = startIndex + limit
 
-            const paginatedSubmissions = allMatchingDocsSnapshot.docs.slice(startIndex, endIndex)
+            allGqlSubmissions = allFilteredAndSorted.slice(startIndex, endIndex)
+        } else if (baseQueryResult.query) {
+            let subRef = baseQueryResult.query
 
-            allGqlSubmissions = paginatedSubmissions.map(dbSubmission =>
+            const limit = filters.limit || 20
+            const offset = filters.offset || 0
+
+            // Apply pagination directly to the database query.
+            subRef = subRef.limit(limit).offset(offset)
+            // Execute the paginated query to get a snapshot of the results.
+            const paginatedSnapshot = await subRef.get()
+
+            // Map each database entity to its GraphQL type and store it.
+            allGqlSubmissions = paginatedSnapshot.docs.map(dbSubmission =>
                 mapDbEntityTogqlEntity(dbSubmission.data() as dbSchema.Submission))
         }
 
         return {
-            data: {
-                nodes: allGqlSubmissions,
-                totalCount: totalCount
-            },
+            data: allGqlSubmissions,
             hasErrors: false
         }
-    } catch (error) {
-        logger.error(`ERROR: Error searching submissions by filters ${filters}: ${error}`)
+    } catch (error: unknown) {
+        logger.error(`ERROR: Error searching submissions by filters ${JSON.stringify(filters)}: ${error}`)
 
         return {
-            data: {
-                nodes: [],
-                totalCount: 0
-            },
+            data: [],
             hasErrors: true,
             errors: [{
                 field: 'searchSubmissions',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+/**
+ * Gets the total count of submissions matching the given filters.
+ * This function is specifically for retrieving only the total count, separate from the paginated data.
+ * It also preserves your existing return object structure for error handling.
+ *
+ * @param filters An object that contains parameters to filter on.
+ * @returns An object containing `data` (the total count), `hasErrors` flag, and optional `errors` array.
+ */
+export async function countSubmissions(filters: gqlTypes.SubmissionSearchFilters) : Promise<Result<number>> {
+    try {
+        const validationResults = validateSubmissionSearchFilters(filters)
+
+        if (validationResults.hasErrors) {
+            return {
+                data: 0,
+                hasErrors: true,
+                errors: validationResults.errors
+            }
+        }
+
+        const baseQueryResult = await buildBaseSubmissionsQuery(filters)
+
+        if (baseQueryResult.hasErrors) {
+            return {
+                data: 0,
+                hasErrors: true,
+                errors: baseQueryResult.errors
+            }
+        }
+
+        let totalCount = 0
+
+        if (baseQueryResult.list) {
+            totalCount = baseQueryResult.list.length
+        } else if (baseQueryResult.query) {
+            const subRef = baseQueryResult.query
+            const allMatchingDocsSnapshot = await subRef.get()
+
+            totalCount = allMatchingDocsSnapshot.docs.length
+        }
+
+        return {
+            data: totalCount,
+            hasErrors: false
+        }
+    } catch (error) {
+        logger.error(`ERROR: Error counting submissions by filters ${JSON.stringify(filters)}: ${error}`)
+        return {
+            data: 0,
+            hasErrors: true,
+            errors: [{
+                field: 'countSubmissions',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]
@@ -798,7 +714,7 @@ function validateIdInput(id: string): Result<unknown> {
     return validationResults
 }
 
-const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submission => {
+export const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submission => {
     const gqlEntity = {
         id: dbEntity.id,
         autofillPlaceFromSubmissionUrl: dbEntity.autofillPlaceFromSubmissionUrl,
