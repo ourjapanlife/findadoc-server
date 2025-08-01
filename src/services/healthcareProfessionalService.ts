@@ -648,7 +648,7 @@ export function mapGqlEntityToDbEntity(newHealthcareProfessionalId: string,
         createdDate: new Date().toISOString(),
         //business rule: updatedDate is updated on every change.
         updatedDate: new Date().toISOString(),
-        additionalInfoForPatients: input.additionalInfoForPatients as string
+        additionalInfoForPatients: input.additionalInfoForPatients ?? ''
     } satisfies dbSchema.HealthcareProfessional
 }
 
