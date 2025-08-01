@@ -33,7 +33,8 @@ export enum Scope {
     'write:posts' = 'write:posts',
     'read:users' = 'read:users',
     'write:users' = 'write:users',
-    'delete:users' = 'delete:users'
+    'delete:users' = 'delete:users',
+    'create:submissions' = 'create:submissions'
 }
 
 // These are the different permissions or "scopes" that are associated with each role.
@@ -69,7 +70,7 @@ const roleScopes: Record<Role, Scope[]> = {
     [Role.User]: [
         Scope['read:healthcareprofessionals'], 
         Scope['read:facilities'], 
-        Scope['write:submissions'],
+        Scope['create:submissions'],
         Scope['read:profile']
     ]
 }

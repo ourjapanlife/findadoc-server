@@ -99,7 +99,7 @@ describe('authorize()', () => {
         // users should have access to user scopes
         expect(authorize(adminUser, [Scope['read:healthcareprofessionals']])).toBe(true)
         expect(authorize(adminUser, [Scope['read:facilities']])).toBe(true)
-        expect(authorize(adminUser, [Scope['write:submissions']])).toBe(true)
+        expect(authorize(adminUser, [Scope['create:submissions']])).toBe(true)
         expect(authorize(adminUser, [Scope['read:profile']])).toBe(true)
     })
 
@@ -119,6 +119,7 @@ describe('authorize()', () => {
         expect(authorize(adminUser, [Scope['write:facilities']])).toBe(false)
         expect(authorize(adminUser, [Scope['delete:facilities']])).toBe(false)
         expect(authorize(adminUser, [Scope['read:submissions']])).toBe(false)
+        expect(authorize(adminUser, [Scope['write:submissions']])).toBe(false)
         expect(authorize(adminUser, [Scope['delete:submissions']])).toBe(false)
         expect(authorize(adminUser, [Scope['read:users']])).toBe(false)
         expect(authorize(adminUser, [Scope['write:users']])).toBe(false)
@@ -237,7 +238,7 @@ describe('roleScopes invariant: no accidental changes', () => {
         [Role.User]: [
             Scope['read:healthcareprofessionals'],
             Scope['read:facilities'],
-            Scope['write:submissions'],
+            Scope['create:submissions'],
             Scope['read:profile']
         ]
     }
