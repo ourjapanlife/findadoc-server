@@ -251,6 +251,7 @@ enum Locale {
   lag_TZ # Langi (Tanzania)
   lg_UG # Ganda (Uganda)
   lv_LV # Latvian (Latvia)
+  mn_MN # Mongolian (Mongolia)
   nb_NO # Norwegian Bokmål (Norway)
   ne_NP # Nepali (Nepal)
   nl_BE # Dutch (Belgium)
