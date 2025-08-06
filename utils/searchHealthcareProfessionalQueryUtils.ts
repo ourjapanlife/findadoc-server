@@ -6,7 +6,7 @@ import { ErrorCode } from '../src/result.js'
 import type { Error } from '../src/result.js'
 import { logger } from '../src/logger.js'
 import { chunkArray } from './arrayUtils.js'
-import { mapDbEntityTogqlEntity } from '../src/services/healthcareProfessionalService.js'
+import { mapDbEntityTogqlEntity } from '../src/services/healthcareProfessionalService-pre-migration.js'
 
 
 type ComparablePrimitive = string | number | boolean | Date

@@ -6,7 +6,7 @@ import { ErrorCode} from '../src/result.js'
 import type { Error } from '../src/result.js'
 import { logger } from '../src/logger.js'
 import { chunkArray } from './arrayUtils.js'
-import { mapDbEntityTogqlEntity } from '../src/services/submissionService.js'
+import { mapDbEntityTogqlEntity } from '../src/services/submissionService-pre-migration.js'
 
 /**
  * Helper function to build the base Firestore query or an in-memory list of submissions based on filters.
