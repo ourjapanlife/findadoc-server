@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql'
 import { authorize, UserContext, Scope } from './auth.js'
-import * as facilityService from './services/facilityService.js'
+import * as facilityService from './services/facilityService-pre-migration.js'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService.js'
 import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService.js'

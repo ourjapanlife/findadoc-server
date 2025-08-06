@@ -4,7 +4,7 @@ import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { dbInstance } from '../firebaseDb.js'
 import { validateNames, validateDegrees, validateProfessionalsSearchInput, validateInsurance, validateSpecialties, validateSpokenLanguages } from '../validation/validationHealthcareProfessional.js'
-import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } from './facilityService.js'
+import { updateFacilitiesWithHealthcareProfessionalIdChanges, validateIdInput } from './facilityService-pre-migration.js'
 import { MapDefinedFields } from '../../utils/objectUtils.js'
 import { logger } from '../logger.js'
 import { createAuditLog } from './auditLogService.js'
@@ -64,7 +64,7 @@ export async function getHealthcareProfessionalById(id: string)
  * @returns An object containing `data` (an array of GraphQL HealthcareProfessionals), `hasErrors` flag, and optional `errors` array.
  */
 export async function searchProfessionals(filters: gqlTypes.HealthcareProfessionalSearchFilters = {}):
-Promise<Result<gqlTypes.HealthcareProfessional[]>> { // *** RETURN TYPE CHANGED ***
+Promise<Result<gqlTypes.HealthcareProfessional[]>> {
     try {
         const validationResult = validateProfessionalsSearchInput(filters)
 

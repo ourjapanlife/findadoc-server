@@ -1,5 +1,5 @@
 import { createHealthcareProfessional } from '../src/services/healthcareProfessionalService.js'
-import { createFacility } from '../src/services/facilityService.js'
+import { createFacility } from '../src/services/facilityService-pre-migration.js'
 
 import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { generateRandomCreateFacilityInputArray } from '../src/fakeData/fakeFacilities.js'

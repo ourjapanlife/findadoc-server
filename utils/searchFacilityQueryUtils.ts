@@ -6,7 +6,7 @@ import { ErrorCode } from '../src/result.js'
 import type { Error } from '../src/result.js'
 import { logger } from '../src/logger.js'
 import { chunkArray } from './arrayUtils.js'
-import { mapDbEntityTogqlEntity } from '../src/services/facilityService.js'
+import { mapDbEntityTogqlEntity } from '../src/services/facilityService-pre-migration.js'
 
 /**
  * Helper function to build the base Firestore query or an in-memory list of facilities based on filters.
