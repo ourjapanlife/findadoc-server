@@ -120,7 +120,7 @@ export function authorize(user: User, requiredScopes: Scope[]): boolean {
         !currentUserRoles.includes(Role.Admin) &&
         !currentUserRoles.includes(Role.Moderator)) {
             // It removes any write or delete permissions from the user's scopes
-            allUserScopes = allUserScopes.filter(scope => scope.startsWith('read:'))
+            allUserScopes = allUserScopes.filter(scope => scope.startsWith('read:') || scope === 'create:submissions')
         }
 
         const hasRequiredScopes = requiredScopes.every((scope: Scope) => allUserScopes.includes(scope))
