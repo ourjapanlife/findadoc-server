@@ -426,12 +426,15 @@ type DeleteResult {
 type Query {
   facility(id: ID!): Facility
   facilities(filters: FacilitySearchFilters!): [Facility!]!
+  facilitiesTotalCount(filters: FacilitySearchFilters!): Int!
   healthcareProfessional(id: ID!): HealthcareProfessional
   healthcareProfessionals(
     filters: HealthcareProfessionalSearchFilters!
   ): [HealthcareProfessional!]!
+  healthcareProfessionalsTotalCount(filters: HealthcareProfessionalSearchFilters!): Int!
   submission(id: ID!): Submission
   submissions(filters: SubmissionSearchFilters!): [Submission!]!
+  submissionsTotalCount(filters: SubmissionSearchFilters!): Int!
   auditLog(id: ID): AuditLog
 }
 

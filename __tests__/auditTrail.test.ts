@@ -3,7 +3,7 @@ import { dbInstance } from '../src/firebaseDb.js'
 import { describe, it, expect} from 'vitest'
 import { createAuditLog } from '../src/services/auditLogService'
 import { generateRandomCreateSubmissionInput } from '../src/fakeData/fakeSubmissions'
-import { mapGqlEntityToDbEntity } from '../src/services/submissionService.js'
+import { mapGqlEntityToDbEntity } from '../src/services/submissionService-pre-migration.js'
 
 describe('createAuditLog', () => {
     it('should create an audit log successfully', async () => {        

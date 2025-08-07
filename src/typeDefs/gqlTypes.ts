@@ -381,11 +381,14 @@ export type Query = {
   __typename?: 'Query';
   auditLog?: Maybe<AuditLog>;
   facilities: Array<Facility>;
+  facilitiesTotalCount: Scalars['Int']['output'];
   facility?: Maybe<Facility>;
   healthcareProfessional?: Maybe<HealthcareProfessional>;
   healthcareProfessionals: Array<HealthcareProfessional>;
+  healthcareProfessionalsTotalCount: Scalars['Int']['output'];
   submission?: Maybe<Submission>;
   submissions: Array<Submission>;
+  submissionsTotalCount: Scalars['Int']['output'];
 };
 
 
@@ -395,6 +398,11 @@ export type QueryAuditLogArgs = {
 
 
 export type QueryFacilitiesArgs = {
+  filters: FacilitySearchFilters;
+};
+
+
+export type QueryFacilitiesTotalCountArgs = {
   filters: FacilitySearchFilters;
 };
 
@@ -414,12 +422,22 @@ export type QueryHealthcareProfessionalsArgs = {
 };
 
 
+export type QueryHealthcareProfessionalsTotalCountArgs = {
+  filters: HealthcareProfessionalSearchFilters;
+};
+
+
 export type QuerySubmissionArgs = {
   id: Scalars['ID']['input'];
 };
 
 
 export type QuerySubmissionsArgs = {
+  filters: SubmissionSearchFilters;
+};
+
+
+export type QuerySubmissionsTotalCountArgs = {
   filters: SubmissionSearchFilters;
 };
 
@@ -817,11 +835,14 @@ export type PhysicalAddressResolvers<ContextType = any, ParentType extends Resol
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   auditLog?: Resolver<Maybe<ResolversTypes['AuditLog']>, ParentType, ContextType, Partial<QueryAuditLogArgs>>;
   facilities?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
+  facilitiesTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryFacilitiesTotalCountArgs, 'filters'>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
   healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
+  healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;
   submissions?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
+  submissionsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QuerySubmissionsTotalCountArgs, 'filters'>>;
 };
 
 export type SubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Submission'] = ResolversParentTypes['Submission']> = {
