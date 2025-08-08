@@ -617,15 +617,18 @@ const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
 
 export const searchSubmissionsQuery = /* GraphQL */ `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
     submissions(filters: $filters) {
-        id
-        googleMapsUrl
-        healthcareProfessionalName
-        isApproved
-        isRejected
-        isUnderReview
-        spokenLanguages
-        createdDate
-        updatedDate
+        totalCount
+        submissions {
+            id
+            googleMapsUrl
+            healthcareProfessionalName
+            isApproved
+            isRejected
+            isUnderReview
+            spokenLanguages
+            createdDate
+            updatedDate
+        }
     }
 }`
 
