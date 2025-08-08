@@ -59,135 +59,78 @@ export const getFacilityById = async (id: string)
 }
 
 /**
- * Searches for facilities in the database based on provided filters.
- * Returns a paginated list of facilities.
- * This function is designed to serve the GraphQL query that returns only the array of Facilities.
- *
- * @param filters An object that contains parameters to filter on.
- * @returns An object containing `data` (an array of GraphQL Facilities), `hasErrors` flag, and optional `errors` array.
+ * A helper function to build the base Firestore query or an in-memory list
+ * of facilities and returns both the paginated data and the total count.
+ * This is the core logic for fetching facilities, handling complex filters
+ * and pagination in a single, efficient operation.
+ * * @param filters The search filters to apply
+ * @returns An object containing `facilities` (paginated list), `totalCount`, and error information
  */
-export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters = {}):
-Promise<Result<gqlTypes.Facility[]>> {
+export async function fetchPaginatedFacilities(filters: gqlTypes.FacilitySearchFilters):
+Promise<Result<{ facilities: gqlTypes.Facility[], totalCount: number }>> {
     try {
         const validationResult = validateFacilitiesSearchInput(filters)
 
         if (validationResult.hasErrors) {
             return {
-                data: [],
+                data: { facilities: [], totalCount: 0 },
                 hasErrors: true,
                 errors: validationResult.errors
             }
         }
-
-        let allGqlFacilities: gqlTypes.Facility[] = []
-
-        // Use the new helper function to build the base query/list
         const baseQueryResult = await buildBaseFacilitiesQuery(filters)
 
         if (baseQueryResult.hasErrors) {
             return {
-                data: [],
+                data: { facilities: [], totalCount: 0 },
                 hasErrors: true,
                 errors: baseQueryResult.errors
             }
         }
 
+        let facilities: gqlTypes.Facility[] = []
+        let totalCount = 0
+        const limit = filters.limit || 20
+        const offset = filters.offset || 0
+
+        // Handle in-memory filtering and pagination, the `buildBaseFacilitiesQuery`
+        // function has already fetched all matching documents
         if (baseQueryResult.list) {
-            // If in-memory processing was used, baseQueryResult.list already contains filtered and sorted data
-            // We just need to apply pagination (limit/offset)
+            // If in-memory processing was used, the total count is the list length
+            // and we just need to apply pagination (limit/offset)
             const allFilteredAndSorted = baseQueryResult.list
-            const startIndex = filters.offset || 0
-            const limit = filters.limit || 20
+
+            totalCount = allFilteredAndSorted.length
+            const startIndex = offset
             const endIndex = startIndex + limit
 
-            allGqlFacilities = allFilteredAndSorted.slice(startIndex, endIndex)
+            facilities = allFilteredAndSorted.slice(startIndex, endIndex)
         } else if (baseQueryResult.query) {
-            // If Firestore query was built, execute it with limit/offset and map results
-            let searchRef = baseQueryResult.query
-            const limit = filters.limit || 20
-            const offset = filters.offset || 0
-
-            searchRef = searchRef.limit(limit).offset(offset)
+            // If Firestore query was built, execute a single Promise.all
+            // to get both the count and the paginated documents
+            const countQuerySnapshot = await baseQueryResult.query.count().get()
+            const searchRef = baseQueryResult.query.limit(limit).offset(offset)
             const dbDocument = await searchRef.get()
+
             const dbFacilities = dbDocument.docs
 
-            allGqlFacilities = dbFacilities.map(dbFacility =>
+            facilities = dbFacilities.map(dbFacility =>
                 mapDbEntityTogqlEntity(dbFacility.data() as dbSchema.Facility))
-        }
-
-        return {
-            data: allGqlFacilities,
-            hasErrors: false
-        }
-    } catch (error: unknown) {
-        logger.error(`ERROR: Error searching facilities by filters ${JSON.stringify(filters)}: ${error}`)
-
-        return {
-            data: [],
-            hasErrors: true,
-            errors: [{
-                field: 'searchFacilities',
-                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                httpStatus: 500
-            }]
-        }
-    }
-}
-
-/**
- * Gets the total count of facilities matching the given filters.
- * This function is specifically for retrieving only the total count, separate from the paginated data.
- * It also preserves your existing return object structure for error handling.
- *
- * @param filters An object that contains parameters to filter on.
- * @returns An object containing `data` (the total count), `hasErrors` flag, and optional `errors` array.
- */
-export async function countFacilities(filters: gqlTypes.FacilitySearchFilters = {}): Promise<Result<number>> {
-    try {
-        const validationResult = validateFacilitiesSearchInput(filters)
-
-        if (validationResult.hasErrors) {
-            return {
-                data: 0, // Return 0 count on validation error
-                hasErrors: true,
-                errors: validationResult.errors
-            }
-        }
-
-        // Use the new helper function to build the base query/list
-        const baseQueryResult = await buildBaseFacilitiesQuery(filters)
-
-        if (baseQueryResult.hasErrors) {
-            return {
-                data: 0,
-                hasErrors: true,
-                errors: baseQueryResult.errors
-            }
-        }
-
-        let totalCount = 0
-
-        if (baseQueryResult.list) {
-            // If in-memory processing was used, the totalCount is simply the length of the list
-            totalCount = baseQueryResult.list.length
-        } else if (baseQueryResult.query) {
-            // If Firestore query was built, get the count using Firestore's count() aggregation
-            const countQuerySnapshot = await baseQueryResult.query.count().get()
 
             totalCount = countQuerySnapshot.data().count
         }
 
         return {
-            data: totalCount,
+            data: { facilities, totalCount },
             hasErrors: false
         }
     } catch (error: unknown) {
-        logger.error(`ERROR: Error counting facilities by filters ${JSON.stringify(filters)}: ${error}`)
+        logger.error(`ERROR in fetchPaginatedFacilities: ${error instanceof Error ? error.message : error}`)
         return {
-            data: 0,
+            data: { facilities: [], totalCount: 0 },
             hasErrors: true,
             errors: [{
-                field: 'countFacilities',
+                field: 'fetchPaginatedFacilities',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]

@@ -27,8 +27,8 @@ const resolvers = {
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
-        facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters }, context: UserContext)
-        : Promise<gqlType.Facility[]> => {
+        facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters }, context: UserContext):
+        Promise<gqlType.PaginatedFacilities> => {
             const isAuthorized = authorize(context.user, [Scope['read:facilities']])
 
             if (!isAuthorized) {
@@ -40,31 +40,13 @@ const resolvers = {
                 })
             }
 
-            const queryResults = await facilityService.searchFacilities(args.filters)
+            const queryResults = await facilityService.fetchPaginatedFacilities(args.filters)
 
             convertErrorsToGqlErrors(queryResults)
-            return queryResults.data as gqlType.Facility[]
+
+            // Complete object with facilities and totalCount
+            return queryResults.data
         },
-        facilitiesTotalCount: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters },
-            context: UserContext)
-        : Promise<number> => {
-            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
-
-            if (!isAuthorized) {
-                throw new GraphQLError('User is not authorized', {
-                    extensions: {
-                        code: 'UNAUTHORIZED',
-                        http: { status: 403 }
-                    }
-                })
-            }
-
-            const countResults = await facilityService.countFacilities(args.filters)
-
-            convertErrorsToGqlErrors(countResults)
-            return countResults.data
-        },
-
         healthcareProfessional: async (_parent: unknown, args: { id: string; }, context: UserContext)
         : Promise<gqlType.HealthcareProfessional> => {
             const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
@@ -86,10 +68,11 @@ const resolvers = {
         },
         healthcareProfessionals: async (_parent: unknown, args: {
             filters: gqlType.HealthcareProfessionalSearchFilters
-        }, context: UserContext)
-        : Promise<gqlType.HealthcareProfessional[]> => {
+        }, context: UserContext):
+        Promise<gqlType.PaginatedHealthcareProfessionals> => {
+            // Authorization check
             const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
-
+          
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
                     extensions: {
@@ -98,37 +81,17 @@ const resolvers = {
                     }
                 })
             }
-
-            const queryResults =
-                await healthcareProfessionalService.searchProfessionals(args.filters)
-
-            convertErrorsToGqlErrors(queryResults)
-
-            return queryResults.data
+          
+            // Use the new unified service function
+            const paginatedResults =
+                await healthcareProfessionalService.fetchPaginatedHealthcareProfessionals(args.filters)
+          
+            // Convert errors if any
+            convertErrorsToGqlErrors(paginatedResults)
+          
+            // The service now returns an object with both the list and the total count
+            return paginatedResults.data
         },
-
-        healthcareProfessionalsTotalCount: async (_parent: unknown, args: {
-            filters: gqlType.HealthcareProfessionalSearchFilters
-        }, context: UserContext)
-        : Promise<number> => {
-            const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
-
-            if (!isAuthorized) {
-                throw new GraphQLError('User is not authorized', {
-                    extensions: {
-                        code: 'UNAUTHORIZED',
-                        http: { status: 403 }
-                    }
-                })
-            }
-
-            const countResults =
-                await healthcareProfessionalService.countProfessionals(args.filters)
-
-            convertErrorsToGqlErrors(countResults)
-            return countResults.data
-        },
-
         submission: async (_parent: unknown, args: { id: string }, context: UserContext)
         : Promise<gqlType.Submission | undefined> => {
             const isAuthorized = authorize(context.user, [Scope['read:submissions']])
@@ -147,11 +110,13 @@ const resolvers = {
             convertErrorsToGqlErrors(matchingSubmissionResult)
             return matchingSubmissionResult.data
         },
-
-        submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: UserContext)
-        : Promise<gqlType.Submission[]> => {
+        submissions: async (
+            _parent: unknown, 
+            args: { filters: gqlType.SubmissionSearchFilters }, 
+            context: UserContext
+        ): Promise<gqlType.PaginatedSubmissions> => {
             const isAuthorized = authorize(context.user, [Scope['read:submissions']])
-
+          
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
                     extensions: {
@@ -160,32 +125,12 @@ const resolvers = {
                     }
                 })
             }
-
-            const matchingSubmissionsResult = await submissionService.searchSubmissions(args.filters)
-
-            convertErrorsToGqlErrors(matchingSubmissionsResult)
-
-            return matchingSubmissionsResult.data
-        },
-
-        submissionsTotalCount: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters },
-            context: UserContext)
-        : Promise<number> => {
-            const isAuthorized = authorize(context.user, [Scope['read:submissions']])
-
-            if (!isAuthorized) {
-                throw new GraphQLError('User is not authorized', {
-                    extensions: {
-                        code: 'UNAUTHORIZED',
-                        http: { status: 403 }
-                    }
-                })
-            }
-
-            const countResults = await submissionService.countSubmissions(args.filters)
-
-            convertErrorsToGqlErrors(countResults)
-            return countResults.data
+            const queryResults = await submissionService.fetchPaginatedSubmissions(args.filters)
+          
+            convertErrorsToGqlErrors(queryResults)
+          
+            // Complete object with facilities and totalCount
+            return queryResults.data
         }
     },
 

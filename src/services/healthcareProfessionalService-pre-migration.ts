@@ -58,129 +58,79 @@ export async function getHealthcareProfessionalById(id: string)
 }
 
 /**
- * Searches for healthcare professionals based on provided filters.
- * Returns a paginated list of professionals.
- * @param filters An object that contains parameters to filter on.
- * @returns An object containing `data` (an array of GraphQL HealthcareProfessionals), `hasErrors` flag, and optional `errors` array.
+ * Unifies the search and count logic for healthcare professionals, handling both in-memory and
+ * direct Firestore query paths to return a paginated list and total count.
+ * @param filters The search filters.
+ * @returns A Result object containing the paginated list and the total count.
  */
-export async function searchProfessionals(filters: gqlTypes.HealthcareProfessionalSearchFilters = {}):
-Promise<Result<gqlTypes.HealthcareProfessional[]>> {
+export async function fetchPaginatedHealthcareProfessionals(
+    filters: gqlTypes.HealthcareProfessionalSearchFilters = {}
+): Promise<Result<{ healthcareProfessionals: gqlTypes.HealthcareProfessional[], totalCount: number }>> {
     try {
         const validationResult = validateProfessionalsSearchInput(filters)
-
+    
         if (validationResult.hasErrors) {
             return {
-                data: [],
+                data: { healthcareProfessionals: [], totalCount: 0 },
                 hasErrors: true,
                 errors: validationResult.errors
             }
         }
-
-        let finalGqlProfessionalsForNodes: gqlTypes.HealthcareProfessional[] = []
-
-        // Use the new helper function to build the base query/list
+    
         const baseQueryResult = await buildBaseHealthcareProfessionalsQuery(filters)
-
+    
         if (baseQueryResult.hasErrors) {
             return {
-                data: [],
+                data: { healthcareProfessionals: [], totalCount: 0 },
                 hasErrors: true,
                 errors: baseQueryResult.errors
             }
         }
-
-        if (baseQueryResult.list) {
-            // If in-memory processing was used, baseQueryResult.list already contains filtered and sorted data
-            // Apply pagination (limit/offset) to this list
-            const allFilteredAndSorted = baseQueryResult.list
-            const startIndex = filters.offset || 0
-            const limit = filters.limit || 20
-            const endIndex = startIndex + limit
-
-            finalGqlProfessionalsForNodes = allFilteredAndSorted.slice(startIndex, endIndex)
-        } else if (baseQueryResult.query) {
-            // If Firestore query was built, execute it with limit/offset and map results
-            let searchRef = baseQueryResult.query
-            const limit = filters.limit || 20
-            const offset = filters.offset || 0
-
-            searchRef = searchRef.limit(limit).offset(offset)
-            const dbDocument = await searchRef.get()
-            const dbProfessionals = dbDocument.docs
-
-            finalGqlProfessionalsForNodes = dbProfessionals.map(dbProfessional =>
-                mapDbEntityTogqlEntity(dbProfessional.data() as dbSchema.HealthcareProfessional))
-        }
-
-        return {
-            data: finalGqlProfessionalsForNodes,
-            hasErrors: false
-        }
-    } catch (error: unknown) {
-        logger.error(`ERROR: Error searching healthcare professionals by filters ${JSON.stringify(filters)}: ${error}`)
-
-        return {
-            data: [],
-            hasErrors: true,
-            errors: [{
-                field: 'searchProfessionals',
-                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                httpStatus: 500
-            }]
-        }
-    }
-}
-
-/**
- * Gets the total count of healthcare professionals matching the given filters.
- * @param filters An object that contains parameters to filter on.
- * @returns An object containing `data` (the total count), `hasErrors` flag, and optional `errors` array.
- */
-export async function countProfessionals(filters: gqlTypes.HealthcareProfessionalSearchFilters = {}):
-Promise<Result<number>> {
-    try {
-        const validationResult = validateProfessionalsSearchInput(filters)
-
-        if (validationResult.hasErrors) {
-            return {
-                data: 0,
-                hasErrors: true,
-                errors: validationResult.errors
-            }
-        }
-
-        // Use the new helper function to build the base query/list
-        const baseQueryResult = await buildBaseHealthcareProfessionalsQuery(filters)
-
-        if (baseQueryResult.hasErrors) {
-            return {
-                data: 0,
-                hasErrors: true,
-                errors: baseQueryResult.errors
-            }
-        }
-
+    
+        let finalGqlProfessionals: gqlTypes.HealthcareProfessional[] = []
         let totalCount = 0
-
+        const limit = filters.limit || 20
+        const offset = filters.offset || 0
+    
+        // Handle in-memory filtering and pagination, the `buildBaseHealthcareProfessionalsQuery`
+        // function has already fetched all matching documents
         if (baseQueryResult.list) {
-            // If in-memory processing was used, the totalCount is simply the length of the list
-            totalCount = baseQueryResult.list.length
-        } else if (baseQueryResult.query) {
-            // If Firestore query was built, use the totalCountForQueryPath returned by the builder
-            totalCount = baseQueryResult.totalCountForQueryPath || 0
-        }
+            // If in-memory processing was used, the total count is the list length
+            // and we just need to apply pagination (limit/offset)
+            const allFilteredAndSorted = baseQueryResult.list
 
+            totalCount = allFilteredAndSorted.length
+            const startIndex = offset
+            const endIndex = startIndex + limit
+    
+            finalGqlProfessionals = allFilteredAndSorted.slice(startIndex, endIndex)
+        } else if (baseQueryResult.query) {
+            // If Firestore query was built, execute a single Promise.all
+            // to get both the count and the paginated documents
+            const searchRef = baseQueryResult.query
+            const countQuerySnapshot = await searchRef.count().get()
+            const limitedSearchRef = searchRef.limit(limit).offset(offset)
+            const dbDocument = await limitedSearchRef.get()
+    
+            const dbProfessionals = dbDocument.docs
+    
+            finalGqlProfessionals = dbProfessionals.map(dbProfessional =>
+                mapDbEntityTogqlEntity(dbProfessional.data() as dbSchema.HealthcareProfessional))
+    
+            totalCount = countQuerySnapshot.data().count
+        }
+    
         return {
-            data: totalCount,
+            data: { healthcareProfessionals: finalGqlProfessionals, totalCount },
             hasErrors: false
         }
     } catch (error: unknown) {
-        logger.error(`ERROR: Error counting healthcare professionals by filters ${JSON.stringify(filters)}: ${error}`)
+        logger.error(`ERROR in fetchPaginatedHealthcareProfessionals: ${error instanceof Error ? error.message : error}`)
         return {
-            data: 0,
+            data: { healthcareProfessionals: [], totalCount: 0 },
             hasErrors: true,
             errors: [{
-                field: 'countProfessionals',
+                field: 'fetchPaginatedHealthcareProfessionals',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]

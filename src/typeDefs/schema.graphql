@@ -50,6 +50,11 @@ input FacilitySearchFilters {
   offset: Int
 }
 
+type PaginatedFacilities {
+  facilities: [Facility!]!
+  totalCount: Int!
+}
+
 type HealthcareProfessional {
   id: ID!
   names: [LocalizedName!]!
@@ -95,6 +100,11 @@ input HealthcareProfessionalSearchFilters {
   orderBy: [OrderBy!]
   limit: Int
   offset: Int
+}
+
+type PaginatedHealthcareProfessionals {
+  healthcareProfessionals: [HealthcareProfessional!]!
+  totalCount: Int!
 }
 
 type Submission {
@@ -170,6 +180,11 @@ input SubmissionSearchFilters {
   orderBy: [OrderBy!]
   limit: Int
   offset: Int
+}
+
+type PaginatedSubmissions {
+  submissions: [Submission!]!
+  totalCount: Int!
 }
 
 type AuditLog {
@@ -425,16 +440,11 @@ type DeleteResult {
 
 type Query {
   facility(id: ID!): Facility
-  facilities(filters: FacilitySearchFilters!): [Facility!]!
-  facilitiesTotalCount(filters: FacilitySearchFilters!): Int!
+  facilities(filters: FacilitySearchFilters!): PaginatedFacilities!
   healthcareProfessional(id: ID!): HealthcareProfessional
-  healthcareProfessionals(
-    filters: HealthcareProfessionalSearchFilters!
-  ): [HealthcareProfessional!]!
-  healthcareProfessionalsTotalCount(filters: HealthcareProfessionalSearchFilters!): Int!
+  healthcareProfessionals(filters: HealthcareProfessionalSearchFilters!): PaginatedHealthcareProfessionals!
   submission(id: ID!): Submission
-  submissions(filters: SubmissionSearchFilters!): [Submission!]!
-  submissionsTotalCount(filters: SubmissionSearchFilters!): Int!
+  submissions(filters: SubmissionSearchFilters!): PaginatedSubmissions!
   auditLog(id: ID): AuditLog
 }
 
