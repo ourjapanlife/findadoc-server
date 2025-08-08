@@ -451,7 +451,7 @@ describe('searchSubmissions', () => {
         //should not have errors
         expect(searchResult.body.errors).toBeUndefined()
 
-        const searchedSubmissions = searchResult.body.data.submissions.submission as Submission[]
+        const searchedSubmissions = searchResult.body.data.submissions.submissions as Submission[]
 
         //should not be empty
         expect(searchedSubmissions).toBeDefined()
