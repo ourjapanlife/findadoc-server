@@ -5,7 +5,7 @@ import { dbInstance } from '../src/firebaseDb.js'
 import { ErrorCode } from '../src/result.js'
 import type { Error } from '../src/result.js'
 import { logger } from '../src/logger.js'
-import { chunkArray } from './arrayUtils.js'
+import { chunkArray, sortArrayByOrderCriteria } from './arrayUtils.js'
 import { mapDbEntityTogqlEntity } from '../src/services/facilityService-pre-migration.js'
 
 /**
@@ -34,7 +34,7 @@ Promise<{ query?: Query<DocumentData>, list?: gqlTypes.Facility[], hasErrors: bo
         * with other range filters or multiple array-contains clauses directly in Firestore.
         */ 
         if (filters.healthcareProfessionalIds && filters.healthcareProfessionalIds.length > 0) {
-            const chunks = chunkArray(filters.healthcareProfessionalIds!, 30);
+            const chunks = chunkArray(filters.healthcareProfessionalIds!, 30)
             const snapshots = await Promise.all(chunks.map(chunk =>
                 dbInstance.collection('facilities')
                     .where('healthcareProfessionalIds', 'array-contains-any', chunk)
@@ -63,70 +63,11 @@ Promise<{ query?: Query<DocumentData>, list?: gqlTypes.Facility[], hasErrors: bo
                 allGqlFacilities = allGqlFacilities.filter(f => f.updatedDate === filters.updatedDate)
             }
 
-            type ComparablePrimitive = string | number | boolean
-            const comparePrimitiveValues = (valA: ComparablePrimitive, valB: ComparablePrimitive): number => {
-                if (valA < valB) {
-                    return -1
-                } else if (valA > valB) {
-                    return 1
-                }
-                return 0
-            }
-
-            if (filters.orderBy && Array.isArray(filters.orderBy)) {
-                allGqlFacilities.sort((facilityA, facilityB) => {
-                    for (const orderCriterion of filters.orderBy!) {
-                        if (!orderCriterion) {
-                            continue
-                        }
-                        const fieldName = orderCriterion.fieldToOrder as keyof gqlTypes.Facility
-                        const valueA = facilityA[fieldName]
-                        const valueB = facilityB[fieldName]
-                        let currentComparison = 0
-
-                        if (valueA === undefined || valueA === null) {
-                            if (valueB === undefined || valueB === null) {
-                                // Both are null/undefined, consider them equal
-                                currentComparison = 0
-                            } else {
-                                // A is null/undefined, B is not, A comes first
-                                currentComparison = -1
-                            }
-                        } else if (valueB === undefined || valueB === null) {
-                            // A is not null/undefined, B is, B comes first
-                            currentComparison = 1
-                        } else {
-                            const isValueAComparable = typeof valueA === 'string' || typeof valueA === 'number' || typeof valueA === 'boolean'
-                            const isValueBComparable = typeof valueB === 'string' || typeof valueB === 'number' || typeof valueB === 'boolean'
-
-                            if (isValueAComparable && isValueBComparable) {
-                                currentComparison = comparePrimitiveValues(valueA as ComparablePrimitive, valueB as ComparablePrimitive)
-                            } else {
-                                throw new Error(`Sorting by field '${String(fieldName)}' is not supported. It contains a non-comparable type (e.g., object or array).`)
-                            }
-                        }
-
-                        // Reverse the comparison if the order direction is Descending
-                        if (orderCriterion.orderDirection === gqlTypes.OrderDirection.Desc) {
-                            currentComparison *= -1
-                        }
-
-                        // If a comparison yields a non-zero result, return it immediately.
-                        if (currentComparison !== 0) {
-                            return currentComparison
-                        }
-                    }
-                    // If all criteria are equal, the facilities are considered equal.
-                    return 0
-                })
-            } else {
-                // Default in-memory sorting: sort by 'createdDate' in descending order.
-                allGqlFacilities.sort((facilityA, facilityB) => {
-                    const createdDateA = new Date(facilityA.createdDate)
-                    const createdDateB = new Date(facilityB.createdDate)
-                    return createdDateB.getTime() - createdDateA.getTime()
-                })
-            }
+            const orderCriteria = (filters.orderBy && Array.isArray(filters.orderBy) && filters.orderBy.length > 0)
+            ? filters.orderBy
+            : [{ fieldToOrder: 'createdDate', orderDirection: gqlTypes.OrderDirection.Desc }]
+        
+            allGqlFacilities = sortArrayByOrderCriteria(allGqlFacilities, orderCriteria as any)
 
             return { list: allGqlFacilities, hasErrors: false }
 

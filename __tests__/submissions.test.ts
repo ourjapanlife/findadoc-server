@@ -451,7 +451,7 @@ describe('searchSubmissions', () => {
         //should not have errors
         expect(searchResult.body.errors).toBeUndefined()
 
-        const searchedSubmissions = searchResult.body.data.submissions as Submission[]
+        const searchedSubmissions = searchResult.body.data.submissions.submissions as Submission[]
 
         //should not be empty
         expect(searchedSubmissions).toBeDefined()
@@ -575,7 +575,7 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
         expect(errors).toBeUndefined()
     }
 
-    const searchedSubmissions = searchResult.body.data.submissions as Submission[]
+    const searchedSubmissions = searchResult.body.data.submissions.submissions as Submission[]
 
     //should have at least 1 result
     expect(searchedSubmissions).toBeDefined()
@@ -617,15 +617,18 @@ const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
 
 export const searchSubmissionsQuery = /* GraphQL */ `query test_searchSubmissions($filters: SubmissionSearchFilters!) {
     submissions(filters: $filters) {
-        id
-        googleMapsUrl
-        healthcareProfessionalName
-        isApproved
-        isRejected
-        isUnderReview
-        spokenLanguages
-        createdDate
-        updatedDate
+        totalCount
+        submissions {
+            id
+            googleMapsUrl
+            healthcareProfessionalName
+            isApproved
+            isRejected
+            isUnderReview
+            spokenLanguages
+            createdDate
+            updatedDate
+        }
     }
 }`
 

@@ -65,141 +65,89 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
 }
 
 /**
- * Searches for submissions in the database based on provided filters.
- * Returns a paginated list of submissions.
- * This function is designed to serve the GraphQL query that returns only the array of submissions.
+ * Searches for submissions in the database based on provided filters,
+ * returning a paginated list and the total count in a single operation.
  *
  * @param filters The search filters to apply.
- * @returns An object containing `data` (an array of GraphQL Submissions), `hasErrors` flag, and optional `errors` array.
+ * @returns An object containing the paginated submissions, total count,
+ * an `hasErrors` flag, and an optional `errors` array.
  */
-export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilters)
-    : Promise<Result<gqlTypes.Submission[]>> {
+export async function fetchPaginatedSubmissions(
+    filters: gqlTypes.SubmissionSearchFilters
+): Promise<Result<{ submissions: gqlTypes.Submission[], totalCount: number }>> {
     try {
         const validationResults = validateSubmissionSearchFilters(filters)
-
+  
         if (validationResults.hasErrors) {
             return {
-                data: [],
+                data: { submissions: [], totalCount: 0 },
                 hasErrors: true,
                 errors: validationResults.errors
             }
         }
-
-        // Initialize an array to hold the final list of GraphQL submissions.
-        let allGqlSubmissions: gqlTypes.Submission[] = []
-
+    
         const baseQueryResult = await buildBaseSubmissionsQuery(filters)
-
-        // Handle errors from the base query building.
+    
         if (baseQueryResult.hasErrors) {
             return {
-                data: [],
+                data: { submissions: [], totalCount: 0 },
                 hasErrors: true,
                 errors: baseQueryResult.errors
             }
         }
-
-        /*Process the query results, applying pagination.
-        * The logic branches based on the structure of `baseQueryResult`.
-        * This suggests there might be two different ways to fetch submissions:
-        * 1. In-memory filtering (`baseQueryResult.list`).
-        * 2. Direct database query with pagination (`baseQueryResult.query`)
-        */
+    
+        let allGqlSubmissions: gqlTypes.Submission[] = []
+        let totalCount = 0
+    
+        // Handle in-memory filtering and pagination, the `buildBaseSubmissionsQuery`
+        // function has already fetched all matching documents
         if (baseQueryResult.list) {
             const allFilteredAndSorted = baseQueryResult.list
-
+    
+            totalCount = allFilteredAndSorted.length
+    
             const startIndex = filters.offset || 0
             const limit = filters.limit || 20
             const endIndex = startIndex + limit
-
+    
             allGqlSubmissions = allFilteredAndSorted.slice(startIndex, endIndex)
         } else if (baseQueryResult.query) {
+            // Handle native Firestore query and pagination, the `buildBaseSubmissionsQuery` function returned a Firestore Query object.
             let subRef = baseQueryResult.query
-
-            const limit = filters.limit || 20
-            const offset = filters.offset || 0
-
-            // Apply pagination directly to the database query.
-            subRef = subRef.limit(limit).offset(offset)
-            // Execute the paginated query to get a snapshot of the results.
-            const paginatedSnapshot = await subRef.get()
-
-            // Map each database entity to its GraphQL type and store it.
-            allGqlSubmissions = paginatedSnapshot.docs.map(dbSubmission =>
-                mapDbEntityTogqlEntity(dbSubmission.data() as dbSchema.Submission))
-        }
-
-        return {
-            data: allGqlSubmissions,
-            hasErrors: false
-        }
-    } catch (error: unknown) {
-        logger.error(`ERROR: Error searching submissions by filters ${JSON.stringify(filters)}: ${error}`)
-
-        return {
-            data: [],
-            hasErrors: true,
-            errors: [{
-                field: 'searchSubmissions',
-                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                httpStatus: 500
-            }]
-        }
-    }
-}
-
-/**
- * Gets the total count of submissions matching the given filters.
- * This function is specifically for retrieving only the total count, separate from the paginated data.
- * It also preserves your existing return object structure for error handling.
- *
- * @param filters An object that contains parameters to filter on.
- * @returns An object containing `data` (the total count), `hasErrors` flag, and optional `errors` array.
- */
-export async function countSubmissions(filters: gqlTypes.SubmissionSearchFilters) : Promise<Result<number>> {
-    try {
-        const validationResults = validateSubmissionSearchFilters(filters)
-
-        if (validationResults.hasErrors) {
-            return {
-                data: 0,
-                hasErrors: true,
-                errors: validationResults.errors
-            }
-        }
-
-        const baseQueryResult = await buildBaseSubmissionsQuery(filters)
-
-        if (baseQueryResult.hasErrors) {
-            return {
-                data: 0,
-                hasErrors: true,
-                errors: baseQueryResult.errors
-            }
-        }
-
-        let totalCount = 0
-
-        if (baseQueryResult.list) {
-            totalCount = baseQueryResult.list.length
-        } else if (baseQueryResult.query) {
-            const subRef = baseQueryResult.query
+    
+            // Get total count before applying pagination
+            // Different to HC and Facility here i can't use
+            // count.get() due to an old version of Firestore
             const allMatchingDocsSnapshot = await subRef.get()
 
             totalCount = allMatchingDocsSnapshot.docs.length
+    
+            const limit = filters.limit || 20
+            const offset = filters.offset || 0
+    
+            // Apply pagination for the final result list
+            subRef = subRef.limit(limit).offset(offset)
+            const paginatedSnapshot = await subRef.get()
+    
+            allGqlSubmissions = paginatedSnapshot.docs.map(dbSubmission =>
+                mapDbEntityTogqlEntity(dbSubmission.data() as dbSchema.Submission))
         }
-
+    
         return {
-            data: totalCount,
+            data: {
+                submissions: allGqlSubmissions,
+                totalCount
+            },
             hasErrors: false
         }
-    } catch (error) {
-        logger.error(`ERROR: Error counting submissions by filters ${JSON.stringify(filters)}: ${error}`)
+    } catch (error: unknown) {
+        logger.error(`ERROR: Error fetching paginated submissions by filters ${JSON.stringify(filters)}: ${error}`)
+    
         return {
-            data: 0,
+            data: { submissions: [], totalCount: 0 },
             hasErrors: true,
             errors: [{
-                field: 'countSubmissions',
+                field: 'fetchPaginatedSubmissions',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]

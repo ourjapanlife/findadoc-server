@@ -352,6 +352,24 @@ export enum OrderDirection {
   Desc = 'desc'
 }
 
+export type PaginatedFacilities = {
+  __typename?: 'PaginatedFacilities';
+  facilities: Array<Facility>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type PaginatedHealthcareProfessionals = {
+  __typename?: 'PaginatedHealthcareProfessionals';
+  healthcareProfessionals: Array<HealthcareProfessional>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type PaginatedSubmissions = {
+  __typename?: 'PaginatedSubmissions';
+  submissions: Array<Submission>;
+  totalCount: Scalars['Int']['output'];
+};
+
 export type PhysicalAddress = {
   __typename?: 'PhysicalAddress';
   addressLine1En: Scalars['String']['output'];
@@ -380,15 +398,12 @@ export type PhysicalAddressInput = {
 export type Query = {
   __typename?: 'Query';
   auditLog?: Maybe<AuditLog>;
-  facilities: Array<Facility>;
-  facilitiesTotalCount: Scalars['Int']['output'];
+  facilities: PaginatedFacilities;
   facility?: Maybe<Facility>;
   healthcareProfessional?: Maybe<HealthcareProfessional>;
-  healthcareProfessionals: Array<HealthcareProfessional>;
-  healthcareProfessionalsTotalCount: Scalars['Int']['output'];
+  healthcareProfessionals: PaginatedHealthcareProfessionals;
   submission?: Maybe<Submission>;
-  submissions: Array<Submission>;
-  submissionsTotalCount: Scalars['Int']['output'];
+  submissions: PaginatedSubmissions;
 };
 
 
@@ -398,11 +413,6 @@ export type QueryAuditLogArgs = {
 
 
 export type QueryFacilitiesArgs = {
-  filters: FacilitySearchFilters;
-};
-
-
-export type QueryFacilitiesTotalCountArgs = {
   filters: FacilitySearchFilters;
 };
 
@@ -422,22 +432,12 @@ export type QueryHealthcareProfessionalsArgs = {
 };
 
 
-export type QueryHealthcareProfessionalsTotalCountArgs = {
-  filters: HealthcareProfessionalSearchFilters;
-};
-
-
 export type QuerySubmissionArgs = {
   id: Scalars['ID']['input'];
 };
 
 
 export type QuerySubmissionsArgs = {
-  filters: SubmissionSearchFilters;
-};
-
-
-export type QuerySubmissionsTotalCountArgs = {
   filters: SubmissionSearchFilters;
 };
 
@@ -670,6 +670,9 @@ export type ResolversTypes = {
   ObjectType: ObjectType;
   OrderBy: OrderBy;
   OrderDirection: OrderDirection;
+  PaginatedFacilities: ResolverTypeWrapper<PaginatedFacilities>;
+  PaginatedHealthcareProfessionals: ResolverTypeWrapper<PaginatedHealthcareProfessionals>;
+  PaginatedSubmissions: ResolverTypeWrapper<PaginatedSubmissions>;
   PhysicalAddress: ResolverTypeWrapper<PhysicalAddress>;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: ResolverTypeWrapper<{}>;
@@ -710,6 +713,9 @@ export type ResolversParentTypes = {
   ModerationAutofillDatabaseSubmissionInput: ModerationAutofillDatabaseSubmissionInput;
   Mutation: {};
   OrderBy: OrderBy;
+  PaginatedFacilities: PaginatedFacilities;
+  PaginatedHealthcareProfessionals: PaginatedHealthcareProfessionals;
+  PaginatedSubmissions: PaginatedSubmissions;
   PhysicalAddress: PhysicalAddress;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: {};
@@ -819,6 +825,24 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateSubmission?: Resolver<ResolversTypes['Submission'], ParentType, ContextType, RequireFields<MutationUpdateSubmissionArgs, 'id' | 'input'>>;
 };
 
+export type PaginatedFacilitiesResolvers<ContextType = any, ParentType extends ResolversParentTypes['PaginatedFacilities'] = ResolversParentTypes['PaginatedFacilities']> = {
+  facilities?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type PaginatedHealthcareProfessionalsResolvers<ContextType = any, ParentType extends ResolversParentTypes['PaginatedHealthcareProfessionals'] = ResolversParentTypes['PaginatedHealthcareProfessionals']> = {
+  healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type PaginatedSubmissionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['PaginatedSubmissions'] = ResolversParentTypes['PaginatedSubmissions']> = {
+  submissions?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type PhysicalAddressResolvers<ContextType = any, ParentType extends ResolversParentTypes['PhysicalAddress'] = ResolversParentTypes['PhysicalAddress']> = {
   addressLine1En?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   addressLine1Ja?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -834,15 +858,12 @@ export type PhysicalAddressResolvers<ContextType = any, ParentType extends Resol
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   auditLog?: Resolver<Maybe<ResolversTypes['AuditLog']>, ParentType, ContextType, Partial<QueryAuditLogArgs>>;
-  facilities?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
-  facilitiesTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryFacilitiesTotalCountArgs, 'filters'>>;
+  facilities?: Resolver<ResolversTypes['PaginatedFacilities'], ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
-  healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
-  healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;
+  healthcareProfessionals?: Resolver<ResolversTypes['PaginatedHealthcareProfessionals'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;
-  submissions?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
-  submissionsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QuerySubmissionsTotalCountArgs, 'filters'>>;
+  submissions?: Resolver<ResolversTypes['PaginatedSubmissions'], ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
 };
 
 export type SubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Submission'] = ResolversParentTypes['Submission']> = {
@@ -872,6 +893,9 @@ export type Resolvers<ContextType = any> = {
   HealthcareProfessionalSubmission?: HealthcareProfessionalSubmissionResolvers<ContextType>;
   LocalizedName?: LocalizedNameResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  PaginatedFacilities?: PaginatedFacilitiesResolvers<ContextType>;
+  PaginatedHealthcareProfessionals?: PaginatedHealthcareProfessionalsResolvers<ContextType>;
+  PaginatedSubmissions?: PaginatedSubmissionsResolvers<ContextType>;
   PhysicalAddress?: PhysicalAddressResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Submission?: SubmissionResolvers<ContextType>;

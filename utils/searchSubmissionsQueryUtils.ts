@@ -5,7 +5,7 @@ import { dbInstance } from '../src/firebaseDb.js'
 import { ErrorCode} from '../src/result.js'
 import type { Error } from '../src/result.js'
 import { logger } from '../src/logger.js'
-import { chunkArray } from './arrayUtils.js'
+import { chunkArray,sortArrayByOrderCriteria } from './arrayUtils.js'
 import { mapDbEntityTogqlEntity } from '../src/services/submissionService-pre-migration.js'
 
 /**
@@ -64,66 +64,14 @@ Promise<{ query?: Query<DocumentData>, list?: gqlTypes.Submission[], hasErrors: 
                 allGqlSubmissions = allGqlSubmissions.filter(s => s.updatedDate === filters.updatedDate)
             }
 
-            type ComparablePrimitive = string | number | boolean
-            const comparePrimitiveValues = (valA: ComparablePrimitive, valB: ComparablePrimitive): number => {
-                if (valA < valB) {
-                    return -1
-                }
-                if (valA > valB) {
-                    return 1
-                }
-                return 0
-            }
-
-            if (filters.orderBy && Array.isArray(filters.orderBy)) {
-                allGqlSubmissions.sort((submissionsA, submissionsB) => {
-                    for (const orderCriterion of filters.orderBy!) {
-                        if (!orderCriterion) {
-                            continue
-                        }
-                        const fieldName = orderCriterion.fieldToOrder as keyof gqlTypes.Submission
-                        const valueA = submissionsA[fieldName]
-                        const valueB = submissionsB[fieldName]
-                        let currentComparison = 0
-
-                        if (valueA === undefined || valueA === null) {
-                            if (valueB === undefined || valueB === null) {
-                                currentComparison = 0
-                            } else {
-                                currentComparison = -1
-                            }
-                        } else if (valueB === undefined || valueB === null) {
-                            currentComparison = 1
-                        } else {
-                            const isValueAComparable = typeof valueA === 'string' || typeof valueA === 'number' || typeof valueA === 'boolean'
-                            const isValueBComparable = typeof valueB === 'string' || typeof valueB === 'number' || typeof valueB === 'boolean'
-
-                            if (isValueAComparable && isValueBComparable) {
-                                currentComparison = comparePrimitiveValues(valueA as ComparablePrimitive,
-                                                                         valueB as ComparablePrimitive)
-                            } else {
-                                throw new Error(`Sorting by field '${String(fieldName)}' is not supported. It contains a non-comparable type (e.g., object or array).`)
-                            }
-                        }
-                        if (orderCriterion.orderDirection === gqlTypes.OrderDirection.Desc) {
-                            currentComparison *= -1
-                        }
-                        if (currentComparison !== 0) {
-                            return currentComparison
-                        }
-                    }
-                    return 0
-                })
-            } else {
-                allGqlSubmissions.sort((submissionA, submissionB) => {
-                    const createdDateA = new Date(submissionA.createdDate)
-                    const createdDateB = new Date(submissionB.createdDate)
-
-                    return createdDateB.getTime() - createdDateA.getTime()
-                })
-            }
+            const orderCriteria = (filters.orderBy && Array.isArray(filters.orderBy) && filters.orderBy.length > 0)
+                ? filters.orderBy
+                : [{ fieldToOrder: 'createdDate', orderDirection: gqlTypes.OrderDirection.Desc }]
+            
+            allGqlSubmissions = sortArrayByOrderCriteria(allGqlSubmissions, orderCriteria as any)
 
             return { list: allGqlSubmissions, hasErrors: false }
+                 
         } catch (error: unknown) {
             logger.error(`ERROR in buildBaseSubmissionsQuery (in-memory path): ${error instanceof Error ? error.message : error}`)
             return {
