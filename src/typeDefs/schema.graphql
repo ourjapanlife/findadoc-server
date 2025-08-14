@@ -378,25 +378,26 @@ enum SpecialtyCategory {
 }
 
 enum Degree {
-  MD # Medical Doctor
+  CNM # Certified Nurse Midwife
+  DC # Doctor of Chiropractic
+  DDS # Doctor of Dental Surgery
+  DMD # Doctor of Dental Medicine
+  DNP # Doctor of Nursing Practice
   DO # Doctor of Osteopathic Medicine
   DPM # Doctor of Podiatric Medicine
-  DMD # Doctor of Dental Medicine
-  DDS # Doctor of Dental Surgery
-  DVM # Doctor of Veterinary Medicine
-  DC # Doctor of Chiropractic
   DPT # Doctor of Physical Therapy
-  DNP # Doctor of Nursing Practice
-  PA # Physician Assistant
-  NP # Nurse Practitioner
-  CNM # Certified Nurse Midwife
-  DSW # Doctor of Social Work
-  PhD # Doctor of Philosophy
-  PsyD # Doctor of Psychology
-  EdD # Doctor of Education
-  PharmD # Doctor of Pharmacy
   DSc # Doctor of Science
+  DSW # Doctor of Social Work
+  DVM # Doctor of Veterinary Medicine
+  EdD # Doctor of Education
+  MD # Medical Doctor
   MPH # Master of Public Health
+  NP # Nurse Practitioner
+  OD # Doctor of Optometry
+  PA # Physician Assistant
+  PhD # Doctor of Philosophy
+  PharmD # Doctor of Pharmacy
+  PsyD # Doctor of Psychology
 }
 
 enum Insurance {
@@ -431,7 +432,9 @@ type Query {
   healthcareProfessionals(
     filters: HealthcareProfessionalSearchFilters!
   ): [HealthcareProfessional!]!
-  healthcareProfessionalsTotalCount(filters: HealthcareProfessionalSearchFilters!): Int!
+  healthcareProfessionalsTotalCount(
+    filters: HealthcareProfessionalSearchFilters!
+  ): Int!
   submission(id: ID!): Submission
   submissions(filters: SubmissionSearchFilters!): [Submission!]!
   submissionsTotalCount(filters: SubmissionSearchFilters!): Int!
@@ -460,7 +463,9 @@ type Mutation {
 
   createSubmission(input: CreateSubmissionInput!): Submission!
 
-  moderationPanelUpdateSubmission(input: ModerationAutofillDatabaseSubmissionInput!): Submission!
+  moderationPanelUpdateSubmission(
+    input: ModerationAutofillDatabaseSubmissionInput!
+  ): Submission!
 
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission!
 
