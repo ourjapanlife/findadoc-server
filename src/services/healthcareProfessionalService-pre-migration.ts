@@ -662,8 +662,8 @@ export function mapDbEntityTogqlEntity(dbEntity: DocumentData)
         specialties: dbEntity.specialties,
         acceptedInsurance: dbEntity.acceptedInsurance,
         facilityIds: dbEntity.facilityIds,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString(),
+        createdDate: dbEntity.createdDate,
+        updatedDate: dbEntity.updatedDate,
         additionalInfoForPatients: dbEntity.additionalInfoForPatients
     } satisfies gqlTypes.HealthcareProfessional
 
