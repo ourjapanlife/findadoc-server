@@ -8,7 +8,7 @@ COPY package.json ./
 COPY yarn.lock ./
 COPY .yarnrc.yml ./
 
-# Yarn Berry
+# Yarn
 RUN mkdir -p ./.yarn/releases
 COPY .yarn/releases/yarn-*.cjs .yarn/releases/.
 RUN corepack enable
@@ -19,11 +19,7 @@ RUN yarn install --immutable --frozen-lockfile
 # Copy app source code
 COPY . .
 
-# Build
-RUN yarn prod:build
-
-
 # Run 
-EXPOSE 4000
+EXPOSE 4500
 
-CMD [ "yarn", "prod:startserver" ]
+CMD [ "yarn", "dev" ]
