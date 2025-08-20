@@ -1,3 +1,6 @@
+import type { OrderBy } from '../src/typeDefs/gqlTypes.js'
+import { OrderDirection } from '../src/typeDefs/gqlTypes.js'
+
 export type ComparablePrimitive = string | number | boolean
 
 /**
@@ -43,18 +46,18 @@ export function chunkArray<T>(arr: T[], size: number): T[][] {
  */
 export function sortArrayByOrderCriteria<T extends Record<string, any>>(
     arrayToSort: T[],
-    orderBy: Array<{ fieldToOrder: keyof T, orderDirection: 'ASC' | 'DESC' }> | null | undefined
+    orderBy: OrderBy[] | null | undefined
 ): T[] {
     // If no sorting criteria are provided, return the original array without sorting.
     if (!orderBy || !Array.isArray(orderBy) || orderBy.length === 0) {
         return arrayToSort
     }
 
-    return arrayToSort.sort((a, b) => {
+    return arrayToSort.sort((itemA, itemB) => {
         for (const orderCriterion of orderBy) {
             const fieldName = orderCriterion.fieldToOrder
-            const valueA = a[fieldName]
-            const valueB = b[fieldName]
+            const valueA = itemA[fieldName]
+            const valueB = itemB[fieldName]
             let currentComparison = 0
 
             // Handle null/undefined values, considering them 'less than' any other value.
@@ -74,7 +77,7 @@ export function sortArrayByOrderCriteria<T extends Record<string, any>>(
             }
 
              // Reverse the comparison result if the sorting direction is descending.
-            if (orderCriterion.orderDirection === 'DESC') {
+            if (orderCriterion.orderDirection === OrderDirection.Desc) {
                 currentComparison *= -1
             }
 

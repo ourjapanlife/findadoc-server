@@ -68,7 +68,7 @@ Promise<{ query?: Query<DocumentData>, list?: gqlTypes.Submission[], hasErrors: 
                 ? filters.orderBy
                 : [{ fieldToOrder: 'createdDate', orderDirection: gqlTypes.OrderDirection.Desc }]
             
-            allGqlSubmissions = sortArrayByOrderCriteria(allGqlSubmissions, orderCriteria as any)
+            allGqlSubmissions = sortArrayByOrderCriteria(allGqlSubmissions, orderCriteria)
 
             return { list: allGqlSubmissions, hasErrors: false }
                  

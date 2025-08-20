@@ -63,11 +63,11 @@ Promise<{ query?: Query<DocumentData>, list?: gqlTypes.Facility[], hasErrors: bo
                 allGqlFacilities = allGqlFacilities.filter(f => f.updatedDate === filters.updatedDate)
             }
 
-            const orderCriteria = (filters.orderBy && Array.isArray(filters.orderBy) && filters.orderBy.length > 0)
+            const orderCriteria = (filters.orderBy && Array.isArray(filters.orderBy) && filters.orderBy.length)
             ? filters.orderBy
             : [{ fieldToOrder: 'createdDate', orderDirection: gqlTypes.OrderDirection.Desc }]
         
-            allGqlFacilities = sortArrayByOrderCriteria(allGqlFacilities, orderCriteria as any)
+            allGqlFacilities = sortArrayByOrderCriteria(allGqlFacilities, orderCriteria)
 
             return { list: allGqlFacilities, hasErrors: false }
 
