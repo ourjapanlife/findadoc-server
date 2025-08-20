@@ -263,7 +263,7 @@ const resolvers = {
         createSubmission: async (_parent: unknown, args: {
             input: gqlType.CreateSubmissionInput
         }, context: UserContext): Promise<gqlType.Submission> => {
-            const isAuthorized = authorize(context.user, [Scope['write:submissions'], Scope['create:submissions']])
+            const isAuthorized = authorize(context.user, [Scope['write:submissions']]) || authorize(context.user, [Scope['create:submissions']])
 
             if (!isAuthorized) {
                 throw new GraphQLError('User is not authorized', {
