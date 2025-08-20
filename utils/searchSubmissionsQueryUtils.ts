@@ -64,7 +64,7 @@ Promise<{ query?: Query<DocumentData>, list?: gqlTypes.Submission[], hasErrors: 
                 allGqlSubmissions = allGqlSubmissions.filter(s => s.updatedDate === filters.updatedDate)
             }
 
-            const orderCriteria = (filters.orderBy && Array.isArray(filters.orderBy) && filters.orderBy.length > 0)
+            const orderCriteria = (filters.orderBy && Array.isArray(filters.orderBy) && filters.orderBy.length)
                 ? filters.orderBy
                 : [{ fieldToOrder: 'createdDate', orderDirection: gqlTypes.OrderDirection.Desc }]
             
