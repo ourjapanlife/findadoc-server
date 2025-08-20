@@ -4,7 +4,7 @@ export function hasSpecialCharacters(str: string) {
 }
 
 export function hasJapaneseCharacters(name: string) {
-    return /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]+/g.test(name)
+    return /[\u3005\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]+/g.test(name)
 }
 
 export function hasLatinCharacters(name: string) {
