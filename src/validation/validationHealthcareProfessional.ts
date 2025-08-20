@@ -311,7 +311,7 @@ export function validateSpecialties(
         return
     }
 
-    if (specialties.length > 16) {
+    if (specialties.length > 32) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'specialties',
