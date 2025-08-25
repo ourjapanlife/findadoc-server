@@ -44,7 +44,7 @@ export const seedDatabase = async () => {
         for await (const submission of submissions) {
             const createSubmissionResult = await createSubmission(submission)
 
-            //we should fail here if we have errors
+            // We should fail here if we have errors
             if (createSubmissionResult.hasErrors) {
                 throw new Error(`${JSON.stringify(createSubmissionResult.errors)}`)
             }
