@@ -10,6 +10,9 @@ node_modules
 !.yarn/versions
 yarn-error.log
 
+# ai env settings
+.claude
+
 # eslint results
 eslint-results.sarif
 

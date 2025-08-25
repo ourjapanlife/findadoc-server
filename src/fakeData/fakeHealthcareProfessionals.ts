@@ -6,8 +6,12 @@ export function generateRandomCreateHealthcareProfessionalInput(
     { facilityIds }: { facilityIds: string[] } = { facilityIds: [] }
 )
     : gqlTypes.CreateHealthcareProfessionalInput {
+    // Let's randomly select 1 to 2 facility IDs from the provided list. 
+    // HP must be associated with at least one facility.
+    const randomSelectedFacilityIds = faker.helpers.arrayElements(facilityIds, { min: 1, max: 3 })
+
     return {
-        facilityIds: facilityIds,
+        facilityIds: randomSelectedFacilityIds,
         names: faker.helpers.multiple(generateLocalizedNameInput, { count: 1 }),
         degrees: generateDegrees(),
         specialties: generateSpecialties(),
@@ -17,9 +21,12 @@ export function generateRandomCreateHealthcareProfessionalInput(
     }
 }
 
-export function generateRandomCreateHealthcareProfessionalInputArray({ count = 5 } = {})
+// This generates an array of HP using existing facility IDs
+export function generateRandomCreateHealthcareProfessionalInputArray({ count, facilityIdOptions} 
+: { count?: number, facilityIdOptions?: string[] } = { count: 100, facilityIdOptions: [] })
     : gqlTypes.CreateHealthcareProfessionalInput[] {
-    return faker.helpers.multiple(generateRandomCreateHealthcareProfessionalInput, {
+    return faker.helpers.multiple(() => 
+        generateRandomCreateHealthcareProfessionalInput({ facilityIds: facilityIdOptions || [] }), {
         count: count
     })
 }

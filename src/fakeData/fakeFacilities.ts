@@ -1,25 +1,56 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { faker, fakerJA } from '@faker-js/faker'
-import { randomPrefecture } from '../../utils/japanesePrefectures.js'
 
 export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: string[])
     : gqlTypes.CreateFacilityInput {
-    const sex = faker.person.sexType()
-    const firstName = faker.person.firstName()
-    const lastName = faker.person.lastName()
-    const fullEnglishName = faker.person.fullName({ firstName, lastName, sex })
+    const fullEnglishName = faker.company.name()
     const email = faker.internet.email({ firstName: fullEnglishName })
-    const firstNameJa = fakerJA.person.lastName()
-    const lastNameJa = fakerJA.person.lastName()
-    const fullJapaneseName = fakerJA.person.fullName({ firstName: firstNameJa, lastName: lastNameJa, sex })
+    const fullJapaneseName = fakerJA.company.name()
 
-    const { en: prefectureEn, ja: prefectureJa } = randomPrefecture()
+    // Select random location from Tokyo, Kyoto, or Hokkaido
+    const locations = [
+        {
+            cityEn: 'Tokyo',
+            cityJa: '東京',
+            prefectureEn: 'Tokyo',
+            prefectureJa: '東京都',
+            latMin: 35.6,
+            latMax: 35.8,
+            lngMin: 139.3,
+            lngMax: 139.9,
+            postalCodePattern: /1[0-9]{2}-[0-9]{4}/
+        },
+        {
+            cityEn: 'Kyoto',
+            cityJa: '京都',
+            prefectureEn: 'Kyoto',
+            prefectureJa: '京都府',
+            latMin: 35.0,
+            latMax: 35.1,
+            lngMin: 135.7,
+            lngMax: 135.8,
+            postalCodePattern: /6[0-9]{2}-[0-9]{4}/
+        },
+        {
+            cityEn: 'Sapporo',
+            cityJa: '札幌',
+            prefectureEn: 'Hokkaido',
+            prefectureJa: '北海道',
+            latMin: 43.0,
+            latMax: 43.1,
+            lngMin: 141.3,
+            lngMax: 141.4,
+            postalCodePattern: /0[0-9]{2}-[0-9]{4}/
+        }
+    ]
+
+    const selectedLocation = faker.helpers.arrayElement(locations)
 
     return {
         nameEn: fullEnglishName,
         nameJa: fullJapaneseName,
-        mapLatitude: faker.location.latitude(), 
-        mapLongitude: faker.location.longitude(),
+        mapLatitude: faker.location.latitude({ min: selectedLocation.latMin, max: selectedLocation.latMax }),
+        mapLongitude: faker.location.longitude({ min: selectedLocation.lngMin, max: selectedLocation.lngMax }),
         healthcareProfessionalIds: healthcareProfessionalIds ?? [],
         contact: {
             googleMapsUrl: faker.internet.url(),
@@ -31,18 +62,19 @@ export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: st
                 addressLine2En: faker.location.secondaryAddress(),
                 addressLine1Ja: fakerJA.location.streetAddress(),
                 addressLine2Ja: fakerJA.location.secondaryAddress(),
-                cityEn: faker.location.city(),
-                cityJa: fakerJA.location.city(),
-                postalCode: faker.location.zipCode(),
-                prefectureEn: prefectureEn,
-                prefectureJa: prefectureJa
+                cityEn: selectedLocation.cityEn,
+                cityJa: selectedLocation.cityJa,
+                postalCode: faker.helpers.fromRegExp(selectedLocation.postalCodePattern),
+                prefectureEn: selectedLocation.prefectureEn,
+                prefectureJa: selectedLocation.prefectureJa
             }
         }
     }
 }
 
-export function generateRandomCreateFacilityInputArray(count: number = 5): gqlTypes.CreateFacilityInput[] {
+export function generateRandomCreateFacilityInputArray({ count }: { count?: number } = { count: 20 })
+    : gqlTypes.CreateFacilityInput[] {
     return faker.helpers.multiple(generateRandomCreateFacilityInput, {
-        count: count
+        count
     })
 }
