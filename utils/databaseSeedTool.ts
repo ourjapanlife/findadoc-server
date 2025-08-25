@@ -13,7 +13,7 @@ export const seedDatabase = async () => {
 
     try {
 
-        const facilities = generateRandomCreateFacilityInputArray({ count: 15 })
+        const facilities = generateRandomCreateFacilityInputArray({ count: 30 })
         const facilityIds: string[] = []
         for await (const facility of facilities) {
             const createdFacilityResult = await createFacility(facility, 'db seed tool')
@@ -34,7 +34,7 @@ export const seedDatabase = async () => {
         for await (const hp of healthcareProfessionals) {
             // for seeding we can just pass a fake userId
             const createProfessionalResult = await createHealthcareProfessional(hp, 'db seed tool')
-            //we should fail here if we have errors
+            // We should fail here if we have errors
             if (createProfessionalResult.hasErrors) {
                 throw new Error(`${JSON.stringify(createProfessionalResult.errors)}`)
             }
@@ -44,7 +44,7 @@ export const seedDatabase = async () => {
         for await (const submission of submissions) {
             const createSubmissionResult = await createSubmission(submission)
 
-            //we should fail here if we have errors
+            // We should fail here if we have errors
             if (createSubmissionResult.hasErrors) {
                 throw new Error(`${JSON.stringify(createSubmissionResult.errors)}`)
             }
