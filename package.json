@@ -4,7 +4,7 @@
     "description": "Backend for Find a Doc, Japan",
     "main": "index.js",
     "scripts": {
-        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && yarn dev:startserver",
+        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && concurrently --raw \"yarn dev:startlocaldb\" \"yarn dev:startserver\"",
         "dev:startserver": "echo '💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon --exec 'node --inspect --loader ts-node/esm src/index.ts'",
         "dev:startlocaldb": "firebase login && firebase emulators:start --project=find-a-doc-japan --only firestore",
         "test": "echo '🧶 Installing yarn dependencies...🧶' && yarn && vitest",
@@ -59,6 +59,7 @@
         "@typescript-eslint/parser": "^6.9.1",
         "all-contributors-cli": "^6.24.0",
         "axios": "^1.7.9",
+        "concurrently": "^9.2.0",
         "copyfiles": "^2.4.1",
         "eslint": "^8.53.0",
         "eslint-config-airbnb-base": "^15.0.0",
