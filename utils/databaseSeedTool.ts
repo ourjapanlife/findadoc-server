@@ -13,7 +13,7 @@ export const seedDatabase = async () => {
 
     try {
 
-        const facilities = generateRandomCreateFacilityInputArray({ count: 15 })
+        const facilities = generateRandomCreateFacilityInputArray({ count: 30 })
         const facilityIds: string[] = []
         for await (const facility of facilities) {
             const createdFacilityResult = await createFacility(facility, 'db seed tool')
