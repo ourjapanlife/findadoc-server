@@ -23,7 +23,7 @@ export function generateRandomCreateHealthcareProfessionalInput(
 
 // This generates an array of HP using existing facility IDs
 export function generateRandomCreateHealthcareProfessionalInputArray({ count, facilityIdOptions} 
-: { count?: number, facilityIdOptions?: string[] } = { count: 100, facilityIdOptions: [] })
+: { count: number, facilityIdOptions: string[] } = { count: 100, facilityIdOptions: [] })
     : gqlTypes.CreateHealthcareProfessionalInput[] {
     return faker.helpers.multiple(() => 
         generateRandomCreateHealthcareProfessionalInput({ facilityIds: facilityIdOptions || [] }), {
