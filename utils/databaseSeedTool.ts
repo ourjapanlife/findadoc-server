@@ -34,7 +34,7 @@ export const seedDatabase = async () => {
         for await (const hp of healthcareProfessionals) {
             // for seeding we can just pass a fake userId
             const createProfessionalResult = await createHealthcareProfessional(hp, 'db seed tool')
-            //we should fail here if we have errors
+            // We should fail here if we have errors
             if (createProfessionalResult.hasErrors) {
                 throw new Error(`${JSON.stringify(createProfessionalResult.errors)}`)
             }
