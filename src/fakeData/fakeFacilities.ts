@@ -72,7 +72,7 @@ export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: st
     }
 }
 
-export function generateRandomCreateFacilityInputArray({ count }: { count?: number } = { count: 30 })
+export function generateRandomCreateFacilityInputArray({ count }: { count: number } = { count: 30 })
     : gqlTypes.CreateFacilityInput[] {
     return faker.helpers.multiple(generateRandomCreateFacilityInput, {
         count
