@@ -979,3 +979,4 @@ function validateAddressInput(input: gqlTypes.PhysicalAddress): Result<unknown> 
 
     return validationResults
 }
+

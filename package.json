@@ -22,7 +22,8 @@
         "prod:logs": "docker logs findadoc-api -f",
         "generate": "echo '➡ ➡ ➡ Generating types from graphql schema ➡ ➡ ➡' && graphql-codegen --config ./typesgeneratorconfig.ts",
         "lint": "cross-env ESLINT_USE_FLAT_CONFIG=true eslint -c eslint.config.js .",
-        "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint ."
+        "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint .",
+        "migrate": "cross-env NODE_ENV=development node --loader ts-node/esm src/migration.ts"
     },
     "repository": {
         "type": "git",
@@ -84,6 +85,7 @@
         "@fastify/rate-limit": "^10.2.2",
         "@firebase/app": "^0.10.18",
         "@firebase/app-compat": "^0.2.48",
+        "@supabase/supabase-js": "^2.56.0",
         "@types/googlemaps": "^3.43.3",
         "cross-env": "^7.0.3",
         "csv-parse": "^5.3.3",
