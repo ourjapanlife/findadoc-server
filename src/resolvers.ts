@@ -4,6 +4,7 @@ import * as facilityService from './services/facilityService-pre-migration.js'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService-pre-migration.js'
 import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService-pre-migration.js'
+import * as userService from './services/userService.js'
 import { Result } from './result.js'
 import { logger } from './logger.js'
 
@@ -186,6 +187,11 @@ const resolvers = {
 
             convertErrorsToGqlErrors(countResults)
             return countResults.data
+        },
+        user: async (_parent: unknown, args: { id: string }): Promise<gqlType.User | undefined> => {
+            const matchingUserResult = await userService.getUserById(args.id)
+
+            return matchingUserResult.data
         }
     },
 
@@ -378,6 +384,11 @@ const resolvers = {
 
             convertErrorsToGqlErrors(deleteSubmissionResult)
             return deleteSubmissionResult.data
+        },
+        createUser: async (_parent: unknown, args: { input: gqlType.CreateUserInput }): Promise<gqlType.User> => {
+            const createUserResult = await userService.createUser(args.input)
+
+            return createUserResult.data
         }
     }
 }
