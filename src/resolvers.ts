@@ -188,7 +188,18 @@ const resolvers = {
             convertErrorsToGqlErrors(countResults)
             return countResults.data
         },
-        user: async (_parent: unknown, args: { id: string }): Promise<gqlType.User | undefined> => {
+        user: async (_parent: unknown, args: { id: string }, context: UserContext)
+        : Promise<gqlType.User | undefined> => {
+            const isAuthorized = authorize(context.user, [Scope['read:users']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
             const matchingUserResult = await userService.getUserById(args.id)
 
             return matchingUserResult.data
@@ -385,7 +396,19 @@ const resolvers = {
             convertErrorsToGqlErrors(deleteSubmissionResult)
             return deleteSubmissionResult.data
         },
-        createUser: async (_parent: unknown, args: { input: gqlType.CreateUserInput }): Promise<gqlType.User> => {
+        createUser: async (_parent: unknown, args: { input: gqlType.CreateUserInput }, context: UserContext)
+        : Promise<gqlType.User> => {
+            const isAuthorized = authorize(context.user, [Scope['write:users']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+
             const createUserResult = await userService.createUser(args.input)
 
             return createUserResult.data
