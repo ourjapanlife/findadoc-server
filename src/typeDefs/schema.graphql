@@ -172,6 +172,24 @@ input SubmissionSearchFilters {
   offset: Int
 }
 
+type User {
+  id: ID!
+  createdDate: String!
+  updatedDate: String! 
+  displayName: String
+  profilePicUrl: String
+}
+
+input CreateUserInput {
+  displayName: String
+  profilePicUrl: String
+}
+
+input UpdateUserInput {
+  displayName: String
+  profilePicUrl: String
+}
+
 type AuditLog {
   id: ID!
   actionType: ActionType!
@@ -439,6 +457,7 @@ type Query {
   submissions(filters: SubmissionSearchFilters!): [Submission!]!
   submissionsTotalCount(filters: SubmissionSearchFilters!): Int!
   auditLog(id: ID): AuditLog
+  user(id: ID!): User
 }
 
 #======== Mutations ========
@@ -470,4 +489,8 @@ type Mutation {
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission!
 
   deleteSubmission(id: ID!): DeleteResult!
+
+  createUser(input: CreateUserInput!): User!
+
+  updateUser(input: UpdateUserInput!): User!
 }
