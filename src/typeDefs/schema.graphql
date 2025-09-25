@@ -172,6 +172,47 @@ input SubmissionSearchFilters {
   offset: Int
 }
 
+type Reservation {
+  id: ID!
+  userId: ID!
+  slotId: ID!
+  createdDate: String!
+  updatedDate: String!
+  status: ReservationStatus!
+}
+
+enum ReservationStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+}
+
+type ReservationSlot {
+  id: ID!
+  hpId: ID!
+  startTime: String!
+  endTime: String!
+  isBooked: Boolean!
+}
+
+type HealthcareProfessionalAvailability {
+  id: ID!
+  hpId: ID!
+  dayOfTheWeek: DayOfTheWeek!
+  startTime: String!
+  endTime: String!
+}
+
+enum DayOfTheWeek {
+  SUN
+  MON
+  TUE
+  WED
+  THUR
+  FRI
+  SAT
+}
+
 type User {
   id: ID!
   createdDate: String!

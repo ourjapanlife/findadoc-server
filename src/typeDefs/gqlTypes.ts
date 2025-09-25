@@ -83,6 +83,16 @@ export type CreateUserInput = {
   profilePicUrl?: InputMaybe<Scalars['String']['input']>;
 };
 
+export enum DayOfTheWeek {
+  Fri = 'FRI',
+  Mon = 'MON',
+  Sat = 'SAT',
+  Sun = 'SUN',
+  Thur = 'THUR',
+  Tue = 'TUE',
+  Wed = 'WED'
+}
+
 export enum Degree {
   Cnm = 'CNM',
   Dc = 'DC',
@@ -160,6 +170,15 @@ export type HealthcareProfessional = {
   specialties: Array<Specialty>;
   spokenLanguages: Array<Locale>;
   updatedDate: Scalars['String']['output'];
+};
+
+export type HealthcareProfessionalAvailability = {
+  __typename?: 'HealthcareProfessionalAvailability';
+  dayOfTheWeek: DayOfTheWeek;
+  endTime: Scalars['String']['output'];
+  hpId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  startTime: Scalars['String']['output'];
 };
 
 export type HealthcareProfessionalSearchFilters = {
@@ -476,6 +495,31 @@ export enum RelationshipAction {
   Update = 'UPDATE'
 }
 
+export type Reservation = {
+  __typename?: 'Reservation';
+  createdDate: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  slotId: Scalars['ID']['output'];
+  status: ReservationStatus;
+  updatedDate: Scalars['String']['output'];
+  userId: Scalars['ID']['output'];
+};
+
+export type ReservationSlot = {
+  __typename?: 'ReservationSlot';
+  endTime: Scalars['String']['output'];
+  hpId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  isBooked: Scalars['Boolean']['output'];
+  startTime: Scalars['String']['output'];
+};
+
+export enum ReservationStatus {
+  Booked = 'BOOKED',
+  Cancelled = 'CANCELLED',
+  Completed = 'COMPLETED'
+}
+
 export enum SchemaVersion {
   V1 = 'V1'
 }
@@ -689,6 +733,7 @@ export type ResolversTypes = {
   CreateHealthcareProfessionalInput: CreateHealthcareProfessionalInput;
   CreateSubmissionInput: CreateSubmissionInput;
   CreateUserInput: CreateUserInput;
+  DayOfTheWeek: DayOfTheWeek;
   Degree: Degree;
   DeleteResult: ResolverTypeWrapper<DeleteResult>;
   Facility: ResolverTypeWrapper<Facility>;
@@ -696,6 +741,7 @@ export type ResolversTypes = {
   FacilitySubmission: ResolverTypeWrapper<FacilitySubmission>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   HealthcareProfessional: ResolverTypeWrapper<HealthcareProfessional>;
+  HealthcareProfessionalAvailability: ResolverTypeWrapper<HealthcareProfessionalAvailability>;
   HealthcareProfessionalSearchFilters: HealthcareProfessionalSearchFilters;
   HealthcareProfessionalSubmission: ResolverTypeWrapper<HealthcareProfessionalSubmission>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
@@ -714,6 +760,9 @@ export type ResolversTypes = {
   Query: ResolverTypeWrapper<{}>;
   Relationship: Relationship;
   RelationshipAction: RelationshipAction;
+  Reservation: ResolverTypeWrapper<Reservation>;
+  ReservationSlot: ResolverTypeWrapper<ReservationSlot>;
+  ReservationStatus: ReservationStatus;
   SchemaVersion: SchemaVersion;
   Specialty: Specialty;
   SpecialtyCategory: SpecialtyCategory;
@@ -743,6 +792,7 @@ export type ResolversParentTypes = {
   FacilitySubmission: FacilitySubmission;
   Float: Scalars['Float']['output'];
   HealthcareProfessional: HealthcareProfessional;
+  HealthcareProfessionalAvailability: HealthcareProfessionalAvailability;
   HealthcareProfessionalSearchFilters: HealthcareProfessionalSearchFilters;
   HealthcareProfessionalSubmission: HealthcareProfessionalSubmission;
   ID: Scalars['ID']['output'];
@@ -756,6 +806,8 @@ export type ResolversParentTypes = {
   PhysicalAddressInput: PhysicalAddressInput;
   Query: {};
   Relationship: Relationship;
+  Reservation: Reservation;
+  ReservationSlot: ReservationSlot;
   String: Scalars['String']['output'];
   Submission: Submission;
   SubmissionSearchFilters: SubmissionSearchFilters;
@@ -830,6 +882,15 @@ export type HealthcareProfessionalResolvers<ContextType = any, ParentType extend
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type HealthcareProfessionalAvailabilityResolvers<ContextType = any, ParentType extends ResolversParentTypes['HealthcareProfessionalAvailability'] = ResolversParentTypes['HealthcareProfessionalAvailability']> = {
+  dayOfTheWeek?: Resolver<ResolversTypes['DayOfTheWeek'], ParentType, ContextType>;
+  endTime?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  hpId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  startTime?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type HealthcareProfessionalSubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['HealthcareProfessionalSubmission'] = ResolversParentTypes['HealthcareProfessionalSubmission']> = {
   acceptedInsurance?: Resolver<Maybe<Array<ResolversTypes['Insurance']>>, ParentType, ContextType>;
   additionalInfoForPatients?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -892,6 +953,25 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<QueryUserArgs, 'id'>>;
 };
 
+export type ReservationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Reservation'] = ResolversParentTypes['Reservation']> = {
+  createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  slotId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['ReservationStatus'], ParentType, ContextType>;
+  updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ReservationSlotResolvers<ContextType = any, ParentType extends ResolversParentTypes['ReservationSlot'] = ResolversParentTypes['ReservationSlot']> = {
+  endTime?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  hpId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isBooked?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  startTime?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type SubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Submission'] = ResolversParentTypes['Submission']> = {
   autofillPlaceFromSubmissionUrl?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -925,11 +1005,14 @@ export type Resolvers<ContextType = any> = {
   Facility?: FacilityResolvers<ContextType>;
   FacilitySubmission?: FacilitySubmissionResolvers<ContextType>;
   HealthcareProfessional?: HealthcareProfessionalResolvers<ContextType>;
+  HealthcareProfessionalAvailability?: HealthcareProfessionalAvailabilityResolvers<ContextType>;
   HealthcareProfessionalSubmission?: HealthcareProfessionalSubmissionResolvers<ContextType>;
   LocalizedName?: LocalizedNameResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   PhysicalAddress?: PhysicalAddressResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  Reservation?: ReservationResolvers<ContextType>;
+  ReservationSlot?: ReservationSlotResolvers<ContextType>;
   Submission?: SubmissionResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
 };
