@@ -5,6 +5,7 @@ import * as healthcareProfessionalService from './services/healthcareProfessiona
 import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService-pre-migration.js'
 import * as userService from './services/userService.js'
+import * as reservationService from './services/reservationService.js'
 import { Result } from './result.js'
 import { logger } from './logger.js'
 
@@ -203,6 +204,22 @@ const resolvers = {
             const matchingUserResult = await userService.getUserById(args.id)
 
             return matchingUserResult.data
+        },
+        reservation: async (_parent: unknown, args: { id: string }, context: UserContext)
+        : Promise<gqlType.Reservation | undefined> => {
+            const isAuthorized = authorize(context.user, [Scope['read:reservations']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+            const matchingReservationResult = await reservationService.getReservationById(args.id)
+
+            return matchingReservationResult.data
         }
     },
 
@@ -412,6 +429,24 @@ const resolvers = {
             const createUserResult = await userService.createUser(args.input)
 
             return createUserResult.data
+        },
+        createReservation: async (_parent: unknown, args: { input: gqlType.CreateReservationInput }, 
+            context: UserContext)
+        : Promise<gqlType.Reservation> => {
+            const isAuthorized = authorize(context.user, [Scope['write:reservations']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+
+            const createReservationResult = await reservationService.createReservation(args.input)
+
+            return createReservationResult.data
         }
     }
 }

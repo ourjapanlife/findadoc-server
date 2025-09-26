@@ -172,6 +172,29 @@ input SubmissionSearchFilters {
   offset: Int
 }
 
+type Reservation {
+  id: ID!
+  userId: ID!
+  createdDate: String!
+  updatedDate: String!
+  status: ReservationStatus!
+}
+
+input CreateReservationInput {
+  userId: ID!
+}
+
+input UpdateReservationInput {
+  userId: ID!
+  status: ReservationStatus!
+}
+
+enum ReservationStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+}
+
 type User {
   id: ID!
   createdDate: String!
@@ -458,6 +481,7 @@ type Query {
   submissionsTotalCount(filters: SubmissionSearchFilters!): Int!
   auditLog(id: ID): AuditLog
   user(id: ID!): User
+  reservation(id: ID!): Reservation
 }
 
 #======== Mutations ========
@@ -493,4 +517,8 @@ type Mutation {
   createUser(input: CreateUserInput!): User!
 
   updateUser(input: UpdateUserInput!): User!
+
+  createReservation(input: CreateReservationInput!): Reservation!
+
+  updateReservation(input: UpdateReservationInput!): Reservation!
 }

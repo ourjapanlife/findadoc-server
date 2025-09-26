@@ -43,6 +43,8 @@ describe('authorize()', () => {
         expect(authorize(adminUser, [Scope['write:posts']])).toBe(true)
         expect(authorize(adminUser, [Scope['read:logs']])).toBe(true)
         expect(authorize(adminUser, [Scope['write:logs']])).toBe(true)
+        expect(authorize(adminUser, [Scope['read:reservations']])).toBe(true)
+        expect(authorize(adminUser, [Scope['write:reservations']])).toBe(true)
     })
 
     it('should allow Moderator to access moderator scopes', () => {
@@ -67,6 +69,8 @@ describe('authorize()', () => {
         expect(authorize(adminUser, [Scope['delete:submissions']])).toBe(true)
         expect(authorize(adminUser, [Scope['read:profile']])).toBe(true)
         expect(authorize(adminUser, [Scope['write:posts']])).toBe(true)
+        expect(authorize(adminUser, [Scope['read:reservations']])).toBe(true)
+        expect(authorize(adminUser, [Scope['write:reservations']])).toBe(true)
     })
 
     it('should not allow Moderator to access admin scopes', () => {
@@ -101,6 +105,8 @@ describe('authorize()', () => {
         expect(authorize(adminUser, [Scope['read:facilities']])).toBe(true)
         expect(authorize(adminUser, [Scope['create:submissions']])).toBe(true)
         expect(authorize(adminUser, [Scope['read:profile']])).toBe(true)
+        expect(authorize(adminUser, [Scope['read:reservations']])).toBe(true)
+        expect(authorize(adminUser, [Scope['write:reservations']])).toBe(true)
     })
 
     it('should not allow User to access moderator or admin scopes', () => {
@@ -217,14 +223,16 @@ describe('roleScopes invariant: no accidental changes', () => {
             Scope['read:users'], Scope['write:users'], Scope['delete:users'],
             Scope['read:profile'],
             Scope['write:posts'],
-            Scope['read:logs'], Scope['write:logs']
+            Scope['read:logs'], Scope['write:logs'],
+            Scope['read:reservations'], Scope['write:reservations']
         ],
         [Role.Moderator]: [
             Scope['read:healthcareprofessionals'], Scope['write:healthcareprofessionals'], Scope['delete:healthcareprofessionals'],
             Scope['read:facilities'], Scope['write:facilities'], Scope['delete:facilities'],
             Scope['read:submissions'], Scope['write:submissions'], Scope['delete:submissions'],
             Scope['read:profile'],
-            Scope['write:posts']
+            Scope['write:posts'],
+            Scope['read:reservations'], Scope['write:reservations']
         ],
         [Role.Dev]: [
             Scope['read:healthcareprofessionals'], Scope['write:healthcareprofessionals'], Scope['delete:healthcareprofessionals'],
@@ -233,13 +241,15 @@ describe('roleScopes invariant: no accidental changes', () => {
             Scope['read:users'], Scope['write:users'], Scope['delete:users'],
             Scope['read:profile'], 
             Scope['write:posts'],
-            Scope['read:logs'], Scope['write:logs']
+            Scope['read:logs'], Scope['write:logs'],
+            Scope['read:reservations'], Scope['write:reservations']
         ],
         [Role.User]: [
             Scope['read:healthcareprofessionals'],
             Scope['read:facilities'],
             Scope['create:submissions'],
-            Scope['read:profile']
+            Scope['read:profile'],
+            Scope['read:reservations'], Scope['write:reservations']
         ]
     }
 

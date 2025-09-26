@@ -34,7 +34,9 @@ export enum Scope {
     'read:users' = 'read:users',
     'write:users' = 'write:users',
     'delete:users' = 'delete:users',
-    'create:submissions' = 'create:submissions'
+    'create:submissions' = 'create:submissions',
+    'read:reservations' = 'read:reservations',
+    'write:reservations' = 'write:reservations'
 }
 
 // These are the different permissions or "scopes" that are associated with each role.
@@ -49,14 +51,16 @@ const roleScopes: Record<Role, Scope[]> = {
         Scope['read:users'], Scope['write:users'], Scope['delete:users'],
         Scope['read:profile'], 
         Scope['write:posts'],
-        Scope['read:logs'], Scope['write:logs']
+        Scope['read:logs'], Scope['write:logs'],
+        Scope['read:reservations'], Scope['write:reservations']
     ],
     [Role.Moderator]: [
         Scope['read:healthcareprofessionals'], Scope['write:healthcareprofessionals'], Scope['delete:healthcareprofessionals'],
         Scope['read:facilities'], Scope['write:facilities'], Scope['delete:facilities'],
         Scope['read:submissions'], Scope['write:submissions'], Scope['delete:submissions'],
         Scope['read:profile'], 
-        Scope['write:posts']
+        Scope['write:posts'],
+        Scope['read:reservations'], Scope['write:reservations']
     ],
     [Role.Dev]: [
         Scope['read:healthcareprofessionals'], Scope['write:healthcareprofessionals'], Scope['delete:healthcareprofessionals'],
@@ -65,13 +69,15 @@ const roleScopes: Record<Role, Scope[]> = {
         Scope['read:users'], Scope['write:users'], Scope['delete:users'],
         Scope['read:profile'], 
         Scope['write:posts'],
-        Scope['read:logs'], Scope['write:logs']
+        Scope['read:logs'], Scope['write:logs'],
+        Scope['read:reservations'], Scope['write:reservations']
     ],
     [Role.User]: [
         Scope['read:healthcareprofessionals'], 
         Scope['read:facilities'], 
         Scope['create:submissions'],
-        Scope['read:profile']
+        Scope['read:profile'],
+        Scope['read:reservations'], Scope['write:reservations']
     ]
 }
 
