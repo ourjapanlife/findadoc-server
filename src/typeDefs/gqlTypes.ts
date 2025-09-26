@@ -70,6 +70,10 @@ export type CreateHealthcareProfessionalInput = {
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
+export type CreateReservationInput = {
+  userId: Scalars['ID']['input'];
+};
+
 export type CreateSubmissionInput = {
   autofillPlaceFromSubmissionUrl?: InputMaybe<Scalars['Boolean']['input']>;
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
@@ -289,6 +293,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   createFacility: Facility;
   createHealthcareProfessional: HealthcareProfessional;
+  createReservation: Reservation;
   createSubmission: Submission;
   createUser: User;
   deleteFacility: DeleteResult;
@@ -297,6 +302,7 @@ export type Mutation = {
   moderationPanelUpdateSubmission: Submission;
   updateFacility: Facility;
   updateHealthcareProfessional: HealthcareProfessional;
+  updateReservation: Reservation;
   updateSubmission: Submission;
   updateUser: User;
 };
@@ -309,6 +315,11 @@ export type MutationCreateFacilityArgs = {
 
 export type MutationCreateHealthcareProfessionalArgs = {
   input: CreateHealthcareProfessionalInput;
+};
+
+
+export type MutationCreateReservationArgs = {
+  input: CreateReservationInput;
 };
 
 
@@ -351,6 +362,11 @@ export type MutationUpdateFacilityArgs = {
 export type MutationUpdateHealthcareProfessionalArgs = {
   id: Scalars['ID']['input'];
   input: UpdateHealthcareProfessionalInput;
+};
+
+
+export type MutationUpdateReservationArgs = {
+  input: UpdateReservationInput;
 };
 
 
@@ -414,6 +430,7 @@ export type Query = {
   healthcareProfessional?: Maybe<HealthcareProfessional>;
   healthcareProfessionals: Array<HealthcareProfessional>;
   healthcareProfessionalsTotalCount: Scalars['Int']['output'];
+  reservation?: Maybe<Reservation>;
   submission?: Maybe<Submission>;
   submissions: Array<Submission>;
   submissionsTotalCount: Scalars['Int']['output'];
@@ -453,6 +470,11 @@ export type QueryHealthcareProfessionalsArgs = {
 
 export type QueryHealthcareProfessionalsTotalCountArgs = {
   filters: HealthcareProfessionalSearchFilters;
+};
+
+
+export type QueryReservationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -607,6 +629,11 @@ export type UpdateHealthcareProfessionalInput = {
   spokenLanguages?: InputMaybe<Array<Locale>>;
 };
 
+export type UpdateReservationInput = {
+  status: ReservationStatus;
+  userId: Scalars['ID']['input'];
+};
+
 export type UpdateSubmissionInput = {
   autofillPlaceFromSubmissionUrl?: InputMaybe<Scalars['Boolean']['input']>;
   facility?: InputMaybe<CreateFacilityInput>;
@@ -712,6 +739,7 @@ export type ResolversTypes = {
   ContactInput: ContactInput;
   CreateFacilityInput: CreateFacilityInput;
   CreateHealthcareProfessionalInput: CreateHealthcareProfessionalInput;
+  CreateReservationInput: CreateReservationInput;
   CreateSubmissionInput: CreateSubmissionInput;
   CreateUserInput: CreateUserInput;
   DayOfTheWeek: DayOfTheWeek;
@@ -750,6 +778,7 @@ export type ResolversTypes = {
   SubmissionSearchFilters: SubmissionSearchFilters;
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
+  UpdateReservationInput: UpdateReservationInput;
   UpdateSubmissionInput: UpdateSubmissionInput;
   UpdateUserInput: UpdateUserInput;
   User: ResolverTypeWrapper<User>;
@@ -763,6 +792,7 @@ export type ResolversParentTypes = {
   ContactInput: ContactInput;
   CreateFacilityInput: CreateFacilityInput;
   CreateHealthcareProfessionalInput: CreateHealthcareProfessionalInput;
+  CreateReservationInput: CreateReservationInput;
   CreateSubmissionInput: CreateSubmissionInput;
   CreateUserInput: CreateUserInput;
   DeleteResult: DeleteResult;
@@ -790,6 +820,7 @@ export type ResolversParentTypes = {
   SubmissionSearchFilters: SubmissionSearchFilters;
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
+  UpdateReservationInput: UpdateReservationInput;
   UpdateSubmissionInput: UpdateSubmissionInput;
   UpdateUserInput: UpdateUserInput;
   User: User;
@@ -882,6 +913,7 @@ export type LocalizedNameResolvers<ContextType = any, ParentType extends Resolve
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
   createFacility?: Resolver<ResolversTypes['Facility'], ParentType, ContextType, RequireFields<MutationCreateFacilityArgs, 'input'>>;
   createHealthcareProfessional?: Resolver<ResolversTypes['HealthcareProfessional'], ParentType, ContextType, RequireFields<MutationCreateHealthcareProfessionalArgs, 'input'>>;
+  createReservation?: Resolver<ResolversTypes['Reservation'], ParentType, ContextType, RequireFields<MutationCreateReservationArgs, 'input'>>;
   createSubmission?: Resolver<ResolversTypes['Submission'], ParentType, ContextType, RequireFields<MutationCreateSubmissionArgs, 'input'>>;
   createUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'input'>>;
   deleteFacility?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteFacilityArgs, 'id'>>;
@@ -890,6 +922,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   moderationPanelUpdateSubmission?: Resolver<ResolversTypes['Submission'], ParentType, ContextType, RequireFields<MutationModerationPanelUpdateSubmissionArgs, 'input'>>;
   updateFacility?: Resolver<ResolversTypes['Facility'], ParentType, ContextType, RequireFields<MutationUpdateFacilityArgs, 'id' | 'input'>>;
   updateHealthcareProfessional?: Resolver<ResolversTypes['HealthcareProfessional'], ParentType, ContextType, RequireFields<MutationUpdateHealthcareProfessionalArgs, 'id' | 'input'>>;
+  updateReservation?: Resolver<ResolversTypes['Reservation'], ParentType, ContextType, RequireFields<MutationUpdateReservationArgs, 'input'>>;
   updateSubmission?: Resolver<ResolversTypes['Submission'], ParentType, ContextType, RequireFields<MutationUpdateSubmissionArgs, 'id' | 'input'>>;
   updateUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateUserArgs, 'input'>>;
 };
@@ -915,6 +948,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
   healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
   healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;
+  reservation?: Resolver<Maybe<ResolversTypes['Reservation']>, ParentType, ContextType, RequireFields<QueryReservationArgs, 'id'>>;
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;
   submissions?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
   submissionsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QuerySubmissionsTotalCountArgs, 'filters'>>;
