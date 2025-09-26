@@ -87,16 +87,6 @@ export type CreateUserInput = {
   profilePicUrl?: InputMaybe<Scalars['String']['input']>;
 };
 
-export enum DayOfTheWeek {
-  Fri = 'FRI',
-  Mon = 'MON',
-  Sat = 'SAT',
-  Sun = 'SUN',
-  Thur = 'THUR',
-  Tue = 'TUE',
-  Wed = 'WED'
-}
-
 export enum Degree {
   Cnm = 'CNM',
   Dc = 'DC',
@@ -742,7 +732,6 @@ export type ResolversTypes = {
   CreateReservationInput: CreateReservationInput;
   CreateSubmissionInput: CreateSubmissionInput;
   CreateUserInput: CreateUserInput;
-  DayOfTheWeek: DayOfTheWeek;
   Degree: Degree;
   DeleteResult: ResolverTypeWrapper<DeleteResult>;
   Facility: ResolverTypeWrapper<Facility>;
