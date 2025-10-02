@@ -1,57 +1,107 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
-import { dbInstance } from '../firebaseDb.js'
 import { ErrorCode, Result } from '../result.js'
 import { hasSpecialCharacters } from '../../utils/stringUtils.js'
+import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
+import { logger } from '../logger.js'
+import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
+import { supabase } from '../supabaseClient.js'
+import { createAuditLogSQL } from './auditLogServiceSupabase.js'
 import { createFacility } from './facilityService-pre-migration.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService-pre-migration.js'
-import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
-import { logger } from '../../src/logger.js'
-import { createAuditLog } from './auditLogService.js'
-import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
-import { buildBaseSubmissionsQuery } from '../../utils/searchSubmissionsQueryUtils.js'
+
+type HasIlike<B> = { 
+    ilike: (column: string, pattern: string) => B
+}
+type HasContains<B> = {
+    //eslint-disable-next-line
+    contains: (column: string, value: string | readonly any[] | Record<string, unknown>) => B
+}
+type HasEq<B> = {
+    eq: (column: string, value: unknown) => B
+}
+
+//Applies filters to a Supabase query builder for the submissions table
+function applySubmissionFilters<B extends HasIlike<B> & HasContains<B> & HasEq<B>>(
+    queryBuilder: B,
+    filters: gqlTypes.SubmissionSearchFilters
+): B {
+    let query = queryBuilder
+
+    if (filters.googleMapsUrl) {
+        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`)
+    }
+    if (filters.healthcareProfessionalName) {
+        query = query.ilike('healthcareProfessionalName', `%${filters.healthcareProfessionalName}%`)
+    }
+    if (filters.spokenLanguages?.length) {
+        query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[])
+    }
+
+    //booleans to status
+    const flags = [filters.isUnderReview, filters.isApproved, filters.isRejected].filter(v => v === true)
+
+    if (flags.length > 1) {
+        throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
+    }
+
+    if (filters.isUnderReview) {
+        query = query.eq('status', 'under_review')
+    }
+    if (filters.isApproved) {
+        query = query.eq('status', 'approved')
+    }
+    if (filters.isRejected) {
+        query = query.eq('status', 'rejected')
+    }
+
+    if (filters.createdDate) {
+        query = query.eq('createdDate', filters.createdDate)
+    }
+    if (filters.updatedDate) { 
+        query = query.eq('updatedDate', filters.updatedDate)
+    }
+
+    return query
+}
 
 /**
  * Gets the Submission from the database that matches the id.
- * @param id A string that matches the id of the Firestore Document for the Submission.
+ * @param id The ID of the Submission row in the database.
  * @returns A Submission object.
  */
-export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Submission>> => {
+export const getSubmissionById = async (
+    id: string
+): Promise<Result<gqlTypes.Submission>> => {
     try {
         const validationResult = validateIdInput(id)
-
+        
         if (validationResult.hasErrors) {
             return validationResult as Result<gqlTypes.Submission>
         }
 
-        const submissionRef = dbInstance.collection('submissions')
-        
-        const dbDocument = await submissionRef.doc(id).get()
+        // Query the 'submissions' table using the ID and expect exactly one row because of .single()
+        const { data: submissionRow, error: submissionRowError } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', id)
+            .single()
 
-        if (!dbDocument.exists) {
+        // PGRST116 = no rows found for single()
+        if (submissionRowError?.code === 'PGRST116' || !submissionRow) {
             return {
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
-                errors: [{
-                    field: 'id',
-                    errorCode: ErrorCode.NOT_FOUND,
-                    httpStatus: 404
-                }]
+                errors: [{ field: 'id', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
             }
         }
-        
-        const dbEntity = dbDocument.data() as dbSchema.Submission
-        const convertedEntity = mapDbEntityTogqlEntity(dbEntity)
 
-        const searchResults = {
-            data: convertedEntity,
-            hasErrors: false
-        }
+        // Map DB → GQL
+        const gqlSubmission = mapDbEntityTogqlEntity(submissionRow as dbSchema.SubmissionRow)
 
-        return searchResults
-    } catch (error) {
-        logger.error(`ERROR: Error retrieving submission by id ${id}: ${error}`)
-
+        return { data: gqlSubmission, hasErrors: false }
+    } catch (err) {
+        logger.error(`ERROR: Error retrieving submission by id ${id}: ${err}`)
         return {
             data: {} as gqlTypes.Submission,
             hasErrors: true,
@@ -68,74 +118,49 @@ export const getSubmissionById = async (id: string): Promise<Result<gqlTypes.Sub
  * Searches for submissions in the database based on provided filters.
  * Returns a paginated list of submissions.
  * This function is designed to serve the GraphQL query that returns only the array of submissions.
- *
  * @param filters The search filters to apply.
- * @returns An object containing `data` (an array of GraphQL Submissions), `hasErrors` flag, and optional `errors` array.
+ * @returns An object containing data (an array of GraphQL Submissions)
  */
-export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilters)
-    : Promise<Result<gqlTypes.Submission[]>> {
+export async function searchSubmissions(
+  filters: gqlTypes.SubmissionSearchFilters = {}
+): Promise<Result<gqlTypes.Submission[]>> {
     try {
-        const validationResults = validateSubmissionSearchFilters(filters)
+        const validation = validateSubmissionSearchFilters(filters)
 
-        if (validationResults.hasErrors) {
-            return {
-                data: [],
-                hasErrors: true,
-                errors: validationResults.errors
-            }
+        if (validation.hasErrors) {
+            return { data: [], hasErrors: true, errors: validation.errors }
         }
 
-        // Initialize an array to hold the final list of GraphQL submissions.
-        let allGqlSubmissions: gqlTypes.Submission[] = []
+        const limit = filters.limit ?? 20
+        const offset = filters.offset ?? 0
 
-        const baseQueryResult = await buildBaseSubmissionsQuery(filters)
+        const baseSelect = supabase
+            .from('submissions')
+            .select('id, googleMapsUrl, healthcareProfessionalName, spokenLanguages, autofillPlaceFromSubmissionUrl, status, createdDate, updatedDate, notes')
 
-        // Handle errors from the base query building.
-        if (baseQueryResult.hasErrors) {
-            return {
-                data: [],
-                hasErrors: true,
-                errors: baseQueryResult.errors
-            }
+        // The applySubmissionFilters function will modify the baseSelect object with .eq, .in
+        let base = applySubmissionFilters(baseSelect, filters)
+
+        // order by (fallback createdDate desc)
+        const orderBy = filters.orderBy?.[0]
+
+        if (orderBy?.fieldToOrder) {
+            base = base.order(orderBy.fieldToOrder, {
+                ascending: orderBy.orderDirection !== 'desc'
+            })
+        } else {
+            base = base.order('createdDate', { ascending: false })
         }
 
-        /*Process the query results, applying pagination.
-        * The logic branches based on the structure of `baseQueryResult`.
-        * This suggests there might be two different ways to fetch submissions:
-        * 1. In-memory filtering (`baseQueryResult.list`).
-        * 2. Direct database query with pagination (`baseQueryResult.query`)
-        */
-        if (baseQueryResult.list) {
-            const allFilteredAndSorted = baseQueryResult.list
+        const { data: rows, error } = await base.range(offset, offset + limit - 1)
 
-            const startIndex = filters.offset || 0
-            const limit = filters.limit || 20
-            const endIndex = startIndex + limit
+        if (error) { throw error }
 
-            allGqlSubmissions = allFilteredAndSorted.slice(startIndex, endIndex)
-        } else if (baseQueryResult.query) {
-            let subRef = baseQueryResult.query
+        const listSubmissions = (rows ?? []).map(row => mapDbEntityTogqlEntity(row as dbSchema.SubmissionRow))
 
-            const limit = filters.limit || 20
-            const offset = filters.offset || 0
-
-            // Apply pagination directly to the database query.
-            subRef = subRef.limit(limit).offset(offset)
-            // Execute the paginated query to get a snapshot of the results.
-            const paginatedSnapshot = await subRef.get()
-
-            // Map each database entity to its GraphQL type and store it.
-            allGqlSubmissions = paginatedSnapshot.docs.map(dbSubmission =>
-                mapDbEntityTogqlEntity(dbSubmission.data() as dbSchema.Submission))
-        }
-
-        return {
-            data: allGqlSubmissions,
-            hasErrors: false
-        }
-    } catch (error: unknown) {
-        logger.error(`ERROR: Error searching submissions by filters ${JSON.stringify(filters)}: ${error}`)
-
+        return { data: listSubmissions, hasErrors: false }
+    } catch (err) {
+        logger.error(`ERROR: searchSubmissions ${JSON.stringify(filters)} -> ${err}`)
         return {
             data: [],
             hasErrors: true,
@@ -154,47 +179,30 @@ export async function searchSubmissions(filters: gqlTypes.SubmissionSearchFilter
  * It also preserves your existing return object structure for error handling.
  *
  * @param filters An object that contains parameters to filter on.
- * @returns An object containing `data` (the total count), `hasErrors` flag, and optional `errors` array.
+ * @returns An object containing data (the total count), hasErrors flag, and optional errors array.
  */
-export async function countSubmissions(filters: gqlTypes.SubmissionSearchFilters) : Promise<Result<number>> {
+export async function countSubmissions(
+  filters: gqlTypes.SubmissionSearchFilters = {}
+): Promise<Result<number>> {
     try {
-        const validationResults = validateSubmissionSearchFilters(filters)
+        const validation = validateSubmissionSearchFilters(filters)
 
-        if (validationResults.hasErrors) {
-            return {
-                data: 0,
-                hasErrors: true,
-                errors: validationResults.errors
-            }
+        if (validation.hasErrors) {
+            return { data: 0, hasErrors: true, errors: validation.errors }
         }
 
-        const baseQueryResult = await buildBaseSubmissionsQuery(filters)
+        //PostgrestFilterBuilder
+        const headSelect = supabase
+            .from('submissions')
+            .select('id', { count: 'exact', head: true })
 
-        if (baseQueryResult.hasErrors) {
-            return {
-                data: 0,
-                hasErrors: true,
-                errors: baseQueryResult.errors
-            }
-        }
+        const { count: countSubs, error: countSubsErr } = await applySubmissionFilters(headSelect, filters)
 
-        let totalCount = 0
+        if (countSubsErr) { throw countSubsErr }
 
-        if (baseQueryResult.list) {
-            totalCount = baseQueryResult.list.length
-        } else if (baseQueryResult.query) {
-            const subRef = baseQueryResult.query
-            const allMatchingDocsSnapshot = await subRef.get()
-
-            totalCount = allMatchingDocsSnapshot.docs.length
-        }
-
-        return {
-            data: totalCount,
-            hasErrors: false
-        }
-    } catch (error) {
-        logger.error(`ERROR: Error counting submissions by filters ${JSON.stringify(filters)}: ${error}`)
+        return { data: countSubs ?? 0, hasErrors: false }
+    } catch (err) {
+        logger.error(`ERROR: countSubmissions ${JSON.stringify(filters)} -> ${err}`)
         return {
             data: 0,
             hasErrors: true,
@@ -207,16 +215,13 @@ export async function countSubmissions(filters: gqlTypes.SubmissionSearchFilters
     }
 }
 
-/**
- * Creates a submission.
- * @param submissionInput the submission to create
- * @returns The submission that was created.
- */
-export const createSubmission = async (submissionInput: gqlTypes.CreateSubmissionInput):
-Promise<Result<gqlTypes.Submission>> => {
+export const createSubmission = async (
+    submissionInput: gqlTypes.CreateSubmissionInput,
+    updatedBy: string
+): Promise<Result<gqlTypes.Submission>> => {
     try {
         const validationResults = validateCreateSubmissionInputs(submissionInput)
-        
+
         if (validationResults.hasErrors) {
             return { 
                 data: {} as gqlTypes.Submission,
@@ -225,48 +230,38 @@ Promise<Result<gqlTypes.Submission>> => {
             }
         }
 
-        // TO DO: After it's validated we should send already an okay request to the user
+        const newSubmission = mapGqlEntityToDbEntity(submissionInput)
 
-        const submissionRef = dbInstance.collection('submissions').doc()
-        const newSubmissionId = submissionRef.id
-        const newSubmission = mapGqlEntityToDbEntity(submissionInput, newSubmissionId)
+        const { data: inserted, error } = await supabase
+            .from('submissions')
+            .insert(newSubmission)
+            .select('*')
+            .single()
 
-        // We want to wrap everyting in a transaction, so when one of the transactions fails we can roll-back
-        await dbInstance.runTransaction(async t => {
-            await t.set(submissionRef, newSubmission)
-            const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Create, 
-                gqlTypes.ObjectType.Submission, 
-                '', 
-                JSON.stringify(newSubmission),
-                null,
-                t
-            )
-
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Create}`) 
-            }
-        })
-
-        const createdSubmission = await getSubmissionById(newSubmissionId)
-
-        // if we didn't get it back or have errors, this is an actual error.
-        if (createdSubmission.hasErrors || !createdSubmission.data) {
-            throw new Error(`${JSON.stringify(createdSubmission.errors)}`)
+        if (error) {
+            throw error
         }
 
+        const gqlSubmission = mapDbEntityTogqlEntity(inserted as dbSchema.SubmissionRow)
+
+        await createAuditLogSQL({
+            actionType: 'CREATE',
+            objectType: 'Submission',
+            updatedBy,
+            newValue: gqlSubmission
+        })
+
         return {
-            data: createdSubmission.data,
+            data: gqlSubmission,
             hasErrors: false
         }
     } catch (error) {
         logger.error(`ERROR: Error creating submission: ${error}`)
-
         return {
             data: {} as gqlTypes.Submission,
             hasErrors: true,
             errors: [{
-                field: `${error}`,
+                field: 'createSubmission',
                 errorCode: ErrorCode.SERVER_ERROR,
                 httpStatus: 500
             }]
@@ -275,208 +270,169 @@ Promise<Result<gqlTypes.Submission>> => {
 }
 
 /**
- * Updates a submission. 
- * Business logic: Use this method if you want to approve a submission. 
- *     If the isApproved field is true, then it will trigger the approve submission workflow.
+ * Updates a submission.
  * @param submissionId the submission to update
  * @param fieldsToUpdate the fields to update
  * @returns The submission that was updated.
  */
-export const updateSubmission = async (submissionId: string, fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>,
-    updatedBy: string):
-Promise<Result<gqlTypes.Submission>> => {
+export const updateSubmission = async (
+    submissionId: string,
+    fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>,
+    updatedBy: string
+): Promise<Result<gqlTypes.Submission>> => {
     try {
-        //business logic: a submission can't be updated or unapproved once it's approved.
-        //business logic: you can't approve and update at the same time. 
         if (fieldsToUpdate.isApproved) {
-            const approvalResult = await approveSubmission(submissionId, updatedBy)
-
-            return approvalResult
-        }
-        
-        const submissionRef = dbInstance.collection('submissions').doc(submissionId)
-        const dbDocument = await submissionRef.get()
-        const submissionToUpdate = dbDocument.data() as dbSchema.Submission
-
-        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && submissionToUpdate.autofillPlaceFromSubmissionUrl) {
-            throw new Error('This submission has already been autofilled once before')
+            return await approveSubmission(submissionId, updatedBy)
         }
 
-        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !submissionToUpdate.autofillPlaceFromSubmissionUrl) {
-            const updatedResultFromAutofill =
-            await autoFillPlacesInformation(submissionId, fieldsToUpdate.googleMapsUrl)
+        const { data: current, error: readErr } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', submissionId)
+            .single()
 
-            return updatedResultFromAutofill
+        if (readErr || !current) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'id', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
+            }
         }
 
-        const updatedSubmissionValues: Partial<dbSchema.Submission> = {
-            //TODO: guarantee the fields in updatesubmissioninput match submission so this doesn't break. maybe a test?
-            ...fieldsToUpdate as Partial<dbSchema.Submission>,
-            //business logic: don't allow updating approval status after the previous check
-            isApproved: submissionToUpdate.isApproved,
+        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && current.autofillPlaceFromSubmissionUrl) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'autofillPlaceFromSubmissionUrl', errorCode: ErrorCode.AUTOFILL_FAILURE, httpStatus: 400 }]
+            }
+        }
+
+        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !current.autofillPlaceFromSubmissionUrl) {
+            return await autoFillPlacesInformation(submissionId, fieldsToUpdate.googleMapsUrl, updatedBy)
+        }
+
+        const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
+
+        const patch: Partial<dbSchema.SubmissionRow> = {
+            googleMapsUrl: fieldsToUpdate.googleMapsUrl ?? current.googleMapsUrl,
+            healthcareProfessionalName: fieldsToUpdate.healthcareProfessionalName ?? current.healthcareProfessionalName,
+            spokenLanguages: fieldsToUpdate.spokenLanguages ?? current.spokenLanguages,
+            notes: fieldsToUpdate.notes ?? current.notes,
+            autofillPlaceFromSubmissionUrl:
+                fieldsToUpdate.autofillPlaceFromSubmissionUrl ?? current.autofillPlaceFromSubmissionUrl,
+            status: current.status,
             updatedDate: new Date().toISOString()
         }
 
-        await dbInstance.runTransaction(async t => {
-            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
-            const doc = await t.get(submissionRef)
-            const oldSubmission = doc.data() as dbSchema.Submission
-            
-            t.update(submissionRef, updatedSubmissionValues)
-            
-            const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Update, 
-                gqlTypes.ObjectType.Submission, 
-                updatedBy,
-                JSON.stringify(updatedSubmissionValues),
-                JSON.stringify(oldSubmission),
-                t
-            )
+        const { error: updErr } = await supabase
+            .from('submissions')
+            .update(patch)
+            .eq('id', submissionId)
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
-            }
+        if (updErr) { throw updErr }
+
+        const refreshed = await getSubmissionById(submissionId)
+
+        if (refreshed.hasErrors || !refreshed.data) { 
+            throw new Error('Could not reload updated submission.')
+        }
+
+        await createAuditLogSQL({
+            actionType: 'UPDATE',
+            objectType: 'Submission',
+            updatedBy,
+            oldValue,
+            newValue: refreshed.data
         })
 
-        logger.info(`\nDB-UPDATE: Submission ${submissionId} was updated.\nFields updated: ${JSON.stringify(fieldsToUpdate)}`)
-        const updatedSubmission = await getSubmissionById(submissionId)
-
-        if (updatedSubmission.hasErrors || !updatedSubmission.data) {
-            throw new Error(`ERROR: Error creating submission: ${JSON.stringify(updatedSubmission.errors)}`)
-        }
-
-        return {
-            data: updatedSubmission.data,
-            hasErrors: false
-        }
+        return { data: refreshed.data, hasErrors: false }
     } catch (error) {
         logger.error(`ERROR: Error updating submission ${submissionId}: ${error}`)
-
         return {
             data: {} as gqlTypes.Submission,
             hasErrors: true,
-            errors: [{
-                field: 'updateSubmission',
-                errorCode: ErrorCode.SERVER_ERROR,
-                httpStatus: 500
-            }]
+            errors: [{ field: 'updateSubmission', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
         }
     }
 }
 
-export const autoFillPlacesInformation = async (submissionId: string, googleMapsUrl: gqlTypes.InputMaybe<string> | undefined, updatedBy: string = ''): 
-Promise<Result<gqlTypes.Submission>> => {
-    const updatedResultFromAutofill: Result<gqlTypes.Submission> = {
-        data: {} as gqlTypes.Submission,
-        hasErrors: false,
-        errors: []
-    }
-
+export const autoFillPlacesInformation = async (
+    submissionId: string,
+    googleMapsUrl: gqlTypes.InputMaybe<string> | undefined,
+    updatedBy: string
+): Promise<Result<gqlTypes.Submission>> => {
     try {
-        const submissionRef = dbInstance.collection('submissions').doc(submissionId)
-        const dbDocument = await submissionRef.get()
-        const currentSubmission = dbDocument.data() as dbSchema.Submission
+        const { data: current, error: readErr } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', submissionId)
+            .single()
 
-        if (!currentSubmission) {
-            updatedResultFromAutofill.errors?.push({
-                field: 'submissionId',
-                errorCode: ErrorCode.NOT_FOUND,
-                httpStatus: 400
-            })
-
-            return updatedResultFromAutofill
-        }
-
-        const googlePlacesSearchResult
-        = await getFacilityDetailsForSubmission(googleMapsUrl as string)
-
-        if (!googlePlacesSearchResult) {
-            updatedResultFromAutofill.errors?.push({
-                field: 'googleMapsUrl',
-                errorCode: ErrorCode.AUTOFILL_FAILURE,
-                httpStatus: 400
-            })
-
-            return updatedResultFromAutofill
-        }
-       
-        const facilityInformation = currentSubmission.facility as gqlTypes.FacilitySubmission
-        const contact: gqlTypes.Contact = {  
-            phone: '', 
-            website: null,
-            googleMapsUrl: '',
-            address: {
-                postalCode: '',
-                prefectureEn: '',
-                addressLine1En: '',
-                addressLine2En: '',
-                cityEn: '',
-                prefectureJa: '',
-                addressLine1Ja: '',
-                addressLine2Ja: '',
-                cityJa: ''
+        if (readErr || !current) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
             }
         }
 
-        if (facilityInformation) {
-            facilityInformation.nameEn = googlePlacesSearchResult.extractedNameEn
-            contact.phone = googlePlacesSearchResult.extractedPhoneNumber
-            contact.website = googlePlacesSearchResult.extractedWebsite
-            contact.googleMapsUrl = googlePlacesSearchResult.extractedGoogleMapsURI
-            contact.address.postalCode
-                = googlePlacesSearchResult.extractedPostalCodeFromInformation
-            contact.address.prefectureEn
-                = googlePlacesSearchResult.extractPrefectureEnFromInformation
-            contact.address.addressLine1En
-                = googlePlacesSearchResult.extractedAddressLine1En
-            facilityInformation.mapLatitude = googlePlacesSearchResult.extractedMapLatitude
-            facilityInformation.mapLongitude = googlePlacesSearchResult.extractedMapLongitude
+        if (!googleMapsUrl) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'googleMapsUrl', errorCode: ErrorCode.AUTOFILL_FAILURE, httpStatus: 400 }]
+            }
         }
 
-        //update the submission to under review with the new updated date and autofill information
-        currentSubmission.facility = facilityInformation
-        currentSubmission.isUnderReview = true
-        currentSubmission.updatedDate = new Date().toISOString()
+        const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
-        await dbInstance.runTransaction(async t => {
-            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
-            const doc = await t.get(submissionRef)
-            const oldSubmission = doc.data() as dbSchema.Submission
-            
-            t.set(submissionRef, currentSubmission, { merge: true })
-            
-            const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Update, 
-                gqlTypes.ObjectType.Submission, 
-                updatedBy,
-                JSON.stringify(currentSubmission),
-                JSON.stringify(oldSubmission),
-                t
-            )
+        const places = await getFacilityDetailsForSubmission(googleMapsUrl as string)
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Update}`) 
+        if (!places) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'googleMapsUrl', errorCode: ErrorCode.AUTOFILL_FAILURE, httpStatus: 400 }]
             }
+        }
+
+        const patch: Partial<dbSchema.SubmissionRow> = {
+            googleMapsUrl: places.extractedGoogleMapsURI ?? current.googleMapsUrl,
+            // altri campi “estratti” se vuoi denormalizzarli (es. notes, ecc.)
+            status: 'under_review',
+            autofillPlaceFromSubmissionUrl: true,
+            updatedDate: new Date().toISOString()
+        }
+
+        const { error: updErr } = await supabase
+            .from('submissions')
+            .update(patch)
+            .eq('id', submissionId)
+
+        if (updErr) { throw updErr }
+
+        const refreshed = await getSubmissionById(submissionId)
+
+        if (refreshed.hasErrors || !refreshed.data) {
+            throw new Error('Could not reload updated submission after autofill.')
+        }
+
+        await createAuditLogSQL({
+            actionType: 'UPDATE',
+            objectType: 'Submission',
+            updatedBy,
+            oldValue,
+            newValue: refreshed.data
         })
 
-        //set the data to return to the approveResult object
-        updatedResultFromAutofill.data = currentSubmission
-
-        //after successful autofilling, set submission field 'autofillPlaceFromSubmissionUrl'
-        //to true so that it will not call autofill a second time for the same submission in the future
-        currentSubmission.autofillPlaceFromSubmissionUrl = true
-
-        return updatedResultFromAutofill
+        return { data: refreshed.data, hasErrors: false }
     } catch (error) {
-        logger.error(`Error updating submission ${submissionId}: ${error}`)
-
-        updatedResultFromAutofill.errors?.push({
-            field: 'autofillPlaceFromSubmissionUrl',
-            errorCode: ErrorCode.SERVER_ERROR,
-            httpStatus: 500
-        })
-
-        return updatedResultFromAutofill
+        logger.error(`Error updating submission ${submissionId} (autofill): ${error}`)
+        return {
+            data: {} as gqlTypes.Submission,
+            hasErrors: true,
+            errors: [{ field: 'autofillPlaceFromSubmissionUrl', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
+        }
     }
 }
 
@@ -486,144 +442,165 @@ Promise<Result<gqlTypes.Submission>> => {
  * @param submissionId the submission to approve
  * @returns The submission that was approved.
  */
-export const approveSubmission = async (submissionId: string, updatedBy: string): 
-Promise<Result<gqlTypes.Submission>> => {
-    const approveResult: Result<gqlTypes.Submission> = {
-        data: {} as gqlTypes.Submission,
-        hasErrors: false,
-        errors: []
-    }
-
+export const approveSubmission = async (
+    submissionId: string,
+    updatedBy: string
+): Promise<Result<gqlTypes.Submission>> => {
     try {
-        const submissionRef = dbInstance.collection('submissions').doc(submissionId)
-        const dbDocument = await submissionRef.get()
-        const currentSubmission = dbDocument.data() as dbSchema.Submission
+        const { data: current, error: readErr } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', submissionId)
+            .single()
 
-        if (!currentSubmission) {
-            approveResult.errors?.push({
-                field: 'submissionId',
-                errorCode: ErrorCode.NOT_FOUND,
-                httpStatus: 400
-            })
-
-            return approveResult
-        }
-
-        //business logic: we can't approve a submission that's already approved. let's confirm it was previously not approved. 
-        if (currentSubmission?.isApproved) {
-            approveResult.errors?.push({
-                field: 'isApproved',
-                errorCode: ErrorCode.SUBMISSION_ALREADY_APPROVED,
-                httpStatus: 400
-            })
-
-            return approveResult
-        }
-    
-        logger.info(`\nDB-UPDATE: Submission ${submissionId} was approved.`)
-        
-        let createFacilityResult: Result<gqlTypes.Facility> | undefined
-
-        // Check if facility exists by looking at healthcare professional's facility IDs
-        const facilityExists = !!currentSubmission.healthcareProfessionals?.some(hp => hp.facilityIds?.length)
-
-        // Check if healthcare professional exists by looking at facility's healthcare professional IDs
-        const healthcareProfessionalExists = !!currentSubmission.facility?.healthcareProfessionalIds?.length
-
-        // Create facility if it doesn't exist
-        if (currentSubmission.facility && !facilityExists) {
-            createFacilityResult = await createFacility(
-                currentSubmission.facility as gqlTypes.CreateFacilityInput, updatedBy
-            )
-    
-            if (createFacilityResult && createFacilityResult.hasErrors) {
-                approveResult.errors?.push(...createFacilityResult.errors!)
-                return approveResult
+        if (readErr || !current) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
             }
         }
 
-        // Create healthcare professional if it doesn't exist
-        if (currentSubmission.healthcareProfessionals && !healthcareProfessionalExists) {
-            for await (const healthcareProfessional of currentSubmission.healthcareProfessionals ?? []) {
-                const healthcareProfessionalInput
-                    = healthcareProfessional satisfies gqlTypes.CreateHealthcareProfessionalInput
-        
-                // If we just created a facility, link it
-                if (createFacilityResult) {
-                    healthcareProfessionalInput.facilityIds = [createFacilityResult.data.id]
-                }
-        
-                const createHealthcareProfessionalResult = await createHealthcareProfessional(
-                    healthcareProfessionalInput, updatedBy
-                )
-        
-                if (createHealthcareProfessionalResult.hasErrors) {
-                    approveResult.errors?.push(...createHealthcareProfessionalResult.errors!)
-                    return approveResult
+        if (current.status === 'approved') {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'status', errorCode: ErrorCode.SUBMISSION_ALREADY_APPROVED, httpStatus: 400 }]
+            }
+        }
+
+        // Prepare data for Audit Log (capturing the state before the update).
+        const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
+
+        let createdFacilityId: string | undefined
+        let finalFacilityId: string | null = current.facilities_id
+        let createdHpId: string | undefined
+
+        // If facility doesn't exist create minimal one
+        if (!finalFacilityId) {
+            const facilityInput: gqlTypes.CreateFacilityInput = {
+                nameEn: 'Unknown Facility',
+                nameJa: 'Unknown Facility',
+                contact: {
+                    googleMapsUrl: current.googleMapsUrl ?? ''
+                },
+                healthcareProfessionalIds: [],
+                mapLatitude: undefined,
+                mapLongitude: undefined
+            }
+
+            const facilityRes = await createFacility(facilityInput, updatedBy)
+
+            if (facilityRes.hasErrors || !facilityRes.data) {
+                return {
+                    data: {} as gqlTypes.Submission,
+                    hasErrors: true,
+                    errors: [{ field: 'facility', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
                 }
             }
+            finalFacilityId = facilityRes.data.id
+            createdFacilityId = finalFacilityId
         }
 
-        //update the submission to approved only if creating the facility and healthcare professionals succeeds
-        currentSubmission.isApproved = true
-        currentSubmission.isUnderReview = false
-        currentSubmission.updatedDate = new Date().toISOString()
-
-        await dbInstance.runTransaction(async t => {
-            // We want to preform first a read of the individual document so we are sure we are updating most up-to-date data
-            const doc = await t.get(submissionRef)
-            const oldSubmission = doc.data() as dbSchema.Submission
-            
-            t.set(submissionRef, currentSubmission, { merge: true })
-            
-            const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Update, 
-                gqlTypes.ObjectType.Submission, 
-                updatedBy,
-                JSON.stringify(currentSubmission),
-                JSON.stringify(oldSubmission),
-                t
-            )
-
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Update}`) 
+        // If no HP but we have HP name on submission, create and link to facility
+        if (!current.hps_id && current.healthcareProfessionalName?.trim() && finalFacilityId) {
+            const hpInput: gqlTypes.CreateHealthcareProfessionalInput = {
+                names: [{ locale: 'en', value: current.healthcareProfessionalName.trim() }],
+                degrees: [],
+                specialties: [],
+                spokenLanguages: (current.spokenLanguages ?? []) as gqlTypes.Locale[],
+                acceptedInsurance: [],
+                additionalInfoForPatients: current.notes ?? null,
+                facilityIds: [finalFacilityId]
             }
+
+            const hpRes = await createHealthcareProfessional(hpInput, updatedBy)
+
+            if (hpRes.hasErrors || !hpRes.data) {
+                return {
+                    data: {} as gqlTypes.Submission,
+                    hasErrors: true,
+                    errors: [{
+                        field: 'healthcareProfessional',
+                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                        httpStatus: 500
+                    }]
+                }
+            }
+            createdHpId = hpRes.data.id
+        }
+
+        // after create facility/hp:
+        const patch: Partial<dbSchema.SubmissionRow> = {
+            status: 'approved',
+            //eslint-disable-next-line
+            facilities_id: createdFacilityId ?? current.facilities_id ?? finalFacilityId,
+            //eslint-disable-next-line
+            hps_id: createdHpId ?? current.hps_id ?? null,
+            updatedDate: new Date().toISOString()
+        }
+
+        const { error: updatedErr } = await supabase
+            .from('submissions')
+            .update(patch)
+            .eq('id', submissionId)
+
+        if (updatedErr) { 
+            throw updatedErr
+        }
+
+        const refreshed = await getSubmissionById(submissionId)
+
+        if (refreshed.hasErrors || !refreshed.data) {
+            throw new Error('Could not reload approved submission.')
+        }
+
+        await createAuditLogSQL({
+            actionType: 'UPDATE',
+            objectType: 'Submission',
+            updatedBy,
+            oldValue,
+            newValue: refreshed.data
         })
 
-        //set the data to return to the approveResult object
-        approveResult.data = currentSubmission
-
-        return approveResult
+        return { data: refreshed.data, hasErrors: false }
     } catch (error) {
         logger.error(`Error approving submission ${submissionId}: ${error}`)
-
-        approveResult.errors?.push({
-            field: 'isApproved',
-            errorCode: ErrorCode.SERVER_ERROR,
-            httpStatus: 500
-        })
-
-        return approveResult
+        return {
+            data: {} as gqlTypes.Submission,
+            hasErrors: true,
+            errors: [{ field: 'status', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
+        }
     }
 }
 
 /**
- * This deletes a submission from the database. If the submission doesn't exist, it will return a validation error.
+ * This deletes a Submission from the database. If the submission doesn't exist, it will return a validation error.
  * @param id The ID of the submission in the database to delete.
  */
-export async function deleteSubmission(id: string, updatedBy: string)
-    : Promise<Result<gqlTypes.DeleteResult>> {
+export async function deleteSubmission(
+  id: string,
+  updatedBy: string
+): Promise<Result<gqlTypes.DeleteResult>> {
     try {
-        const submissionRef = dbInstance.collection('submissions').doc(id)
-        const dbDocument = await submissionRef.get()
+        const validation = validateIdInput(id)
 
-        if (!dbDocument.exists) {
-            logger.warn(`Validation Error: User tried deleting non-existant submission: ${id}`)
-
+        if (validation.hasErrors) {
+            logger.warn(`Validation Error: invalid id for deleteSubmission: ${id}`)
             return {
-                data: {
-                    isSuccessful: false
-                },
+                data: { isSuccessful: false },
+                hasErrors: true,
+                errors: validation.errors
+            }
+        }
+
+        // Ensure the submission exists (utile per messaggi e audit)
+        const existing = await getSubmissionById(id)
+
+        if (existing.hasErrors || !existing.data) {
+            logger.warn(`deleteSubmission: submission not found: ${id}`)
+            return {
+                data: { isSuccessful: false },
                 hasErrors: true,
                 errors: [{
                     field: 'deleteSubmission',
@@ -633,40 +610,33 @@ export async function deleteSubmission(id: string, updatedBy: string)
             }
         }
 
-        const submissionToDelete = dbDocument.data() as dbSchema.Submission
-        const convertedEntity = mapDbEntityTogqlEntity(submissionToDelete)
+        // Delete
+        const { error: delErr } = await supabase
+            .from('submissions')
+            .delete()
+            .eq('id', id)
 
-        await dbInstance.runTransaction(async t => {
-            await t.delete(submissionRef)
-            const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Delete, 
-                gqlTypes.ObjectType.Submission, 
-                updatedBy,
-                null,
-                JSON.stringify(convertedEntity),
-                t
-            )
+        if (delErr) {
+            throw new Error(`Failed to delete submission: ${delErr.message}`)
+        }
 
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`) 
-            }
+        await createAuditLogSQL({
+            actionType: 'DELETE',
+            objectType: 'Submission',
+            updatedBy,
+            oldValue: existing.data
         })
-        
-        logger.info(`\nDB-DELETE: Submission ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+
+        logger.info(`\nDB-DELETE: submission ${id} was deleted.\nEntity: ${JSON.stringify(id)}`)
 
         return {
-            data: {
-                isSuccessful: true
-            },
+            data: { isSuccessful: true },
             hasErrors: false
         }
     } catch (error) {
         logger.error(`ERROR: Error deleting submission ${id}: ${error}`)
-
         return {
-            data: {
-                isSuccessful: false
-            },
+            data: { isSuccessful: false },
             hasErrors: true,
             errors: [{
                 field: 'deleteSubmission',
@@ -677,22 +647,22 @@ export async function deleteSubmission(id: string, updatedBy: string)
     }
 }
 
-export function mapGqlEntityToDbEntity(input: gqlTypes.CreateSubmissionInput, newId: string): dbSchema.Submission {
+export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Submission {
     return {
-        id: newId,
-        autofillPlaceFromSubmissionUrl: false,
-        googleMapsUrl: input.googleMapsUrl as string,
-        healthcareProfessionalName: input.healthcareProfessionalName as string,
-        spokenLanguages: input.spokenLanguages as gqlTypes.Locale[],
-        isUnderReview: false,
-        isApproved: false,
-        isRejected: false,
+        id: row.id,
+        googleMapsUrl: row.googleMapsUrl,
+        healthcareProfessionalName: row.healthcareProfessionalName,
+        spokenLanguages: row.spokenLanguages as gqlTypes.Locale[],
+        autofillPlaceFromSubmissionUrl: row.autofillPlaceFromSubmissionUrl,
         facility: null,
         healthcareProfessionals: [],
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString(),
-        notes: input.notes ?? ''
-    } satisfies dbSchema.Submission
+        isUnderReview: row.status === 'under_review',
+        isApproved: row.status === 'approved',
+        isRejected: row.status === 'rejected',
+        createdDate: row.createdDate,
+        updatedDate: row.updatedDate,
+        notes: row.notes ?? undefined
+    }
 }
 
 function validateIdInput(id: string): Result<unknown> {
@@ -714,22 +684,21 @@ function validateIdInput(id: string): Result<unknown> {
     return validationResults
 }
 
-export const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Submission): gqlTypes.Submission => {
-    const gqlEntity = {
-        id: dbEntity.id,
-        autofillPlaceFromSubmissionUrl: dbEntity.autofillPlaceFromSubmissionUrl,
-        googleMapsUrl: dbEntity.googleMapsUrl,
-        healthcareProfessionalName: dbEntity.healthcareProfessionalName,
-        spokenLanguages: dbEntity.spokenLanguages,
-        facility: dbEntity.facility,
-        healthcareProfessionals: dbEntity.healthcareProfessionals,
-        isUnderReview: dbEntity.isUnderReview,
-        isApproved: dbEntity.isApproved,
-        isRejected: dbEntity.isRejected,
-        createdDate: dbEntity.createdDate,
-        updatedDate: dbEntity.updatedDate,
-        notes: dbEntity.notes
-    } satisfies gqlTypes.Submission
-
-    return gqlEntity
+export function mapGqlEntityToDbEntity(
+  input: gqlTypes.CreateSubmissionInput
+): dbSchema.SubmissionInsertRow {
+    return {
+        status: 'pending',
+        googleMapsUrl: input.googleMapsUrl ?? '',
+        healthcareProfessionalName: input.healthcareProfessionalName ?? '',
+        spokenLanguages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
+        autofillPlaceFromSubmissionUrl: false,
+        //eslint-disable-next-line
+        hps_id: null,
+        //eslint-disable-next-line
+        facilities_id: null,
+        notes: input.notes ?? null,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
+    }
 }
