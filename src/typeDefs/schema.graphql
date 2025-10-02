@@ -516,7 +516,7 @@ type Mutation {
 
   createUser(input: CreateUserInput!): User!
 
-  updateUser(input: UpdateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
 
   createReservation(input: CreateReservationInput!): Reservation!
 
