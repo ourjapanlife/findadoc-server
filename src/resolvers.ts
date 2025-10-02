@@ -430,6 +430,23 @@ const resolvers = {
 
             return createUserResult.data
         },
+        updateUser: async (_parent: unknown, args: { id: string, input: gqlType.UpdateUserInput }, context: UserContext)
+        : Promise<gqlType.User> => {
+            const isAuthorized = authorize(context.user, [Scope['write:users']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+
+            const updateUserResult = await userService.updateUser(args.id, args.input)
+
+            return updateUserResult.data
+        },
         createReservation: async (_parent: unknown, args: { input: gqlType.CreateReservationInput }, 
             context: UserContext)
         : Promise<gqlType.Reservation> => {
