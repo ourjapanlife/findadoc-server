@@ -426,7 +426,7 @@ const resolvers = {
                 })
             }
 
-            const createUserResult = await userService.createUser(args.input)
+            const createUserResult = await userService.createUser(args.input, true)
 
             return createUserResult.data
         },
