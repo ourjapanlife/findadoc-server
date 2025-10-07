@@ -49,9 +49,12 @@ export async function createUser(
 ): Promise<Result<gqlTypes.User>> {
     if (connectToSupabase) {
         try {
+            const { count } = await supabase
+                .from('user')
+                .select('*', { count: 'exact', head: true })
             const newCreatedDate = new Date().toISOString()
             const newUpdatedDate = new Date().toISOString()
-            const newIdNum = Math.floor(Math.random() * 100000000 + 1)
+            const newIdNum = count !== null ? count + 1 : 1
             const newId = String(newIdNum)
 
             const createdUserResult:gqlTypes.User = {
