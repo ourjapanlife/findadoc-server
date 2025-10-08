@@ -3,9 +3,6 @@ import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
 import { supabase } from '../supabaseClient.js'
 
-// temporarily using in-memory database for testing user service before using Supabase
-const users: Array<gqlTypes.User> = []
-
 /**
  * Gets a user from the database that matches on the id.
  * @param id A string that matches the id of the User.
@@ -14,17 +11,29 @@ const users: Array<gqlTypes.User> = []
 export async function getUserById(id: string)
     : Promise<Result<gqlTypes.User>> {
     try {
-        const selectedUser = users.find(u => u.id === id)
+        const { data } = await supabase
+            .from('user')
+            .select('*')
+            .eq('id', id) 
 
-        if (!selectedUser) {
+        if (!data) {
             throw new Error(`No user found with id: ${id}`)
         }
+
+        const selectedUser:gqlTypes.User = {
+            createdDate: data[0].created_date,
+            id: data[0].id,
+            updatedDate: data[0].updated_date,
+            displayName: data[0].display_name,
+            profilePicUrl: data[0].profile_pic_url
+        }
+
         return {
             data: selectedUser,
             hasErrors: false
         }
     } catch (error) {
-        logger.error(`ERROR: Error getting user by id: ${error}`)
+        logger.error(`Error getting user by id: ${error}`)
 
         return {
             data: {} as gqlTypes.User,
@@ -44,80 +53,42 @@ export async function getUserById(id: string)
  * @returns the newly created User so you don't have to query it after
  */
 export async function createUser(
-    input: gqlTypes.CreateUserInput,
-    connectToSupabase: boolean
+    input: gqlTypes.CreateUserInput
 ): Promise<Result<gqlTypes.User>> {
-    if (connectToSupabase) {
-        try {
-            const { count } = await supabase
-                .from('user')
-                .select('*', { count: 'exact', head: true })
-            const newCreatedDate = new Date().toISOString()
-            const newUpdatedDate = new Date().toISOString()
-            const newIdNum = count !== null ? count + 1 : 1
-            const newId = String(newIdNum)
-
-            const createdUserResult:gqlTypes.User = {
-                createdDate: newCreatedDate,
-                id: newId,
-                updatedDate: newUpdatedDate,
-                displayName: input.displayName,
-                profilePicUrl: input.profilePicUrl
-            } 
-
-            await supabase
-                .from('user')
-                .insert([
-                    { id: newId,
-                        // eslint-disable-next-line camelcase
-                        created_date: newCreatedDate,
-                        // eslint-disable-next-line camelcase
-                        updated_date: newUpdatedDate,
-                        // eslint-disable-next-line camelcase
-                        display_name: input.displayName,
-                        // eslint-disable-next-line camelcase
-                        profile_pic_url: input.profilePicUrl}
-                ])
-            return {
-                data: createdUserResult,
-                hasErrors: false
-            }
-        } catch (error) {
-            logger.error(`ERROR: Error creating user: ${error}`)
-
-            return {
-                data: {} as gqlTypes.User,
-                hasErrors: true,
-                errors: [{
-                    field: 'createUser',
-                    errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                    httpStatus: 500
-                }]
-            }
-        }
-    }
-
     try {
-        const newCreatedDate = new Date().toISOString()
-        const newUpdatedDate = new Date().toISOString()
-        const newIdNum = users.length + 1
-        const newId = String(newIdNum)
+        const { data } = await supabase
+            .from('user')
+            // eslint-disable-next-line camelcase
+            .insert([{created_date: new Date().toISOString(),
+                // eslint-disable-next-line camelcase
+                updated_date: new Date().toISOString(),
+                // eslint-disable-next-line camelcase
+                display_name: input.displayName,
+                // eslint-disable-next-line camelcase
+                profile_pic_url: input.profilePicUrl}
+            ])
+            .select('*')
+
+        if (!data) {
+            throw new Error('No data from create user call')
+        }
 
         const createdUserResult:gqlTypes.User = {
-            createdDate: newCreatedDate,
-            id: newId,
-            updatedDate: newUpdatedDate,
-            displayName: input.displayName,
-            profilePicUrl: input.profilePicUrl
-        } 
+            createdDate: data[0].created_date,
+            id: data[0].id,
+            updatedDate: data[0].updated_date,
+            displayName: data[0].display_name,
+            profilePicUrl: data[0].profile_pic_url
+        }
 
-        users.push(createdUserResult)
+        // logger.info(JSON.stringify(createdUserResult))
+
         return {
             data: createdUserResult,
             hasErrors: false
         }
     } catch (error) {
-        logger.error(`ERROR: Error creating user: ${error}`)
+        logger.error(`Error creating user: ${error}`)
 
         return {
             data: {} as gqlTypes.User,
@@ -137,41 +108,47 @@ export async function createUser(
  * @returns the updated User so you don't have to query it after
  */
 export async function updateUser(
-    userId: string,
+    id: string,
     fieldsToUpdate: gqlTypes.UpdateUserInput
 ): Promise<Result<gqlTypes.User>> {
     try {
-        // check if user exists and get the array index in the database
-        const userArrayIndex = users.findIndex(u => u.id === userId)
+        const { data } = await supabase
+            .from('user')
+            .update({
+                // eslint-disable-next-line camelcase
+                updated_date: new Date().toISOString(),
+                // eslint-disable-next-line camelcase
+                display_name: fieldsToUpdate.displayName,
+                // eslint-disable-next-line camelcase
+                profile_pic_url: fieldsToUpdate.profilePicUrl
+            })
+            .eq('id', id)
+            .select('*')
 
-        if (userArrayIndex === -1) {
-            throw new Error('No user exists with the provided id')
+        if (!data) {
+            throw new Error('no data returned from update call')
         }
 
-        // update the user using the array index
-        users[userArrayIndex] = {
-            createdDate: users[userArrayIndex].createdDate,
-            id: users[userArrayIndex].id,
-            updatedDate: new Date().toISOString(),
-            displayName: fieldsToUpdate.displayName !== undefined ? fieldsToUpdate.displayName
-                : users[userArrayIndex].displayName,
-            profilePicUrl: fieldsToUpdate.profilePicUrl !== undefined ? fieldsToUpdate.profilePicUrl
-                : users[userArrayIndex].profilePicUrl
+        const updatedUser:gqlTypes.User = {
+            createdDate: data[0].created_date,
+            id: data[0].id,
+            updatedDate: data[0].updated_date,
+            displayName: data[0].display_name,
+            profilePicUrl: data[0].profile_pic_url
         }
 
-        // return the updated user
         return {
-            data: users[userArrayIndex],
+            data: updatedUser,
             hasErrors: false
         } 
     } catch (error) {
-        logger.error(`ERROR: Error creating user: ${error}`)
+        logger.error(`Error updating user: ${error}`)
 
         return {
             data: {} as gqlTypes.User,
             hasErrors: true,
             errors: [{
-                field: 'createUser',
+                field: 'updateUser',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]
