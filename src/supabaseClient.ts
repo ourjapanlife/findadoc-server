@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { envVariables } from '../utils/environmentVariables'
 
-const url = process.env.SUPABASE_URL
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const url = envVariables.supabaseUrl()
+const serviceKey = envVariables.supabaseServiceRoleKey()
 
 if (!url) {
     throw new Error('Missing env SUPABASE_URL')
