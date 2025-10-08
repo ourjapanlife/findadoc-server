@@ -81,8 +81,6 @@ export async function createUser(
             profilePicUrl: data[0].profile_pic_url
         }
 
-        // logger.info(JSON.stringify(createdUserResult))
-
         return {
             data: createdUserResult,
             hasErrors: false
