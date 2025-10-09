@@ -27,7 +27,9 @@ const envVariables = {
     firebaseServiceAccount: () => process.env.FIRESTORE_SERVICE_ACCOUNT as string,
     firebaseProjectId: () => process.env.FIRESTORE_PROJECT_ID,
     firebaseDatabaseUrl: () => process.env.FIREBASE_DATABASE_URL,
-    googleAPIKey: () => process.env.GOOGLE_API_KEY
+    googleAPIKey: () => process.env.GOOGLE_API_KEY,
+    supabaseUrl: () => process.env.SUPABASE_URL,
+    supabaseServiceRoleKey: () => process.env.SUPABASE_SERVICE_ROLE_KEY
 }
 
 console.log('🔌 Loaded env variables 🔌')
