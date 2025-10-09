@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { envVariables } from '../utils/environmentVariables'
+import { envVariables } from '../utils/environmentVariables.js'
 
 const url = envVariables.supabaseUrl()
 const serviceKey = envVariables.supabaseServiceRoleKey()
