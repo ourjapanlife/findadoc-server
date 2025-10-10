@@ -368,3 +368,70 @@ export function validateSpokenLanguages(
         })
     }
 }
+
+export function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcareProfessionalInput>)
+    : Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
+        hasErrors: false,
+        errors: []
+    }
+
+    if (Object.keys(input).length < 1) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'input',
+            errorCode: ErrorCode.MISSING_INPUT,
+            httpStatus: 400
+        })
+        return validationResults
+    }
+
+    if (input.names) {
+        validateNames(input.names, validationResults)
+    }
+    if (input.degrees) {
+        validateDegrees(input.degrees, validationResults)
+    }
+
+    if (input.specialties) {
+        validateSpecialties(input.specialties, validationResults)
+    }
+
+    if (input.acceptedInsurance) {
+        validateInsurance(input.acceptedInsurance, validationResults)
+    }
+
+    if (input.spokenLanguages) {
+        validateSpokenLanguages(input.spokenLanguages, validationResults)
+    }
+
+    return validationResults
+}
+
+export function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfessionalInput)
+    : Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
+        hasErrors: false,
+        errors: []
+    }
+
+    //business rule: at least one facility id is required
+    if (!input.facilityIds || input.facilityIds.length < 1) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'facilityIds',
+            errorCode: ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED,
+            httpStatus: 400
+        })
+    }
+
+    validateNames(input.names, validationResults)
+    validateDegrees(input.degrees, validationResults)
+    validateSpecialties(input.specialties, validationResults)
+    validateInsurance(input.acceptedInsurance, validationResults)
+    validateSpokenLanguages(input.spokenLanguages, validationResults)
+
+    return validationResults
+}
