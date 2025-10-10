@@ -46,7 +46,7 @@ describe('create reservation', () => {
         const createRezResult = await request(gqlApiUrl).post('').send(createRezMutationRequest)
 
         //should not have errors
-        const createRezErrors = createUserResult.body?.errors
+        const createRezErrors = createRezResult.body?.errors
         
         if (createRezErrors) {
             expect(JSON.stringify(createRezErrors)).toBeUndefined()
