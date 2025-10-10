@@ -10,6 +10,54 @@ import { createAuditLogSQL } from './auditLogServiceSupabase.js'
 import { createFacility } from './facilityService-pre-migration.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService-pre-migration.js'
 
+function makeMinimalAddress(): gqlTypes.PhysicalAddressInput {
+    return {
+        addressLine1En: '',
+        addressLine2En: '',
+        addressLine1Ja: '',
+        addressLine2Ja: '',
+        cityEn: '',
+        cityJa: '',
+        prefectureEn: '',
+        prefectureJa: '',
+        postalCode: ''
+    }
+}
+
+function makeMinimalContact(googleMapsUrl?: string): gqlTypes.ContactInput {
+    return {
+        address: makeMinimalAddress(),
+        email: '',
+        phone: '',
+        website: '',
+        googleMapsUrl: googleMapsUrl ?? ''
+    }
+}
+
+function toLocaleEnum(v?: string): gqlTypes.Locale {
+    switch ((v ?? '').toLowerCase()) {
+        case 'ja': return gqlTypes.Locale.JaJp
+        case 'en': return gqlTypes.Locale.EnUs
+        default: return gqlTypes.Locale.EnUs
+    }
+}
+
+function splitPersonName(full: string): { firstName: string; lastName: string; middleName?: string } {
+    const parts = full.trim().split(/\s+/).filter(Boolean)
+
+    if (parts.length === 1) {
+        return { firstName: parts[0], lastName: 'Unknown' }
+    }
+    if (parts.length === 2) {
+        return { firstName: parts[0], lastName: parts[1] }
+    }
+    return {
+        firstName: parts[0],
+        lastName: parts[parts.length - 1],
+        middleName: parts.slice(1, -1).join(' ')
+    }    
+}
+
 type HasIlike<B> = { 
     ilike: (column: string, pattern: string) => B
 }
@@ -481,12 +529,10 @@ export const approveSubmission = async (
             const facilityInput: gqlTypes.CreateFacilityInput = {
                 nameEn: 'Unknown Facility',
                 nameJa: 'Unknown Facility',
-                contact: {
-                    googleMapsUrl: current.googleMapsUrl ?? ''
-                },
-                healthcareProfessionalIds: [],
-                mapLatitude: undefined,
-                mapLongitude: undefined
+                contact: makeMinimalContact(current.googleMapsUrl ?? ''),
+                mapLatitude: 0,
+                mapLongitude: 0,
+                healthcareProfessionalIds: []
             }
 
             const facilityRes = await createFacility(facilityInput, updatedBy)
@@ -504,11 +550,19 @@ export const approveSubmission = async (
 
         // If no HP but we have HP name on submission, create and link to facility
         if (!current.hps_id && current.healthcareProfessionalName?.trim() && finalFacilityId) {
+            const parsed = splitPersonName(current.healthcareProfessionalName.trim())
+
             const hpInput: gqlTypes.CreateHealthcareProfessionalInput = {
-                names: [{ locale: 'en', value: current.healthcareProfessionalName.trim() }],
+                names: [{
+                    locale: gqlTypes.Locale.EnUs,
+                    firstName: parsed.firstName,
+                    lastName: parsed.lastName,
+                    ...(parsed.middleName ? { middleName: parsed.middleName } : {})
+                }],
                 degrees: [],
                 specialties: [],
-                spokenLanguages: (current.spokenLanguages ?? []) as gqlTypes.Locale[],
+                spokenLanguages: (current.spokenLanguages ?? [])
+                    .map((spoken : gqlTypes.Locale[]) => toLocaleEnum(String(spoken))),
                 acceptedInsurance: [],
                 additionalInfoForPatients: current.notes ?? null,
                 facilityIds: [finalFacilityId]
@@ -520,11 +574,7 @@ export const approveSubmission = async (
                 return {
                     data: {} as gqlTypes.Submission,
                     hasErrors: true,
-                    errors: [{
-                        field: 'healthcareProfessional',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500
-                    }]
+                    errors: [{ field: 'healthcareProfessional', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
                 }
             }
             createdHpId = hpRes.data.id

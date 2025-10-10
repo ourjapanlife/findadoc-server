@@ -12,4 +12,3 @@ if (!serviceKey) {
 
 export const supabase = createClient(url, serviceKey)
 
-//"dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && concurrently --raw \"yarn dev:startlocaldb\" \"yarn dev:startserver\"",
