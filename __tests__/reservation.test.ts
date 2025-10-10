@@ -66,7 +66,7 @@ describe('create reservation', () => {
         //should not have errors
         expect(searchResult.body?.errors).toBeUndefined()
                 
-        const searchedRez = searchResult.body.data.user as Reservation
+        const searchedRez = searchResult.body.data.reservation as Reservation
         const originalInputValues = createRezMutationRequest.variables.input
 
         //validate the created Reservation exists and has an id
