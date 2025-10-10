@@ -79,7 +79,7 @@ describe('create reservation', () => {
     }) 
 })
 
-export const createRezMutation = `mutation test_createRez($input: CreateUserInput!) {
+export const createRezMutation = `mutation test_createRez($input: CreateReservationInput!) {
     createReservation(input: $input) {
         id
         userId
