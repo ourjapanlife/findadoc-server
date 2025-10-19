@@ -103,7 +103,7 @@ describe('deleteHealthcareProfessional', () => {
 
         const searchedProfessional = validQueryResult.body.data.healthcareProfessional as HealthcareProfessional
 
-        // We want to ensure the professional was created before we delete it. 
+        // We want to ensure the professional was created before we delete it.
         expect(searchedProfessional.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
         expect(searchedProfessional.id).toBeDefined()
 
@@ -202,7 +202,7 @@ describe('deleteHealthcareProfessional', () => {
 
         const searchedProfessional = validQueryResult.body.data.healthcareProfessional as HealthcareProfessional
 
-        // We want to ensure the professional was created before we delete it. 
+        // We want to ensure the professional was created before we delete it.
         expect(searchedProfessional.spokenLanguages).toEqual(originalInputValues.spokenLanguages)
         expect(searchedProfessional.id).toBeDefined()
 
@@ -252,6 +252,150 @@ describe('deleteHealthcareProfessional', () => {
         expect(deleteAgainErrors[0]).toBeDefined()
         expect(deleteAgainErrors[0].field).toBe('deleteHealthcareProfessional')
         expect(deleteAgainErrors[0].errorCode).toBe(ErrorCode.INVALID_ID)
+    })
+})
+
+describe('searchHealthcareProfessionals', () => {
+    test('searches for healthcare professionals by ids filter', async () => {
+        // Create two professionals
+        const professionalInputs = [
+            generateCreateProfessionalInput({ facilityIds: sharedFacilityIds }),
+            generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
+        ]
+
+        const createdProfessionals: HealthcareProfessional[] = []
+
+        for (const input of professionalInputs) {
+            const createRequest = {
+                query: createHealthcareProfessionalMutation,
+                variables: { input }
+            } as gqlMutation<CreateHealthcareProfessionalInput>
+            const createResult = await request(gqlApiUrl).post('').send(createRequest)
+
+            expect(createResult.body?.errors).toBeUndefined()
+            createdProfessionals.push(createResult.body.data.createHealthcareProfessional as HealthcareProfessional)
+        }
+
+        // Search by ids
+        const searchQuery = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
+            healthcareProfessionals(filters: $filters) {
+                id
+                names { firstName lastName }
+            }
+        }`
+
+        const searchRequest = {
+            query: searchQuery,
+            variables: {
+                filters: { ids: [createdProfessionals[0].id, createdProfessionals[1].id] }
+            }
+        }
+        const searchResult = await request(gqlApiUrl).post('').send(searchRequest)
+
+        expect(searchResult.body?.errors).toBeUndefined()
+        const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+
+        expect(foundProfessionals.length).toBe(2)
+        expect(foundProfessionals.map(p => p.id)).toEqual(
+            expect.arrayContaining([createdProfessionals[0].id, createdProfessionals[1].id])
+        )
+    })
+
+    test('returns empty array when no professionals match ids', async () => {
+        const searchQuery = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
+            healthcareProfessionals(filters: $filters) {
+                id
+            }
+        }`
+        const searchRequest = {
+            query: searchQuery,
+            variables: {
+                filters: { ids: ['nonexistent-id-1', 'nonexistent-id-2'] }
+            }
+        }
+        const searchResult = await request(gqlApiUrl).post('').send(searchRequest)
+
+        expect(searchResult.body?.errors).toBeUndefined()
+        const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+
+        expect(foundProfessionals.length).toBe(0)
+    })
+
+    test('returns limited results when limit is set', async () => {
+        // Create three professionals
+        const professionalInputs = [
+            generateCreateProfessionalInput({ facilityIds: sharedFacilityIds }),
+            generateCreateProfessionalInput({ facilityIds: sharedFacilityIds }),
+            generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
+        ]
+        const createdProfessionals: HealthcareProfessional[] = []
+
+        for (const input of professionalInputs) {
+            const createRequest = {
+                query: createHealthcareProfessionalMutation,
+                variables: { input }
+            } as gqlMutation<CreateHealthcareProfessionalInput>
+            const createResult = await request(gqlApiUrl).post('').send(createRequest)
+
+            expect(createResult.body?.errors).toBeUndefined()
+            createdProfessionals.push(createResult.body.data.createHealthcareProfessional as HealthcareProfessional)
+        }
+        // Search with limit = 2
+        const searchQuery = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
+            healthcareProfessionals(filters: $filters) {
+                id
+            }
+        }`
+        const searchRequest = {
+            query: searchQuery,
+            variables: {
+                filters: { limit: 2 }
+            }
+        }
+        const searchResult = await request(gqlApiUrl).post('').send(searchRequest)
+
+        expect(searchResult.body?.errors).toBeUndefined()
+        const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+
+        expect(foundProfessionals.length).toBeLessThanOrEqual(2)
+    })
+
+    test('returns paginated results when offset is set', async () => {
+        // Create two professionals
+        const professionalInputs = [
+            generateCreateProfessionalInput({ facilityIds: sharedFacilityIds }),
+            generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
+        ]
+        const createdProfessionals: HealthcareProfessional[] = []
+
+        for (const input of professionalInputs) {
+            const createRequest = {
+                query: createHealthcareProfessionalMutation,
+                variables: { input }
+            } as gqlMutation<CreateHealthcareProfessionalInput>
+            const createResult = await request(gqlApiUrl).post('').send(createRequest)
+
+            expect(createResult.body?.errors).toBeUndefined()
+            createdProfessionals.push(createResult.body.data.createHealthcareProfessional as HealthcareProfessional)
+        }
+        // Search with offset = 1
+        const searchQuery = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
+            healthcareProfessionals(filters: $filters) {
+                id
+            }
+        }`
+        const searchRequest = {
+            query: searchQuery,
+            variables: {
+                filters: { offset: 1 }
+            }
+        }
+        const searchResult = await request(gqlApiUrl).post('').send(searchRequest)
+
+        expect(searchResult.body?.errors).toBeUndefined()
+        const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+
+        expect(foundProfessionals.length).toBeGreaterThanOrEqual(1)
     })
 })
 
