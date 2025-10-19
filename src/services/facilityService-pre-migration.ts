@@ -1,204 +1,169 @@
-import { Transaction } from 'firebase-admin/firestore'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
-import { dbInstance } from '../firebaseDb.js'
-import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
-import { MapDefinedFields } from '../../utils/objectUtils.js'
-import { updateHealthcareProfessionalsWithFacilityIdChanges } from './healthcareProfessionalService-pre-migration.js'
 import { logger } from '../logger.js'
-import { createAuditLog } from './auditLogService.js'
-import { chunkArray } from '../../utils/arrayUtils.js'
-import { buildBaseFacilitiesQuery } from '../../utils/searchFacilityQueryUtils.js'
-import { Timestamp } from 'firebase-admin/firestore'
+import { supabase } from '../supabaseClient.js'
+import { createAuditLogSQL } from './auditLogServiceSupabase.js'
+import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
+
+// Row shape as returned from Supabase "facilities" table (no healthcareProfessionalIds yet).
+type DbFacilityRow = Omit<dbSchema.Facility, 'healthcareProfessionalIds'>
+
+/**
+ * Builds a payload for a Supabase update operation, including only the fields that are defined in the input.
+ * It also automatically adds the `updatedDate` timestamp.
+ */
+function buildFacilityUpdatePayload(fields: Partial<gqlTypes.UpdateFacilityInput>) {
+    const payload: Record<string, unknown> = {}
+
+    // Map only requested field
+    if (fields.nameEn !== undefined) {
+        payload.nameEn = fields.nameEn
+    }
+    if (fields.nameJa !== undefined) {
+        payload.nameJa = fields.nameJa
+    }
+    if (fields.contact !== undefined) {
+        payload.contact = fields.contact
+    }
+    if (fields.mapLatitude !== undefined) {
+        payload.mapLatitude = fields.mapLatitude
+    }
+    if (fields.mapLongitude !== undefined) {
+        payload.mapLongitude = fields.mapLongitude
+    }
+
+    // business rule: always timestamp when the entity is updated
+    payload.updatedDate = new Date().toISOString()
+
+    return payload
+}
+
+type HasIlike<B> = {
+    ilike: (column: string, pattern: string) => B
+}
+
+/**
+ * Applies text-based search filters (`ilike`) to a Supabase query builder for facilities.
+ * This is a generic utility to be used by both search and count functions.
+ */
+function applyFacilityFilters<B extends HasIlike<B>>(
+  facilitySelect: B,
+  filters: gqlTypes.FacilitySearchFilters
+): B {
+    let query = facilitySelect
+
+    // text filters (case-insensitive contains)
+    if (filters.nameEn) {
+        query = query.ilike('nameEn', `%${filters.nameEn}%`)
+    }
+    if (filters.nameJa) {
+        query = query.ilike('nameJa', `%${filters.nameJa}%`)
+    }
+
+    return query
+}
 
 /**
  * Gets the Facility from the database that matches on the id.
- * @param id A string that matches the id of the Firestore Document for the Facility.
+ * @param id A string that matches the id of the Supabase for the Facility.
  * @returns A Facility object.
  */
-export const getFacilityById = async (id: string)
-: Promise<Result<gqlTypes.Facility>> => {
+export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility>> => {
     try {
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
-            logger.warn(`Validation Error: User passed in invalid id: ${id}}`)
+            logger.warn(`Validation Error: User passed in invalid id: ${id}`)
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        //using .doc(id) pulls from a stale cache, so we use a .where() query instead.
-        const facilityRef = dbInstance.collection('facilities').where('id', '==', id)
-        const dbQueryResults = await facilityRef.get()
-        const dbDocs = dbQueryResults.docs
+        // Query the 'facilities' table using the ID and expect exactly one row because of .single()
+        const { data: facilityRow, error: facilityRowError } = await supabase
+            .from('facilities')
+            .select('*')
+            .eq('id', id)
+            .single()
 
-        if (dbDocs.length != 1) {
-            throw new Error(`No facility found with id: ${id}`)
+        // PGRST116 = no rows found for single()
+        if (facilityRowError?.code === 'PGRST116' || !facilityRow) {
+            return {
+                data: {} as gqlTypes.Facility,
+                hasErrors: true,
+                errors: [{ field: 'id', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
+            }
         }
 
-        const dbFacility = dbDocs[0].data() as dbSchema.Facility
-        const convertedEntity = mapDbEntityTogqlEntity(dbFacility)
-
-        return {
-            data: convertedEntity,
-            hasErrors: false
+        if (facilityRowError) {
+            throw facilityRowError
         }
+
+        // This is a join to get all linked Healthcare Professional IDs for the found facility.
+        const { data: relatedRows, error: relatedRowsError } = await supabase
+            .from('hps_facilities')
+            .select('hps_id')
+            .eq('facilities_id', id)
+
+        if (relatedRowsError) {
+            throw relatedRowsError
+        }
+
+        // Extract the array of HP IDs from the related rows.
+        const healthcareProfessionalIds = (relatedRows ?? []).map(row => row.hps_id as string)
+
+        // Merge the scalar facility data with the relational IDs and map the result to the internal database schema type.
+        const dbFacilityModel: dbSchema.Facility = {
+            ...(facilityRow as DbFacilityRow), healthcareProfessionalIds 
+        }
+
+        return { data: mapDbEntityTogqlEntity(dbFacilityModel), hasErrors: false }
     } catch (error) {
         logger.error(`ERROR: Error retrieving facility by id: ${error}`)
-
         return {
             data: {} as gqlTypes.Facility,
             hasErrors: true,
-            errors: [{
-                field: 'getFacilityById',
-                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                httpStatus: 500
-            }]
+            errors: [{ field: 'getFacilityById', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
         }
     }
 }
 
 /**
- * Searches for facilities in the database based on provided filters.
- * Returns a paginated list of facilities.
- * This function is designed to serve the GraphQL query that returns only the array of Facilities.
- *
- * @param filters An object that contains parameters to filter on.
- * @returns An object containing `data` (an array of GraphQL Facilities), `hasErrors` flag, and optional `errors` array.
+ * Returns the set of Facility IDs that are linked to any of the given HP IDs.
+ * Why a Set?
+ * - A single facility can be linked to multiple HPs. Using a Set automatically
+ * removes duplicates so the caller gets unique facility IDs.
+ * @param hpIds Array of Healthcare Professional IDs to look up.
+ * @returns A Set of facility IDs that have at least one relation with the provided HPs.
+ * @throws Propagates a Supabase/PostgREST error if the query fails.
  */
-export async function searchFacilities(filters: gqlTypes.FacilitySearchFilters = {}):
-Promise<Result<gqlTypes.Facility[]>> {
-    try {
-        const validationResult = validateFacilitiesSearchInput(filters)
+async function getFacilityIdsByHpIds(hpIds: string[]): Promise<Set<string>> {
+    // Query the junction table to find all facility ids related to the given HP ids
+    const { data, error } = await supabase
+        .from('hps_facilities')
+        .select('facilities_id')
+        .in('hps_id', hpIds)
 
-        if (validationResult.hasErrors) {
-            return {
-                data: [],
-                hasErrors: true,
-                errors: validationResult.errors
-            }
-        }
+    // If the DB call failed, bubble up the error to the caller
+    if (error) {
+        throw error
+    }
 
-        let allGqlFacilities: gqlTypes.Facility[] = []
+    // Use a Set to ensure each facility id appears only once
+    const ids = new Set<string>()
 
-        // Use the new helper function to build the base query/list
-        const baseQueryResult = await buildBaseFacilitiesQuery(filters)
-
-        if (baseQueryResult.hasErrors) {
-            return {
-                data: [],
-                hasErrors: true,
-                errors: baseQueryResult.errors
-            }
-        }
-
-        if (baseQueryResult.list) {
-            // If in-memory processing was used, baseQueryResult.list already contains filtered and sorted data
-            // We just need to apply pagination (limit/offset)
-            const allFilteredAndSorted = baseQueryResult.list
-            const startIndex = filters.offset || 0
-            const limit = filters.limit || 20
-            const endIndex = startIndex + limit
-
-            allGqlFacilities = allFilteredAndSorted.slice(startIndex, endIndex)
-        } else if (baseQueryResult.query) {
-            // If Firestore query was built, execute it with limit/offset and map results
-            let searchRef = baseQueryResult.query
-            const limit = filters.limit || 20
-            const offset = filters.offset || 0
-
-            searchRef = searchRef.limit(limit).offset(offset)
-            const dbDocument = await searchRef.get()
-            const dbFacilities = dbDocument.docs
-
-            allGqlFacilities = dbFacilities.map(dbFacility =>
-                mapDbEntityTogqlEntity(dbFacility.data() as dbSchema.Facility))
-        }
-
-        return {
-            data: allGqlFacilities,
-            hasErrors: false
-        }
-    } catch (error: unknown) {
-        logger.error(`ERROR: Error searching facilities by filters ${JSON.stringify(filters)}: ${error}`)
-
-        return {
-            data: [],
-            hasErrors: true,
-            errors: [{
-                field: 'searchFacilities',
-                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                httpStatus: 500
-            }]
+    //data may be null
+    for (const row of data ?? []) {
+        if (row.facilities_id) {
+            ids.add(row.facilities_id as string)
         }
     }
-}
-
-/**
- * Gets the total count of facilities matching the given filters.
- * This function is specifically for retrieving only the total count, separate from the paginated data.
- * It also preserves your existing return object structure for error handling.
- *
- * @param filters An object that contains parameters to filter on.
- * @returns An object containing `data` (the total count), `hasErrors` flag, and optional `errors` array.
- */
-export async function countFacilities(filters: gqlTypes.FacilitySearchFilters = {}): Promise<Result<number>> {
-    try {
-        const validationResult = validateFacilitiesSearchInput(filters)
-
-        if (validationResult.hasErrors) {
-            return {
-                data: 0, // Return 0 count on validation error
-                hasErrors: true,
-                errors: validationResult.errors
-            }
-        }
-
-        // Use the new helper function to build the base query/list
-        const baseQueryResult = await buildBaseFacilitiesQuery(filters)
-
-        if (baseQueryResult.hasErrors) {
-            return {
-                data: 0,
-                hasErrors: true,
-                errors: baseQueryResult.errors
-            }
-        }
-
-        let totalCount = 0
-
-        if (baseQueryResult.list) {
-            // If in-memory processing was used, the totalCount is simply the length of the list
-            totalCount = baseQueryResult.list.length
-        } else if (baseQueryResult.query) {
-            // If Firestore query was built, get the count using Firestore's count() aggregation
-            const countQuerySnapshot = await baseQueryResult.query.count().get()
-
-            totalCount = countQuerySnapshot.data().count
-        }
-
-        return {
-            data: totalCount,
-            hasErrors: false
-        }
-    } catch (error: unknown) {
-        logger.error(`ERROR: Error counting facilities by filters ${JSON.stringify(filters)}: ${error}`)
-        return {
-            data: 0,
-            hasErrors: true,
-            errors: [{
-                field: 'countFacilities',
-                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                httpStatus: 500
-            }]
-        }
-    }
+    return ids
 }
 
 /**
  * Creates a new Facility. 
  * Any healthcareprofessionalIds will build an association, but it won't create a healthcare professional. 
- * You need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
+ * You need to call the createHealthcareProfessional function separately. This prevents hidden side effects.
  * @param facilityInput 
  * @returns A Facility with a list containing the ID of the initial HealthcareProfessional that was created.
  */
@@ -213,52 +178,74 @@ export async function createFacility(
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        const facilityRef = dbInstance.collection('facilities').doc()
-        const newFacilityId = facilityRef.id
-        const newDbFacility = mapGqlCreateInputToDbEntity(facilityInput, newFacilityId)
+        // Prepare row for 'facilities' (Postgres will generate UUID)
+        const facilityRow = {
+            // ID NOT set, generated by DB
+            nameEn: facilityInput.nameEn,
+            nameJa: facilityInput.nameJa,
+            contact: facilityInput.contact,
+            mapLatitude: facilityInput.mapLatitude ?? null,
+            mapLongitude: facilityInput.mapLongitude ?? null,
+            createdDate: new Date().toISOString(),
+            updatedDate: new Date().toISOString()
+        }
 
-        /*let's wrap all of our updates in a transaction so we can roll back if anything fails. 
-        (for example we don't want to update the professional if updating the associated facility updates fail)*/
-        await dbInstance.runTransaction(async t => {
-            await t.set(facilityRef, newDbFacility)
-            //let's update all the healthcareProfessionals that should add this facilityId to their facilityIds array
-            if (newDbFacility.healthcareProfessionalIds && newDbFacility.healthcareProfessionalIds.length > 0) {
-                const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
-                    newDbFacility.id,
-                    newDbFacility.healthcareProfessionalIds.map(id => ({
-                        otherEntityId: id,
-                        action: gqlTypes.RelationshipAction.Create
-                    } satisfies gqlTypes.Relationship)),
-                    t
-                )
-    
-                // if we didn't get it back or have errors, this is an actual error.
-                if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
-                    throw new Error(`ERROR: Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
-                }
+        // Insert facility and get the generated row back
+        const { data: insertedFacility, error: insertedFacilityError } = await supabase
+            .from('facilities')
+            .insert(facilityRow)
+            .select('*')
+            .single()
+
+        if (insertedFacilityError) {
+            throw insertedFacilityError
+        }
+
+        const facilityId = insertedFacility.id as string
+
+        const hpIds = (facilityInput.healthcareProfessionalIds ?? []) as string[]
+
+        // If HPs were provided, create rows in join table
+        if (hpIds.length > 0) {
+            const joinRows = hpIds.map(hpsId => ({
+                //eslint-disable-next-line
+                hps_id: hpsId, facilities_id: facilityId
+            }))
+
+            // Use upsert for insert relations
+            const { error: relationsError } = await supabase
+                .from('hps_facilities')
+                .upsert(joinRows, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
+
+            if (relationsError) {
+                throw relationsError
             }
-            
-            const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Create, 
-                gqlTypes.ObjectType.Facility, 
-                updatedBy, 
-                JSON.stringify(newDbFacility),
-                null,
-                t
-            )
-            
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Create}`)
-            }
+        }
+
+        // Build GraphQL shape (include HP ids )
+        const gqlFacility: gqlTypes.Facility = {
+            id: facilityId,
+            nameEn: insertedFacility.nameEn,
+            nameJa: insertedFacility.nameJa,
+            contact: insertedFacility.contact,
+            mapLatitude: insertedFacility.mapLatitude,
+            mapLongitude: insertedFacility.mapLongitude,
+            healthcareProfessionalIds: hpIds,
+            createdDate: insertedFacility.createdDate,
+            updatedDate: insertedFacility.updatedDate
+        }
+
+        await createAuditLogSQL({
+            actionType: 'CREATE',
+            objectType: 'Facility',
+            updatedBy,
+            newValue: { ...insertedFacility, healthcareProfessionalIds: hpIds }
         })
-        
-        logger.info(`\nDB-CREATE: CREATE facility ${newFacilityId}.\nEntity: ${JSON.stringify(newDbFacility)}`)
 
-        //let's return the newly created facility. Since we have the full entity, no need to do a new query. 
-        const createdGqlEntity = mapDbEntityTogqlEntity(newDbFacility)
+        logger.info(`\nDB-CREATE: CREATE facility ${facilityId}.\nEntity: ${JSON.stringify(insertedFacility)}`)
 
         return {
-            data: createdGqlEntity,
+            data: gqlFacility,
             hasErrors: false
         }
     } catch (error) {
@@ -277,14 +264,178 @@ export async function createFacility(
 }
 
 /**
- * Updates a Facility in the database with the params in the database based on the id. 
- * - It will only update the fields that are provided and are not undefined.
- * - If you want to create a new HealthcareProfessional, you need to call the `createHealthcareProfessional` function separately. This prevents hidden side effects.
- * - If you want to link an existing HealthcareProfessional to a Facility, add the healthcareprofessionalId to the `healthcareProfessionalIds` array. 
-     Use the action to add or remove the association. If an id isn't in the list, no change will occur. 
- * @param facilityId The ID of the facility in the database.
- * @param fieldsToUpdate The values that should be updated. They will be created if they don't exist.
- * @returns The updated Facility.
+ * Searches for a paginated list of Facilities based on various criteria.
+ * This function handles multi-step filtering:
+ * - It optionally applies a filter based on associated Healthcare Professional IDs (HP)
+ * by performing a preliminary lookup to get a subset of Facility IDs.
+ * - It applies scalar filters, ordering, and pagination to the main facilities table.
+ * @param filters Optional search and pagination filters for Facilities.
+ * @returns A Promise that resolves to a Result object containing an array of Facilities.
+ */
+export async function searchFacilities(
+  filters: gqlTypes.FacilitySearchFilters = {}
+): Promise<Result<gqlTypes.Facility[]>> {
+    try {
+        const validationResult = validateFacilitiesSearchInput(filters)
+
+        if (validationResult.hasErrors) {
+            return { data: [], hasErrors: true, errors: validationResult.errors }
+        }
+
+        const limit = filters.limit ?? 20
+        const offset = filters.offset ?? 0
+
+        // If there is a filter on HPs, first get the facility IDs from the join table.
+        let facilityIdSubset: string[] | null = null
+
+        if (filters.healthcareProfessionalIds?.length) {
+            // Fetch all Facility IDs associated with the given HP IDs from the join table.
+            const idSet = await getFacilityIdsByHpIds(filters.healthcareProfessionalIds as string[])
+
+            if (idSet.size === 0) {
+                return { data: [], hasErrors: false }
+            }
+            // Convert the Set to an Array for use in the main query `IN` later
+            facilityIdSubset = Array.from(idSet)
+        }
+
+        // Base query on facilities + scalar filters.
+        let baseQuery = applyFacilityFilters(
+            supabase.from('facilities').select('*'),
+            filters
+        )
+
+        // If there is a subset of IDs (from HPs), filter with IN.
+        if (facilityIdSubset) {
+            baseQuery = baseQuery.in('id', facilityIdSubset)
+        }
+
+        // Determine the field and direction for ordering, falling back to nameEn if no order is specified
+        const orderBy = filters.orderBy?.[0]
+
+        if (orderBy?.fieldToOrder) {
+            baseQuery = baseQuery.order(orderBy.fieldToOrder, { ascending: orderBy.orderDirection !== 'desc' })
+        } else {
+            baseQuery = baseQuery.order('nameEn', { ascending: true })
+        }
+
+        // Execute the main query, applying the offset and limit for the current page
+        const { data: paginationRows, error: paginationRowsError } = await baseQuery.range(offset, offset + limit - 1)
+
+        if (paginationRowsError) {
+            throw paginationRowsError
+        }
+        if (!paginationRows || paginationRows.length === 0) {
+            return { data: [], hasErrors: false }
+        }
+
+        // Extract the IDs of only the facilities that are present on the current, paginated results
+        const facilityIds = paginationRows.map(r => r.id as string)
+
+        // Fetching ALL Healthcare Professional (HP) relationships for the facilities on the current page with a SINGLE query
+        const { data: hpRelationsForFacilities, error: hpRelationsForFacilitiesError } = await supabase
+            .from('hps_facilities')
+            .select('hps_id, facilities_id')
+            .in('facilities_id', facilityIds)
+
+        if (hpRelationsForFacilitiesError) { throw hpRelationsForFacilitiesError }
+
+        // Map for avoid N+1 issue, used like a lookup table because O(1)
+        const hpIdsByFacility = new Map<string, string[]>()
+
+        for (const relationshipRow of hpRelationsForFacilities ?? []) {
+            const facId = relationshipRow.facilities_id as string
+            // All the Hps ID related to the Facility ID
+            const list = hpIdsByFacility.get(facId) ?? []
+
+            // Add the current HP ID to the list associated with the facility.
+            list.push(relationshipRow.hps_id as string)
+            hpIdsByFacility.set(facId, list)
+        }
+
+        // Map the paginated DB rows to the final GraphQL shape, injecting the associated HP IDs
+        const list: gqlTypes.Facility[] = (paginationRows ?? []).map((facility: DbFacilityRow) => {
+            const dbFacility: dbSchema.Facility = {
+                ...facility,
+                healthcareProfessionalIds: hpIdsByFacility.get(facility.id) ?? []
+            }
+
+            return mapDbEntityTogqlEntity(dbFacility)
+        })
+
+        return { data: list, hasErrors: false }
+    } catch (err) {
+        logger.error(`ERROR: searchFacilities ${JSON.stringify(filters)} -> ${err}`)
+        return {
+            data: [],
+            hasErrors: true,
+            errors: [{
+                field: 'searchFacilities',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+/**
+ * Counts the total number of Facilities matching the provided filters.
+ * This function applies direct scalar filters to the professional data
+ * and returns the exact count of the results.
+ * add an extra filter if we wanna search only a type of hps
+ * @param filters An optional object of search filters for Facilities
+ * @returns A Promise that resolves to a Result object containing the count (number) or errors.
+ */
+export async function countFacilities(
+  filters: gqlTypes.FacilitySearchFilters = {}
+): Promise<Result<number>> {
+    try {
+        const validationResult = validateFacilitiesSearchInput(filters)
+
+        if (validationResult.hasErrors) {
+            return { data: 0, hasErrors: true, errors: validationResult.errors }
+        }
+
+        // Base query on facilities + scalar filters
+        let baseQuery = applyFacilityFilters(
+            supabase.from('facilities').select('*', { count: 'exact', head: true }),
+            filters
+        )
+
+        // filter on HPs (as in searchFacilities)
+        if (filters.healthcareProfessionalIds?.length) {
+            const idSet = await getFacilityIdsByHpIds(filters.healthcareProfessionalIds as string[])
+
+            if (idSet.size === 0) {
+                return { data: 0, hasErrors: false }
+            }
+            baseQuery = baseQuery.in('id', Array.from(idSet))
+        }
+
+        const { count: facilyCount, error: facilityCountError } = await baseQuery
+
+        if (facilityCountError) { throw facilityCountError }
+
+        return { data: facilyCount ?? 0, hasErrors: false }
+    } catch (err) {
+        logger.error(`ERROR: countFacilities ${JSON.stringify(filters)} -> ${err}`)
+        return {
+            data: 0,
+            hasErrors: true,
+            errors: [{
+                field: 'countFacilities',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+/**
+ * Updates a Facility in the database based on the id.
+ * - Scalar fields are updated on facilities
+ * - Relationship changes (HPs) are applied in hps_facilities via the provided actions
+ * - Returns the updated Facility
  */
 export const updateFacility = async (
     facilityId: string,
@@ -298,80 +449,74 @@ export const updateFacility = async (
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        const facilityRef = dbInstance.collection('facilities').doc(facilityId)
-        
-        //let's wrap all of our updates in a batch so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
-        const updatedFacility = await dbInstance.runTransaction(async t => {
-            const dbDocument = await t.get(facilityRef)
-            const dbFacilityToUpdate = dbDocument.data() as dbSchema.Facility
-            const oldFacilityDataAuditLogEntity: string = JSON.stringify(
-                mapDbEntityTogqlEntity(dbFacilityToUpdate)
-            )
+        // Retrieve current state
+        const currentState = await getFacilityById(facilityId)
 
-            const originalHealthcareProfessionalIdsForFacility = dbFacilityToUpdate.healthcareProfessionalIds
-            
-            //let's update the fields that were provided
-            MapDefinedFields(fieldsToUpdate, dbFacilityToUpdate)
-    
-            //Business rule: always timestamp when the entity was updated.
-            dbFacilityToUpdate.updatedDate = new Date().toISOString()
-    
-            //let's update all the healthcareProfessionals that should add or remove this facilityId from their facilityIds array 
-            if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
-                const healthcareProfessionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
-                    dbFacilityToUpdate.id,
-                    fieldsToUpdate.healthcareProfessionalIds,
-                    t,
-                    originalHealthcareProfessionalIdsForFacility ?? []
-                )
-    
-                // if we didn't get it back or have errors, this is an actual error.
-                if (healthcareProfessionalUpdateResults.hasErrors || !healthcareProfessionalUpdateResults.data) {
-                    throw new Error(`Error updating facility's healthcareProfessionalIds: ${JSON.stringify(healthcareProfessionalUpdateResults.errors)}`)
-                }
-                //let's update the professional with the new facility ids
-                dbFacilityToUpdate.healthcareProfessionalIds = healthcareProfessionalUpdateResults.data
+        if (currentState.hasErrors || !currentState.data) {
+            throw new Error(`Could not find facility with id ${facilityId} to update.`)
+        }
+        const originalHpIds = currentState.data.healthcareProfessionalIds ?? []
+
+        // Prepare the update payload for the facilities table
+        const updatePayload = buildFacilityUpdatePayload(fieldsToUpdate)
+
+        // If there are no scalar fields to update, skip the UPDATE on facilities.
+        if (Object.keys(updatePayload).length > 1) {
+            const { error: updateErr } = await supabase
+                .from('facilities')
+                .update(updatePayload)
+                .eq('id', facilityId)
+                .select('*')
+                .single()
+
+            if (updateErr) {
+                throw updateErr
             }
 
-            t.set(facilityRef, dbFacilityToUpdate, { merge: true })
+            logger.info(`DB-UPDATE: facilities ${facilityId} scalar fields updated.`)
+        } else {
+        // If we still want to update updatedDate to track the entity "touch"?
+            const { error: touchError } = await supabase
+                .from('facilities')
+                .update({ updatedDate: new Date().toISOString() })
+                .eq('id', facilityId)
 
-            // Make sure we store a more readable object in our audit log
-            const updatedFacilityAuditLogEntity: string = JSON.stringify(
-                mapDbEntityTogqlEntity(dbFacilityToUpdate)
-            )
-
-            const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Update, 
-                gqlTypes.ObjectType.Facility, 
-                updatedBy,
-                updatedFacilityAuditLogEntity,
-                oldFacilityDataAuditLogEntity,
-                t
-            )
-
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            if (touchError) {
+                throw touchError
             }
+        }
 
-            return dbFacilityToUpdate
+        // Here we expect an array of Relationship with Create/Delete actions.
+        if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
+            const relResult = await processHealthcareProfessionalRelationshipChanges(
+                facilityId,
+                fieldsToUpdate.healthcareProfessionalIds,
+                originalHpIds
+            )
+
+            if (relResult.hasErrors) {
+                throw new Error('Error updating facility healthcareProfessionalIds')
+            }
+        }
+
+        // Return the updated HP with relations included
+        const refreshed = await getFacilityById(facilityId)
+
+        if (refreshed.hasErrors || !refreshed.data) {
+            throw new Error('Error updating facility. Couldnt query the updated facility.')
+        }
+
+        await createAuditLogSQL({
+            actionType: 'UPDATE',
+            objectType: 'Facility',
+            updatedBy,
+            oldValue: currentState.data,
+            newValue: refreshed.data
         })
 
-        logger.info(`\nDB-UPDATE: Updated facility ${facilityRef.id}.\n Entity: ${JSON.stringify(updatedFacility)}`)
-
-        const queriedFacilityResult = await getFacilityById(facilityId)
-
-        // if we didn't get it back or have errors, this is an actual error.
-        if (queriedFacilityResult.hasErrors || !queriedFacilityResult.data) {
-            throw new Error(`Error updating facility. Couldn't query the updated facility: ${JSON.stringify(queriedFacilityResult.errors)}`)
-        }
-
-        return {
-            data: queriedFacilityResult.data,
-            hasErrors: false
-        }
+        return { data: refreshed.data, hasErrors: false }
     } catch (error) {
         logger.error(`ERROR: Error updating facility ${facilityId}: ${error}`)
-
         return {
             data: {} as gqlTypes.Facility,
             hasErrors: true,
@@ -384,129 +529,98 @@ export const updateFacility = async (
     }
 }
 
-/** 
- * Updates all the healthcare professionals that have an id in the healthcareProfessionalIds array. It will add or delete based on the action provided. 
- * @param facilityId The ID of the facility in the database.
- * @param healthcareProfessionalRelationshipChanges The changes to the healthcare professional relationships.
-* @param batch - The batch that we add the db writes to. The parent controls when the batch is committed.
- * @param originalHealthcareProfessionalIds The original healthcare professional ids for the facility.
- * @returns The updated facility ids for the healthcare professional based on the action.
-*/
-async function processHealthcareProfessionalRelationshipChanges(facilityId: string,
-    healthcareProfessionalRelationshipChanges: gqlTypes.Relationship[],
-    t: Transaction,
-    originalHealthcareProfessionalIds: string[] = [])
-    : Promise<Result<string[]>> {
-    // deep clone the array so we don't modify the original
-    let updatedProfessionalIdsArray = [...originalHealthcareProfessionalIds]
-
-    healthcareProfessionalRelationshipChanges.forEach(change => {
-        switch (change.action) {
-            case gqlTypes.RelationshipAction.Create:
-                updatedProfessionalIdsArray.push(change.otherEntityId)
-                break
-            case gqlTypes.RelationshipAction.Delete:
-                updatedProfessionalIdsArray = updatedProfessionalIdsArray.filter(id => id !== change.otherEntityId)
-                break
-            default:
-                break
-        }
-    })
-
-    //update all the associated healthcare professionals (note: this should be contained within a transaction with the facility so we can roll back if anything fails)
-    const healthcareProfessionalUpdateResults = await updateHealthcareProfessionalsWithFacilityIdChanges(
-        healthcareProfessionalRelationshipChanges,
-        facilityId,
-        t
-    )
-
-    return {
-        //let's return the updated healthcareProfessionalIds array so we can update the facility
-        data: updatedProfessionalIdsArray,
-        hasErrors: healthcareProfessionalUpdateResults.hasErrors,
-        errors: healthcareProfessionalUpdateResults.errors
-    }
-}
-
 /**
-    * This function updates the healthcareprofessional id list for each facility listed. 
-    * Based on the action, it will add or remove the healthcareprofessional id from the existing list of healthcare professional ids.
-    * @param facilitiesToUpdate - The list of facilities to update. 
-    * @param healthcareProfessionalId - The id of the healthcareprofessional that is being added or removed. 
-    * @param batch - The batch that we add the db writes to. The parent controls when the batch is committed.
-    * @returns Result containing any errors that occurred.
-*/
-export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
-    facilitiesToUpdate: gqlTypes.Relationship[],
-    healthcareProfessionalId: string,
-    t: Transaction
-): Promise<Result<void>> {
+ * Apply relationship changes (Create/Delete) between ONE facility and MANY HPs.
+ * In SQL this means insert/delete rows in the join table hps_facilities.
+ * @returns the final list of HP ids for that facility
+ */
+async function processHealthcareProfessionalRelationshipChanges(
+  facilityId: string,
+  changes: gqlTypes.Relationship[],
+  originalHpIds: string[] = []
+): Promise<Result<string[]>> {
     try {
-        if (!facilitiesToUpdate || facilitiesToUpdate.length === 0) {
+        if (!changes || changes.length === 0) {
+            return { data: originalHpIds, hasErrors: false }
+        }
+
+        // Split creates / deletes
+        const toCreate = changes
+            .filter(c => c.action === gqlTypes.RelationshipAction.Create)
+            //eslint-disable-next-line
+            .map(c => ({ hps_id: c.otherEntityId, facilities_id: facilityId }))
+
+        const toDelete = changes
+            .filter(c => c.action === gqlTypes.RelationshipAction.Delete)
+            .map(c => c.otherEntityId)
+
+        // Do inserts first
+        if (toCreate.length > 0) {
+            const { error: upsertError } = await supabase
+                .from('hps_facilities')
+                .upsert(toCreate, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
+    
+            if (upsertError) {
+                return {
+                    data: originalHpIds,
+                    hasErrors: true,
+                    errors: [{ 
+                        field: 'processHealthcareProfessionalRelationshipChanges',
+                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                        httpStatus: 500
+                    }]
+                }
+            }
+        }
+
+        // Deletes
+        if (toDelete.length > 0) {
+            const { error: deletionError } = await supabase
+                .from('hps_facilities')
+                .delete()
+                .eq('facilities_id', facilityId)
+                .in('hps_id', toDelete)
+
+            if (deletionError) {
+                return {
+                    data: originalHpIds,
+                    hasErrors: true,
+                    errors: [{
+                        field: 'processHealthcareProfessionalRelationshipChanges',
+                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                        httpStatus: 500
+                    }]
+                }
+            }
+        }
+
+        // Return the final list of HPs for this facility
+        const { data: relatedRows, error: relErr } = await supabase
+            .from('hps_facilities')
+            .select('hps_id')
+            .eq('facilities_id', facilityId)
+
+        if (relErr) {
             return {
-                data: undefined,
-                hasErrors: false
+                data: originalHpIds,
+                hasErrors: true,
+                errors: [{
+                    field: 'processHealthcareProfessionalRelationshipChanges',
+                    errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                    httpStatus: 500
+                }]
             }
         }
 
-        const allFacilitiesIds = facilitiesToUpdate.map(f => f.otherEntityId)
-        const chunks = chunkArray(allFacilitiesIds, 30)
+        const finalHpIds = (relatedRows ?? []).map(related => related.hps_id as string)
 
-        const querySnapshot = await Promise.all(
-            chunks.map(chunk =>
-                dbInstance.collection('facilities').where('id', 'in', chunk).get())
-        )
-
-        const allFacilityDocuments = querySnapshot.flatMap(snapshot => snapshot.docs)
-
-        //const facilityQuery = dbInstance.collection('facilities').where('id', 'in', facilitiesToUpdate.map(f => f.otherEntityId))
-        // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first. 
-        //const allFacilityDocuments = await facilityQuery.get()
-        const dbFacilitiesToUpdate = allFacilityDocuments ?? []
-
-        dbFacilitiesToUpdate.forEach(dbFacility => {
-            const matchingRelationship = facilitiesToUpdate.find(f => f.otherEntityId === dbFacility.id)
-            const dbFacilityRef = dbFacility.ref
-            const dbFacilityData = dbFacility.data() as dbSchema.Facility
-
-            if (!matchingRelationship) {
-                throw new Error(`updating facility healthcareprofessional id list for ${dbFacility.id}. Could not find matching relationship.`)
-            }
-
-            //we want to add or remove the healthcareprofessional id from the list based on the action.
-            switch (matchingRelationship.action) {
-                case gqlTypes.RelationshipAction.Create:
-                    dbFacilityData.healthcareProfessionalIds.push(healthcareProfessionalId)
-                    break
-                case gqlTypes.RelationshipAction.Delete:
-                    dbFacilityData.healthcareProfessionalIds = dbFacilityData.healthcareProfessionalIds
-                        .filter(id => id !== healthcareProfessionalId)
-                    break
-                default:
-                    logger.error(`ERROR: updating facility healthcareprofessional id list for ${matchingRelationship.otherEntityId}. Contained an invalid relationship action of ${matchingRelationship.action}`)
-                    break
-            }
-
-            //business rule: we always timestamp when the entity was updated.
-            dbFacilityData.updatedDate = new Date().toISOString()
-
-            //This will add the record update to the batch, but we don't want to commit at this point. 
-            t.set(dbFacilityRef, dbFacilityData, { merge: true })
-            logger.info(`\nDB-UPDATE: Updated facility ${dbFacilityData.id} healthcareprofessional relation ids.\n Updated values: ${JSON.stringify(dbFacilityData)}`)
-        })
-
+        return { data: finalHpIds, hasErrors: false }
+    } catch (e) {
         return {
-            data: undefined,
-            hasErrors: false
-        }
-    } catch (error) {
-        logger.error(`ERROR: Error updating facility healthcareprofessional id list: ${error}`)
-
-        return {
-            data: undefined,
+            data: originalHpIds,
             hasErrors: true,
             errors: [{
-                field: 'updateFacilityHealthcareprofessionalAssociations',
+                field: 'processHealthcareProfessionalRelationshipChanges',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]
@@ -515,7 +629,84 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
 }
 
 /**
- * This deletes a Facility from the database. If the Facility doesn't exist, it will return a validation error.
+    * This function updates the facilityIds list for each facilities listed.
+    * Based on the action, it will add or remove the hp id from the existing list of HpIds.
+    * @param healthcareProfessionalId - The id of the facility that is being added or removed.
+    * @returns Result containing any errors that occurred.
+*/
+export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
+  facilitiesToUpdate: gqlTypes.Relationship[],
+  healthcareProfessionalId: string
+): Promise<Result<void>> {
+    try {
+        if (!facilitiesToUpdate || facilitiesToUpdate.length === 0) {
+            return { data: undefined, hasErrors: false }
+        }
+
+        const toCreate = facilitiesToUpdate
+            .filter(r => r.action === gqlTypes.RelationshipAction.Create)
+            //eslint-disable-next-line
+            .map(r => ({ hps_id: healthcareProfessionalId, facilities_id: r.otherEntityId }))
+
+        const toDeleteIds = facilitiesToUpdate
+            .filter(r => r.action === gqlTypes.RelationshipAction.Delete)
+            .map(r => r.otherEntityId)
+
+        if (toCreate.length > 0) {
+            const { error: upsertErr } = await supabase
+                .from('hps_facilities')
+                .upsert(toCreate, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
+
+            if (upsertErr) {
+                return {
+                    data: undefined,
+                    hasErrors: true,
+                    errors: [{
+                        field: 'updateFacilitiesWithHealthcareProfessionalIdChanges',
+                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                        httpStatus: 500
+                    }]
+                }
+            }
+        }
+
+        if (toDeleteIds.length > 0) {
+            const { error: deleteError } = await supabase
+                .from('hps_facilities')
+                .delete()
+                .eq('hps_id', healthcareProfessionalId)
+                .in('facilities_id', toDeleteIds)
+
+            if (deleteError) {
+                return {
+                    data: undefined,
+                    hasErrors: true,
+                    errors: [{
+                        field: 'updateFacilitiesWithHealthcareProfessionalIdChanges',
+                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                        httpStatus: 500 
+                    }]
+                }
+            }
+        }
+
+        return { data: undefined, hasErrors: false }
+    } catch (e) {
+        return {
+            data: undefined,
+            hasErrors: true,
+            errors: [{
+                field: 'updateFacilitiesWithHealthcareProfessionalIdChanges',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+/**
+ * This deletes a Facility from the database.
+ * If the Facility doesn't exist, it will return a validation error.
  * @param id The ID of the facility in the database to delete.
  */
 export async function deleteFacility(
@@ -523,16 +714,24 @@ export async function deleteFacility(
     updatedBy: string
 ): Promise<Result<gqlTypes.DeleteResult>> {
     try {
-        const facilityRef = dbInstance.collection('facilities').where('id', '==', id)
-        const dbDocument = await facilityRef.get()
+        const validationResult = validateIdInput(id)
 
-        if (dbDocument.empty) {
-            logger.warn(`Validation Error: User tried deleting non-existant facility: ${id}`)
-
+        if (validationResult.hasErrors) {
+            logger.warn(`Validation Error: invalid id for deleteFacility: ${id}`)
             return {
-                data: {
-                    isSuccessful: false
-                },
+                data: { isSuccessful: false },
+                hasErrors: true,
+                errors: validationResult.errors
+            }
+        }
+
+        // Ensure the facility exists
+        const existingFacility = await getFacilityById(id)
+
+        if (existingFacility.hasErrors || !existingFacility.data) {
+            logger.warn(`deleteFacility: facility not found: ${id}`)
+            return {
+                data: { isSuccessful: false },
                 hasErrors: true,
                 errors: [{
                     field: 'deleteFacility',
@@ -542,67 +741,25 @@ export async function deleteFacility(
             }
         }
 
-        if (dbDocument.docs.length > 1) {
-            logger.error(`ERROR: Found multiple facilities with id ${id}. This should never happen.`)
+        // Delete the main facility record. Delete join table (hps_facilities) rows 
+        // is handled by a Supabase ONCASCADE trigger.
+        const { error: facilityDeleteError } = await supabase
+            .from('facilities')
+            .delete()
+            .eq('id', id)
 
-            return {
-                data: {
-                    isSuccessful: false
-                },
-                hasErrors: true,
-                errors: [{
-                    field: 'deleteFacility',
-                    errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                    httpStatus: 500
-                }]
-            }
+        if (facilityDeleteError) {
+            throw new Error(`Failed to delete facility: ${facilityDeleteError.message}`)
         }
 
-        const facility = dbDocument.docs[0].data() as dbSchema.Facility
-
-        /*
-        let's wrap all of our updates in a batch so we can roll back if anything fails. 
-        (for example we don't want to update the professional if updating the associated facility updates fail)
-        */
-        await dbInstance.runTransaction(async t => {
-            //let's update all the healthcareProfessionals that should remove this facilityId from their facilityIds array
-            const professionalUpdateResults = await processHealthcareProfessionalRelationshipChanges(
-                id,
-                facility.healthcareProfessionalIds.map(
-                    professionalId => ({
-                        otherEntityId: professionalId,
-                        action: gqlTypes.RelationshipAction.Delete
-                    } satisfies gqlTypes.Relationship)
-                ),
-                t
-            )
-    
-            // if we have errors, this is an actual error.
-            if (professionalUpdateResults.hasErrors) {
-                throw new Error(`ERROR: Error updating associated facility's healthcareProfessionalIds: ${JSON.stringify(professionalUpdateResults.errors)}`)
-            }
-    
-            t.delete(dbDocument.docs[0].ref)
-
-            const oldFacilityDataAuditLogEntity: string = JSON.stringify(
-                mapDbEntityTogqlEntity(facility)
-            )
-
-            const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Delete, 
-                gqlTypes.ObjectType.Facility, 
-                updatedBy,
-                null,
-                JSON.stringify(oldFacilityDataAuditLogEntity),
-                t
-            )
-
-            if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`) 
-            }
+        await createAuditLogSQL({
+            actionType: 'DELETE',
+            objectType: 'Facility',
+            updatedBy,
+            oldValue: existingFacility.data
         })
 
-        logger.info(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(dbDocument)}`)
+        logger.info(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(id)}`)
 
         return {
             data: {
@@ -628,44 +785,9 @@ export async function deleteFacility(
 }
 
 /**
- * Converts the values for FacilityInput to the format they will be stored as in the database.
- * @param input - The `FacilityInput` variables that were passed in the API request.
- * @param newId - The ID of the Facility in the Firestore collection.
- * @returns 
+ * Maps a database entity (dbSchema.Facility) to its GraphQL representation (gqlTypes.Facility)
+ * This function ensures the data shape matches the API contract.
  */
-export function mapGqlCreateInputToDbEntity(input: gqlTypes.CreateFacilityInput, newId: string): dbSchema.Facility {
-    return {
-        id: newId,
-        nameEn: input.nameEn,
-        nameJa: input.nameJa,
-        contact: input.contact,
-        mapLatitude: input.mapLatitude,
-        mapLongitude: input.mapLongitude,
-        healthcareProfessionalIds: input.healthcareProfessionalIds as string[],
-        //business rule: createdDate cannot be set by the user.
-        createdDate: new Date().toISOString(),
-        //business rule: updatedDate is updated on every change.
-        updatedDate: new Date().toISOString()
-
-    } satisfies dbSchema.Facility
-}
-
-export const toValidDateString = (date: unknown): string => {
-    if (!date) {
-        return ''
-    }
-    if (typeof date === 'string') {
-        return date
-    }
-    if (date instanceof Timestamp) {
-        return date.toDate().toISOString()
-    }
-    if (date instanceof Date) {
-        return date.toISOString()
-    }
-    return ''
-}
-
 export const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Facility): gqlTypes.Facility => {
     const gqlEntity = {
         id: dbEntity.id,
@@ -682,300 +804,3 @@ export const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Facility): gqlTypes.Fa
     return gqlEntity
 }
 
-export function validateIdInput(id: string): Result<unknown> {
-    const validationResults: Result<unknown> = {
-        data: undefined,
-        hasErrors: false,
-        errors: []
-    }
-
-    if (id && (hasSpecialCharacters(id) || id.length > 4096)) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'id',
-            errorCode: ErrorCode.INVALID_ID,
-            httpStatus: 400
-        })
-    }
-
-    return validationResults
-}
-
-function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySearchFilters): Result<unknown> {
-    const validationResults: Result<unknown> = {
-        data: [],
-        hasErrors: false,
-        errors: []
-    }
-
-    if (searchInput.nameEn && searchInput.nameEn.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'nameEn',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (searchInput.nameJa && searchInput.nameJa.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'nameJa',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (searchInput.limit && searchInput.limit > 1000) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'limit',
-            errorCode: ErrorCode.MAX_LIMIT,
-            httpStatus: 400
-        })
-    }
-
-    if (searchInput.limit && searchInput.limit < 0) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'limit',
-            errorCode: ErrorCode.MIN_LIMIT,
-            httpStatus: 400
-        })
-    }
-
-    return validationResults
-}
-
-function validateUpdateFacilityInput(input: Partial<gqlTypes.UpdateFacilityInput>): Result<unknown> {
-    const validationResults: Result<unknown> = {
-        data: undefined,
-        hasErrors: false,
-        errors: []
-    }
-
-    if (input.nameEn && input.nameEn.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'nameEn',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.nameJa && input.nameJa.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'nameJa',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.contact) {
-        const contactValidationResults = validateContactInput(input.contact)
-
-        if (contactValidationResults.hasErrors) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push(...contactValidationResults.errors as [])
-        }
-    }
-
-    return validationResults
-}
-
-function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput): Result<unknown> {
-    const validationResults: Result<unknown> = {
-        data: undefined,
-        hasErrors: false,
-        errors: []
-    }
-
-    if (!input.nameEn) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'nameEn',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    }
-
-    if (input.nameEn && input.nameEn.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'nameEn',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.nameJa) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'nameJa',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    }
-
-    if (input.nameJa && input.nameJa.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'nameJa',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.contact) {
-        const contactValidationResults = validateContactInput(input.contact)
-
-        if (contactValidationResults.hasErrors) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push(...contactValidationResults.errors as [])
-        }
-    }
-
-    return validationResults
-}
-
-function validateContactInput(contactInput: gqlTypes.Contact): Result<unknown> {
-    const validationResults: Result<unknown> = {
-        data: undefined,
-        hasErrors: false,
-        errors: []
-    }
-
-    if (!contactInput) {
-        return validationResults
-    }
-
-    if (contactInput.email && (!isValidEmail(contactInput.email) || contactInput.email.length > 128)) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'email',
-            errorCode: ErrorCode.INVALID_EMAIL,
-            httpStatus: 400
-        })
-    }
-
-    if (contactInput.phone && !isValidPhoneNumber(contactInput.phone)) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'phone',
-            errorCode: ErrorCode.INVALID_PHONE_NUMBER,
-            httpStatus: 400
-        })
-    }
-
-    if (contactInput.website && !isValidWebsite(contactInput.website)) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'website',
-            errorCode: ErrorCode.INVALID_WEBSITE,
-            httpStatus: 400
-        })
-    }
-
-    if (contactInput.address) {
-        const addressValidationResults = validateAddressInput(contactInput.address)
-
-        if (addressValidationResults.hasErrors) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push(...addressValidationResults.errors as [])
-        }
-    }
-
-    return validationResults
-}
-
-function validateAddressInput(input: gqlTypes.PhysicalAddress): Result<unknown> {
-    const validationResults: Result<unknown> = {
-        data: undefined,
-        hasErrors: false,
-        errors: []
-    }
-
-    if (input.addressLine1En && input.addressLine1En.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine1En',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.addressLine2En && input.addressLine2En.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine2En',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.addressLine1Ja && input.addressLine1Ja.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine1Ja',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.addressLine2Ja && input.addressLine2Ja.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine2Ja',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.cityEn && input.cityEn.length > 64) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'cityEn',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.cityJa && input.cityJa.length > 64) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'cityJa',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.postalCode && input.postalCode.length > 18) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'postalCode',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.prefectureEn && input.prefectureEn.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'prefectureEn',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.prefectureJa && input.prefectureJa.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'prefectureJa',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    return validationResults
-}
