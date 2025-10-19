@@ -277,22 +277,26 @@ describe('searchHealthcareProfessionals', () => {
         }
 
         // Search by ids
-        const searchQuery = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
-            healthcareProfessionals(filters: $filters) {
-                id
-                names { firstName lastName }
-            }
-        }`
-
-        const searchRequest = {
-            query: searchQuery,
+        const searchHealthcareProfessionalsRequest = {
+            query: searchHealthcareProfessionals,
             variables: {
-                filters: { ids: [createdProfessionals[0].id, createdProfessionals[1].id] }
+                filters: {
+                    ids: [createdProfessionals[0].id, createdProfessionals[1].id]
+                }
             }
-        }
-        const searchResult = await request(gqlApiUrl).post('').send(searchRequest)
+        } as gqlRequest
 
-        expect(searchResult.body?.errors).toBeUndefined()
+        // -- Search the professionals by id --
+        const searchResult = await request(gqlApiUrl).post('').send(searchHealthcareProfessionalsRequest)
+
+        //should not have errors
+        const queryErrors = searchResult.body?.errors
+
+        if (queryErrors) {
+            logger.error(JSON.stringify(queryErrors))
+            expect(queryErrors).toBeUndefined()
+        }
+
         const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
 
         expect(foundProfessionals.length).toBe(2)
@@ -302,13 +306,8 @@ describe('searchHealthcareProfessionals', () => {
     })
 
     test('returns empty array when no professionals match ids', async () => {
-        const searchQuery = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
-            healthcareProfessionals(filters: $filters) {
-                id
-            }
-        }`
         const searchRequest = {
-            query: searchQuery,
+            query: searchHealthcareProfessionals,
             variables: {
                 filters: { ids: ['nonexistent-id-1', 'nonexistent-id-2'] }
             }
@@ -341,13 +340,8 @@ describe('searchHealthcareProfessionals', () => {
             createdProfessionals.push(createResult.body.data.createHealthcareProfessional as HealthcareProfessional)
         }
         // Search with limit = 2
-        const searchQuery = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
-            healthcareProfessionals(filters: $filters) {
-                id
-            }
-        }`
         const searchRequest = {
-            query: searchQuery,
+            query: searchHealthcareProfessionals,
             variables: {
                 filters: { limit: 2 }
             }
@@ -378,14 +372,8 @@ describe('searchHealthcareProfessionals', () => {
             expect(createResult.body?.errors).toBeUndefined()
             createdProfessionals.push(createResult.body.data.createHealthcareProfessional as HealthcareProfessional)
         }
-        // Search with offset = 1
-        const searchQuery = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
-            healthcareProfessionals(filters: $filters) {
-                id
-            }
-        }`
         const searchRequest = {
-            query: searchQuery,
+            query: searchHealthcareProfessionals,
             variables: {
                 filters: { offset: 1 }
             }
@@ -435,6 +423,13 @@ const getHealthcareProfessionalByIdQuery = `query test_getHealthcareProfessional
         acceptedInsurance
         createdDate
         updatedDate
+    }
+}`
+
+const searchHealthcareProfessionals = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
+    healthcareProfessionals(filters: $filters) {
+        id
+        names { firstName lastName }
     }
 }`
 
