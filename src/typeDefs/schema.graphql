@@ -85,7 +85,7 @@ input UpdateHealthcareProfessionalInput {
 
 # You can search for healthcare professional using any of combination these fields (AND operators)
 input HealthcareProfessionalSearchFilters {
-  ids: [ID]
+  ids: [ID!]
   names: [LocalizedNameInput!]
   spokenLanguages: [Locale!]
   degrees: [Degree!]
