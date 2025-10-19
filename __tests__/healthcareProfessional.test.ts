@@ -264,19 +264,17 @@ describe('searchHealthcareProfessionals', () => {
         ]
 
         // Use Promise.all for parallel creation
-        const createRequests = professionalInputs.map(input => {
-            return request(gqlApiUrl).post('').send({
-                query: createHealthcareProfessionalMutation,
-                variables: { input }
-            } as gqlMutation<CreateHealthcareProfessionalInput>);
-        });
-        const createResults = await Promise.all(createRequests);
+        const createRequests = professionalInputs.map(input => request(gqlApiUrl).post('').send({
+            query: createHealthcareProfessionalMutation,
+            variables: { input }
+        } as gqlMutation<CreateHealthcareProfessionalInput>))
+        const createResults = await Promise.all(createRequests)
+
         createResults.forEach(result => {
-            expect(result.body?.errors).toBeUndefined();
-        });
+            expect(result.body?.errors).toBeUndefined()
+        })
         const createdProfessionals: HealthcareProfessional[] = createResults.map(result =>
-            result.body.data.createHealthcareProfessional as HealthcareProfessional
-        );
+            result.body.data.createHealthcareProfessional as HealthcareProfessional)
 
         // Search by ids
         const searchHealthcareProfessionalsRequest = {
@@ -330,19 +328,16 @@ describe('searchHealthcareProfessionals', () => {
             generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
         ]
         // Use Promise.all for parallel creation
-        const createRequests = professionalInputs.map(input => {
-            return request(gqlApiUrl).post('').send({
-                query: createHealthcareProfessionalMutation,
-                variables: { input }
-            } as gqlMutation<CreateHealthcareProfessionalInput>);
-        });
-        const createResults = await Promise.all(createRequests);
+        const createRequests = professionalInputs.map(input => request(gqlApiUrl).post('').send({
+            query: createHealthcareProfessionalMutation,
+            variables: { input }
+        } as gqlMutation<CreateHealthcareProfessionalInput>))
+        const createResults = await Promise.all(createRequests)
+
         createResults.forEach(result => {
-            expect(result.body?.errors).toBeUndefined();
-        });
-        const createdProfessionals: HealthcareProfessional[] = createResults.map(result =>
-            result.body.data.createHealthcareProfessional as HealthcareProfessional
-        );
+            expect(result.body?.errors).toBeUndefined()
+        })
+
         // Search with limit = 2
         const searchRequest = {
             query: searchHealthcareProfessionals,
@@ -365,19 +360,16 @@ describe('searchHealthcareProfessionals', () => {
             generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
         ]
         // Use Promise.all for parallel creation
-        const createRequests = professionalInputs.map(input => {
-            return request(gqlApiUrl).post('').send({
-                query: createHealthcareProfessionalMutation,
-                variables: { input }
-            } as gqlMutation<CreateHealthcareProfessionalInput>);
-        });
-        const createResults = await Promise.all(createRequests);
+        const createRequests = professionalInputs.map(input => request(gqlApiUrl).post('').send({
+            query: createHealthcareProfessionalMutation,
+            variables: { input }
+        } as gqlMutation<CreateHealthcareProfessionalInput>))
+        const createResults = await Promise.all(createRequests)
+
         createResults.forEach(result => {
-            expect(result.body?.errors).toBeUndefined();
-        });
-        const createdProfessionals: HealthcareProfessional[] = createResults.map(result =>
-            result.body.data.createHealthcareProfessional as HealthcareProfessional
-        );
+            expect(result.body?.errors).toBeUndefined()
+        })
+
         const searchRequest = {
             query: searchHealthcareProfessionals,
             variables: {
