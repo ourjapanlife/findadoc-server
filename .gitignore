@@ -32,3 +32,6 @@ firebase-debug.log
 firebaseServiceAccountKey.json
 # build output
 dist
+
+# foo
+.idea
