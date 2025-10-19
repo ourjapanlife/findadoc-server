@@ -112,6 +112,12 @@ Promise<Result<gqlTypes.HealthcareProfessional[]>> {
                 mapDbEntityTogqlEntity(dbProfessional.data() as dbSchema.HealthcareProfessional))
         }
 
+        // Apply final ID filtering if 'ids' filter is provided
+        if (filters.ids && filters.ids?.length > 0) {
+            finalGqlProfessionalsForNodes = finalGqlProfessionalsForNodes.filter(professional =>
+                filters.ids?.includes(professional.id))
+        }
+
         return {
             data: finalGqlProfessionalsForNodes,
             hasErrors: false
@@ -212,13 +218,13 @@ export async function createHealthcareProfessional(
         const newHealthcareProfessional = mapGqlEntityToDbEntity(newHealthcareProfessionalId, input)
 
         /*
-        let's wrap all of our updates in a transaction so we can roll back if anything fails. 
+        let's wrap all of our updates in a transaction so we can roll back if anything fails.
         (for example we don't want to update the professional if updating the associated facility updates fail)
         */
         await dbInstance.runTransaction(async t => {
             //this will update only the fields that are provided and are not undefined.
             await t.set(healthcareProfessionalRef, newHealthcareProfessional, {merge: true})
-            
+
             //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array
             if (newHealthcareProfessional.facilityIds && newHealthcareProfessional.facilityIds.length > 0) {
                 const facilityUpdateResults = await processFacilityRelationshipChanges(
@@ -229,7 +235,7 @@ export async function createHealthcareProfessional(
                     } satisfies gqlTypes.Relationship)),
                     t
                 )
-    
+
                 // if we didn't get it back or have errors, this is an actual error.
                 if (facilityUpdateResults.hasErrors || !facilityUpdateResults.data) {
                     throw new Error(`Error updating healthcare professional facilityIds: ${JSON.stringify(facilityUpdateResults.errors)}`)
@@ -240,9 +246,9 @@ export async function createHealthcareProfessional(
             const newHealthcareProfessionalAuditLogEntity = mapDbEntityTogqlEntity(newHealthcareProfessional)
 
             const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Create, 
-                gqlTypes.ObjectType.HealthcareProfessional, 
-                updatedBy, 
+                gqlTypes.ActionType.Create,
+                gqlTypes.ObjectType.HealthcareProfessional,
+                updatedBy,
                 JSON.stringify(newHealthcareProfessionalAuditLogEntity),
                 null,
                 t
@@ -252,7 +258,7 @@ export async function createHealthcareProfessional(
                 throw new Error(`Failed to create and audit log on ${gqlTypes.ActionType.Create}`)
             }
         })
-        
+
         logger.info(`\nDB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
 
         //let's return the newly created professional. Since we have the full entity, no need to do a new query.
@@ -300,7 +306,7 @@ export const updateHealthcareProfessional = async (
         }
 
         const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
-        
+
         // //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
         const updatedProfessional = await dbInstance.runTransaction(async t => {
             const dbDocument = await t.get(professionalRef)
@@ -308,16 +314,16 @@ export const updateHealthcareProfessional = async (
             const oldHealthcareProfessionalDataAuditLogEntity: string = JSON.stringify(
                 mapDbEntityTogqlEntity(dbProfessionalToUpdate)
             )
-            
+
             const originalFacilityIdsForHealthcareProfessional
                 = dbProfessionalToUpdate.facilityIds
 
             //let's update the fields that were provided
             MapDefinedFields(fieldsToUpdate, dbProfessionalToUpdate)
-            
+
             //Business rule: always timestamp when the entity was updated.
             dbProfessionalToUpdate.updatedDate = new Date().toISOString()
-            
+
             //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array
             if (fieldsToUpdate.facilityIds && fieldsToUpdate.facilityIds.length > 0) {
                 const facilityUpdateResults = await processFacilityRelationshipChanges(
@@ -326,12 +332,12 @@ export const updateHealthcareProfessional = async (
                     t,
                     originalFacilityIdsForHealthcareProfessional ?? []
                 )
-    
+
                 // if we didn't get it back or have errors, this is an actual error.
                 if (facilityUpdateResults.hasErrors || !facilityUpdateResults.data) {
                     throw new Error(`ERROR: Error updating healthcare professional facilityIds: ${JSON.stringify(facilityUpdateResults.errors)}`)
                 }
-    
+
                 //let's update the professional with the new facility ids
                 dbProfessionalToUpdate.facilityIds = facilityUpdateResults.data
             }
@@ -344,8 +350,8 @@ export const updateHealthcareProfessional = async (
             )
 
             const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Update, 
-                gqlTypes.ObjectType.HealthcareProfessional, 
+                gqlTypes.ActionType.Update,
+                gqlTypes.ObjectType.HealthcareProfessional,
                 updatedBy,
                 updatedHealthcareProfessionalAuditLogEntity,
                 oldHealthcareProfessionalDataAuditLogEntity,
@@ -353,12 +359,12 @@ export const updateHealthcareProfessional = async (
             )
 
             if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`)
             }
 
             return dbProfessionalToUpdate
         })
-        
+
         logger.info(`\nDB-UPDATE: Updated healthcare professional ${id}.\nEntity: ${JSON.stringify(updatedProfessional)}`)
         const updatedProfessionalResult = await getHealthcareProfessionalById(id)
 
@@ -396,7 +402,7 @@ export async function deleteHealthcareProfessional(id: string, updatedBy: string
         const dbRef = dbInstance.collection('healthcareProfessionals')
         const query = dbRef.where('id', '==', id)
         const dbDocument = await query.get()
-        
+
         if (dbDocument.empty) {
             logger.warn(`Validation Error: User tried deleting non-existant healthcare professional: ${id}`)
             return {
@@ -411,10 +417,10 @@ export async function deleteHealthcareProfessional(id: string, updatedBy: string
                 }]
             }
         }
-        
+
         if (dbDocument.docs.length > 1) {
             logger.error(`ERROR: Found multiple healthcare professionals with id ${id}. This should never happen.`)
-            
+
             return {
                 data: {
                     isSuccessful: false
@@ -427,11 +433,11 @@ export async function deleteHealthcareProfessional(id: string, updatedBy: string
                 }]
             }
         }
-        
+
         const professional = dbDocument.docs[0].data() as dbSchema.HealthcareProfessional
-        
+
         /*
-        let's wrap all of our updates in a transaction so we can roll back if anything fails. 
+        let's wrap all of our updates in a transaction so we can roll back if anything fails.
         (for example we don't want to update the professional if updating the associated facility updates fail)
         */
         await dbInstance.runTransaction(async t => {
@@ -460,8 +466,8 @@ export async function deleteHealthcareProfessional(id: string, updatedBy: string
             )
 
             const createdAuditLog = await createAuditLog(
-                gqlTypes.ActionType.Delete, 
-                gqlTypes.ObjectType.HealthcareProfessional, 
+                gqlTypes.ActionType.Delete,
+                gqlTypes.ObjectType.HealthcareProfessional,
                 updatedBy,
                 null,
                 JSON.stringify(oldHealthcareProfessionalDataAuditLogEntity),
@@ -469,7 +475,7 @@ export async function deleteHealthcareProfessional(id: string, updatedBy: string
             )
 
             if (!createdAuditLog.isSuccesful) {
-                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`) 
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`)
             }
         })
 
@@ -588,7 +594,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             const matchingRelationship
                 = professionalRelationshipsToUpdate.find(f => f.otherEntityId === dbProfessional.id)
             const dbProfessionalData = dbProfessional as dbSchema.HealthcareProfessional
-            
+
             if (!matchingRelationship) {
                 throw new Error(`ERROR: updating professional facilityId list for ${dbProfessional.id}. Could not find matching relationship.`)
             }
