@@ -85,6 +85,7 @@ input UpdateHealthcareProfessionalInput {
 
 # You can search for healthcare professional using any of combination these fields (AND operators)
 input HealthcareProfessionalSearchFilters {
+  ids: [ID!]
   names: [LocalizedNameInput!]
   spokenLanguages: [Locale!]
   degrees: [Degree!]
@@ -198,7 +199,7 @@ enum ReservationStatus {
 type User {
   id: ID!
   createdDate: String!
-  updatedDate: String! 
+  updatedDate: String!
   displayName: String
   profilePicUrl: String
 }
