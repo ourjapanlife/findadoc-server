@@ -1,7 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
-import { supabase } from '../supabaseClient.js'
+import { supabaseClient } from '../supabaseClient.js'
 
 /**
  * Gets a user from the database that matches on the id.
@@ -11,21 +11,27 @@ import { supabase } from '../supabaseClient.js'
 export async function getUserById(id: string)
     : Promise<Result<gqlTypes.User>> {
     try {
-        const { data } = await supabase
+        const { data } = await supabaseClient
             .from('user')
             .select('*')
             .eq('id', id) 
 
         if (!data) {
-            throw new Error(`No user found with id: ${id}`)
+            throw new Error(`No data found for user with id: ${id}`)
         }
 
+        if (data.length === 0) {
+            throw new Error('data array is empty')
+        }
+
+        const selectedUserData = data[0]
+
         const selectedUser:gqlTypes.User = {
-            createdDate: data[0].created_date,
-            id: data[0].id,
-            updatedDate: data[0].updated_date,
-            displayName: data[0].display_name,
-            profilePicUrl: data[0].profile_pic_url
+            createdDate: selectedUserData.created_date,
+            id: selectedUserData.id,
+            updatedDate: selectedUserData.updated_date,
+            displayName: selectedUserData.display_name,
+            profilePicUrl: selectedUserData.profile_pic_url
         }
 
         return {
@@ -56,21 +62,33 @@ export async function createUser(
     input: gqlTypes.CreateUserInput
 ): Promise<Result<gqlTypes.User>> {
     try {
-        const { data } = await supabase
+        const userToCreate:gqlTypes.User = {
+            createdDate: new Date().toISOString(),
+            id: '', //supabase will automatically assign an id upon creation, so will leave this blank
+            updatedDate: new Date().toISOString(),
+            displayName: input.displayName,
+            profilePicUrl: input.profilePicUrl
+        }
+
+        const { data } = await supabaseClient
             .from('user')
             // eslint-disable-next-line camelcase
-            .insert([{created_date: new Date().toISOString(),
+            .insert([{created_date: userToCreate.createdDate,
                 // eslint-disable-next-line camelcase
-                updated_date: new Date().toISOString(),
+                updated_date: userToCreate.updatedDate,
                 // eslint-disable-next-line camelcase
-                display_name: input.displayName,
+                display_name: userToCreate.displayName,
                 // eslint-disable-next-line camelcase
-                profile_pic_url: input.profilePicUrl}
+                profile_pic_url: userToCreate.profilePicUrl}
             ])
             .select('*')
 
         if (!data) {
             throw new Error('No data from create user call')
+        }
+
+        if (data.length === 0) {
+            throw new Error('data array is empty')
         }
 
         const createdUserResult:gqlTypes.User = {
@@ -110,7 +128,7 @@ export async function updateUser(
     fieldsToUpdate: gqlTypes.UpdateUserInput
 ): Promise<Result<gqlTypes.User>> {
     try {
-        const { data } = await supabase
+        const { data } = await supabaseClient
             .from('user')
             .update({
                 // eslint-disable-next-line camelcase
