@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
@@ -72,13 +73,9 @@ export async function createUser(
 
         const { data } = await supabaseClient
             .from('user')
-            // eslint-disable-next-line camelcase
             .insert([{created_date: userToCreate.createdDate,
-                // eslint-disable-next-line camelcase
                 updated_date: userToCreate.updatedDate,
-                // eslint-disable-next-line camelcase
                 display_name: userToCreate.displayName,
-                // eslint-disable-next-line camelcase
                 profile_pic_url: userToCreate.profilePicUrl}
             ])
             .select('*')
@@ -91,12 +88,14 @@ export async function createUser(
             throw new Error('data array is empty')
         }
 
+        const createdUserData = data[0]
+
         const createdUserResult:gqlTypes.User = {
-            createdDate: data[0].created_date,
-            id: data[0].id,
-            updatedDate: data[0].updated_date,
-            displayName: data[0].display_name,
-            profilePicUrl: data[0].profile_pic_url
+            createdDate: createdUserData.created_date,
+            id: createdUserData.id,
+            updatedDate: createdUserData.updated_date,
+            displayName: createdUserData.display_name,
+            profilePicUrl: createdUserData.profile_pic_url
         }
 
         return {
@@ -128,15 +127,20 @@ export async function updateUser(
     fieldsToUpdate: gqlTypes.UpdateUserInput
 ): Promise<Result<gqlTypes.User>> {
     try {
+        const userToUpdate:gqlTypes.User = {
+            updatedDate: new Date().toISOString(),
+            displayName: fieldsToUpdate.displayName,
+            profilePicUrl: fieldsToUpdate.profilePicUrl,
+            createdDate: '', // dont update this
+            id: '' // dont update this
+        }
+
         const { data } = await supabaseClient
             .from('user')
             .update({
-                // eslint-disable-next-line camelcase
-                updated_date: new Date().toISOString(),
-                // eslint-disable-next-line camelcase
-                display_name: fieldsToUpdate.displayName,
-                // eslint-disable-next-line camelcase
-                profile_pic_url: fieldsToUpdate.profilePicUrl
+                updated_date: userToUpdate.updatedDate,
+                display_name: userToUpdate.displayName,
+                profile_pic_url: userToUpdate.profilePicUrl
             })
             .eq('id', id)
             .select('*')
@@ -145,12 +149,18 @@ export async function updateUser(
             throw new Error('no data returned from update call')
         }
 
+        if (data.length === 0) {
+            throw new Error('data array is empty')
+        }
+
+        const updatedUserData = data[0]
+
         const updatedUser:gqlTypes.User = {
-            createdDate: data[0].created_date,
-            id: data[0].id,
-            updatedDate: data[0].updated_date,
-            displayName: data[0].display_name,
-            profilePicUrl: data[0].profile_pic_url
+            createdDate: updatedUserData.created_date,
+            id: updatedUserData.id,
+            updatedDate: updatedUserData.updated_date,
+            displayName: updatedUserData.display_name,
+            profilePicUrl: updatedUserData.profile_pic_url
         }
 
         return {
