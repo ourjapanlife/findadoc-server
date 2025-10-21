@@ -3,6 +3,10 @@ name: Test
 on:
   pull_request:
 
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
 jobs:
   tests:
     name: Running Tests

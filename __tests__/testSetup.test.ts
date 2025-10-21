@@ -10,6 +10,7 @@ import { createFacilityMutation } from './facilities.test.js'
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import { createApolloFastifyServer } from '../src/server.js'
 import { initializeLogger, logger } from '../src/logger.js'
+import { initializeSupabaseClient } from '../src/supabaseClient.js'
 // import { createTestUser, deleteTestUser } from './auth.test.js'
 
 // These ids can be used in any of the tests so they don't have to recreate the same data. 
@@ -27,9 +28,10 @@ beforeAll(async () => {
     process.env.TEST_ENABLED = 'true'
     const testPort = 0
 
-    //this initializes a shared firebase instance for all the tests.
+    //this initializes a shared firebase instance and supabase instance for all the tests.
     initializeLogger()
     await initiatilizeFirebaseInstance()
+    await initializeSupabaseClient()
     serverUrl = await createApolloFastifyServer(testPort)
     gqlApiUrl = `${serverUrl}/`
 
