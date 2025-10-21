@@ -7,13 +7,6 @@ const serviceKey = envVariables.supabaseServiceRoleKey()
 
 export let supabaseClient: SupabaseClient
 
-if (!url) {
-    throw new Error('Missing env SUPABASE_URL')
-}
-if (!serviceKey) {
-    throw new Error('Missing env SUPABASE_SERVICE_ROLE_KEY')
-}
-
 const testSupabaseIsInitialized = async () => {
     try {
         const { error } = await supabaseClient.from('user').select('id').limit(1)
@@ -37,6 +30,15 @@ export const initializeSupabaseClient = async () => {
     }
 
     alreadyStartedInitialization = true
+
+    if (!url) {
+        logger.error('❌ Missing supabase env variables, abandoning supabase client initialization ❌ ')
+        return
+    }
+    if (!serviceKey) {
+        logger.error('❌ Missing supabase env variables, abandoning supabase client initialization ❌')
+        return
+    }
 
     const newSupabaseClient = createClient(url, serviceKey)
 
