@@ -65,7 +65,7 @@ export async function createUser(
     try {
         const userToCreate:gqlTypes.User = {
             createdDate: new Date().toISOString(),
-            id: '', //supabase will automatically assign an id upon creation, so will leave this blank
+            id: 'donotuse', //supabase will automatically assign an id upon creation, so will not use this value
             updatedDate: new Date().toISOString(),
             displayName: input.displayName,
             profilePicUrl: input.profilePicUrl

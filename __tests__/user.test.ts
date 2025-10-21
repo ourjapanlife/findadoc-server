@@ -7,8 +7,8 @@ import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 describe('createUser', () => {
     test('can create a User and search it by id', async () => {
         const newUserInput: CreateUserInput = {
-            displayName: 'Matt',
-            profilePicUrl: '/profile-pic'
+            displayName: 'user test display name',
+            profilePicUrl: 'user test profile-pic'
         }
 
         const createUserMutationRequest = {
