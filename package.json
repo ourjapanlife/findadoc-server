@@ -4,9 +4,9 @@
     "description": "Backend for Find a Doc, Japan",
     "main": "index.js",
     "scripts": {
-        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && concurrently --raw \"yarn dev:startlocaldb\" \"yarn dev:startserver\"",
+        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && supabase start && supabase db reset && yarn dev:seeddb && concurrently --raw \"yarn dev:startlocaldb\" \"yarn dev:startserver\"",
         "dev:startserver": "echo '💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon --exec 'node --inspect --loader ts-node/esm src/index.ts'",
-        "dev:startlocaldb": "firebase login && firebase emulators:start --project=find-a-doc-japan --only firestore",
+        "dev:startlocaldb": "supabase start -f",
         "test": "echo '🧶 Installing yarn dependencies...🧶' && yarn && vitest",
         "test:dockerstart": "docker compose -f docker/docker-compose-test.yml up -d --build",
         "test:dockerstop": "docker compose -f docker/docker-compose-test.yml down",
@@ -23,7 +23,9 @@
         "generate": "echo '➡ ➡ ➡ Generating types from graphql schema ➡ ➡ ➡' && graphql-codegen --config ./typesgeneratorconfig.ts",
         "lint": "cross-env ESLINT_USE_FLAT_CONFIG=true eslint -c eslint.config.js .",
         "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint .",
-        "migrate": "cross-env NODE_ENV=development node --loader ts-node/esm src/migration.ts"
+        "migrate": "cross-env NODE_ENV=development node --loader ts-node/esm src/migration.ts",
+        "generate:seed": "node --loader ts-node/esm ./utils/generateSqlSeed.ts",
+        "dev:seeddb": "psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f utils/seed_data.sql"
     },
     "repository": {
         "type": "git",

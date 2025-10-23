@@ -2,31 +2,53 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { faker, fakerJA } from '@faker-js/faker'
 import { logger } from '../logger.js'
 
-export function generateRandomCreateHealthcareProfessionalInput(
+/**
+ * Generates random data for a CreateHealthcareProfessionalInput object,
+ * focusing only on the core fields for the 'healthcare_professionals' table.
+ * * @param {object} options - Options containing the available facility IDs.
+ * @returns {object} The HP data structure, excluding the facilityIds.
+ */
+export function generateRandomCreateHealthcareProfessionalData(
+    // We keep facilityIds here to select the random associations, but we don't include them in the returned object
     { facilityIds }: { facilityIds: string[] } = { facilityIds: [] }
 )
-    : gqlTypes.CreateHealthcareProfessionalInput {
-    // Let's randomly select 1 to 2 facility IDs from the provided list. 
-    // HP must be associated with at least one facility.
+    : {
+        coreData: Omit<gqlTypes.CreateHealthcareProfessionalInput, 'facilityIds'>,
+        selectedFacilityIds: string[]
+    } {
+    // Select random facility IDs for this HP (1 to 3 associations)
     const randomSelectedFacilityIds = faker.helpers.arrayElements(facilityIds, { min: 1, max: 3 })
 
     return {
-        facilityIds: randomSelectedFacilityIds,
-        names: faker.helpers.multiple(generateLocalizedNameInput, { count: 1 }),
-        degrees: generateDegrees(),
-        specialties: generateSpecialties(),
-        spokenLanguages: generateSpokenLanguages(),
-        acceptedInsurance: [faker.helpers.enumValue(gqlTypes.Insurance)],
-        additionalInfoForPatients: ''
+        coreData: {
+            // Note: facilityIds is omitted here for the core table
+            names: faker.helpers.multiple(generateLocalizedNameInput, { count: 1 }),
+            degrees: generateDegrees(),
+            specialties: generateSpecialties(),
+            spokenLanguages: generateSpokenLanguages(),
+            acceptedInsurance: [faker.helpers.enumValue(gqlTypes.Insurance)],
+            additionalInfoForPatients: ''
+        },
+        selectedFacilityIds: randomSelectedFacilityIds
     }
 }
 
-// This generates an array of HP using existing facility IDs
-export function generateRandomCreateHealthcareProfessionalInputArray({ count, facilityIdOptions} 
+/**
+ * This generates an array of HP data, structured to separate core HP data
+ * from the Facility relationships (which will go into the hps_facilities table).
+ * * @param {object} options - Options for array generation.
+ * @param {number} options.count - The number of HPs to generate (default is 100).
+ * @param {string[]} options.facilityIdOptions - The list of available facility UUIDs.
+ * @returns {Array<object>} An array of objects, each containing coreData and selectedFacilityIds.
+ */
+export function generateRandomCreateHealthcareProfessionalInputArray({ count, facilityIdOptions }
 : { count: number, facilityIdOptions: string[] } = { count: 100, facilityIdOptions: [] })
-    : gqlTypes.CreateHealthcareProfessionalInput[] {
-    return faker.helpers.multiple(() => 
-        generateRandomCreateHealthcareProfessionalInput({ facilityIds: facilityIdOptions || [] }), {
+    : Array<{
+        coreData: Omit<gqlTypes.CreateHealthcareProfessionalInput, 'facilityIds'>,
+        selectedFacilityIds: string[]
+    }> {
+    return faker.helpers.multiple(() =>
+        generateRandomCreateHealthcareProfessionalData({ facilityIds: facilityIdOptions || [] }), {
         count: count
     })
 }
