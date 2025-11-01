@@ -21,7 +21,7 @@ export async function getUserById(id: string)
             throw new Error(`No data found for user with id: ${id}`)
         }
 
-        if (data.length === 0) {
+        if (!data.length) {
             throw new Error('data array is empty')
         }
 
@@ -84,7 +84,7 @@ export async function createUser(
             throw new Error('No data from create user call')
         }
 
-        if (data.length === 0) {
+        if (!data.length) {
             throw new Error('data array is empty')
         }
 
@@ -149,7 +149,7 @@ export async function updateUser(
             throw new Error('no data returned from update call')
         }
 
-        if (data.length === 0) {
+        if (!data.length) {
             throw new Error('data array is empty')
         }
 

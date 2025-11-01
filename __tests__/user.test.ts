@@ -8,7 +8,7 @@ describe('createUser', () => {
     test('can create a User and search it by id', async () => {
         const newUserInput: CreateUserInput = {
             displayName: 'user test display name',
-            profilePicUrl: 'user test profile-pic'
+            profilePicUrl: '/profile-pic'
         }
 
         const createUserMutationRequest = {

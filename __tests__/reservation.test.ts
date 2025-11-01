@@ -9,7 +9,7 @@ describe('create reservation', () => {
         // create a user 
         const newUserInput: CreateUserInput = {
             displayName: 'rez_test_user',
-            profilePicUrl: 'rez test profile-pic'
+            profilePicUrl: '/profile-pic'
         }
 
         const createUserMutationRequest = {
