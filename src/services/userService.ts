@@ -1,9 +1,8 @@
+/* eslint-disable camelcase */
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
-
-// temporarily using in-memory database for testing user service before using Supabase
-const users: Array<gqlTypes.User> = []
+import { supabaseClient } from '../supabaseClient.js'
 
 /**
  * Gets a user from the database that matches on the id.
@@ -13,17 +12,35 @@ const users: Array<gqlTypes.User> = []
 export async function getUserById(id: string)
     : Promise<Result<gqlTypes.User>> {
     try {
-        const selectedUser = users.find(u => u.id === id)
+        const { data } = await supabaseClient
+            .from('user')
+            .select('*')
+            .eq('id', id) 
 
-        if (!selectedUser) {
-            throw new Error(`No user found with id: ${id}`)
+        if (!data) {
+            throw new Error(`No data found for user with id: ${id}`)
         }
+
+        if (!data.length) {
+            throw new Error('data array is empty')
+        }
+
+        const selectedUserData = data[0]
+
+        const selectedUser:gqlTypes.User = {
+            createdDate: selectedUserData.created_date,
+            id: selectedUserData.id,
+            updatedDate: selectedUserData.updated_date,
+            displayName: selectedUserData.display_name,
+            profilePicUrl: selectedUserData.profile_pic_url
+        }
+
         return {
             data: selectedUser,
             hasErrors: false
         }
     } catch (error) {
-        logger.error(`ERROR: Error getting user by id: ${error}`)
+        logger.error(`Error getting user by id: ${error}`)
 
         return {
             data: {} as gqlTypes.User,
@@ -46,26 +63,47 @@ export async function createUser(
     input: gqlTypes.CreateUserInput
 ): Promise<Result<gqlTypes.User>> {
     try {
-        const newCreatedDate = new Date().toISOString()
-        const newUpdatedDate = new Date().toISOString()
-        const newIdNum = users.length + 1
-        const newId = String(newIdNum)
-
-        const createdUserResult:gqlTypes.User = {
-            createdDate: newCreatedDate,
-            id: newId,
-            updatedDate: newUpdatedDate,
+        const userToCreate:gqlTypes.User = {
+            createdDate: new Date().toISOString(),
+            id: 'donotuse', //supabase will automatically assign an id upon creation, so will not use this value
+            updatedDate: new Date().toISOString(),
             displayName: input.displayName,
             profilePicUrl: input.profilePicUrl
-        } 
+        }
 
-        users.push(createdUserResult)
+        const { data } = await supabaseClient
+            .from('user')
+            .insert([{created_date: userToCreate.createdDate,
+                updated_date: userToCreate.updatedDate,
+                display_name: userToCreate.displayName,
+                profile_pic_url: userToCreate.profilePicUrl}
+            ])
+            .select('*')
+
+        if (!data) {
+            throw new Error('No data from create user call')
+        }
+
+        if (!data.length) {
+            throw new Error('data array is empty')
+        }
+
+        const createdUserData = data[0]
+
+        const createdUserResult:gqlTypes.User = {
+            createdDate: createdUserData.created_date,
+            id: createdUserData.id,
+            updatedDate: createdUserData.updated_date,
+            displayName: createdUserData.display_name,
+            profilePicUrl: createdUserData.profile_pic_url
+        }
+
         return {
             data: createdUserResult,
             hasErrors: false
         }
     } catch (error) {
-        logger.error(`ERROR: Error creating user: ${error}`)
+        logger.error(`Error creating user: ${error}`)
 
         return {
             data: {} as gqlTypes.User,
@@ -85,41 +123,58 @@ export async function createUser(
  * @returns the updated User so you don't have to query it after
  */
 export async function updateUser(
-    userId: string,
+    id: string,
     fieldsToUpdate: gqlTypes.UpdateUserInput
 ): Promise<Result<gqlTypes.User>> {
     try {
-        // check if user exists and get the array index in the database
-        const userArrayIndex = users.findIndex(u => u.id === userId)
-
-        if (userArrayIndex === -1) {
-            throw new Error('No user exists with the provided id')
-        }
-
-        // update the user using the array index
-        users[userArrayIndex] = {
-            createdDate: users[userArrayIndex].createdDate,
-            id: users[userArrayIndex].id,
+        const userToUpdate:gqlTypes.User = {
             updatedDate: new Date().toISOString(),
-            displayName: fieldsToUpdate.displayName !== undefined ? fieldsToUpdate.displayName
-                : users[userArrayIndex].displayName,
-            profilePicUrl: fieldsToUpdate.profilePicUrl !== undefined ? fieldsToUpdate.profilePicUrl
-                : users[userArrayIndex].profilePicUrl
+            displayName: fieldsToUpdate.displayName,
+            profilePicUrl: fieldsToUpdate.profilePicUrl,
+            createdDate: '', // dont update this
+            id: '' // dont update this
         }
 
-        // return the updated user
+        const { data } = await supabaseClient
+            .from('user')
+            .update({
+                updated_date: userToUpdate.updatedDate,
+                display_name: userToUpdate.displayName,
+                profile_pic_url: userToUpdate.profilePicUrl
+            })
+            .eq('id', id)
+            .select('*')
+
+        if (!data) {
+            throw new Error('no data returned from update call')
+        }
+
+        if (!data.length) {
+            throw new Error('data array is empty')
+        }
+
+        const updatedUserData = data[0]
+
+        const updatedUser:gqlTypes.User = {
+            createdDate: updatedUserData.created_date,
+            id: updatedUserData.id,
+            updatedDate: updatedUserData.updated_date,
+            displayName: updatedUserData.display_name,
+            profilePicUrl: updatedUserData.profile_pic_url
+        }
+
         return {
-            data: users[userArrayIndex],
+            data: updatedUser,
             hasErrors: false
         } 
     } catch (error) {
-        logger.error(`ERROR: Error creating user: ${error}`)
+        logger.error(`Error updating user: ${error}`)
 
         return {
             data: {} as gqlTypes.User,
             hasErrors: true,
             errors: [{
-                field: 'createUser',
+                field: 'updateUser',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
                 httpStatus: 500
             }]
