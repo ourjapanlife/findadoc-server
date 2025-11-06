@@ -329,7 +329,7 @@ const resolvers = {
                 })
             }
 
-            const createSubmissionResult = await submissionService.createSubmission(args.input)
+            const createSubmissionResult = await submissionService.createSubmission(args.input, context.user.sub)
 
             convertErrorsToGqlErrors(createSubmissionResult)
             return createSubmissionResult.data
