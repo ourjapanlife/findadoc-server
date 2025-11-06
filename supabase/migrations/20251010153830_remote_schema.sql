@@ -174,13 +174,16 @@ CREATE TABLE IF NOT EXISTS "public"."submissions" (
     "status" character varying NOT NULL,
     "createdDate" timestamp with time zone,
     "updatedDate" timestamp with time zone,
-    "hps_id" "uuid" NOT NULL,
-    "facilities_id" "uuid" NOT NULL,
+    "hps_id" "uuid",
+    "facilities_id" "uuid",
     "googleMapsUrl" "text",
     "healthcareProfessionalName" "text",
     "spokenLanguages" "jsonb",
     "notes" "text",
     "autofillPlaceFromSubmissionUrl" boolean DEFAULT false NOT NULL,
+    "facility_partial" "jsonb",
+    "healthcare_professionals_partial" "jsonb",
+    
     "firestore_id" "text"
 );
 

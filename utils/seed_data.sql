@@ -1,223 +1,248 @@
 -- Clean up existing data to ensure a fresh start
-DELETE FROM public.hps_facilities;
-DELETE FROM public.healthcare_professionals;
-DELETE FROM public.facilities;
-DELETE FROM public.submissions;
+DELETE FROM hps_facilities;
+DELETE FROM hps;
+DELETE FROM facilities;
+DELETE FROM submissions;
 ------------------------------------
 
 
-INSERT INTO public.facilities (
-id, nameEn, nameJa, mapLatitude, mapLongitude, contact
-) VALUES (
-'f9676348-f989-4046-8762-36db0c2657a9', 
-'Jacobson - Russel', 
-'加藤通信合同会社', 
-35.0405, 
-135.7082, 
-'{"googleMapsUrl":"https://puzzling-loading.com/","email":"Jacobson-Russel_Huel90@yahoo.com","phone":"402.541.3952 x934","website":"https://educated-freight.info","address":{"addressLine1En":"45780 Rath Passage","addressLine2En":"Apt. 710","addressLine1Ja":"143 斎藤Dam","addressLine2Ja":"Suite 885","cityEn":"Kyoto","cityJa":"京都","postalCode":"615-5313","prefectureEn":"Kyoto","prefectureJa":"京都府"}}'
-);
+            INSERT INTO facilities (
+                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact
+            ) VALUES (
+                'dcde5a03-5dc4-4890-b204-ab1cbde5f1f6', 
+                'Buckridge, VonRueden and Gusikowski', 
+                '株式会社松本印刷', 
+                35.6462, 
+                139.8595, 
+                '{"googleMapsUrl":"https://robust-instruction.biz","email":"BuckridgeVonRuedenandGusikowski6@yahoo.com","phone":"5464187846 x60272","website":"https://insignificant-period.org","address":{"addressLine1En":"1774 Bechtelar Club","addressLine2En":"Apt. 128","addressLine1Ja":"127 伊藤Pike","addressLine2Ja":"Suite 875","cityEn":"Tokyo","cityJa":"東京","postalCode":"187-2405","prefectureEn":"Tokyo","prefectureJa":"東京都"}}'
+            );
 
-INSERT INTO public.facilities (
-id, nameEn, nameJa, mapLatitude, mapLongitude, contact
-) VALUES (
-'b147f044-037f-4b86-ba3d-059f84d53455', 
-'Smith LLC', 
-'林ガス有限会社', 
-35.6006, 
-139.4279, 
-'{"googleMapsUrl":"https://flamboyant-legislature.com","email":"SmithLLC_Turcotte@hotmail.com","phone":"3055004111 x47060","website":"https://meaty-word.net","address":{"addressLine1En":"844 Nella Forest","addressLine2En":"Suite 493","addressLine1Ja":"5676 加藤Inlet","addressLine2Ja":"Suite 150","cityEn":"Tokyo","cityJa":"東京","postalCode":"138-7603","prefectureEn":"Tokyo","prefectureJa":"東京都"}}'
-);
+            INSERT INTO facilities (
+                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact
+            ) VALUES (
+                '503703a5-f0df-4cc1-8c64-ce7a96b1d216', 
+                'Turner, Towne and Mraz', 
+                '合資会社鈴木運輸', 
+                35.0901, 
+                135.7594, 
+                '{"googleMapsUrl":"https://yellowish-tea.biz/","email":"TurnerTowneandMraz86@yahoo.com","phone":"18086879498 x30214","website":"https://triangular-dance.net/","address":{"addressLine1En":"89442 Lake Street","addressLine2En":"Suite 658","addressLine1Ja":"600 吉田Valley","addressLine2Ja":"Apt. 886","cityEn":"Kyoto","cityJa":"京都","postalCode":"685-8651","prefectureEn":"Kyoto","prefectureJa":"京都府"}}'
+            );
 
-INSERT INTO public.facilities (
-id, nameEn, nameJa, mapLatitude, mapLongitude, contact
-) VALUES (
-'4d79853d-65ed-4ab1-9f5e-5997bd115b00', 
-'MacGyver, Marquardt and Grant', 
-'田中農林合名会社', 
-35.0164, 
-135.7597, 
-'{"googleMapsUrl":"https://corrupt-mill.biz","email":"MacGyverMarquardtandGrant.Keebler-Boehm@gmail.com","phone":"598.492.3596 x60117","website":"https://impartial-snowflake.com/","address":{"addressLine1En":"58179 Aliyah Lakes","addressLine2En":"Suite 770","addressLine1Ja":"6600 桃子Club","addressLine2Ja":"Apt. 933","cityEn":"Kyoto","cityJa":"京都","postalCode":"640-5857","prefectureEn":"Kyoto","prefectureJa":"京都府"}}'
-);
+            INSERT INTO facilities (
+                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact
+            ) VALUES (
+                'b4ad6568-114d-4d77-9942-0574e72c5d34', 
+                'Zulauf and Sons', 
+                '合名会社井上銀行', 
+                35.6899, 
+                139.4871, 
+                '{"googleMapsUrl":"https://disastrous-community.biz","email":"ZulaufandSons43@yahoo.com","phone":"5128224425","website":"https://homely-echidna.name","address":{"addressLine1En":"3307 Anibal Isle","addressLine2En":"Suite 140","addressLine1Ja":"492 小林Flat","addressLine2Ja":"Apt. 372","cityEn":"Tokyo","cityJa":"東京","postalCode":"102-5056","prefectureEn":"Tokyo","prefectureJa":"東京都"}}'
+            );
 
-INSERT INTO public.facilities (
-id, nameEn, nameJa, mapLatitude, mapLongitude, contact
-) VALUES (
-'1ee12e1e-ab2f-4b0f-a66c-b59de44f58c5', 
-'Blanda, Nitzsche and Walsh', 
-'合名会社佐々木銀行', 
-35.0333, 
-135.7999, 
-'{"googleMapsUrl":"https://inconsequential-rowing.org/","email":"BlandaNitzscheandWalsh.Mosciski56@yahoo.com","phone":"16572225945","website":"https://agreeable-pinto.biz/","address":{"addressLine1En":"222 Mann Lake","addressLine2En":"Apt. 738","addressLine1Ja":"50678 山本Cape","addressLine2Ja":"Apt. 611","cityEn":"Kyoto","cityJa":"京都","postalCode":"681-7554","prefectureEn":"Kyoto","prefectureJa":"京都府"}}'
-);
+            INSERT INTO facilities (
+                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact
+            ) VALUES (
+                '1d415e32-550b-4f32-b3f5-9b0b9101224a', 
+                'Hickle, Koch and Mann', 
+                '合名会社清水ガス', 
+                35.0487, 
+                135.7073, 
+                '{"googleMapsUrl":"https://utter-flavor.name","email":"HickleKochandMann98@yahoo.com","phone":"778.449.8977 x3709","website":"https://concerned-permafrost.biz","address":{"addressLine1En":"190 Weissnat Trail","addressLine2En":"Suite 824","addressLine1Ja":"61863 木村Route","addressLine2Ja":"Apt. 987","cityEn":"Kyoto","cityJa":"京都","postalCode":"699-0847","prefectureEn":"Kyoto","prefectureJa":"京都府"}}'
+            );
 
-INSERT INTO public.facilities (
-id, nameEn, nameJa, mapLatitude, mapLongitude, contact
-) VALUES (
-'2014363e-f71d-4a64-891f-2ca259943533', 
-'Jenkins Group', 
-'合資会社山口ガス', 
-35.0346, 
-135.7111, 
-'{"googleMapsUrl":"https://infamous-curve.net","email":"JenkinsGroup_Daugherty@yahoo.com","phone":"883.295.3736 x27679","website":"https://sarcastic-cartilage.name","address":{"addressLine1En":"10187 Vicente Canyon","addressLine2En":"Suite 758","addressLine1Ja":"35804 友美Fords","addressLine2Ja":"Apt. 851","cityEn":"Kyoto","cityJa":"京都","postalCode":"699-9491","prefectureEn":"Kyoto","prefectureJa":"京都府"}}'
-);
-INSERT INTO public.healthcare_professionals (
-id, names, degrees, specialties, spoken_languages, accepted_insurance, additional_info_for_patients
-) VALUES (
-'2795fb8b-976a-41d5-85ac-f9873210f59a', 
-'[{"firstName":"Erica","middleName":"Greer","lastName":"Hickle","locale":"en_US"}]', 
-'["NP","DNP"]', 
-'["DENTISTRY","OPHTHALMOLOGY"]', 
-'["he_IL"]', 
-'["JAPANESE_HEALTH_INSURANCE"]', 
-''
-);
-INSERT INTO public.healthcare_professionals (
-id, names, degrees, specialties, spoken_languages, accepted_insurance, additional_info_for_patients
-) VALUES (
-'7404a889-891c-4d75-94b7-af5bcf24fd0a', 
-'[{"firstName":"駿","lastName":"井上","locale":"ja_JP"}]', 
-'["DVM","EdD"]', 
-'["INFECTIOUS_DISEASES","TRAUMATOLOGY"]', 
-'["zh_HK"]', 
-'["JAPANESE_HEALTH_INSURANCE"]', 
-''
-);
-INSERT INTO public.healthcare_professionals (
-id, names, degrees, specialties, spoken_languages, accepted_insurance, additional_info_for_patients
-) VALUES (
-'40ce380b-2b45-4f0f-a90b-8faefd66123e', 
-'[{"firstName":"大翔","lastName":"吉田","locale":"ja_JP"}]', 
-'["DSW","DPM"]', 
-'["SURGERY","PEDIATRICS"]', 
-'["ne_NP"]', 
-'["INTERNATIONAL_HEALTH_INSURANCE"]', 
-''
-);
-INSERT INTO public.healthcare_professionals (
-id, names, degrees, specialties, spoken_languages, accepted_insurance, additional_info_for_patients
-) VALUES (
-'1b9f0b95-1af4-47cb-b5aa-7f74f216e0e6', 
-'[{"firstName":"智也","lastName":"高橋","locale":"ja_JP"}]', 
-'["DPM","DPT"]', 
-'["ENT_SPECIALIST","PSYCHIATRY"]', 
-'["vi_VN","ko_KR"]', 
-'["TRAVEL_INSURANCE"]', 
-''
-);
-INSERT INTO public.healthcare_professionals (
-id, names, degrees, specialties, spoken_languages, accepted_insurance, additional_info_for_patients
-) VALUES (
-'1e591a39-e60e-4201-b0db-fadcca2b720e', 
-'[{"firstName":"学","lastName":"佐々木","locale":"ja_JP"}]', 
-'["DMD","EdD"]', 
-'["ORTHOPEDIC_SURGERY","EMERGENCY_MEDICINE"]', 
-'["sr_Cyrl"]', 
-'["UNINSURED"]', 
-''
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'2795fb8b-976a-41d5-85ac-f9873210f59a', 
-'b147f044-037f-4b86-ba3d-059f84d53455'
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'2795fb8b-976a-41d5-85ac-f9873210f59a', 
-'1ee12e1e-ab2f-4b0f-a66c-b59de44f58c5'
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'7404a889-891c-4d75-94b7-af5bcf24fd0a', 
-'b147f044-037f-4b86-ba3d-059f84d53455'
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'40ce380b-2b45-4f0f-a90b-8faefd66123e', 
-'b147f044-037f-4b86-ba3d-059f84d53455'
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'1b9f0b95-1af4-47cb-b5aa-7f74f216e0e6', 
-'b147f044-037f-4b86-ba3d-059f84d53455'
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'1b9f0b95-1af4-47cb-b5aa-7f74f216e0e6', 
-'2014363e-f71d-4a64-891f-2ca259943533'
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'1e591a39-e60e-4201-b0db-fadcca2b720e', 
-'1ee12e1e-ab2f-4b0f-a66c-b59de44f58c5'
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'1e591a39-e60e-4201-b0db-fadcca2b720e', 
-'4d79853d-65ed-4ab1-9f5e-5997bd115b00'
-);
-INSERT INTO public.hps_facilities (hp_id, facility_id) VALUES (
-'1e591a39-e60e-4201-b0db-fadcca2b720e', 
-'f9676348-f989-4046-8762-36db0c2657a9'
-);
-INSERT INTO public.submissions (
-id, google_maps_url, healthcare_professional_name, spoken_languages, 
-facility_data, healthcare_professionals_data, is_approved, is_rejected, is_under_review
-) VALUES (
-'fe773fdb-8e93-4eee-8652-4c084d47c5ef', 
-'https://beloved-pulse.info', 
-'Jeff Kemmer', 
-'["zh_CN","und"]', 
-'{"nameEn":"Olson Inc","nameJa":"吉田農林合名会社","mapLatitude":43.046,"mapLongitude":141.3592,"contact":{"googleMapsUrl":"https://warped-spectacles.biz/","email":"OlsonInc.McClure@gmail.com","phone":"(692) 4245234 x46800","website":"https://teeming-tunnel.biz/","address":{"addressLine1En":"745 Johns Wall","addressLine2En":"Suite 121","addressLine1Ja":"361 啓子Circle","addressLine2Ja":"Suite 516","cityEn":"Sapporo","cityJa":"札幌","postalCode":"021-1718","prefectureEn":"Hokkaido","prefectureJa":"北海道"}}}', 
-'[{"names":[{"firstName":"恵美子","lastName":"佐々木","locale":"ja_JP"}],"degrees":["OD","PharmD"],"specialties":["GENERAL_MEDICINE","PATHOLOGY"],"spokenLanguages":["fi_FI"],"acceptedInsurance":["INTERNATIONAL_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"麻美","lastName":"松本","locale":"ja_JP"}],"degrees":["DMD","DDS"],"specialties":["PREVENTIVE_MEDICINE","TRAUMATOLOGY"],"spokenLanguages":["mn_MN","lg_UG"],"acceptedInsurance":["JAPANESE_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]}]', 
-TRUE, 
-FALSE, 
-FALSE
-);
-INSERT INTO public.submissions (
-id, google_maps_url, healthcare_professional_name, spoken_languages, 
-facility_data, healthcare_professionals_data, is_approved, is_rejected, is_under_review
-) VALUES (
-'ec7d1fda-a6cb-4c1a-86d2-f4d735cf486c', 
-'https://ill-racer.org/', 
-'Michelle Schowalter', 
-'["hr_HR","hu_HU"]', 
-'{"nameEn":"Lang - Herman","nameJa":"田中通信合同会社","mapLatitude":43.0002,"mapLongitude":141.3036,"contact":{"googleMapsUrl":"https://wary-performance.info/","email":"Lang-Herman.Daniel16@hotmail.com","phone":"744.808.1696 x4018","website":"https://high-involvement.net","address":{"addressLine1En":"65577 4th Street","addressLine2En":"Suite 246","addressLine1Ja":"19336 未来Orchard","addressLine2Ja":"Apt. 305","cityEn":"Sapporo","cityJa":"札幌","postalCode":"033-1854","prefectureEn":"Hokkaido","prefectureJa":"北海道"}}}', 
-'[{"names":[{"firstName":"心優","lastName":"小林","locale":"ja_JP"}],"degrees":["DC","DPT"],"specialties":["OPTOMETRY","PEDIATRICS"],"spokenLanguages":["und","en_US"],"acceptedInsurance":["INTERNATIONAL_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"正夫","lastName":"松本","locale":"ja_JP"}],"degrees":["DPT","DO"],"specialties":["PEDIATRICS","CARDIOLOGY"],"spokenLanguages":["kn_IN","sq_AL"],"acceptedInsurance":["UNINSURED"],"additionalInfoForPatients":"","facilityIds":[]}]', 
-FALSE, 
-FALSE, 
-TRUE
-);
-INSERT INTO public.submissions (
-id, google_maps_url, healthcare_professional_name, spoken_languages, 
-facility_data, healthcare_professionals_data, is_approved, is_rejected, is_under_review
-) VALUES (
-'7841c6f8-a8b7-4f4f-95c0-4327262d9e5e', 
-'https://careless-ruckus.com/', 
-'Claude McClure', 
-'["zh_HK","th_TH"]', 
-'{"nameEn":"Quitzon Group","nameJa":"株式会社渡辺情報","mapLatitude":43.0686,"mapLongitude":141.3491,"contact":{"googleMapsUrl":"https://medium-builder.net","email":"QuitzonGroup_Moen@gmail.com","phone":"688.508.7805 x316","website":"https://deep-commandment.info","address":{"addressLine1En":"209 Asia Vista","addressLine2En":"Suite 481","addressLine1Ja":"10290 結月Turnpike","addressLine2Ja":"Apt. 725","cityEn":"Sapporo","cityJa":"札幌","postalCode":"017-6195","prefectureEn":"Hokkaido","prefectureJa":"北海道"}}}', 
-'[{"names":[{"firstName":"陽葵","lastName":"高橋","locale":"ja_JP"}],"degrees":["DVM","OD"],"specialties":["SPORTS_MEDICINE","INTERNAL_MEDICINE"],"spokenLanguages":["sw_KE"],"acceptedInsurance":["UNINSURED"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"Sammy","middleName":"Bowie","lastName":"Barton","locale":"en_US"}],"degrees":["DPM","DPM"],"specialties":["DENTISTRY","PHARMACY"],"spokenLanguages":["si_LK","pl_PL"],"acceptedInsurance":["INTERNATIONAL_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]}]', 
-FALSE, 
-TRUE, 
-FALSE
-);
-INSERT INTO public.submissions (
-id, google_maps_url, healthcare_professional_name, spoken_languages, 
-facility_data, healthcare_professionals_data, is_approved, is_rejected, is_under_review
-) VALUES (
-'f8616b2c-eba7-4f67-bf1f-d14aa9359901', 
-'https://likely-stitcher.biz/', 
-'Travis Hettinger', 
-'["si_LK","kab_DZ"]', 
-'{"nameEn":"Hagenes, Rowe and Kunde","nameJa":"有限会社高橋建設","mapLatitude":35.0626,"mapLongitude":135.7721,"contact":{"googleMapsUrl":"https://used-grit.name","email":"HagenesRoweandKunde_Nienow74@gmail.com","phone":"427.838.4658 x37175","website":"https://obvious-mukluk.name","address":{"addressLine1En":"4606 Bechtelar Oval","addressLine2En":"Suite 137","addressLine1Ja":"951 斎藤Pass","addressLine2Ja":"Suite 507","cityEn":"Kyoto","cityJa":"京都","postalCode":"620-6643","prefectureEn":"Kyoto","prefectureJa":"京都府"}}}', 
-'[{"names":[{"firstName":"Zack","middleName":"Dakota","lastName":"Konopelski","locale":"en_US"}],"degrees":["PhD","PA"],"specialties":["RADIATION_ONCOLOGY","ENT_SPECIALIST"],"spokenLanguages":["und","kn_IN"],"acceptedInsurance":["TRAVEL_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"功","lastName":"林","locale":"ja_JP"}],"degrees":["MPH","MPH"],"specialties":["DENTISTRY","PSYCHIATRY"],"spokenLanguages":["ee_GH","km_KH"],"acceptedInsurance":["INSURANCE_NOT_ACCEPTED"],"additionalInfoForPatients":"","facilityIds":[]}]', 
-TRUE, 
-FALSE, 
-FALSE
-);
-INSERT INTO public.submissions (
-id, google_maps_url, healthcare_professional_name, spoken_languages, 
-facility_data, healthcare_professionals_data, is_approved, is_rejected, is_under_review
-) VALUES (
-'5f1001ef-712b-459e-8999-97a0e88a3507', 
-'https://far-off-amount.info/', 
-'Arthur Grady', 
-'["guz_KE","ja_JP"]', 
-'{"nameEn":"Block, Wuckert and Ebert","nameJa":"合同会社井上情報","mapLatitude":35.093,"mapLongitude":135.7442,"contact":{"googleMapsUrl":"https://unwritten-talent.info","email":"BlockWuckertandEbert.Bahringer@gmail.com","phone":"(200) 2024878 x044","website":"https://knowledgeable-half-brother.info/","address":{"addressLine1En":"956 New Lane","addressLine2En":"Suite 879","addressLine1Ja":"38121 林Branch","addressLine2Ja":"Apt. 125","cityEn":"Kyoto","cityJa":"京都","postalCode":"667-2664","prefectureEn":"Kyoto","prefectureJa":"京都府"}}}', 
-'[{"names":[{"firstName":"秀樹","lastName":"中村","locale":"ja_JP"}],"degrees":["MD","DC"],"specialties":["UROLOGY","INFECTIOUS_DISEASES"],"spokenLanguages":["ar_AE"],"acceptedInsurance":["INTERNATIONAL_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"Reilly","middleName":"Jules","lastName":"Hand","locale":"en_US"}],"degrees":["DDS","MD"],"specialties":["OPTOMETRY","NUCLEAR_MEDICINE"],"spokenLanguages":["lg_UG"],"acceptedInsurance":["INTERNATIONAL_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]}]', 
-FALSE, 
-FALSE, 
-TRUE
-);
+            INSERT INTO facilities (
+                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact
+            ) VALUES (
+                '17ff9c09-c8d0-476e-83a5-f16325600323', 
+                'Emard - Swift', 
+                '有限会社田中水産', 
+                43.0417, 
+                141.3043, 
+                '{"googleMapsUrl":"https://unhealthy-boolean.com","email":"Emard-Swift_Schuster@hotmail.com","phone":"(327) 6871951 x3945","website":"https://misty-second.name/","address":{"addressLine1En":"81992 12th Street","addressLine2En":"Apt. 763","addressLine1Ja":"309 成美Estate","addressLine2Ja":"Apt. 700","cityEn":"Sapporo","cityJa":"札幌","postalCode":"043-6887","prefectureEn":"Hokkaido","prefectureJa":"北海道"}}'
+            );
+INSERT INTO hps (
+                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients"
+            ) VALUES (
+                'af361298-5c0b-4b74-895e-47e52e5546d4', 
+                '[{"firstName":"紀子","lastName":"田中","locale":"ja_JP"}]', 
+                '["DPT","CNM"]', 
+                '["ORTHODONTICS","NEUROLOGY"]', 
+                '["cs_CZ","is_IS"]', 
+                '["UNINSURED"]', 
+                ''
+            );
+INSERT INTO hps (
+                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients"
+            ) VALUES (
+                '94ad9e8e-98e7-4aec-9106-b1c8b17407e6', 
+                '[{"firstName":"悠希","lastName":"井上","locale":"ja_JP"}]', 
+                '["DDS","DPT"]', 
+                '["TRAUMATOLOGY","SPORTS_MEDICINE"]', 
+                '["lg_UG"]', 
+                '["TRAVEL_INSURANCE"]', 
+                ''
+            );
+INSERT INTO hps (
+                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients"
+            ) VALUES (
+                '6ad9d336-24e1-4945-9fbd-8f08410cfb5e', 
+                '[{"firstName":"Winfield","middleName":"Kai","lastName":"Bergnaum","locale":"en_US"}]', 
+                '["DC","CNM"]', 
+                '["SPORTS_MEDICINE","FAMILY_MEDICINE"]', 
+                '["km_KH"]', 
+                '["TRAVEL_INSURANCE"]', 
+                ''
+            );
+INSERT INTO hps (
+                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients"
+            ) VALUES (
+                '2da44890-abc2-4608-b458-0426a9bcb362', 
+                '[{"firstName":"優子","lastName":"林","locale":"ja_JP"}]', 
+                '["DSW","OD"]', 
+                '["DERMATOLOGY","PREVENTIVE_MEDICINE"]', 
+                '["de_DE","de_DE"]', 
+                '["JAPANESE_HEALTH_INSURANCE"]', 
+                ''
+            );
+INSERT INTO hps (
+                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients"
+            ) VALUES (
+                'dbe365cf-8fe3-4593-b8f5-4d62b60d71fb', 
+                '[{"firstName":"莉子","lastName":"斎藤","locale":"ja_JP"}]', 
+                '["MPH","DMD"]', 
+                '["GENERAL_MEDICINE","ORTHODONTICS"]', 
+                '["hy_AM"]', 
+                '["INTERNATIONAL_HEALTH_INSURANCE"]', 
+                ''
+            );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    'af361298-5c0b-4b74-895e-47e52e5546d4', 
+                    '17ff9c09-c8d0-476e-83a5-f16325600323'
+                );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    '94ad9e8e-98e7-4aec-9106-b1c8b17407e6', 
+                    '17ff9c09-c8d0-476e-83a5-f16325600323'
+                );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    '94ad9e8e-98e7-4aec-9106-b1c8b17407e6', 
+                    'dcde5a03-5dc4-4890-b204-ab1cbde5f1f6'
+                );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    '6ad9d336-24e1-4945-9fbd-8f08410cfb5e', 
+                    'dcde5a03-5dc4-4890-b204-ab1cbde5f1f6'
+                );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    '6ad9d336-24e1-4945-9fbd-8f08410cfb5e', 
+                    'b4ad6568-114d-4d77-9942-0574e72c5d34'
+                );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    '2da44890-abc2-4608-b458-0426a9bcb362', 
+                    'dcde5a03-5dc4-4890-b204-ab1cbde5f1f6'
+                );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    'dbe365cf-8fe3-4593-b8f5-4d62b60d71fb', 
+                    '503703a5-f0df-4cc1-8c64-ce7a96b1d216'
+                );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    'dbe365cf-8fe3-4593-b8f5-4d62b60d71fb', 
+                    'b4ad6568-114d-4d77-9942-0574e72c5d34'
+                );
+INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
+                    'dbe365cf-8fe3-4593-b8f5-4d62b60d71fb', 
+                    'dcde5a03-5dc4-4890-b204-ab1cbde5f1f6'
+                );
+INSERT INTO submissions (
+                id, "googleMapsUrl", "healthcareProfessionalName", "spokenLanguages", 
+                facility_partial, healthcare_professionals_partial, 
+                status, hps_id, facilities_id, "autofillPlaceFromSubmissionUrl",
+                "createdDate", "updatedDate"
+            ) VALUES (
+                '91581c89-b44a-4e64-b264-e07e547cefda', 
+                'https://colossal-outlook.info/', 
+                'Felipe Berge', 
+                '["he_IL","ru_RU"]', 
+                '{"nameEn":"Mayert and Sons","nameJa":"有限会社松本保険","mapLatitude":35.6079,"mapLongitude":139.6141,"contact":{"googleMapsUrl":"https://verifiable-emergency.biz/","email":"MayertandSons.Turner51@hotmail.com","phone":"19778611036","website":"https://functional-crime.info","address":{"addressLine1En":"508 E Walnut Street","addressLine2En":"Apt. 642","addressLine1Ja":"8961 松本Brook","addressLine2Ja":"Suite 537","cityEn":"Tokyo","cityJa":"東京","postalCode":"186-9923","prefectureEn":"Tokyo","prefectureJa":"東京都"}}}', 
+                '[{"names":[{"firstName":"キミ","lastName":"渡辺","locale":"ja_JP"}],"degrees":["DVM","PharmD"],"specialties":["UROLOGY","ORTHOPEDIC_SURGERY"],"spokenLanguages":["el_GR","id_ID"],"acceptedInsurance":["INTERNATIONAL_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"Ashly","middleName":"Ellis","lastName":"Kutch","locale":"en_US"}],"degrees":["DSc","DVM"],"specialties":["NUCLEAR_MEDICINE","NUCLEAR_MEDICINE"],"spokenLanguages":["ne_NP"],"acceptedInsurance":["JAPANESE_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]}]', 
+                'approved',
+                NULL,
+                NULL,
+                FALSE,
+                '2025-11-06T13:43:00.220Z',
+                '2025-11-06T13:43:00.225Z'
+            );
+INSERT INTO submissions (
+                id, "googleMapsUrl", "healthcareProfessionalName", "spokenLanguages", 
+                facility_partial, healthcare_professionals_partial, 
+                status, hps_id, facilities_id, "autofillPlaceFromSubmissionUrl",
+                "createdDate", "updatedDate"
+            ) VALUES (
+                '41c233df-0acc-4821-829d-f51a9c50d1eb', 
+                'https://outgoing-assassination.org/', 
+                'Ida Larson', 
+                '["ne_NP","fa_AF"]', 
+                '{"nameEn":"Bechtelar - Mohr","nameJa":"株式会社清水食品","mapLatitude":43.0436,"mapLongitude":141.3781,"contact":{"googleMapsUrl":"https://multicolored-zombie.info/","email":"Bechtelar-Mohr.Wunsch@hotmail.com","phone":"801.397.2506 x549","website":"https://well-off-affinity.org/","address":{"addressLine1En":"421 Dana Fields","addressLine2En":"Suite 614","addressLine1Ja":"2293 浩之Falls","addressLine2Ja":"Suite 801","cityEn":"Sapporo","cityJa":"札幌","postalCode":"015-9732","prefectureEn":"Hokkaido","prefectureJa":"北海道"}}}', 
+                '[{"names":[{"firstName":"由美","lastName":"林","locale":"ja_JP"}],"degrees":["MD","DC"],"specialties":["NEUROLOGY","MEDICAL_GENETICS"],"spokenLanguages":["pt_BR","da_DK"],"acceptedInsurance":["JAPANESE_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"進","lastName":"小林","locale":"ja_JP"}],"degrees":["DSW","DDS"],"specialties":["PHYSIOTHERAPY","NUCLEAR_MEDICINE"],"spokenLanguages":["ig_NG","bm_ML"],"acceptedInsurance":["UNINSURED"],"additionalInfoForPatients":"","facilityIds":[]}]', 
+                'under_review',
+                NULL,
+                NULL,
+                FALSE,
+                '2025-11-06T13:43:00.227Z',
+                '2025-11-06T13:43:00.227Z'
+            );
+INSERT INTO submissions (
+                id, "googleMapsUrl", "healthcareProfessionalName", "spokenLanguages", 
+                facility_partial, healthcare_professionals_partial, 
+                status, hps_id, facilities_id, "autofillPlaceFromSubmissionUrl",
+                "createdDate", "updatedDate"
+            ) VALUES (
+                '048b4499-40df-4fe5-abfd-98d67ac8e2f2', 
+                'https://concrete-leather.net/', 
+                'Maureen Witting-Morissette', 
+                '["nb_NO","hy_AM"]', 
+                '{"nameEn":"Johns - Gulgowski","nameJa":"林情報株式会社","mapLatitude":35.6048,"mapLongitude":139.8218,"contact":{"googleMapsUrl":"https://vivacious-abbreviation.biz","email":"Johns-Gulgowski_Hickle@yahoo.com","phone":"5538311013 x7998","website":"https://intelligent-roast.com/","address":{"addressLine1En":"22517 Columbia Avenue","addressLine2En":"Apt. 647","addressLine1Ja":"746 一男Forges","addressLine2Ja":"Apt. 583","cityEn":"Tokyo","cityJa":"東京","postalCode":"185-2812","prefectureEn":"Tokyo","prefectureJa":"東京都"}}}', 
+                '[{"names":[{"firstName":"Henderson","middleName":"Brooklyn","lastName":"Reichert","locale":"en_US"}],"degrees":["DVM","DC"],"specialties":["OPHTHALMOLOGY","PEDIATRICS"],"spokenLanguages":["und"],"acceptedInsurance":["INTERNATIONAL_HEALTH_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"貴大","lastName":"井上","locale":"ja_JP"}],"degrees":["PhD","EdD"],"specialties":["NEUROLOGY","ANESTHESIOLOGY"],"spokenLanguages":["id_ID"],"acceptedInsurance":["TRAVEL_INSURANCE"],"additionalInfoForPatients":"","facilityIds":[]}]', 
+                'rejected',
+                NULL,
+                NULL,
+                FALSE,
+                '2025-11-06T13:43:00.228Z',
+                '2025-11-06T13:43:00.228Z'
+            );
+INSERT INTO submissions (
+                id, "googleMapsUrl", "healthcareProfessionalName", "spokenLanguages", 
+                facility_partial, healthcare_professionals_partial, 
+                status, hps_id, facilities_id, "autofillPlaceFromSubmissionUrl",
+                "createdDate", "updatedDate"
+            ) VALUES (
+                'ddfc8b70-ae55-4ee7-99b3-87322bbb2d44', 
+                'https://unselfish-dirndl.biz/', 
+                'Krista Kozey', 
+                '["nl_BE","hi_IN"]', 
+                '{"nameEn":"Mayert Group","nameJa":"合名会社清水水産","mapLatitude":35.6797,"mapLongitude":139.5292,"contact":{"googleMapsUrl":"https://sneaky-hyphenation.net/","email":"MayertGroup_Kunze2@hotmail.com","phone":"2107249978 x986","website":"https://smooth-goddess.com/","address":{"addressLine1En":"502 Orchard Lane","addressLine2En":"Suite 537","addressLine1Ja":"737 鈴木Fall","addressLine2Ja":"Apt. 400","cityEn":"Tokyo","cityJa":"東京","postalCode":"117-4764","prefectureEn":"Tokyo","prefectureJa":"東京都"}}}', 
+                '[{"names":[{"firstName":"キミ","lastName":"小林","locale":"ja_JP"}],"degrees":["PhD","DVM"],"specialties":["NEUROLOGY","PHYSICAL_MEDICINE_AND_REHABILITATION"],"spokenLanguages":["pl_PL","ak_GH"],"acceptedInsurance":["UNINSURED"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"Eldora","middleName":"Robin","lastName":"Sipes","locale":"en_US"}],"degrees":["DSW","DVM"],"specialties":["PSYCHIATRY","RADIATION_ONCOLOGY"],"spokenLanguages":["vi_VN"],"acceptedInsurance":["INSURANCE_NOT_ACCEPTED"],"additionalInfoForPatients":"","facilityIds":[]}]', 
+                'approved',
+                NULL,
+                NULL,
+                FALSE,
+                '2025-11-06T13:43:00.229Z',
+                '2025-11-06T13:43:00.229Z'
+            );
+INSERT INTO submissions (
+                id, "googleMapsUrl", "healthcareProfessionalName", "spokenLanguages", 
+                facility_partial, healthcare_professionals_partial, 
+                status, hps_id, facilities_id, "autofillPlaceFromSubmissionUrl",
+                "createdDate", "updatedDate"
+            ) VALUES (
+                'e8ee29d5-31d2-40d7-9f21-a86fdba4d63b', 
+                'https://slight-team.biz/', 
+                'Clifton Predovic', 
+                '["sw_KE","zh_HK"]', 
+                '{"nameEn":"Krajcik LLC","nameJa":"合名会社中村鉱業","mapLatitude":43.0376,"mapLongitude":141.3715,"contact":{"googleMapsUrl":"https://late-buck.name/","email":"KrajcikLLC.Hauck@yahoo.com","phone":"3964691360 x60031","website":"https://teeming-fishbone.name/","address":{"addressLine1En":"1755 Jacey Falls","addressLine2En":"Apt. 689","addressLine1Ja":"95334 勉Centers","addressLine2Ja":"Apt. 801","cityEn":"Sapporo","cityJa":"札幌","postalCode":"030-9782","prefectureEn":"Hokkaido","prefectureJa":"北海道"}}}', 
+                '[{"names":[{"firstName":"友美","lastName":"井上","locale":"ja_JP"}],"degrees":["DNP","MD"],"specialties":["OPHTHALMOLOGY","COSMETIC_SURGERY"],"spokenLanguages":["kab_DZ","ee_GH"],"acceptedInsurance":["INSURANCE_NOT_ACCEPTED"],"additionalInfoForPatients":"","facilityIds":[]},{"names":[{"firstName":"Deven","middleName":"North","lastName":"Ebert","locale":"en_US"}],"degrees":["OD","MPH"],"specialties":["FAMILY_MEDICINE","NEUROLOGY"],"spokenLanguages":["sr_Cyrl"],"acceptedInsurance":["INSURANCE_NOT_ACCEPTED"],"additionalInfoForPatients":"","facilityIds":[]}]', 
+                'under_review',
+                NULL,
+                NULL,
+                FALSE,
+                '2025-11-06T13:43:00.229Z',
+                '2025-11-06T13:43:00.229Z'
+            );

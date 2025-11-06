@@ -45,6 +45,9 @@ export interface SubmissionRow {
     healthcareProfessionalName: string
     spokenLanguages: gqlType.Locale[]
     autofillPlaceFromSubmissionUrl: boolean
+    //Used for approvesubmission with partial data
+    facility_partial: gqlType.FacilitySubmission | null
+    healthcare_professionals_partial: gqlType.HealthcareProfessionalSubmission[] | null
     hps_id: string | null
     facilities_id: string | null
     notes: string | null

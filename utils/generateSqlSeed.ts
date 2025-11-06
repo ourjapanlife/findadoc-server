@@ -38,6 +38,25 @@ function toSqlValue(value: any): string {
     return `'${String(value).replace(/'/g, "''")}'`
 }
 
+/**
+ * Converts boolean status flags into a single status string.
+ * This matches our SQL schema where status is a varchar column.
+ * @param isApproved Whether the submission is approved
+ * @param isRejected Whether the submission is rejected
+ * @param isUnderReview Whether the submission is under review
+ * @returns Status string: 'approved', 'rejected', 'under_review', or 'pending'
+ */
+function getStatusFromBooleans(
+    isApproved?: boolean | null,
+    isRejected?: boolean | null,
+    isUnderReview?: boolean | null
+): string {
+    if (isApproved) return 'approved'
+    if (isRejected) return 'rejected'
+    if (isUnderReview) return 'under_review'
+    return 'pending'
+}
+
 // --- Main Seed Generation Function ---
 
 /**
@@ -52,17 +71,19 @@ export const generateSqlSeed = async () => {
         const NUM_SUBMISSIONS = 5
 
         // --- Cleanup Statements ---
+        // Remove all existing data to start fresh
         const cleanupStatements = [
             '-- Clean up existing data to ensure a fresh start',
             'DELETE FROM hps_facilities;',
-            'DELETE FROM healthcare_professionals;',
+            'DELETE FROM hps;',
             'DELETE FROM facilities;',
             'DELETE FROM submissions;',
             '------------------------------------\n'
         ]
         sqlStatements.push(...cleanupStatements)
 
-
+        // --- 1. FACILITIES (Table 'facilities') ---
+        // Generate random facility data for testing
         const facilitiesData = generateRandomCreateFacilityInputArray({ count: NUM_FACILITIES })
         const facilityIds: string[] = [] // Store IDs for linking HPs later
 
@@ -73,29 +94,32 @@ export const generateSqlSeed = async () => {
             // The 'contact' field is a complex object (ContactInput) and must be inserted as JSONB.
             const contactJson = JSON.stringify(facility.contact)
 
-            // Columns used: id, nameEn, nameJa, mapLatitude, mapLongitude, contact (JSONB)
+            // Insert facility with all required columns
+            // Note: Using camelCase column names as defined in the SQL schema
             const statement = `
             INSERT INTO facilities (
-            id, nameEn, nameJa, mapLatitude, mapLongitude, contact
+                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact
             ) VALUES (
-            ${toSqlValue(facilityId)}, 
-            ${toSqlValue(facility.nameEn)}, 
-            ${toSqlValue(facility.nameJa)}, 
-            ${toSqlValue(facility.mapLatitude)}, 
-            ${toSqlValue(facility.mapLongitude)}, 
-            ${toSqlValue(contactJson)}
+                ${toSqlValue(facilityId)}, 
+                ${toSqlValue(facility.nameEn)}, 
+                ${toSqlValue(facility.nameJa)}, 
+                ${toSqlValue(facility.mapLatitude)}, 
+                ${toSqlValue(facility.mapLongitude)}, 
+                ${toSqlValue(contactJson)}
             );`
             sqlStatements.push(statement)
         }
 
         console.log(`✅ Generated ${NUM_FACILITIES} facility records.`)
 
-        // --- 2. HEALTHCARE PROFESSIONALS (Table 'healthcare_professionals') ---
+        // --- 2. HEALTHCARE PROFESSIONALS (Table 'hps') ---
+        // Generate random healthcare professional data with facility associations
         const healthcareProfessionalsData = generateRandomCreateHealthcareProfessionalInputArray({
             count: NUM_HPS,
             facilityIdOptions: facilityIds // Pass facility IDs to allow realistic associations
         })
 
+        // Map to store HP -> Facility relationships for junction table
         const hpIdToFacilityIdsMap = new Map<string, string[]>()
 
         for (const hpWithRelations of healthcareProfessionalsData) {
@@ -105,8 +129,10 @@ export const generateSqlSeed = async () => {
             // Store the associations for the junction table creation later
             hpIdToFacilityIdsMap.set(hpId, selectedFacilityIds) 
 
-            const statement = `INSERT INTO healthcare_professionals (
-                id, names, degrees, specialties, spoken_languages, accepted_insurance, additional_info_for_patients
+            // Insert healthcare professional with JSONB fields for arrays
+            // Note: Using snake_case and camelCase as defined in SQL schema
+            const statement = `INSERT INTO hps (
+                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients"
             ) VALUES (
                 ${toSqlValue(hpId)}, 
                 ${toSqlValue(coreData.names)}, 
@@ -118,14 +144,15 @@ export const generateSqlSeed = async () => {
             );`
             sqlStatements.push(statement)
         }
-        console.log(`✅ Generated ${NUM_HPS} INSERTs for 'healthcare_professionals'.`)
-
+        console.log(`✅ Generated ${NUM_HPS} INSERTs for 'hps'.`)
 
         // --- 3. HP <-> FACILITY RELATIONS (Junction Table 'hps_facilities') ---
+        // Create many-to-many relationships between healthcare professionals and facilities
         let relationshipCount = 0
         hpIdToFacilityIdsMap.forEach((facilityIds, hpId) => {
             for (const facilityId of facilityIds) {
-                const statement = `INSERT INTO hps_facilities (hp_id, facility_id) VALUES (
+                // Insert relationship into junction table
+                const statement = `INSERT INTO hps_facilities (hps_id, facilities_id) VALUES (
                     ${toSqlValue(hpId)}, 
                     ${toSqlValue(facilityId)}
                 );`
@@ -133,22 +160,35 @@ export const generateSqlSeed = async () => {
                 relationshipCount++
             }
         })
-        console.log(`✅ Generated ${relationshipCount} INSERTs for 'hps_facilities' (relations).`)
-
+        console.log(`✅ Generated ${relationshipCount} INSERTs for 'hps_facilities' (many-to-many relations).`)
 
         // --- 4. SUBMISSIONS (Table 'submissions') ---
+        // Generate submissions with varying statuses for testing
         for (let i = 0; i < NUM_SUBMISSIONS; i++) {
-            // Generate a random submission, setting the status for variety
+            // Cycle through different statuses to create variety in test data
             const submissionStatus = i % 3 === 0 ? { isApproved: true } : 
                                      i % 3 === 1 ? { isUnderReview: true } : 
-                                     { isRejected: true };
+                                     { isRejected: true }
 
             const submissionData = generateRandomUpdateSubmissionInput(submissionStatus)
             
+            // Convert boolean status flags to single status string
+            const statusString = getStatusFromBooleans(
+                submissionData.isApproved,
+                submissionData.isRejected,
+                submissionData.isUnderReview
+            )
+            
             const submissionId = uuidv4()
+            
+            // Insert submission with partial data (before approval)
+            // facility_partial and healthcare_professionals_partial store temporary data
+            // hps_id and facilities_id are NULL until the submission is approved
             const submissionStatement = `INSERT INTO submissions (
-                id, google_maps_url, healthcare_professional_name, spoken_languages, 
-                facility_data, healthcare_professionals_data, is_approved, is_rejected, is_under_review
+                id, "googleMapsUrl", "healthcareProfessionalName", "spokenLanguages", 
+                facility_partial, healthcare_professionals_partial, 
+                status, hps_id, facilities_id, "autofillPlaceFromSubmissionUrl",
+                "createdDate", "updatedDate"
             ) VALUES (
                 ${toSqlValue(submissionId)}, 
                 ${toSqlValue(submissionData.googleMapsUrl)}, 
@@ -156,16 +196,19 @@ export const generateSqlSeed = async () => {
                 ${toSqlValue(submissionData.spokenLanguages)}, 
                 ${toSqlValue(submissionData.facility)}, 
                 ${toSqlValue(submissionData.healthcareProfessionals)}, 
-                ${toSqlValue(submissionData.isApproved)}, 
-                ${toSqlValue(submissionData.isRejected)}, 
-                ${toSqlValue(submissionData.isUnderReview)}
+                ${toSqlValue(statusString)},
+                ${toSqlValue(null)},
+                ${toSqlValue(null)},
+                ${toSqlValue(false)},
+                ${toSqlValue(new Date().toISOString())},
+                ${toSqlValue(new Date().toISOString())}
             );`
             sqlStatements.push(submissionStatement)
         }
         console.log(`✅ Generated ${NUM_SUBMISSIONS} INSERTs for 'submissions'.`)
 
-
         // --- Write Final File ---
+        // Combine all SQL statements and write to output file
         const fileContent = sqlStatements.join('\n')
         fs.writeFileSync(OUTPUT_FILE, fileContent)
         console.log(`\n🎉 SQL Database Seed successfully generated at: ${OUTPUT_FILE} 🎉`)
@@ -176,7 +219,8 @@ export const generateSqlSeed = async () => {
     }
 }
 
+// Execute the seed generation
 generateSqlSeed().catch(error => {
-    console.error('Seed generation failed:', error);
-    process.exit(1);
-});
+    console.error('Seed generation failed:', error)
+    process.exit(1)
+})

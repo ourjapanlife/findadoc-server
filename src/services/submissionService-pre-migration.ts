@@ -34,14 +34,6 @@ function makeMinimalContact(googleMapsUrl?: string): gqlTypes.ContactInput {
     }
 }
 
-function toLocaleEnum(v?: string): gqlTypes.Locale {
-    switch ((v ?? '').toLowerCase()) {
-        case 'ja': return gqlTypes.Locale.JaJp
-        case 'en': return gqlTypes.Locale.EnUs
-        default: return gqlTypes.Locale.EnUs
-    }
-}
-
 function splitPersonName(full: string): { firstName: string; lastName: string; middleName?: string } {
     const parts = full.trim().split(/\s+/).filter(Boolean)
 
@@ -184,8 +176,8 @@ export async function searchSubmissions(
 
         const baseSelect = supabase
             .from('submissions')
-            .select('id, googleMapsUrl, healthcareProfessionalName, spokenLanguages, autofillPlaceFromSubmissionUrl, status, createdDate, updatedDate, notes')
-
+            .select('*')
+        
         // The applySubmissionFilters function will modify the baseSelect object with .eq, .in
         let base = applySubmissionFilters(baseSelect, filters)
 
@@ -444,9 +436,36 @@ export const autoFillPlacesInformation = async (
             }
         }
 
+        const facilityPartial: gqlTypes.FacilitySubmission = {
+            id: undefined,
+            nameEn: places.extractedNameEn,
+            nameJa: places.extractedNameJa ?? places.extractedNameEn,
+            contact: {
+                phone: places.extractedPhoneNumber,
+                email: undefined,
+                website: places.extractedWebsite,
+                googleMapsUrl: places.extractedGoogleMapsURI,
+                address: {
+                    addressLine1En: places.extractedAddressLine1En,
+                    addressLine2En: undefined,
+                    cityEn: places.extractedCityEn ?? '',
+                    prefectureEn: places.extractPrefectureEnFromInformation,
+                    postalCode: places.extractedPostalCodeFromInformation,
+                    addressLine1Ja: places.extractedAddressLine1Ja ?? '',
+                    addressLine2Ja: undefined,
+                    cityJa: places.extractedCityJa ?? '',
+                    prefectureJa: places.extractedPrefectureJa ?? ''
+                }
+            },
+            mapLatitude: places.extractedMapLatitude,
+            mapLongitude: places.extractedMapLongitude,
+            healthcareProfessionalIds: []
+        }
+
         const patch: Partial<dbSchema.SubmissionRow> = {
             googleMapsUrl: places.extractedGoogleMapsURI ?? current.googleMapsUrl,
-            // altri campi “estratti” se vuoi denormalizzarli (es. notes, ecc.)
+            //eslint-disable-next-line
+            facility_partial: facilityPartial as any,
             status: 'under_review',
             autofillPlaceFromSubmissionUrl: true,
             updatedDate: new Date().toISOString()
@@ -484,12 +503,6 @@ export const autoFillPlacesInformation = async (
     }
 }
 
-/**
- * Approves a submission. Once approved, it creates a new facility and/or healthcare professional(s).
- * Once it's approved, it can't be unapproved.
- * @param submissionId the submission to approve
- * @returns The submission that was approved.
- */
 export const approveSubmission = async (
     submissionId: string,
     updatedBy: string
@@ -517,22 +530,26 @@ export const approveSubmission = async (
             }
         }
 
-        // Prepare data for Audit Log (capturing the state before the update).
         const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
         let createdFacilityId: string | undefined
         let finalFacilityId: string | null = current.facilities_id
         let createdHpId: string | undefined
 
-        // If facility doesn't exist create minimal one
         if (!finalFacilityId) {
-            const facilityInput: gqlTypes.CreateFacilityInput = {
-                nameEn: 'Unknown Facility',
-                nameJa: 'Unknown Facility',
-                contact: makeMinimalContact(current.googleMapsUrl ?? ''),
-                mapLatitude: 0,
-                mapLongitude: 0,
-                healthcareProfessionalIds: []
+            let facilityInput: gqlTypes.CreateFacilityInput
+
+            if (current.facility_partial) {
+                facilityInput = current.facility_partial as gqlTypes.CreateFacilityInput
+            } else {
+                facilityInput = {
+                    nameEn: 'Unknown Facility',
+                    nameJa: 'Unknown Facility',
+                    contact: makeMinimalContact(current.googleMapsUrl ?? ''),
+                    mapLatitude: 0,
+                    mapLongitude: 0,
+                    healthcareProfessionalIds: []
+                }
             }
 
             const facilityRes = await createFacility(facilityInput, updatedBy)
@@ -548,39 +565,54 @@ export const approveSubmission = async (
             createdFacilityId = finalFacilityId
         }
 
-        // If no HP but we have HP name on submission, create and link to facility
-        if (!current.hps_id && current.healthcareProfessionalName?.trim() && finalFacilityId) {
-            const parsed = splitPersonName(current.healthcareProfessionalName.trim())
+        if (!current.hps_id && finalFacilityId) {
+            let hpInput: gqlTypes.CreateHealthcareProfessionalInput
 
-            const hpInput: gqlTypes.CreateHealthcareProfessionalInput = {
-                names: [{
-                    locale: gqlTypes.Locale.EnUs,
-                    firstName: parsed.firstName,
-                    lastName: parsed.lastName,
-                    ...(parsed.middleName ? { middleName: parsed.middleName } : {})
-                }],
-                degrees: [],
-                specialties: [],
-                spokenLanguages: (current.spokenLanguages ?? [])
-                    .map((spoken : gqlTypes.Locale[]) => toLocaleEnum(String(spoken))),
-                acceptedInsurance: [],
-                additionalInfoForPatients: current.notes ?? null,
-                facilityIds: [finalFacilityId]
-            }
+            // Se abbiamo dati parziali, usali
+            if (current.healthcare_professionals_partial && current.healthcare_professionals_partial.length > 0) {
+                const firstHp = current.healthcare_professionals_partial[0]
 
-            const hpRes = await createHealthcareProfessional(hpInput, updatedBy)
+                hpInput = {
+                    ...firstHp,
+                    facilityIds: [finalFacilityId]
+                } as gqlTypes.CreateHealthcareProfessionalInput
+            } else if (current.healthcareProfessionalName?.trim()) {
+                const parsed = splitPersonName(current.healthcareProfessionalName.trim())
 
-            if (hpRes.hasErrors || !hpRes.data) {
-                return {
-                    data: {} as gqlTypes.Submission,
-                    hasErrors: true,
-                    errors: [{ field: 'healthcareProfessional', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
+                hpInput = {
+                    names: [{
+                        locale: gqlTypes.Locale.EnUs,
+                        firstName: parsed.firstName,
+                        lastName: parsed.lastName,
+                        ...(parsed.middleName ? { middleName: parsed.middleName } : {})
+                    }],
+                    degrees: [],
+                    specialties: [],
+                    spokenLanguages: (current.spokenLanguages ?? []) as gqlTypes.Locale[],
+                    acceptedInsurance: [],
+                    additionalInfoForPatients: current.notes ?? null,
+                    facilityIds: [finalFacilityId]
                 }
+            } else {
+                // eslint-disable-next-line
+                hpInput = null as any
             }
-            createdHpId = hpRes.data.id
+
+            if (hpInput) {
+                const hpRes = await createHealthcareProfessional(hpInput, updatedBy)
+
+                if (hpRes.hasErrors || !hpRes.data) {
+                    return {
+                        data: {} as gqlTypes.Submission,
+                        hasErrors: true,
+                        errors: [{ field: 'healthcareProfessional', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
+                    }
+                }
+                createdHpId = hpRes.data.id
+            }
         }
 
-        // after create facility/hp:
+        // Update submission with created entity IDs
         const patch: Partial<dbSchema.SubmissionRow> = {
             status: 'approved',
             //eslint-disable-next-line
@@ -704,8 +736,8 @@ export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Su
         healthcareProfessionalName: row.healthcareProfessionalName,
         spokenLanguages: row.spokenLanguages as gqlTypes.Locale[],
         autofillPlaceFromSubmissionUrl: row.autofillPlaceFromSubmissionUrl,
-        facility: null,
-        healthcareProfessionals: [],
+        facility: row.facility_partial,
+        healthcareProfessionals: row.healthcare_professionals_partial ?? [],
         isUnderReview: row.status === 'under_review',
         isApproved: row.status === 'approved',
         isRejected: row.status === 'rejected',
@@ -735,7 +767,7 @@ function validateIdInput(id: string): Result<unknown> {
 }
 
 export function mapGqlEntityToDbEntity(
-  input: gqlTypes.CreateSubmissionInput
+    input: gqlTypes.CreateSubmissionInput
 ): dbSchema.SubmissionInsertRow {
     return {
         status: 'pending',
@@ -743,10 +775,17 @@ export function mapGqlEntityToDbEntity(
         healthcareProfessionalName: input.healthcareProfessionalName ?? '',
         spokenLanguages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
         autofillPlaceFromSubmissionUrl: false,
+        
+        //eslint-disable-next-line
+        facility_partial: null,
+        //eslint-disable-next-line
+        healthcare_professionals_partial: null,
+        
         //eslint-disable-next-line
         hps_id: null,
         //eslint-disable-next-line
         facilities_id: null,
+        
         notes: input.notes ?? null,
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
