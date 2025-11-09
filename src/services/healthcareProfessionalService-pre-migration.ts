@@ -375,72 +375,58 @@ export async function createHealthcareProfessional(
             return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
-        //Business rule: HP → at least ONE facility
-        const requestedFacilityIds: string[] = Array.isArray(input.facilityIds)
-            ? (input.facilityIds as unknown[]).filter((facId): facId is string => typeof facId === 'string')
-            : []
+        const healthcareProfessionalRef = dbInstance.collection('healthcareProfessionals').doc()
+        const newHealthcareProfessionalId = healthcareProfessionalRef.id
+        const newHealthcareProfessional = mapGqlEntityToDbEntity(newHealthcareProfessionalId, input)
 
-        if (requestedFacilityIds.length > 1) {
-            return {
-                data: {} as gqlTypes.HealthcareProfessional,
-                hasErrors: true,
-                errors: [{
-                    field: 'facilityIds',
-                    errorCode: ErrorCode.INVALID_INPUT,
-                    httpStatus: 400
-                }]
-            }
-        }
-
-        const insertPayload = toHpInsertPayload(input)
-
-        const { data: insertedRow, error: insertErr } = await supabase
-            .from('hps')
-            .insert(insertPayload)
-            .select('*')
-            .single()
-
-        if (insertErr) {
-            throw insertErr
-        }
-
-        createdHpId = insertedRow.id as string
-        
-        //Join: enforce at most one facility link
-        let facilityIdsForResponse: string[] = []
-
-        if (requestedFacilityIds.length === 1) {
-            const oneFacilityId = requestedFacilityIds[0]
-
-            // Idempotent upsert on the junction table
-            const { error: upsertRelationErr } = await supabase
-                .from('hps_facilities')
-                .upsert(
-                    //eslint-disable-next-line
-                    [{ hps_id: createdHpId, facilities_id: oneFacilityId }],
-                    { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true }
+        /*
+        let's wrap all of our updates in a transaction so we can roll back if anything fails. 
+        (for example we don't want to update the professional if updating the associated facility updates fail)
+        */
+        await dbInstance.runTransaction(async t => {
+            //this will update only the fields that are provided and are not undefined.
+            await t.set(healthcareProfessionalRef, newHealthcareProfessional, {merge: true})
+            
+            //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array
+            if (newHealthcareProfessional.facilityIds && newHealthcareProfessional.facilityIds.length > 0) {
+                const facilityUpdateResults = await processFacilityRelationshipChanges(
+                    newHealthcareProfessional.id,
+                    newHealthcareProfessional.facilityIds.map(id => ({
+                        otherEntityId: id,
+                        action: gqlTypes.RelationshipAction.Create
+                    } satisfies gqlTypes.Relationship)),
+                    t
                 )
+    
+                // if we didn't get it back or have errors, this is an actual error.
+                if (facilityUpdateResults.hasErrors || !facilityUpdateResults.data) {
+                    throw new Error(`Error updating healthcare professional facilityIds: ${JSON.stringify(facilityUpdateResults.errors)}`)
+                }
+            }
+
+            // Make sure we store a more readable object in our audit log
+            const newHealthcareProfessionalAuditLogEntity = mapDbEntityTogqlEntity(newHealthcareProfessional)
+
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Create, 
+                gqlTypes.ObjectType.HealthcareProfessional, 
+                updatedBy, 
+                JSON.stringify(newHealthcareProfessionalAuditLogEntity),
+                null,
+                t
+            )
 
             if (upsertRelationErr) {
                 logger.error(`Join hps_facilities failed for HP ${createdHpId}: ${upsertRelationErr.message}`)
             } else {
                 facilityIdsForResponse = [oneFacilityId]
             }
-        }
-        
-        const gqlHealthcareProfessional = mapDbHpToGql(
-            insertedRow as dbSchema.DbHealthcareProfessionalRow,
-            facilityIdsForResponse
-        )
-        
-        await createAuditLogSQL({
-            actionType: 'CREATE',
-            objectType: 'HealthcareProfessional',
-            updatedBy,
-            newValue: gqlHealthcareProfessional
         })
+        
+        logger.info(`\nDB-CREATE: Created healthcare professional ${newHealthcareProfessionalId}.\nEntity: ${JSON.stringify(newHealthcareProfessional)}`)
 
-        logger.info(`DB-CREATE: Created healthcare professional ${createdHpId}.`)
+        //let's return the newly created professional. Since we have the full entity, no need to do a new query.
+        const createdHealthcareProfessionalResult = mapDbEntityTogqlEntity(newHealthcareProfessional)
 
         return {
             data: gqlHealthcareProfessional,
@@ -480,59 +466,68 @@ export const updateHealthcareProfessional = async (
             return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
-        // Ensure the HP exists
-        const currentState = await getHealthcareProfessionalById(id)
+        const professionalRef = dbInstance.collection('healthcareProfessionals').doc(id)
+        
+        // //let's wrap all of our updates in a transaction so we can roll back if anything fails. (for example we don't want to update the professional if updating the associated facility updates fail)
+        const updatedProfessional = await dbInstance.runTransaction(async t => {
+            const dbDocument = await t.get(professionalRef)
+            const dbProfessionalToUpdate = dbDocument.data() as dbSchema.HealthcareProfessional
+            const oldHealthcareProfessionalDataAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(dbProfessionalToUpdate)
+            )
+            
+            const originalFacilityIdsForHealthcareProfessional
+                = dbProfessionalToUpdate.facilityIds
 
-        if (currentState.hasErrors || !currentState.data) {
-            return {
-                data: {} as gqlTypes.HealthcareProfessional,
-                hasErrors: true,
-                errors: [{ field: 'id', errorCode: ErrorCode.INVALID_ID, httpStatus: 404 }]
-            }
-        }
-
-        const oldValue = currentState.data
-
-        // prepare the update payload for the hps tables
-        const updatePayload = buildHpUpdatePayload(fieldsToUpdate)
-
-        // If there are scalar fields (besides updatedDate) we issue a normal UPDATE,
-        // otherwise we just "touch" updatedDate.
-        const hasAnyScalarChange = Object.keys(updatePayload).length > 1
-
-        if (hasAnyScalarChange) {
-            const { error: updateErr } = await supabase
-                .from('hps')
-                .update(updatePayload)
-                .eq('id', id)
-
-            if (updateErr) { throw updateErr }
-        } else {
-        // If we still want to update updatedDate to track the entity "touch"?
-            const { error: touchErr } = await supabase
-                .from('hps')
-                .update({ updatedDate: new Date().toISOString() })
-                .eq('id', id)
-
-            if (touchErr) { throw touchErr }
-        }
-
-        if (fieldsToUpdate.facilityIds !== undefined) {
-            const { newFacilityId, error } = resolveFacilityIdFromRelationships(fieldsToUpdate.facilityIds ?? null)
-
-            if (error) {
-                return {
-                    data: {} as gqlTypes.HealthcareProfessional,
-                    hasErrors: true,
-                    errors: [{ field: 'facilityIds', errorCode: ErrorCode.INVALID_INPUT, httpStatus: 400 }]
+            //let's update the fields that were provided
+            MapDefinedFields(fieldsToUpdate, dbProfessionalToUpdate)
+            
+            //Business rule: always timestamp when the entity was updated.
+            dbProfessionalToUpdate.updatedDate = new Date().toISOString()
+            
+            //let's update all the facilities that should add or remove this professional id from their healthcareProfessionalIds array
+            if (fieldsToUpdate.facilityIds && fieldsToUpdate.facilityIds.length > 0) {
+                const facilityUpdateResults = await processFacilityRelationshipChanges(
+                    dbProfessionalToUpdate.id,
+                    fieldsToUpdate.facilityIds,
+                    t,
+                    originalFacilityIdsForHealthcareProfessional ?? []
+                )
+    
+                // if we didn't get it back or have errors, this is an actual error.
+                if (facilityUpdateResults.hasErrors || !facilityUpdateResults.data) {
+                    throw new Error(`ERROR: Error updating healthcare professional facilityIds: ${JSON.stringify(facilityUpdateResults.errors)}`)
                 }
+    
+                //let's update the professional with the new facility ids
+                dbProfessionalToUpdate.facilityIds = facilityUpdateResults.data
             }
-            // This clears existing links and optionally sets a new one
-            await setHpFacility(id, newFacilityId)
-        }
 
-        // Return the refreshed HP with relations included
-        const refreshedResult = await getHealthcareProfessionalById(id)
+            t.set(professionalRef, dbProfessionalToUpdate, { merge: true })
+
+            // Make sure we store a more readable object in our audit log
+            const updatedHealthcareProfessionalAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(dbProfessionalToUpdate)
+            )
+
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Update, 
+                gqlTypes.ObjectType.HealthcareProfessional, 
+                updatedBy,
+                updatedHealthcareProfessionalAuditLogEntity,
+                oldHealthcareProfessionalDataAuditLogEntity,
+                t
+            )
+
+            if (!createdAuditLog.isSuccesful) {
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Update}`) 
+            }
+
+            return dbProfessionalToUpdate
+        })
+        
+        logger.info(`\nDB-UPDATE: Updated healthcare professional ${id}.\nEntity: ${JSON.stringify(updatedProfessional)}`)
+        const updatedProfessionalResult = await getHealthcareProfessionalById(id)
 
         if (refreshedResult.hasErrors || !refreshedResult.data) {
             throw new Error('Could not reload updated healthcare professional.')
@@ -571,22 +566,12 @@ export async function deleteHealthcareProfessional(
     updatedBy: string
 ): Promise<Result<gqlTypes.DeleteResult>> {
     try {
-        const validationResult = validateIdInput(id)
-
-        if (validationResult.hasErrors) {
-            logger.warn(`Validation Error: invalid id for deleteHealtchareProfessional: ${id}`)
-            return {
-                data: { isSuccessful: false },
-                hasErrors: true,
-                errors: validationResult.errors
-            }
-        }
-
-        // Ensure the HP exists
-        const existingHp = await getHealthcareProfessionalById(id)
-
-        if (existingHp.hasErrors || !existingHp.data) {
-            logger.warn(`deleteHealthcareProfessional: professional not found: ${id}`)
+        const dbRef = dbInstance.collection('healthcareProfessionals')
+        const query = dbRef.where('id', '==', id)
+        const dbDocument = await query.get()
+        
+        if (dbDocument.empty) {
+            logger.warn(`Validation Error: User tried deleting non-existant healthcare professional: ${id}`)
             return {
                 data: { isSuccessful: false},
                 hasErrors: true,
@@ -597,34 +582,66 @@ export async function deleteHealthcareProfessional(
                 }]
             }
         }
-
-        // Remove junction rows first
-        // Maybe useless because there is ON CASCADE on supabase
-        // To try
-        /*const { error: junctionDelErr } = await supabase
-            .from('hps_facilities')
-            .delete()
-            .eq('hps_id', id)
-    
-        if (junctionDelErr) {
-            throw new Error(`Failed to delete HP junctions: ${junctionDelErr.message}`)
+        
+        if (dbDocument.docs.length > 1) {
+            logger.error(`ERROR: Found multiple healthcare professionals with id ${id}. This should never happen.`)
+            
+            return {
+                data: {
+                    isSuccessful: false
+                },
+                hasErrors: true,
+                errors: [{
+                    field: 'deleteFacility',
+                    errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                    httpStatus: 500
+                }]
+            }
         }
+        
+        const professional = dbDocument.docs[0].data() as dbSchema.HealthcareProfessional
+        
+        /*
+        let's wrap all of our updates in a transaction so we can roll back if anything fails. 
+        (for example we don't want to update the professional if updating the associated facility updates fail)
         */
+        await dbInstance.runTransaction(async t => {
+            //let's update all the facilities that should remove this healthcareProfessionalId from their healthcareProfessionalIds array
+            const facilityUpdateResults = await processFacilityRelationshipChanges(
+                id,
+                professional.facilityIds.map(
+                    facilityId => ({
+                        otherEntityId: facilityId,
+                        action: gqlTypes.RelationshipAction.Delete
+                    } satisfies gqlTypes.Relationship)
+                ),
+                t
+            )
 
-        const { error: hpDeleteErr } = await supabase
-            .from('hps')
-            .delete()
-            .eq('id', id)
+            // if we have errors, this is an actual error.
+            if (facilityUpdateResults.hasErrors) {
+                throw new Error(`ERROR: Error updating healthcare professional facilityIds: ${JSON.stringify(facilityUpdateResults.errors)}`)
+            }
 
-        if (hpDeleteErr) {
-            throw new Error(`Failed to delete professional: ${hpDeleteErr.message}`)
-        }
+            t.delete(dbDocument.docs[0].ref)
 
-        await createAuditLogSQL({
-            actionType: 'DELETE',
-            objectType: 'HealthcareProfessional',
-            updatedBy,
-            oldValue: existingHp.data
+            // Make sure we store a more readable object in our audit log
+            const oldHealthcareProfessionalDataAuditLogEntity: string = JSON.stringify(
+                mapDbEntityTogqlEntity(professional)
+            )
+
+            const createdAuditLog = await createAuditLog(
+                gqlTypes.ActionType.Delete, 
+                gqlTypes.ObjectType.HealthcareProfessional, 
+                updatedBy,
+                null,
+                JSON.stringify(oldHealthcareProfessionalDataAuditLogEntity),
+                t
+            )
+
+            if (!createdAuditLog.isSuccesful) {
+                throw new Error(`Faild to create and audit log on ${gqlTypes.ActionType.Delete}`) 
+            }
         })
 
         logger.info(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(id)}`)
@@ -667,96 +684,56 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
         }
 
-        // 1) Split incoming relationships into ids to create/delete
-        const hpIdsToCreate: string[] = professionalRelationshipsToUpdate
-            .filter(r => r.action === gqlTypes.RelationshipAction.Create)
-            .map(r => r.otherEntityId)
+        const MAX_BATCH_SIZE = 30
 
-        const hpIdsToDelete: string[] = professionalRelationshipsToUpdate
-            .filter(r => r.action === gqlTypes.RelationshipAction.Delete)
-            .map(r => r.otherEntityId)
+        const allProfessionalIds = professionalRelationshipsToUpdate.map(f => f.otherEntityId)
+        const chunks = chunkArray(allProfessionalIds, MAX_BATCH_SIZE)
 
-        const createSet = new Set<string>(hpIdsToCreate)
-        const deleteSet = new Set<string>(hpIdsToDelete)
+        // A Firestore transaction requires all reads before any writes — esegui tutte le query prima
+        const querySnapshots = await Promise.all(
+            chunks.map(chunk =>
+                dbInstance.collection('healthcareProfessionals').where('id', 'in', chunk).get())
+        )
 
-        // Resolve conflicts: if an HP is in both, remove from both (no-op)
-        for (const hpId of Array.from(createSet)) {
-            if (deleteSet.has(hpId)) {
-                createSet.delete(hpId)
-                deleteSet.delete(hpId)
+        const allProfessionalDocuments = querySnapshots.flatMap(snapshot => snapshot.docs)
+        //const professionalsQuery = dbInstance.collection('healthcareProfessionals').where('id', 'in', professionalRelationshipsToUpdate.map(f => f.otherEntityId))
+        // A Firestore transaction requires all reads to happen before any writes, so we'll query all the professionals first.
+        //const allProfessionalDocuments = await professionalsQuery.get()
+        const dbProfessionalsToUpdate = allProfessionalDocuments.map(document => ({
+            ref: document.ref,
+            data: document.data()
+        }))
+
+        dbProfessionalsToUpdate.forEach(({ ref, data: dbProfessional }) => {
+            const matchingRelationship
+                = professionalRelationshipsToUpdate.find(f => f.otherEntityId === dbProfessional.id)
+            const dbProfessionalData = dbProfessional as dbSchema.HealthcareProfessional
+            
+            if (!matchingRelationship) {
+                throw new Error(`ERROR: updating professional facilityId list for ${dbProfessional.id}. Could not find matching relationship.`)
             }
-        }
 
-        // Build rows for INSERT/UPSERT
-        const relationsToCreate =
-            Array.from(createSet).map(hpsId =>
-                //eslint-disable-next-line
-                ({ hps_id: hpsId, facilities_id: facilityId }))
-
-        const idsToDelete = Array.from(deleteSet)
-
-        // INSERT/UPSERT relations first (idempotent)
-        if (relationsToCreate.length > 0) {
-            const { error: upsertErr } = await supabase
-                .from('hps_facilities')
-                .upsert(relationsToCreate, {
-                    onConflict: 'hps_id,facilities_id',
-                    ignoreDuplicates: true
-                })
-
-            if (upsertErr) {
-                return {
-                    data: undefined,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'updateHealthcareProfessionalsWithFacilityIdChanges',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500
-                    }]
-                }
+            //we want to add or remove the healthcareprofessional id from the list based on the action.
+            switch (matchingRelationship.action) {
+                case gqlTypes.RelationshipAction.Create:
+                    dbProfessionalData.facilityIds.push(facilityId)
+                    break
+                case gqlTypes.RelationshipAction.Delete:
+                    dbProfessionalData.facilityIds = dbProfessionalData.facilityIds
+                        .filter(id => id !== facilityId)
+                    break
+                default:
+                    logger.error(`ERROR: updating healthcare professional's facilityId list for ${matchingRelationship.otherEntityId}. Contained an invalid relationship action of ${matchingRelationship.action}`)
+                    break
             }
-        }
 
-        // DELETE relations
-        if (idsToDelete.length > 0) {
-            const { error: deleteErr } = await supabase
-                .from('hps_facilities')
-                .delete()
-                .eq('facilities_id', facilityId)
-                .in('hps_id', idsToDelete)
+            //business rule: we always timestamp when the entity was updated.
+            dbProfessionalData.updatedDate = new Date().toISOString()
+            //This will add the record update to the transaction, but we don't want to commit until later when all changes are done
+            t.set(ref, dbProfessionalData, { merge: true })
+            logger.info(`\nDB-UPDATE: Updated healthcare professional ${dbProfessionalData.id} related facility ids. Updated values: ${JSON.stringify(dbProfessionalData)}`)
+        })
 
-            const hpCounts = await Promise.all(idsToDelete.map(async hpId => ({
-                hpId,
-                count: await getHpFacilityCount(hpId)
-            })))
-
-            // If HP has count === 1 and we are deleting this link
-            const wouldBreak = hpCounts.filter(x => x.count <= 1)
-
-            if (wouldBreak.length > 0) {
-                return {
-                    data: undefined,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'facilityIds',
-                        errorCode: ErrorCode.INVALID_INPUT,
-                        httpStatus: 400
-                    }]
-                }
-            }
-            if (deleteErr) {
-                return {
-                    data: undefined,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'updateHealthcareProfessionalsWithFacilityIdChanges',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500
-                    }]
-                }
-            }
-        }
-       
         return {
             data: undefined,
             hasErrors: false

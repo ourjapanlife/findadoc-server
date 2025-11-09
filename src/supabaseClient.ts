@@ -1,14 +1,50 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { envVariables } from '../utils/environmentVariables.js'
+import { logger } from './logger.js'
 
-const url = process.env.SUPABASE_URL
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const url = envVariables.supabaseUrl()
+const serviceKey = envVariables.supabaseServiceRoleKey()
 
-if (!url) {
-    throw new Error('Missing env SUPABASE_URL')
+export let supabaseClient: SupabaseClient
+
+const testSupabaseIsInitialized = async () => {
+    try {
+        const { error } = await supabaseClient.from('user').select('id').limit(1)
+
+        if (error) {
+            throw new Error(`Error testing initialized supabase client: ${error}`)
+        }
+    } catch (ex) {
+        logger.error(`❌ Supabase is not connecting... ❌ ${ex}'`)
+        throw new Error('❌ Supabase is not connecting... ❌')
+    }
 }
-if (!serviceKey) {
-    throw new Error('Missing env SUPABASE_SERVICE_ROLE_KEY')
+
+// This is to prevent race conditions where parallel calls/tests/etc 
+// try to initialize the supabase instance at the same time
+let alreadyStartedInitialization = false
+
+export const initializeSupabaseClient = async () => {
+    if (supabaseClient || alreadyStartedInitialization) {
+        return
+    }
+
+    alreadyStartedInitialization = true
+
+    if (!url) {
+        logger.error('❌ Missing supabase env variables, abandoning supabase client initialization ❌ ')
+        return
+    }
+    if (!serviceKey) {
+        logger.error('❌ Missing supabase env variables, abandoning supabase client initialization ❌')
+        return
+    }
+
+    const newSupabaseClient = createClient(url, serviceKey)
+
+    supabaseClient = newSupabaseClient
+
+    await testSupabaseIsInitialized()
+
+    logger.info('✅ Supabase client is initialized! ✅ \n')
 }
-
-export const supabase = createClient(url, serviceKey)
-
