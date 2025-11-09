@@ -3,6 +3,7 @@ import { initializeApp, cert, applicationDefault } from 'firebase-admin/app'
 import admin from 'firebase-admin'
 import dotenv from 'dotenv'
 import { envVariables } from '../utils/environmentVariables.js'
+import readline from 'readline'
 
 // =============================================================================
 // TYPES & INTERFACES
@@ -46,16 +47,28 @@ interface FirestoreSubmission {
     updatedDate?: FirebaseFirestore.Timestamp | string
 }
 
+interface MigrationStats {
+    facilities: number
+    healthcareProfessionals: number
+    hpFacilityRelationships: number
+    submissions: number
+    duration: number
+}
+
 // =============================================================================
 // CONFIGURATION & INITIALIZATION
 // =============================================================================
 
-// Load environment variables
-dotenv.config({ path: '.env.prod' })
+// Load environment variables based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.dev'
+dotenv.config({ path: envFile })
 
 const isProduction = envVariables.isProduction()
 const isLocal = envVariables.isLocal()
 const isTestingEnvironment = envVariables.isTestingEnvironment()
+
+// Dry run mode - simulates migration without writing to database
+const DRY_RUN = process.env.DRY_RUN === 'true'
 
 let firestoreInstance: FirebaseFirestore.Firestore
 let supabaseClient: SupabaseClient
@@ -127,6 +140,37 @@ function createIdMap(data: Array<{ id: string; firestore_id: string }>): Map<str
     return new Map(data.map(item => [item.firestore_id, item.id]))
 }
 
+/**
+ * Prompts user for confirmation before proceeding
+ * @param message - The confirmation message to display
+ * @returns Promise that resolves to true if user confirms, false otherwise
+ */
+function askForConfirmation(message: string): Promise<boolean> {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    })
+
+    return new Promise(resolve => {
+        rl.question(`${message} (yes/no): `, answer => {
+            rl.close()
+            resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y')
+        })
+    })
+}
+
+/**
+ * Waits for a specified number of seconds with countdown display
+ * @param seconds - Number of seconds to wait
+ */
+async function countdown(seconds: number): Promise<void> {
+    for (let i = seconds; i > 0; i--) {
+        process.stdout.write(`\r⏳ Starting in ${i} seconds... (Press Ctrl+C to cancel)`)
+        await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+    process.stdout.write('\r✅ Proceeding with migration...                           \n\n')
+}
+
 // =============================================================================
 // INITIALIZATION FUNCTIONS
 // =============================================================================
@@ -139,7 +183,7 @@ async function testFirestoreConnection(): Promise<void> {
     try {
         const ref = firestoreInstance.collection('facilities')
         await ref.limit(1).get()
-        console.log('✅ Firestore connection established')
+        console.log('✅ Firestore connection established (READ-ONLY)')
     } catch (error) {
         console.error('❌ Firestore connection failed:', error)
         throw new Error('Failed to connect to Firestore')
@@ -151,6 +195,8 @@ async function testFirestoreConnection(): Promise<void> {
  * Sets up Firestore instance for production or development environment
  */
 async function initializeFirebase(): Promise<void> {
+    console.log('🔥 Initializing Firebase...')
+    
     const firebaseConfig = {
         projectId: envVariables.firebaseProjectId(),
         credential: isProduction
@@ -163,10 +209,11 @@ async function initializeFirebase(): Promise<void> {
     firestoreInstance = admin.firestore()
 
     if (isProduction) {
-        console.log('🔥 Connecting to production Firestore...')
+        console.log('   📍 Environment: PRODUCTION')
+        console.log('   🔒 Mode: READ-ONLY (Firestore will NOT be modified)')
     } else if (isTestingEnvironment || isLocal) {
-        console.log('🔥 Connecting to Firestore emulator...')
-        console.log('💡 TIP: If connection hangs, ensure the emulator is running')
+        console.log('   📍 Environment: DEVELOPMENT/LOCAL')
+        console.log('   💡 TIP: If connection hangs, ensure the Firestore emulator is running')
     }
 
     await testFirestoreConnection()
@@ -178,15 +225,80 @@ async function initializeFirebase(): Promise<void> {
  * @throws Error if required environment variables are missing
  */
 function initializeSupabase(): void {
+    console.log('🔧 Initializing Supabase...')
+    
     const supabaseUrl = process.env.SUPABASE_URL
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase credentials in environment variables')
+        throw new Error('❌ Missing Supabase credentials in environment variables')
     }
 
     supabaseClient = createClient(supabaseUrl, supabaseKey)
+    
+    if (DRY_RUN) {
+        console.log('   🔍 DRY RUN MODE: No data will be written to Supabase')
+    } else {
+        console.log('   ⚠️  WRITE MODE: Data will be written to Supabase')
+    }
+    
+    console.log(`   📍 Target: ${supabaseUrl}`)
     console.log('✅ Supabase client initialized\n')
+}
+
+// =============================================================================
+// SAFETY CHECK FUNCTIONS
+// =============================================================================
+
+/**
+ * Displays pre-migration safety information and warnings
+ * Requires user confirmation before proceeding with production migrations
+ */
+async function performSafetyChecks(): Promise<void> {
+    console.log('🛡️  ========================================')
+    console.log('🛡️  PRE-MIGRATION SAFETY CHECKS')
+    console.log('🛡️  ========================================\n')
+
+    console.log('📋 Migration Summary:')
+    console.log(`   • Environment:        ${isProduction ? 'PRODUCTION ⚠️' : 'DEVELOPMENT ✅'}`)
+    console.log(`   • Dry Run:            ${DRY_RUN ? 'YES (Safe) ✅' : 'NO (Will write data) ⚠️'}`)
+    console.log(`   • Firestore:          READ-ONLY (Safe) ✅`)
+    console.log(`   • Supabase:           ${DRY_RUN ? 'READ-ONLY (Safe) ✅' : 'WRITE (Data will be modified) ⚠️'}`)
+    console.log(`   • Config File:        ${envFile}`)
+    console.log()
+
+    if (isProduction && !DRY_RUN) {
+        console.log('⚠️  WARNING: PRODUCTION MIGRATION ⚠️')
+        console.log('   This will modify your production Supabase database!')
+        console.log('   Firestore will remain unchanged (read-only).')
+        console.log()
+        console.log('📝 Pre-flight checklist:')
+        console.log('   ☐ Firestore backup created?')
+        console.log('   ☐ Supabase backup/snapshot created?')
+        console.log('   ☐ Tested migration on local/dev environment?')
+        console.log('   ☐ Verified schema compatibility?')
+        console.log('   ☐ Ready to proceed with production migration?')
+        console.log()
+
+        const confirmed = await askForConfirmation('⚠️  Do you want to proceed with PRODUCTION migration?')
+        
+        if (!confirmed) {
+            console.log('\n❌ Migration cancelled by user.')
+            process.exit(0)
+        }
+
+        console.log('\n⏳ Starting migration in 10 seconds...')
+        console.log('   (Press Ctrl+C to cancel)\n')
+        await countdown(10)
+    } else if (DRY_RUN) {
+        console.log('🔍 DRY RUN MODE ACTIVE')
+        console.log('   Migration will be simulated without writing data.')
+        console.log('   This is safe to run multiple times.\n')
+        await countdown(3)
+    } else {
+        console.log('✅ Development migration - proceeding...\n')
+        await countdown(3)
+    }
 }
 
 // =============================================================================
@@ -204,7 +316,7 @@ async function migrateFacilities(): Promise<number> {
     const snapshot = await firestoreInstance.collection('facilities').get()
 
     if (snapshot.empty) {
-        console.log('⚠️  No facilities found in Firestore')
+        console.log('   ⚠️  No facilities found in Firestore')
         return 0
     }
 
@@ -223,40 +335,48 @@ async function migrateFacilities(): Promise<number> {
         }
     })
 
-    console.log(`   Found ${facilities.length} facilities to migrate`)
+    console.log(`   📊 Found ${facilities.length} facilities to migrate`)
 
-    const { error } = await supabaseClient
-        .from('facilities')
-        .upsert(facilities, { onConflict: 'firestore_id' })
+    if (DRY_RUN) {
+        console.log(`   🔍 DRY RUN: Would insert/update ${facilities.length} facilities`)
+        console.log(`   📝 Sample data: ${facilities[0].nameEn} (${facilities[0].firestore_id})`)
+    } else {
+        const { error } = await supabaseClient
+            .from('facilities')
+            .upsert(facilities, { onConflict: 'firestore_id' })
 
-    if (error) {
-        console.error('❌ Error migrating facilities:', error)
-        throw error
+        if (error) {
+            console.error('   ❌ Error migrating facilities:', error)
+            throw error
+        }
+
+        console.log(`   ✅ Successfully migrated ${facilities.length} facilities`)
     }
 
-    console.log(`✅ Successfully migrated ${facilities.length} facilities\n`)
+    console.log()
     return facilities.length
 }
 
 /**
  * Migrates healthcare professionals from Firestore to Supabase
  * Processes in batches to handle large datasets efficiently
- * @returns Number of healthcare professionals migrated
+ * @returns Object with count of HPs and relationships migrated
  */
-async function migrateHealthcareProfessionals(): Promise<number> {
+async function migrateHealthcareProfessionals(): Promise<{ hps: number; relationships: number }> {
     console.log('📦 Step 2: Migrating healthcare professionals...')
 
     const snapshot = await firestoreInstance.collection('healthcareProfessionals').get()
 
     if (snapshot.empty) {
-        console.log('⚠️  No healthcare professionals found in Firestore')
-        return 0
+        console.log('   ⚠️  No healthcare professionals found in Firestore\n')
+        return { hps: 0, relationships: 0 }
     }
 
-    console.log(`   Found ${snapshot.docs.length} healthcare professionals to migrate`)
+    console.log(`   📊 Found ${snapshot.docs.length} healthcare professionals to migrate`)
 
     const BATCH_SIZE = 100
     let totalMigrated = 0
+    let totalRelationships = 0
 
     // Process in batches to avoid overwhelming the database
     for (let i = 0; i < snapshot.docs.length; i += BATCH_SIZE) {
@@ -264,7 +384,7 @@ async function migrateHealthcareProfessionals(): Promise<number> {
         const batchNumber = Math.floor(i / BATCH_SIZE) + 1
         const totalBatches = Math.ceil(snapshot.docs.length / BATCH_SIZE)
 
-        console.log(`   Processing batch ${batchNumber}/${totalBatches}...`)
+        console.log(`   🔄 Processing batch ${batchNumber}/${totalBatches} (${batchDocs.length} records)...`)
 
         // Transform healthcare professional data
         const hps = batchDocs.map(doc => {
@@ -284,54 +404,83 @@ async function migrateHealthcareProfessionals(): Promise<number> {
             }
         })
 
-        // Insert healthcare professionals
-        const { error: hpsError } = await supabaseClient
-            .from('hps')
-            .upsert(hps, { onConflict: 'firestore_id' })
+        if (DRY_RUN) {
+            console.log(`      🔍 DRY RUN: Would insert/update ${hps.length} healthcare professionals`)
+        } else {
+            // Insert healthcare professionals
+            const { error: hpsError } = await supabaseClient
+                .from('hps')
+                .upsert(hps, { onConflict: 'firestore_id' })
 
-        if (hpsError) {
-            console.error('❌ Error migrating healthcare professionals batch:', hpsError)
-            throw hpsError
-        }
+            if (hpsError) {
+                console.error('      ❌ Error migrating healthcare professionals:', hpsError)
+                throw hpsError
+            }
 
-        // Fetch the newly created UUIDs for relationship mapping
-        const firestoreIds = batchDocs.map(doc => doc.id)
-        const { data: existingHps, error: fetchError } = await supabaseClient
-            .from('hps')
-            .select('id, firestore_id')
-            .in('firestore_id', firestoreIds)
-
-        if (fetchError) {
-            console.error('❌ Error fetching healthcare professional IDs:', fetchError)
-            throw fetchError
+            console.log(`      ✅ Inserted ${hps.length} healthcare professionals`)
         }
 
         // Migrate facility relationships for this batch
-        await migrateHpsFacilitiesRelationships(batchDocs, existingHps)
-
+        const relationshipsCount = await migrateHpsFacilitiesRelationships(batchDocs)
+        
         totalMigrated += batchDocs.length
+        totalRelationships += relationshipsCount
     }
 
-    console.log(`✅ Successfully migrated ${totalMigrated} healthcare professionals\n`)
-    return totalMigrated
+    console.log(`   ✅ Successfully migrated ${totalMigrated} healthcare professionals`)
+    console.log(`   ✅ Successfully migrated ${totalRelationships} HP-facility relationships`)
+    console.log()
+    
+    return { hps: totalMigrated, relationships: totalRelationships }
 }
 
 /**
  * Migrates many-to-many relationships between HPs and facilities
  * @param hpDocs - Firestore documents for healthcare professionals
- * @param supabaseHps - Corresponding Supabase records with UUIDs
+ * @returns Number of relationships migrated
  */
 async function migrateHpsFacilitiesRelationships(
-    hpDocs: FirebaseFirestore.QueryDocumentSnapshot[],
-    supabaseHps: Array<{ id: string; firestore_id: string }>
-): Promise<void> {
+    hpDocs: FirebaseFirestore.QueryDocumentSnapshot[]
+): Promise<number> {
+    // Fetch all HP and facility IDs for mapping
+    const firestoreIds = hpDocs.map(doc => doc.id)
+    
+    if (DRY_RUN) {
+        // In dry run, simulate the mapping
+        let relationshipCount = 0
+        
+        for (const doc of hpDocs) {
+            const data = doc.data() as FirestoreHealthcareProfessional
+            if (data.facilityIds && Array.isArray(data.facilityIds)) {
+                relationshipCount += data.facilityIds.length
+            }
+        }
+        
+        if (relationshipCount > 0) {
+            console.log(`      🔍 DRY RUN: Would insert ${relationshipCount} HP-facility relationships`)
+        }
+        
+        return relationshipCount
+    }
+
+    // Fetch Supabase IDs for HPs in this batch
+    const { data: supabaseHps, error: hpsError } = await supabaseClient
+        .from('hps')
+        .select('id, firestore_id')
+        .in('firestore_id', firestoreIds)
+
+    if (hpsError) {
+        console.error('      ❌ Error fetching HP IDs:', hpsError)
+        throw hpsError
+    }
+
     // Fetch all facilities to map Firestore IDs to Supabase UUIDs
     const { data: facilities, error: facilitiesError } = await supabaseClient
         .from('facilities')
         .select('id, firestore_id')
 
     if (facilitiesError) {
-        console.error('❌ Error fetching facilities:', facilitiesError)
+        console.error('      ❌ Error fetching facility IDs:', facilitiesError)
         throw facilitiesError
     }
 
@@ -356,22 +505,22 @@ async function migrateHpsFacilitiesRelationships(
     })
 
     if (relationships.length === 0) {
-        console.log('   No HP-facility relationships found in this batch')
-        return
+        return 0
     }
 
-    console.log(`   Migrating ${relationships.length} HP-facility relationships...`)
+    console.log(`      🔗 Migrating ${relationships.length} HP-facility relationships...`)
 
     const { error } = await supabaseClient
         .from('hps_facilities')
         .upsert(relationships, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
 
     if (error) {
-        console.error('❌ Error migrating HP-facility relationships:', error)
+        console.error('      ❌ Error migrating relationships:', error)
         throw error
     }
 
-    console.log(`   ✅ Migrated ${relationships.length} relationships`)
+    console.log(`      ✅ Migrated ${relationships.length} relationships`)
+    return relationships.length
 }
 
 /**
@@ -385,11 +534,11 @@ async function migrateSubmissions(): Promise<number> {
     const snapshot = await firestoreInstance.collection('submissions').get()
 
     if (snapshot.empty) {
-        console.log('⚠️  No submissions found in Firestore')
+        console.log('   ⚠️  No submissions found in Firestore\n')
         return 0
     }
 
-    console.log(`   Found ${snapshot.docs.length} submissions to migrate`)
+    console.log(`   📊 Found ${snapshot.docs.length} submissions to migrate`)
 
     // Fetch ID mappings for relationships
     const { data: hps, error: hpsError } = await supabaseClient
@@ -401,7 +550,7 @@ async function migrateSubmissions(): Promise<number> {
         .select('id, firestore_id')
 
     if (hpsError || facilitiesError) {
-        console.error('❌ Error fetching ID mappings:', hpsError || facilitiesError)
+        console.error('   ❌ Error fetching ID mappings:', hpsError || facilitiesError)
         throw hpsError || facilitiesError
     }
 
@@ -452,17 +601,93 @@ async function migrateSubmissions(): Promise<number> {
         }
     })
 
-    const { error } = await supabaseClient
-        .from('submissions')
-        .upsert(submissions, { onConflict: 'firestore_id' })
+    if (DRY_RUN) {
+        console.log(`   🔍 DRY RUN: Would insert/update ${submissions.length} submissions`)
+        console.log(`   📝 Sample: ${submissions[0].healthcareProfessionalName} - Status: ${submissions[0].status}`)
+    } else {
+        const { error } = await supabaseClient
+            .from('submissions')
+            .upsert(submissions, { onConflict: 'firestore_id' })
 
-    if (error) {
-        console.error('❌ Error migrating submissions:', error)
-        throw error
+        if (error) {
+            console.error('   ❌ Error migrating submissions:', error)
+            throw error
+        }
+
+        console.log(`   ✅ Successfully migrated ${submissions.length} submissions`)
     }
 
-    console.log(`✅ Successfully migrated ${submissions.length} submissions\n`)
+    console.log()
     return submissions.length
+}
+
+// =============================================================================
+// REPORTING FUNCTIONS
+// =============================================================================
+
+/**
+ * Displays a detailed summary of the migration results
+ * @param stats - Migration statistics
+ */
+function displayMigrationSummary(stats: MigrationStats): void {
+    console.log('🎉 ========================================')
+    console.log('🎉 MIGRATION COMPLETED SUCCESSFULLY!')
+    console.log('🎉 ========================================\n')
+
+    console.log('📊 Migration Summary:')
+    console.log(`   • Environment:              ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`)
+    console.log(`   • Mode:                     ${DRY_RUN ? 'DRY RUN (No data written)' : 'LIVE (Data written)'}`)
+    console.log(`   • Facilities:               ${stats.facilities}`)
+    console.log(`   • Healthcare Professionals: ${stats.healthcareProfessionals}`)
+    console.log(`   • HP-Facility Links:        ${stats.hpFacilityRelationships}`)
+    console.log(`   • Submissions:              ${stats.submissions}`)
+    console.log(`   • Total Records:            ${stats.facilities + stats.healthcareProfessionals + stats.submissions}`)
+    console.log(`   • Duration:                 ${stats.duration}s`)
+    console.log()
+
+    if (DRY_RUN) {
+        console.log('💡 This was a DRY RUN - no data was written.')
+        console.log('   To perform the actual migration, run without DRY_RUN=true')
+        console.log()
+    } else {
+        console.log('✅ Data has been successfully migrated to Supabase.')
+        console.log('🔒 Firestore data remains unchanged (read-only operation).')
+        console.log()
+        console.log('📝 Next Steps:')
+        console.log('   1. Verify data in Supabase Studio')
+        console.log('   2. Test application with new database')
+        console.log('   3. Monitor for any issues')
+        console.log('   4. Keep Firestore as backup for rollback if needed')
+        console.log()
+    }
+}
+
+/**
+ * Displays error information and cleanup instructions
+ * @param error - The error that occurred
+ */
+function displayErrorSummary(error: unknown): void {
+    console.error('\n❌ ========================================')
+    console.error('❌ MIGRATION FAILED')
+    console.error('❌ ========================================\n')
+    
+    console.error('💥 Error Details:')
+    console.error(`   ${error instanceof Error ? error.message : 'Unknown error'}`)
+    
+    if (error instanceof Error && error.stack) {
+        console.error('\n📋 Stack Trace:')
+        console.error(error.stack)
+    }
+
+    console.error('\n🔧 Troubleshooting:')
+    console.error('   1. Check your network connection')
+    console.error('   2. Verify environment variables are set correctly')
+    console.error('   3. Ensure Firestore and Supabase are accessible')
+    console.error('   4. Check the error message above for specific issues')
+    console.error('   5. Review logs for more detailed error information')
+    console.error()
+    console.error('💡 TIP: Run with DRY_RUN=true to test without writing data')
+    console.error()
 }
 
 // =============================================================================
@@ -478,42 +703,44 @@ async function migrateSubmissions(): Promise<number> {
  */
 async function runMigration(): Promise<void> {
     console.log('🚀 ========================================')
-    console.log('🚀 Starting Firestore → Supabase Migration')
+    console.log('🚀 FIRESTORE → SUPABASE MIGRATION')
     console.log('🚀 ========================================\n')
 
     const startTime = Date.now()
 
     try {
+        // Perform safety checks and get user confirmation if needed
+        await performSafetyChecks()
+
         // Initialize connections
         await initializeFirebase()
         initializeSupabase()
 
         // Run migrations in order (maintaining referential integrity)
+        console.log('📋 ========================================')
+        console.log('📋 STARTING DATA MIGRATION')
+        console.log('📋 ========================================\n')
+
         const facilitiesCount = await migrateFacilities()
-        const hpsCount = await migrateHealthcareProfessionals()
+        const { hps: hpsCount, relationships: relationshipsCount } = await migrateHealthcareProfessionals()
         const submissionsCount = await migrateSubmissions()
 
-        // Summary
+        // Calculate duration
         const duration = ((Date.now() - startTime) / 1000).toFixed(2)
-        console.log('🎉 ========================================')
-        console.log('🎉 Migration Completed Successfully!')
-        console.log('🎉 ========================================')
-        console.log(`\n📊 Migration Summary:`)
-        console.log(`   • Facilities:              ${facilitiesCount}`)
-        console.log(`   • Healthcare Professionals: ${hpsCount}`)
-        console.log(`   • Submissions:             ${submissionsCount}`)
-        console.log(`   • Total Duration:          ${duration}s\n`)
 
-    } catch (error) {
-        console.error('\n❌ ========================================')
-        console.error('❌ Migration Failed')
-        console.error('❌ ========================================')
-        console.error(`\n💥 Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-
-        if (error instanceof Error && error.stack) {
-            console.error(`\n📋 Stack trace:\n${error.stack}`)
+        // Display summary
+        const stats: MigrationStats = {
+            facilities: facilitiesCount,
+            healthcareProfessionals: hpsCount,
+            hpFacilityRelationships: relationshipsCount,
+            submissions: submissionsCount,
+            duration: parseFloat(duration)
         }
 
+        displayMigrationSummary(stats)
+
+    } catch (error) {
+        displayErrorSummary(error)
         process.exit(1)
     }
 }
@@ -521,6 +748,13 @@ async function runMigration(): Promise<void> {
 // =============================================================================
 // SCRIPT ENTRY POINT
 // =============================================================================
+
+// Display startup banner
+console.clear()
+console.log('╔════════════════════════════════════════╗')
+console.log('║  FIRESTORE → SUPABASE MIGRATION TOOL  ║')
+console.log('╚════════════════════════════════════════╝')
+console.log()
 
 // Execute migration
 runMigration()
