@@ -34,6 +34,24 @@ export function generateRandomCreateHealthcareProfessionalData(
 }
 
 /**
+ * Generates a single HP input for backward compatibility with tests
+ * @param facilityIds - Optional array of facility IDs to associate
+ * @returns CreateHealthcareProfessionalInput with facilityIds
+ */
+export function generateRandomCreateHealthcareProfessionalInput(
+    { facilityIds }: { facilityIds?: string[] } = {}
+): gqlTypes.CreateHealthcareProfessionalInput {
+    const { coreData, selectedFacilityIds } = generateRandomCreateHealthcareProfessionalData({
+        facilityIds: facilityIds || []
+    })
+
+    return {
+        ...coreData,
+        facilityIds: selectedFacilityIds  // Include facilityIds for compatibility
+    }
+}
+
+/**
  * This generates an array of HP data, structured to separate core HP data
  * from the Facility relationships (which will go into the hps_facilities table).
  * * @param {object} options - Options for array generation.
