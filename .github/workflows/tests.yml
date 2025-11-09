@@ -31,62 +31,42 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
 
-      # ✅ FIX: Usa installer ufficiale
-      - name: Install Supabase CLI
-        run: |
-          echo "📦 Installing Supabase CLI..."
-          curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/scripts/install.sh | bash
-          echo "✅ Supabase CLI installed"
-          supabase --version
+      # ✅ USA L'ACTION UFFICIALE
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      - name: Initialize Supabase
-        run: |
-          echo "🔧 Initializing Supabase..."
-          supabase init
-          echo "✅ Supabase initialized"
+      - name: Verify Supabase CLI
+        run: supabase --version
 
-      - name: Start Supabase services
-        run: |
-          echo "🚀 Starting Supabase services..."
-          supabase start
-          echo "✅ Supabase services started"
+      - name: Start Supabase
+        run: supabase start
 
-      - name: Verify Supabase connection
+      - name: Verify Supabase is running
         run: |
-          echo "🔍 Verifying Supabase connection..."
-          timeout 30 bash -c 'until curl -s http://127.0.0.1:54321/rest/v1/ > /dev/null; do echo "Waiting for Supabase..."; sleep 2; done'
+          timeout 30 bash -c 'until curl -s http://127.0.0.1:54321/rest/v1/ > /dev/null; do sleep 2; done'
           echo "✅ Supabase is ready"
 
       - name: Install dependencies
-        run: |
-          echo "📦 Installing project dependencies..."
-          yarn install --immutable
-          echo "✅ Dependencies installed"
+        run: yarn install --immutable
 
       - name: Generate GraphQL types
-        run: |
-          echo "🔄 Generating GraphQL types..."
-          yarn generate
-          echo "✅ GraphQL types generated"
+        run: yarn generate
 
       - name: Run tests
-        run: |
-          echo "🧪 Running tests..."
-          yarn test
+        run: yarn test
         env:
           SUPABASE_URL: http://127.0.0.1:54321
           SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
 
-      - name: Show Supabase logs on failure
+      - name: Show logs on failure
         if: failure()
         run: |
-          echo "❌ Tests failed. Showing diagnostics..."
-          supabase status || echo "Failed to get status"
+          supabase status
           docker ps -a
 
       - name: Stop Supabase
         if: always()
-        run: |
-          echo "🧹 Cleaning up..."
-          supabase stop || echo "Already stopped"
+        run: supabase stop
