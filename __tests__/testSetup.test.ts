@@ -2,7 +2,6 @@
 import request from 'supertest'
 import { expect, beforeAll, afterAll } from 'vitest'
 import fs from 'fs'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
 import { gqlMutation } from '../utils/gqlTool.js'
 import { CreateFacilityInput, Facility } from '../src/typeDefs/gqlTypes.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
