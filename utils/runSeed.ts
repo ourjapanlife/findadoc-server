@@ -1,4 +1,3 @@
-// runSeed.ts (DA CREARE)
 import * as fs from 'fs'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
@@ -21,12 +20,24 @@ async function runSeed() {
     try {
         console.log('🌱 Connecting to database...')
         await client.connect()
+        console.log('✅ Connected!')
 
         const seedFile = path.join(__dirname, 'seed_data.sql')
+        console.log(`📄 Reading seed file: ${seedFile}`)
+        
+        if (!fs.existsSync(seedFile)) {
+            throw new Error(`Seed file not found: ${seedFile}`)
+        }
+        
         const sql = fs.readFileSync(seedFile, 'utf8')
+        console.log(`📝 SQL file size: ${sql.length} characters`)
 
         console.log('🌱 Running seed script...')
-        await client.query(sql)
+        const result = await client.query(sql)
+        console.log('📊 Query result:', result)
+
+        const count = await client.query('SELECT COUNT(*) FROM facilities')
+        console.log(`✅ Facilities count after seed: ${count.rows[0].count}`)
 
         console.log('✅ Database seeded successfully!')
     } catch (error) {

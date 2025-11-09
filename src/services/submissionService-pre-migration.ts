@@ -5,7 +5,7 @@ import { hasSpecialCharacters } from '../../utils/stringUtils.js'
 import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
 import { logger } from '../logger.js'
 import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
-import { supabase } from '../supabaseClient.js'
+import { supabaseClient } from '../supabaseClient.js'
 import { createAuditLogSQL } from './auditLogServiceSupabase.js'
 import { createFacility } from './facilityService-pre-migration.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService-pre-migration.js'
@@ -121,7 +121,7 @@ export const getSubmissionById = async (
         }
 
         // Query the 'submissions' table using the ID and expect exactly one row because of .single()
-        const { data: submissionRow, error: submissionRowError } = await supabase
+        const { data: submissionRow, error: submissionRowError } = await supabaseClient
             .from('submissions')
             .select('*')
             .eq('id', id)
@@ -174,7 +174,7 @@ export async function searchSubmissions(
         const limit = filters.limit ?? 20
         const offset = filters.offset ?? 0
 
-        const baseSelect = supabase
+        const baseSelect = supabaseClient
             .from('submissions')
             .select('*')
         
@@ -232,7 +232,7 @@ export async function countSubmissions(
         }
 
         //PostgrestFilterBuilder
-        const headSelect = supabase
+        const headSelect = supabaseClient
             .from('submissions')
             .select('id', { count: 'exact', head: true })
 
@@ -272,7 +272,7 @@ export const createSubmission = async (
 
         const newSubmission = mapGqlEntityToDbEntity(submissionInput)
 
-        const { data: inserted, error } = await supabase
+        const { data: inserted, error } = await supabaseClient
             .from('submissions')
             .insert(newSubmission)
             .select('*')
@@ -325,7 +325,7 @@ export const updateSubmission = async (
             return await approveSubmission(submissionId, updatedBy)
         }
 
-        const { data: current, error: readErr } = await supabase
+        const { data: current, error: readErr } = await supabaseClient
             .from('submissions')
             .select('*')
             .eq('id', submissionId)
@@ -364,7 +364,7 @@ export const updateSubmission = async (
             updatedDate: new Date().toISOString()
         }
 
-        const { error: updErr } = await supabase
+        const { error: updErr } = await supabaseClient
             .from('submissions')
             .update(patch)
             .eq('id', submissionId)
@@ -402,7 +402,7 @@ export const autoFillPlacesInformation = async (
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
-        const { data: current, error: readErr } = await supabase
+        const { data: current, error: readErr } = await supabaseClient
             .from('submissions')
             .select('*')
             .eq('id', submissionId)
@@ -471,7 +471,7 @@ export const autoFillPlacesInformation = async (
             updatedDate: new Date().toISOString()
         }
 
-        const { error: updErr } = await supabase
+        const { error: updErr } = await supabaseClient
             .from('submissions')
             .update(patch)
             .eq('id', submissionId)
@@ -508,7 +508,7 @@ export const approveSubmission = async (
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
-        const { data: current, error: readErr } = await supabase
+        const { data: current, error: readErr } = await supabaseClient
             .from('submissions')
             .select('*')
             .eq('id', submissionId)
@@ -622,7 +622,7 @@ export const approveSubmission = async (
             updatedDate: new Date().toISOString()
         }
 
-        const { error: updatedErr } = await supabase
+        const { error: updatedErr } = await supabaseClient
             .from('submissions')
             .update(patch)
             .eq('id', submissionId)
@@ -693,7 +693,7 @@ export async function deleteSubmission(
         }
 
         // Delete
-        const { error: delErr } = await supabase
+        const { error: delErr } = await supabaseClient
             .from('submissions')
             .delete()
             .eq('id', id)
@@ -736,7 +736,10 @@ export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Su
         healthcareProfessionalName: row.healthcareProfessionalName,
         spokenLanguages: row.spokenLanguages as gqlTypes.Locale[],
         autofillPlaceFromSubmissionUrl: row.autofillPlaceFromSubmissionUrl,
-        facility: row.facility_partial,
+        facility: row.facility_partial ? {
+            ...row.facility_partial,
+            healthcareProfessionalIds: row.facility_partial.healthcareProfessionalIds ?? []  // ← FIX!
+        } : undefined,
         healthcareProfessionals: row.healthcare_professionals_partial ?? [],
         isUnderReview: row.status === 'under_review',
         isApproved: row.status === 'approved',

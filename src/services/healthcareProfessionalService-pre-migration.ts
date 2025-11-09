@@ -4,7 +4,7 @@ import { ErrorCode, Result } from '../result.js'
 import { validateProfessionalsSearchInput, validateUpdateProfessionalInput, validateCreateProfessionalInput } from '../validation/validationHealthcareProfessional.js'
 import { validateIdInput } from '../validation/validateFacility.js'
 import { logger } from '../logger.js'
-import { supabase } from '../supabaseClient.js'
+import { supabaseClient } from '../supabaseClient.js'
 import { createAuditLogSQL } from './auditLogServiceSupabase.js'
 
 // Build only provided scalar fields for UPDATE
@@ -29,7 +29,7 @@ async function setHpFacility(hpId: string, facilityId: string | null): Promise<v
         throw new Error('HealthcareProfessional must be linked to at least one Facility')
     }
     // remove all current links for the HP
-    const { error: delErr } = await supabase
+    const { error: delErr } = await supabaseClient
         .from('hps_facilities')
         .delete()
         .eq('hps_id', hpId)
@@ -37,7 +37,7 @@ async function setHpFacility(hpId: string, facilityId: string | null): Promise<v
     if (delErr) { throw delErr }
 
     if (facilityId) {
-        const { error: upsertErr } = await supabase
+        const { error: upsertErr } = await supabaseClient
             .from('hps_facilities')
             //eslint-disable-next-line
             .upsert([{ hps_id: hpId, facilities_id: facilityId }],
@@ -132,7 +132,7 @@ function resolveFacilityIdFromRelationships(
 }
 
 async function getHpFacilityCount(hpId: string): Promise<number> {
-    const { count: facilityCount, error: facilityCountError } = await supabase
+    const { count: facilityCount, error: facilityCountError } = await supabaseClient
         .from('hps_facilities')
         .select('hps_id', { count: 'exact', head: true })
         .eq('hps_id', hpId)
@@ -160,7 +160,7 @@ export async function getHealthcareProfessionalById(id: string)
         }
 
         // Query the 'hps' table using the ID and expect exactly one row because of .single()
-        const { data: healthcareProfessionalRow, error: healthcareProfessionalRowError } = await supabase
+        const { data: healthcareProfessionalRow, error: healthcareProfessionalRowError } = await supabaseClient
             .from('hps')
             .select('*')
             .eq('id', id)
@@ -181,7 +181,7 @@ export async function getHealthcareProfessionalById(id: string)
         }
 
         //Fetch related facility from the join table
-        const { data: relatedRows, error: relatedErrors } = await supabase
+        const { data: relatedRows, error: relatedErrors } = await supabaseClient
             .from('hps_facilities')
             .select('facilities_id')
             .eq('hps_id', id)
@@ -239,7 +239,7 @@ export async function searchProfessionals(
         const offset = filters.offset ?? 0
 
         // Build the base query and apply JSONB filters
-        let hpQuery = applyHpFilters(supabase.from('hps').select('*'), filters)
+        let hpQuery = applyHpFilters(supabaseClient.from('hps').select('*'), filters)
 
         const orderBy = filters.orderBy?.[0]
 
@@ -272,7 +272,7 @@ export async function searchProfessionals(
         }
 
         // Load relations for this page from the junction table
-        const { data: facilityRelationsForHPs, error: facilityRelationsForHPsError } = await supabase
+        const { data: facilityRelationsForHPs, error: facilityRelationsForHPsError } = await supabaseClient
             .from('hps_facilities')
             .select('hps_id, facilities_id')
             .in('hps_id', hpIds)
@@ -334,7 +334,7 @@ export async function countProfessionals(
 
         // Build a COUNT(*) query with the same JSONB filters used in search
         const countQuery = applyHpFilters(
-            supabase.from('hps').select('*', { count: 'exact', head: true }),
+            supabaseClient.from('hps').select('*', { count: 'exact', head: true }),
             filters
         )
 
@@ -394,7 +394,7 @@ export async function createHealthcareProfessional(
 
         const insertPayload = toHpInsertPayload(input)
 
-        const { data: insertedRow, error: insertErr } = await supabase
+        const { data: insertedRow, error: insertErr } = await supabaseClient
             .from('hps')
             .insert(insertPayload)
             .select('*')
@@ -413,7 +413,7 @@ export async function createHealthcareProfessional(
             const oneFacilityId = requestedFacilityIds[0]
 
             // Idempotent upsert on the junction table
-            const { error: upsertRelationErr } = await supabase
+            const { error: upsertRelationErr } = await supabaseClient
                 .from('hps_facilities')
                 .upsert(
                     //eslint-disable-next-line
@@ -501,7 +501,7 @@ export const updateHealthcareProfessional = async (
         const hasAnyScalarChange = Object.keys(updatePayload).length > 1
 
         if (hasAnyScalarChange) {
-            const { error: updateErr } = await supabase
+            const { error: updateErr } = await supabaseClient
                 .from('hps')
                 .update(updatePayload)
                 .eq('id', id)
@@ -509,7 +509,7 @@ export const updateHealthcareProfessional = async (
             if (updateErr) { throw updateErr }
         } else {
         // If we still want to update updatedDate to track the entity "touch"?
-            const { error: touchErr } = await supabase
+            const { error: touchErr } = await supabaseClient
                 .from('hps')
                 .update({ updatedDate: new Date().toISOString() })
                 .eq('id', id)
@@ -598,20 +598,7 @@ export async function deleteHealthcareProfessional(
             }
         }
 
-        // Remove junction rows first
-        // Maybe useless because there is ON CASCADE on supabase
-        // To try
-        /*const { error: junctionDelErr } = await supabase
-            .from('hps_facilities')
-            .delete()
-            .eq('hps_id', id)
-    
-        if (junctionDelErr) {
-            throw new Error(`Failed to delete HP junctions: ${junctionDelErr.message}`)
-        }
-        */
-
-        const { error: hpDeleteErr } = await supabase
+        const { error: hpDeleteErr } = await supabaseClient
             .from('hps')
             .delete()
             .eq('id', id)
@@ -697,7 +684,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
 
         // INSERT/UPSERT relations first (idempotent)
         if (relationsToCreate.length > 0) {
-            const { error: upsertErr } = await supabase
+            const { error: upsertErr } = await supabaseClient
                 .from('hps_facilities')
                 .upsert(relationsToCreate, {
                     onConflict: 'hps_id,facilities_id',
@@ -719,7 +706,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
 
         // DELETE relations
         if (idsToDelete.length > 0) {
-            const { error: deleteErr } = await supabase
+            const { error: deleteErr } = await supabaseClient
                 .from('hps_facilities')
                 .delete()
                 .eq('facilities_id', facilityId)

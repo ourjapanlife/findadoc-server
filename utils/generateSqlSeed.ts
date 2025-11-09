@@ -98,14 +98,16 @@ export const generateSqlSeed = async () => {
             // Note: Using camelCase column names as defined in the SQL schema
             const statement = `
             INSERT INTO facilities (
-                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact
+                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact, "createdDate", "updatedDate"
             ) VALUES (
                 ${toSqlValue(facilityId)}, 
                 ${toSqlValue(facility.nameEn)}, 
                 ${toSqlValue(facility.nameJa)}, 
                 ${toSqlValue(facility.mapLatitude)}, 
                 ${toSqlValue(facility.mapLongitude)}, 
-                ${toSqlValue(contactJson)}
+                ${toSqlValue(contactJson)},
+                ${toSqlValue(new Date().toISOString())},
+                ${toSqlValue(new Date().toISOString())}
             );`
             sqlStatements.push(statement)
         }
@@ -132,7 +134,7 @@ export const generateSqlSeed = async () => {
             // Insert healthcare professional with JSONB fields for arrays
             // Note: Using snake_case and camelCase as defined in SQL schema
             const statement = `INSERT INTO hps (
-                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients"
+                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients", "createdDate", "updatedDate"
             ) VALUES (
                 ${toSqlValue(hpId)}, 
                 ${toSqlValue(coreData.names)}, 
@@ -140,7 +142,9 @@ export const generateSqlSeed = async () => {
                 ${toSqlValue(coreData.specialties)}, 
                 ${toSqlValue(coreData.spokenLanguages)}, 
                 ${toSqlValue(coreData.acceptedInsurance)}, 
-                ${toSqlValue(coreData.additionalInfoForPatients)}
+                ${toSqlValue(coreData.additionalInfoForPatients)},
+                ${toSqlValue(new Date().toISOString())},
+                ${toSqlValue(new Date().toISOString())}
             );`
             sqlStatements.push(statement)
         }

@@ -85,6 +85,7 @@ input UpdateHealthcareProfessionalInput {
 
 # You can search for healthcare professional using any of combination these fields (AND operators)
 input HealthcareProfessionalSearchFilters {
+  ids: [ID!]
   names: [LocalizedNameInput!]
   spokenLanguages: [Locale!]
   degrees: [Degree!]
@@ -170,6 +171,47 @@ input SubmissionSearchFilters {
   orderBy: [OrderBy!]
   limit: Int
   offset: Int
+}
+
+type Reservation {
+  id: ID!
+  userId: ID!
+  createdDate: String!
+  updatedDate: String!
+  status: ReservationStatus!
+}
+
+input CreateReservationInput {
+  userId: ID!
+}
+
+input UpdateReservationInput {
+  userId: ID!
+  status: ReservationStatus!
+}
+
+enum ReservationStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+}
+
+type User {
+  id: ID!
+  createdDate: String!
+  updatedDate: String!
+  displayName: String
+  profilePicUrl: String
+}
+
+input CreateUserInput {
+  displayName: String
+  profilePicUrl: String
+}
+
+input UpdateUserInput {
+  displayName: String
+  profilePicUrl: String
 }
 
 type AuditLog {
@@ -345,6 +387,7 @@ enum Specialty {
   OPTOMETRY
   ORTHODONTICS
   ORTHOPEDIC_SURGERY
+  OTOLARYNGOLOGY
   PATHOLOGY
   PEDIATRICS
   PHARMACY
@@ -352,6 +395,7 @@ enum Specialty {
   PHYSICAL_MEDICINE_AND_REHABILITATION
   PLASTIC_SURGERY
   PREVENTIVE_MEDICINE
+  PROCTOLOGY
   PSYCHIATRY
   RADIATION_ONCOLOGY
   SPORTS_MEDICINE
@@ -439,6 +483,8 @@ type Query {
   submissions(filters: SubmissionSearchFilters!): [Submission!]!
   submissionsTotalCount(filters: SubmissionSearchFilters!): Int!
   auditLog(id: ID): AuditLog
+  user(id: ID!): User
+  reservation(id: ID!): Reservation
 }
 
 #======== Mutations ========
@@ -470,4 +516,12 @@ type Mutation {
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission!
 
   deleteSubmission(id: ID!): DeleteResult!
+
+  createUser(input: CreateUserInput!): User!
+
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+
+  createReservation(input: CreateReservationInput!): Reservation!
+
+  updateReservation(input: UpdateReservationInput!): Reservation!
 }
