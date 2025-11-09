@@ -276,7 +276,6 @@ export async function searchFacilities(
   filters: gqlTypes.FacilitySearchFilters = {}
 ): Promise<Result<gqlTypes.Facility[]>> {
     try {
-        console.log('🔍 searchFacilities called with filters:', JSON.stringify(filters))
         const validationResult = validateFacilitiesSearchInput(filters)
 
         if (validationResult.hasErrors) {
@@ -285,8 +284,6 @@ export async function searchFacilities(
 
         const limit = filters.limit ?? 20
         const offset = filters.offset ?? 0
-
-        console.log(`📊 limit: ${limit}, offset: ${offset}`)
 
         // If there is a filter on HPs, first get the facility IDs from the join table.
         let facilityIdSubset: string[] | null = null
@@ -324,9 +321,6 @@ export async function searchFacilities(
 
         // Execute the main query, applying the offset and limit for the current page
         const { data: paginationRows, error: paginationRowsError } = await baseQuery.range(offset, offset + limit - 1)
-
-        console.log('📦 SQL returned rows:', paginationRows?.length)
-        console.log('📦 First row:', paginationRows?.[0])
 
         if (paginationRowsError) {
             throw paginationRowsError
@@ -369,8 +363,6 @@ export async function searchFacilities(
             return mapDbEntityTogqlEntity(dbFacility)
         })
 
-        console.log('✅ Final list length:', list.length)
-        console.log('✅ First facility:', JSON.stringify(list[0]))
         return { data: list, hasErrors: false }
     } catch (err) {
         logger.error(`ERROR: searchFacilities ${JSON.stringify(filters)} -> ${err}`)

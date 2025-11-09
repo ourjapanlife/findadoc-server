@@ -45,9 +45,9 @@ export function generateRandomCreateHealthcareProfessionalInput(
         facilityIds: facilityIds || []
     })
 
-    return {
+    return {    
         ...coreData,
-        facilityIds: selectedFacilityIds  // Include facilityIds for compatibility
+        facilityIds: selectedFacilityIds// Include facilityIds for compatibility
     }
 }
 

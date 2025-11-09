@@ -738,7 +738,7 @@ export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Su
         autofillPlaceFromSubmissionUrl: row.autofillPlaceFromSubmissionUrl,
         facility: row.facility_partial ? {
             ...row.facility_partial,
-            healthcareProfessionalIds: row.facility_partial.healthcareProfessionalIds ?? []  // ← FIX!
+            healthcareProfessionalIds: row.facility_partial.healthcareProfessionalIds ?? [] // ← FIX!
         } : undefined,
         healthcareProfessionals: row.healthcare_professionals_partial ?? [],
         isUnderReview: row.status === 'under_review',

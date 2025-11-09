@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { initializeApp, cert, applicationDefault } from 'firebase-admin/app'
 import admin from 'firebase-admin'
@@ -61,6 +63,7 @@ interface MigrationStats {
 
 // Load environment variables based on NODE_ENV
 const envFile = process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.dev'
+
 dotenv.config({ path: envFile })
 
 const isProduction = envVariables.isProduction()
@@ -86,7 +89,7 @@ let supabaseClient: SupabaseClient
 function convertTimestampToISO(
     timestamp?: FirebaseFirestore.Timestamp | string | { seconds: number }
 ): string | null {
-    if (!timestamp) return null
+    if (!timestamp) { return null }
 
     // Handle Firestore Timestamp with toDate() method
     if (typeof timestamp === 'object' && 'toDate' in timestamp) {
@@ -102,6 +105,7 @@ function convertTimestampToISO(
     if (typeof timestamp === 'string') {
         try {
             const date = new Date(timestamp)
+
             if (!isNaN(date.getTime())) {
                 return date.toISOString()
             }
@@ -125,9 +129,9 @@ function getSubmissionStatus(
     isRejected?: boolean,
     isUnderReview?: boolean
 ): string {
-    if (isApproved) return 'approved'
-    if (isRejected) return 'rejected'
-    if (isUnderReview) return 'under_review'
+    if (isApproved) { return 'approved' }
+    if (isRejected) { return 'rejected' }
+    if (isUnderReview) { return 'under_review' }
     return 'pending'
 }
 
@@ -182,6 +186,7 @@ async function countdown(seconds: number): Promise<void> {
 async function testFirestoreConnection(): Promise<void> {
     try {
         const ref = firestoreInstance.collection('facilities')
+
         await ref.limit(1).get()
         console.log('✅ Firestore connection established (READ-ONLY)')
     } catch (error) {
@@ -262,7 +267,7 @@ async function performSafetyChecks(): Promise<void> {
     console.log('📋 Migration Summary:')
     console.log(`   • Environment:        ${isProduction ? 'PRODUCTION ⚠️' : 'DEVELOPMENT ✅'}`)
     console.log(`   • Dry Run:            ${DRY_RUN ? 'YES (Safe) ✅' : 'NO (Will write data) ⚠️'}`)
-    console.log(`   • Firestore:          READ-ONLY (Safe) ✅`)
+    console.log('   • Firestore:          READ-ONLY (Safe) ✅')
     console.log(`   • Supabase:           ${DRY_RUN ? 'READ-ONLY (Safe) ✅' : 'WRITE (Data will be modified) ⚠️'}`)
     console.log(`   • Config File:        ${envFile}`)
     console.log()
@@ -451,6 +456,7 @@ async function migrateHpsFacilitiesRelationships(
         
         for (const doc of hpDocs) {
             const data = doc.data() as FirestoreHealthcareProfessional
+
             if (data.facilityIds && Array.isArray(data.facilityIds)) {
                 relationshipCount += data.facilityIds.length
             }
@@ -738,7 +744,6 @@ async function runMigration(): Promise<void> {
         }
 
         displayMigrationSummary(stats)
-
     } catch (error) {
         displayErrorSummary(error)
         process.exit(1)

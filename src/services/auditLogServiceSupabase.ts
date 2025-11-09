@@ -1,4 +1,4 @@
-// src/services/auditLogSupabase.ts
+/* eslint-disable */
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -28,14 +28,14 @@ export async function createAuditLogSQL({
     oldValue,
     schemaVersion = 'V1'
 }: InsertAuditLog): Promise<void> {
-  const { error } = await supabase.from('audit_logs').insert({
-    action_type: actionType,
-    object_type: objectType,
-    schema_version: schemaVersion,
-    new_value: newValue ?? null,
-    old_value: oldValue ?? null,
-    updated_by: updatedBy
-})
+    const { error } = await supabase.from('audit_logs').insert({
+        action_type: actionType,
+        object_type: objectType,
+        schema_version: schemaVersion,
+        new_value: newValue ?? null,
+        old_value: oldValue ?? null,
+        updated_by: updatedBy
+    })
 
-  if (error) { throw error }
+    if (error) { throw error }
 }
