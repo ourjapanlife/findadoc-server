@@ -30,7 +30,6 @@ beforeAll(async () => {
 
     //this initializes a shared firebase instance and supabase instance for all the tests.
     initializeLogger()
-    await initiatilizeFirebaseInstance()
     await initializeSupabaseClient()
     serverUrl = await createApolloFastifyServer(testPort)
     gqlApiUrl = `${serverUrl}/`
