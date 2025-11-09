@@ -1,284 +1,526 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { initializeApp, cert, applicationDefault } from 'firebase-admin/app'
-import { Firestore } from 'firebase-admin/firestore'
-import dotenv from 'dotenv'
 import admin from 'firebase-admin'
-
-// The logic from firebaseDb.ts adapted not to depend on logger, seedDatabase, etc.
+import dotenv from 'dotenv'
 import { envVariables } from '../utils/environmentVariables.js'
 
-const isTestingEnvironment = envVariables.isTestingEnvironment()
+// =============================================================================
+// TYPES & INTERFACES
+// =============================================================================
+
+interface FirestoreFacility {
+    nameEn?: string
+    nameJa?: string
+    contact?: Record<string, unknown>
+    mapLatitude?: number
+    mapLongitude?: number
+    createdDate?: FirebaseFirestore.Timestamp | string
+    updatedDate?: FirebaseFirestore.Timestamp | string
+}
+
+interface FirestoreHealthcareProfessional {
+    email?: string
+    names?: unknown[]
+    degrees?: unknown[]
+    specialties?: unknown[]
+    spokenLanguages?: unknown[]
+    acceptedInsurance?: unknown[]
+    additionalInfoForPatients?: string
+    facilityIds?: string[]
+    createdDate?: FirebaseFirestore.Timestamp | string
+    updatedDate?: FirebaseFirestore.Timestamp | string
+}
+
+interface FirestoreSubmission {
+    isApproved?: boolean
+    isRejected?: boolean
+    isUnderReview?: boolean
+    googleMapsUrl?: string
+    healthcareProfessionalName?: string
+    spokenLanguages?: unknown[]
+    autofillPlaceFromSubmissionUrl?: boolean
+    facility?: { id?: string; [key: string]: unknown }
+    healthcareProfessionals?: Array<{ id?: string; [key: string]: unknown }>
+    notes?: string
+    createdDate?: FirebaseFirestore.Timestamp | string
+    updatedDate?: FirebaseFirestore.Timestamp | string
+}
+
+// =============================================================================
+// CONFIGURATION & INITIALIZATION
+// =============================================================================
+
+// Load environment variables
+dotenv.config({ path: '.env.prod' })
+
 const isProduction = envVariables.isProduction()
 const isLocal = envVariables.isLocal()
+const isTestingEnvironment = envVariables.isTestingEnvironment()
 
-export let dbInstance
+let firestoreInstance: FirebaseFirestore.Firestore
+let supabaseClient: SupabaseClient
 
-const testFirestoreIsInitialized = async () => {
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+/**
+ * Converts Firestore Timestamp to ISO string format
+ * Handles various timestamp formats including Firestore Timestamp objects and strings
+ * @param timestamp - The timestamp to convert
+ * @returns ISO string or null if conversion fails
+ */
+function convertTimestampToISO(
+    timestamp?: FirebaseFirestore.Timestamp | string | { seconds: number }
+): string | null {
+    if (!timestamp) return null
+
+    // Handle Firestore Timestamp with toDate() method
+    if (typeof timestamp === 'object' && 'toDate' in timestamp) {
+        return timestamp.toDate().toISOString()
+    }
+
+    // Handle timestamp with seconds property
+    if (typeof timestamp === 'object' && 'seconds' in timestamp) {
+        return new Date(timestamp.seconds * 1000).toISOString()
+    }
+
+    // Handle string timestamps
+    if (typeof timestamp === 'string') {
+        try {
+            const date = new Date(timestamp)
+            if (!isNaN(date.getTime())) {
+                return date.toISOString()
+            }
+        } catch {
+            // Invalid string format, return null
+        }
+    }
+
+    return null
+}
+
+/**
+ * Converts submission status booleans to a single status string
+ * @param isApproved - Whether submission is approved
+ * @param isRejected - Whether submission is rejected
+ * @param isUnderReview - Whether submission is under review
+ * @returns Status string
+ */
+function getSubmissionStatus(
+    isApproved?: boolean,
+    isRejected?: boolean,
+    isUnderReview?: boolean
+): string {
+    if (isApproved) return 'approved'
+    if (isRejected) return 'rejected'
+    if (isUnderReview) return 'under_review'
+    return 'pending'
+}
+
+/**
+ * Creates ID mapping from Firestore IDs to Supabase UUIDs
+ * @param data - Array of records with id and firestore_id
+ * @returns Map of firestore_id -> uuid
+ */
+function createIdMap(data: Array<{ id: string; firestore_id: string }>): Map<string, string> {
+    return new Map(data.map(item => [item.firestore_id, item.id]))
+}
+
+// =============================================================================
+// INITIALIZATION FUNCTIONS
+// =============================================================================
+
+/**
+ * Tests Firestore connection by attempting to query a collection
+ * @throws Error if connection fails
+ */
+async function testFirestoreConnection(): Promise<void> {
     try {
-        const ref = dbInstance.collection('facilities')
+        const ref = firestoreInstance.collection('facilities')
         await ref.limit(1).get()
-        console.log('🔥 Firestore connection established 🔥')
-    } catch (ex) {
-        console.error(`❌ Firestore connection failed... ❌ ${ex}`)
-        throw new Error('❌ Firestore connection failed... ❌')
+        console.log('✅ Firestore connection established')
+    } catch (error) {
+        console.error('❌ Firestore connection failed:', error)
+        throw new Error('Failed to connect to Firestore')
     }
 }
 
-let alreadyStartedInitialization = false
-
-export const initiatilizeFirebaseInstance = async () => {
-    if (dbInstance || alreadyStartedInitialization) {
-        return
-    }
-
-    alreadyStartedInitialization = true
-
+/**
+ * Initializes Firebase Admin SDK with appropriate credentials
+ * Sets up Firestore instance for production or development environment
+ */
+async function initializeFirebase(): Promise<void> {
     const firebaseConfig = {
         projectId: envVariables.firebaseProjectId(),
-        credential: isProduction ? cert(JSON.parse(envVariables.firebaseServiceAccount())) : applicationDefault(),
+        credential: isProduction
+            ? cert(JSON.parse(envVariables.firebaseServiceAccount()))
+            : applicationDefault(),
         databaseURL: isProduction ? undefined : envVariables.getDbUrl()
     }
 
     initializeApp(firebaseConfig)
-    
-    const newDbInstance = admin.firestore()
-    dbInstance = newDbInstance
-    
-    const isNotProduction = !!isTestingEnvironment || isLocal
+    firestoreInstance = admin.firestore()
 
     if (isProduction) {
-        console.log('🔥 Connecting to production firebase...\n')
-    } else if (isNotProduction) {
-        console.log('🔥 Connecting to firebase emulator...\n')
-        console.log('TIP: If it doesn\'t connect after 10 seconds, make sure the firebase emulator is running with the command "yarn dev:startlocaldb"')
+        console.log('🔥 Connecting to production Firestore...')
+    } else if (isTestingEnvironment || isLocal) {
+        console.log('🔥 Connecting to Firestore emulator...')
+        console.log('💡 TIP: If connection hangs, ensure the emulator is running')
     }
 
-    await testFirestoreIsInitialized()
-    console.log('✅ Firebase initialized! ✅ \n')
+    await testFirestoreConnection()
+    console.log('✅ Firebase initialized successfully\n')
 }
 
-// Function to handle Firestore timestamps and convert to ISO string
-const convertTimestampToISO = (timestamp) => {
-    // Check if the timestamp is a valid object with toDate() or _seconds
-    if (timestamp && typeof timestamp.toDate === 'function') {
-        return timestamp.toDate().toISOString()
-    } else if (timestamp && timestamp.seconds) {
-        return new Date(timestamp.seconds * 1000).toISOString()
-    } else if (typeof timestamp === 'string') {
-        // Handle case where it's already a string (e.g., in development data)
-        try {
-            const date = new Date(timestamp)
+/**
+ * Initializes Supabase client with credentials from environment
+ * @throws Error if required environment variables are missing
+ */
+function initializeSupabase(): void {
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-            if (!isNaN(date.getTime())) {
-                return date.toISOString()
-            }
-        } catch (e) {
-            // Do nothing, will return null
+    if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase credentials in environment variables')
+    }
+
+    supabaseClient = createClient(supabaseUrl, supabaseKey)
+    console.log('✅ Supabase client initialized\n')
+}
+
+// =============================================================================
+// MIGRATION FUNCTIONS
+// =============================================================================
+
+/**
+ * Migrates facilities from Firestore to Supabase
+ * Transforms data structure to match SQL schema
+ * @returns Number of facilities migrated
+ */
+async function migrateFacilities(): Promise<number> {
+    console.log('📦 Step 1: Migrating facilities...')
+
+    const snapshot = await firestoreInstance.collection('facilities').get()
+
+    if (snapshot.empty) {
+        console.log('⚠️  No facilities found in Firestore')
+        return 0
+    }
+
+    const facilities = snapshot.docs.map(doc => {
+        const data = doc.data() as FirestoreFacility
+
+        return {
+            firestore_id: doc.id,
+            nameEn: data.nameEn || null,
+            nameJa: data.nameJa || null,
+            contact: data.contact || {},
+            mapLatitude: data.mapLatitude || null,
+            mapLongitude: data.mapLongitude || null,
+            createdDate: convertTimestampToISO(data.createdDate),
+            updatedDate: convertTimestampToISO(data.updatedDate)
         }
+    })
+
+    console.log(`   Found ${facilities.length} facilities to migrate`)
+
+    const { error } = await supabaseClient
+        .from('facilities')
+        .upsert(facilities, { onConflict: 'firestore_id' })
+
+    if (error) {
+        console.error('❌ Error migrating facilities:', error)
+        throw error
     }
-    return null
+
+    console.log(`✅ Successfully migrated ${facilities.length} facilities\n`)
+    return facilities.length
 }
 
-// --- MAIN MIGRATION LOGIC ---
-dotenv.config({ path: '.env.dev' })
+/**
+ * Migrates healthcare professionals from Firestore to Supabase
+ * Processes in batches to handle large datasets efficiently
+ * @returns Number of healthcare professionals migrated
+ */
+async function migrateHealthcareProfessionals(): Promise<number> {
+    console.log('📦 Step 2: Migrating healthcare professionals...')
 
-async function runMigration() {
-    try {
-        console.log('🚀 Starting migration... 🚀')
-        await initiatilizeFirebaseInstance()
-        
-        const supabaseUrl = process.env.SUPABASE_URL
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-        const supabase = createClient(supabaseUrl, supabaseKey)
+    const snapshot = await firestoreInstance.collection('healthcareProfessionals').get()
 
-        console.log('✅ Database connections verified.')
+    if (snapshot.empty) {
+        console.log('⚠️  No healthcare professionals found in Firestore')
+        return 0
+    }
 
-        // 1. Migrate the 'facilities' table (step 1)
-        console.log('Fetching data from Firestore from the "facilities" collection...')
-        const facilitiesSnapshot = await dbInstance.collection('facilities').get()
-        const facilitiesData = facilitiesSnapshot.docs.map(doc => {
-            const data = doc.data()
-            const name = data.nameEn || data.nameJa || null
+    console.log(`   Found ${snapshot.docs.length} healthcare professionals to migrate`)
+
+    const BATCH_SIZE = 100
+    let totalMigrated = 0
+
+    // Process in batches to avoid overwhelming the database
+    for (let i = 0; i < snapshot.docs.length; i += BATCH_SIZE) {
+        const batchDocs = snapshot.docs.slice(i, i + BATCH_SIZE)
+        const batchNumber = Math.floor(i / BATCH_SIZE) + 1
+        const totalBatches = Math.ceil(snapshot.docs.length / BATCH_SIZE)
+
+        console.log(`   Processing batch ${batchNumber}/${totalBatches}...`)
+
+        // Transform healthcare professional data
+        const hps = batchDocs.map(doc => {
+            const data = doc.data() as FirestoreHealthcareProfessional
 
             return {
                 firestore_id: doc.id,
-                name: name,
-                contact: data.contact, 
-                mapLatitude: data.mapLatitude || null, 
-                mapLongitude: data.mapLongitude || null,
+                email: data.email || null,
+                names: data.names || [],
+                degrees: data.degrees || [],
+                specialties: data.specialties || [],
+                spokenLanguages: data.spokenLanguages || [],
+                acceptedInsurance: data.acceptedInsurance || [],
+                additionalInfoForPatients: data.additionalInfoForPatients || null,
                 createdDate: convertTimestampToISO(data.createdDate),
                 updatedDate: convertTimestampToISO(data.updatedDate)
             }
         })
 
-        console.log(`Found ${facilitiesData.length} 'facilities' documents to migrate.`)
-        if (facilitiesData.length > 0) {
-            console.log('Inserting/updating data in the "facilities" table...')
-            const { error: facilitiesError } = await supabase.from('facilities').upsert(facilitiesData)
-            if (facilitiesError) {
-                console.error('❌ Error during Supabase insert (facilities table):', facilitiesError)
-                throw new Error('Supabase insert error. Migration aborted.')
-            }
-            console.log('✅ \'facilities\' data inserted/updated successfully.')
-        } else {
-            console.log('No \'facilities\' data to migrate.')
-        }
-        
-        // 2. Migrate the 'hps' table (step 2)
-        console.log('Fetching data from Firestore from the "healthcareProfessionals" collection... (step 2)')
-        const hpsSnapshot = await dbInstance.collection('healthcareProfessionals').get()
+        // Insert healthcare professionals
+        const { error: hpsError } = await supabaseClient
+            .from('hps')
+            .upsert(hps, { onConflict: 'firestore_id' })
 
-        if (hpsSnapshot.empty) {
-            console.log('No documents found in the "healthcareProfessionals" collection. Migration finished.')
-            return
+        if (hpsError) {
+            console.error('❌ Error migrating healthcare professionals batch:', hpsError)
+            throw hpsError
         }
 
-        console.log(`Found ${hpsSnapshot.docs.length} documents to migrate.`)
-        
-        const batchSize = 100
-        let migratedCount = 0
-        
-        for (let i = 0; i < hpsSnapshot.docs.length; i += batchSize) {
-            const batchDocs = hpsSnapshot.docs.slice(i, i + batchSize)
-            
-            const hpsData = batchDocs.map(doc => {
-                const data = doc.data()
+        // Fetch the newly created UUIDs for relationship mapping
+        const firestoreIds = batchDocs.map(doc => doc.id)
+        const { data: existingHps, error: fetchError } = await supabaseClient
+            .from('hps')
+            .select('id, firestore_id')
+            .in('firestore_id', firestoreIds)
 
-                return {
-                    firestore_id: doc.id,
-                    email: data.email || null,
-                    names: data.names || null,
-                    degrees: data.degrees || null,
-                    specialties: data.specialties || null,
-                    spokenLanguages: data.spokenLanguages || null,
-                    acceptedInsurance: data.acceptedInsurance || null,
-                    createdDate: convertTimestampToISO(data.createdDate),
-                    updatedDate: convertTimestampToISO(data.updatedDate),
-                    additionalInfoForPatients: data.additionalInfoForPatients || null
-                }
-            })
-
-            console.log(`Inserting/updating batch ${i / batchSize + 1} of ${hpsData.length} documents in the 'hps' table...`)
-            const { error: hpsError } = await supabase.from('hps').upsert(hpsData)
-
-            if (hpsError) {
-                console.error('❌ Error during Supabase insert (hps table):', hpsError)
-                throw new Error('Supabase insert error. Migration aborted.')
-            }
-            console.log(`✅ Batch ${i / batchSize + 1} successfully inserted into 'hps' table.`)
-
-            // Fetch the new UUIDs for the relationship tables
-            const { data: existingHps, error: hpsFetchError } = await supabase.from('hps').select('id, firestore_id').in('firestore_id', batchDocs.map(doc => doc.id))
-            const { data: existingFacilities, error: facilitiesFetchError } = await supabase.from('facilities').select('id, firestore_id')
-            
-            if (hpsFetchError || facilitiesFetchError) {
-                console.error('❌ Error fetching existing IDs from Supabase:', hpsFetchError || facilitiesFetchError)
-                throw new Error('Supabase fetch error. Migration aborted.')
-            }
-            
-            const hpIdMap = new Map(existingHps.map(hp => [hp.firestore_id, hp.id]))
-            const facilityIdMap = new Map(existingFacilities.map(facility => [facility.firestore_id, facility.id]))
-
-            // 3. Migrate the 'hps_facilities' table (step 3)
-            const hpsFacilitiesData = batchDocs.flatMap(doc => {
-                const data = doc.data()
-                
-                if (data.facilityIds && Array.isArray(data.facilityIds)) {
-                    return data.facilityIds.map(facilityId => ({
-                        hps_id: hpIdMap.get(doc.id),
-                        facilities_id: facilityIdMap.get(facilityId)
-                    })).filter(relationship => relationship.hps_id && relationship.facilities_id)
-                }
-                return []
-            });
-            
-            if (hpsFacilitiesData.length > 0) {
-                console.log(`Inserting/updating ${hpsFacilitiesData.length} relationships in the 'hps_facilities' table...`)
-                const { error: hpsFacilitiesError } = await supabase.from('hps_facilities').upsert(hpsFacilitiesData)
-                
-                if (hpsFacilitiesError) {
-                    console.error('❌ Error during Supabase insert (hps_facilities table):', hpsFacilitiesError)
-                    throw new Error('Supabase insert error. Migration aborted.')
-                }
-                console.log(`✅ Relationships successfully inserted into the 'hps_facilities' table.`)
-            } else {
-                console.log('No facility-hp relationship found for this batch. Skipping insert into "hps_facilities" table.')
-            }
-
-            migratedCount += batchDocs.length
+        if (fetchError) {
+            console.error('❌ Error fetching healthcare professional IDs:', fetchError)
+            throw fetchError
         }
 
-        // 4. Migrate the 'submissions' table (step 4)
-        console.log('Fetching data from Firestore from the "submissions" collection... (step 4)')
-        const submissionsSnapshot = await dbInstance.collection('submissions').get()
+        // Migrate facility relationships for this batch
+        await migrateHpsFacilitiesRelationships(batchDocs, existingHps)
 
-        if (submissionsSnapshot.empty) {
-            console.log('No documents found in the "submissions" collection. Migration step finished.');
-        } else {
-            // Fetch existing HP and Facility IDs from Supabase to check against, using firestore_id
-            const { data: existingHps, error: hpsFetchError } = await supabase.from('hps').select('id, firestore_id');
-            const { data: existingFacilities, error: facilitiesFetchError } = await supabase.from('facilities').select('id, firestore_id')
-            
-            if (hpsFetchError || facilitiesFetchError) {
-                console.error('❌ Error fetching existing IDs from Supabase:', hpsFetchError || facilitiesFetchError)
-                throw new Error('Supabase fetch error. Migration aborted.')
-            }
-            
-            const hpIdMap = new Map(existingHps.map(hp => [hp.firestore_id, hp.id]))
-            const facilityIdMap = new Map(existingFacilities.map(facility => [facility.firestore_id, facility.id]))
+        totalMigrated += batchDocs.length
+    }
 
-            const submissionData = submissionsSnapshot.docs.flatMap(doc => {
-                const data = doc.data()
-                
-                let status = 'pending'
+    console.log(`✅ Successfully migrated ${totalMigrated} healthcare professionals\n`)
+    return totalMigrated
+}
 
-                if (data.isApproved) {
-                    status = 'approved'
-                } else if (data.isRejected) {
-                    status = 'rejected'
-                }
-                
-                const hpIdsInSubmission = (data.healthcareProfessionals || []).map(hp => hp.id)
-                const facilityIdInSubmission = data.facility?.id || null
-                
-                const mappedHpIds = hpIdsInSubmission
-                    .map(firestoreId => hpIdMap.get(firestoreId))
-                    .filter(id => id !== undefined)
-                
-                const mappedFacilityId = facilityIdMap.get(facilityIdInSubmission)
-                
-                if (mappedHpIds.length > 0 && mappedFacilityId !== undefined) {
-                    return mappedHpIds.map(hpId => ({
-                        hps_id: hpId, 
-                        facilities_id: mappedFacilityId,
-                        status: status,
-                        createdDate: convertTimestampToISO(data.createdDate),
-                        updatedDate: convertTimestampToISO(data.updatedDate)
-                    }));
-                }
-                console.log(`Skipping submission with ID ${doc.id}: could not find a valid HP or Facility ID in Supabase.`)
-                return []
-            })
+/**
+ * Migrates many-to-many relationships between HPs and facilities
+ * @param hpDocs - Firestore documents for healthcare professionals
+ * @param supabaseHps - Corresponding Supabase records with UUIDs
+ */
+async function migrateHpsFacilitiesRelationships(
+    hpDocs: FirebaseFirestore.QueryDocumentSnapshot[],
+    supabaseHps: Array<{ id: string; firestore_id: string }>
+): Promise<void> {
+    // Fetch all facilities to map Firestore IDs to Supabase UUIDs
+    const { data: facilities, error: facilitiesError } = await supabaseClient
+        .from('facilities')
+        .select('id, firestore_id')
 
-            if (submissionData.length > 0) {
-                console.log(`Found ${submissionData.length} relationships to migrate to the 'submissions' table.`)
-                console.log('Inserting data into the "submissions" table...')
-                const { error: submissionError } = await supabase.from('submissions').insert(submissionData)
-                if (submissionError) {
-                    console.error('❌ Error during Supabase insert (submissions table):', submissionError)
-                    throw new Error('Supabase insert error. Migration aborted.')
-                }
-                console.log('✅ Submissions data inserted successfully.')
-            } else {
-                console.log('No valid submission data with existing HP and Facility IDs to migrate.')
-            }
+    if (facilitiesError) {
+        console.error('❌ Error fetching facilities:', facilitiesError)
+        throw facilitiesError
+    }
+
+    const hpIdMap = createIdMap(supabaseHps)
+    const facilityIdMap = createIdMap(facilities)
+
+    // Build relationship records
+    const relationships = hpDocs.flatMap(doc => {
+        const data = doc.data() as FirestoreHealthcareProfessional
+        const hpSupabaseId = hpIdMap.get(doc.id)
+
+        if (!hpSupabaseId || !data.facilityIds || !Array.isArray(data.facilityIds)) {
+            return []
         }
-        
-        console.log(`🎉 Migration completed! All documents and their relationships have been migrated successfully. 🎉`)
+
+        return data.facilityIds
+            .map(facilityFirestoreId => ({
+                hps_id: hpSupabaseId,
+                facilities_id: facilityIdMap.get(facilityFirestoreId)
+            }))
+            .filter(rel => rel.facilities_id !== undefined)
+    })
+
+    if (relationships.length === 0) {
+        console.log('   No HP-facility relationships found in this batch')
+        return
+    }
+
+    console.log(`   Migrating ${relationships.length} HP-facility relationships...`)
+
+    const { error } = await supabaseClient
+        .from('hps_facilities')
+        .upsert(relationships, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
+
+    if (error) {
+        console.error('❌ Error migrating HP-facility relationships:', error)
+        throw error
+    }
+
+    console.log(`   ✅ Migrated ${relationships.length} relationships`)
+}
+
+/**
+ * Migrates submissions from Firestore to Supabase
+ * Maps relationships to existing HPs and facilities using UUIDs
+ * @returns Number of submissions migrated
+ */
+async function migrateSubmissions(): Promise<number> {
+    console.log('📦 Step 3: Migrating submissions...')
+
+    const snapshot = await firestoreInstance.collection('submissions').get()
+
+    if (snapshot.empty) {
+        console.log('⚠️  No submissions found in Firestore')
+        return 0
+    }
+
+    console.log(`   Found ${snapshot.docs.length} submissions to migrate`)
+
+    // Fetch ID mappings for relationships
+    const { data: hps, error: hpsError } = await supabaseClient
+        .from('hps')
+        .select('id, firestore_id')
+
+    const { data: facilities, error: facilitiesError } = await supabaseClient
+        .from('facilities')
+        .select('id, firestore_id')
+
+    if (hpsError || facilitiesError) {
+        console.error('❌ Error fetching ID mappings:', hpsError || facilitiesError)
+        throw hpsError || facilitiesError
+    }
+
+    const hpIdMap = createIdMap(hps)
+    const facilityIdMap = createIdMap(facilities)
+
+    // Transform submission data
+    const submissions = snapshot.docs.map(doc => {
+        const data = doc.data() as FirestoreSubmission
+
+        // Determine submission status
+        const status = getSubmissionStatus(
+            data.isApproved,
+            data.isRejected,
+            data.isUnderReview
+        )
+
+        // Map Firestore IDs to Supabase UUIDs
+        const facilityFirestoreId = data.facility?.id
+        const hpFirestoreIds = (data.healthcareProfessionals || [])
+            .map(hp => hp.id)
+            .filter(Boolean)
+
+        const facilitySupabaseId = facilityFirestoreId
+            ? facilityIdMap.get(facilityFirestoreId)
+            : null
+
+        const hpSupabaseIds = hpFirestoreIds
+            .map(id => hpIdMap.get(id!))
+            .filter(Boolean)
+
+        return {
+            firestore_id: doc.id,
+            // Link to first HP (main healthcare professional for the submission)
+            hps_id: hpSupabaseIds[0] || null,
+            facilities_id: facilitySupabaseId || null,
+            status,
+            googleMapsUrl: data.googleMapsUrl || '',
+            healthcareProfessionalName: data.healthcareProfessionalName || '',
+            spokenLanguages: data.spokenLanguages || [],
+            autofillPlaceFromSubmissionUrl: data.autofillPlaceFromSubmissionUrl || false,
+            // Store partial data as JSONB for submissions not yet approved
+            facility_partial: data.facility || null,
+            healthcare_professionals_partial: data.healthcareProfessionals || [],
+            notes: data.notes || null,
+            createdDate: convertTimestampToISO(data.createdDate),
+            updatedDate: convertTimestampToISO(data.updatedDate)
+        }
+    })
+
+    const { error } = await supabaseClient
+        .from('submissions')
+        .upsert(submissions, { onConflict: 'firestore_id' })
+
+    if (error) {
+        console.error('❌ Error migrating submissions:', error)
+        throw error
+    }
+
+    console.log(`✅ Successfully migrated ${submissions.length} submissions\n`)
+    return submissions.length
+}
+
+// =============================================================================
+// MAIN MIGRATION ORCHESTRATION
+// =============================================================================
+
+/**
+ * Main migration function that orchestrates the entire migration process
+ * Migrates data in the correct order to maintain referential integrity:
+ * 1. Facilities (no dependencies)
+ * 2. Healthcare Professionals + their facility relationships
+ * 3. Submissions (depends on both HPs and facilities)
+ */
+async function runMigration(): Promise<void> {
+    console.log('🚀 ========================================')
+    console.log('🚀 Starting Firestore → Supabase Migration')
+    console.log('🚀 ========================================\n')
+
+    const startTime = Date.now()
+
+    try {
+        // Initialize connections
+        await initializeFirebase()
+        initializeSupabase()
+
+        // Run migrations in order (maintaining referential integrity)
+        const facilitiesCount = await migrateFacilities()
+        const hpsCount = await migrateHealthcareProfessionals()
+        const submissionsCount = await migrateSubmissions()
+
+        // Summary
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+        console.log('🎉 ========================================')
+        console.log('🎉 Migration Completed Successfully!')
+        console.log('🎉 ========================================')
+        console.log(`\n📊 Migration Summary:`)
+        console.log(`   • Facilities:              ${facilitiesCount}`)
+        console.log(`   • Healthcare Professionals: ${hpsCount}`)
+        console.log(`   • Submissions:             ${submissionsCount}`)
+        console.log(`   • Total Duration:          ${duration}s\n`)
+
     } catch (error) {
-        console.error('❌ Critical error during migration:', error.message)
+        console.error('\n❌ ========================================')
+        console.error('❌ Migration Failed')
+        console.error('❌ ========================================')
+        console.error(`\n💥 Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+
+        if (error instanceof Error && error.stack) {
+            console.error(`\n📋 Stack trace:\n${error.stack}`)
+        }
+
+        process.exit(1)
     }
 }
 
-// Start the migration script
+// =============================================================================
+// SCRIPT ENTRY POINT
+// =============================================================================
+
+// Execute migration
 runMigration()
