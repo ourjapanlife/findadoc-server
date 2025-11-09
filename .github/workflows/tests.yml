@@ -22,28 +22,23 @@ jobs:
         node-version: [21.3.0]
 
     steps:
-      # Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup Node.js
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
 
-      # Install Supabase CLI
+      # ✅ FIX: Usa installer ufficiale
       - name: Install Supabase CLI
         run: |
           echo "📦 Installing Supabase CLI..."
-          curl -sL https://github.com/supabase/cli/releases/download/v1.123.4/supabase_1.123.4_linux_amd64.tar.gz -o supabase.tar.gz
-          tar -xzf supabase.tar.gz
-          sudo mv supabase /usr/local/bin/
-          supabase --version
+          curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/scripts/install.sh | bash
           echo "✅ Supabase CLI installed"
+          supabase --version
 
-      # Initialize and start Supabase
       - name: Initialize Supabase
         run: |
           echo "🔧 Initializing Supabase..."
@@ -56,54 +51,42 @@ jobs:
           supabase start
           echo "✅ Supabase services started"
 
-      # Verify Supabase is running
       - name: Verify Supabase connection
         run: |
           echo "🔍 Verifying Supabase connection..."
           timeout 30 bash -c 'until curl -s http://127.0.0.1:54321/rest/v1/ > /dev/null; do echo "Waiting for Supabase..."; sleep 2; done'
-          echo "✅ Supabase is ready and accepting connections"
+          echo "✅ Supabase is ready"
 
-      # Install project dependencies
       - name: Install dependencies
         run: |
           echo "📦 Installing project dependencies..."
           yarn install --immutable
           echo "✅ Dependencies installed"
 
-      # Generate GraphQL types
       - name: Generate GraphQL types
         run: |
           echo "🔄 Generating GraphQL types..."
           yarn generate
           echo "✅ GraphQL types generated"
 
-      # Run tests
       - name: Run tests
         run: |
           echo "🧪 Running tests..."
           yarn test
         env:
-          # Supabase local instance credentials (demo keys - safe to commit)
           SUPABASE_URL: http://127.0.0.1:54321
           SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
 
-      # Show Supabase status and logs on failure
       - name: Show Supabase logs on failure
         if: failure()
         run: |
-          echo "❌ Tests failed. Showing Supabase status and logs..."
-          echo "--- Supabase Status ---"
-          supabase status || echo "Failed to get Supabase status"
-          echo "--- Docker Containers ---"
+          echo "❌ Tests failed. Showing diagnostics..."
+          supabase status || echo "Failed to get status"
           docker ps -a
-          echo "--- Supabase DB Logs ---"
-          docker logs supabase_db_test 2>&1 | tail -50 || echo "No database logs available"
 
-      # Cleanup: Stop Supabase
       - name: Stop Supabase
         if: always()
         run: |
-          echo "🧹 Cleaning up Supabase services..."
-          supabase stop || echo "Supabase already stopped"
-          echo "✅ Cleanup complete"
+          echo "🧹 Cleaning up..."
+          supabase stop || echo "Already stopped"
