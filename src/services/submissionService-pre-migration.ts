@@ -1,7 +1,6 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
-import { hasSpecialCharacters } from '../../utils/stringUtils.js'
 import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
 import { logger } from '../logger.js'
 import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
@@ -35,8 +34,9 @@ function makeMinimalContact(googleMapsUrl?: string): gqlTypes.ContactInput {
 }
 
 function dedupeLocales(locales: (gqlTypes.Locale | null | undefined)[] | null | undefined): gqlTypes.Locale[] {
-    if (!locales) return []
+    if (!locales) { return [] }
     const clean = locales.filter((l): l is gqlTypes.Locale => !!l)
+
     return Array.from(new Set(clean))
 }
 
@@ -72,41 +72,41 @@ function applySubmissionFilters<B extends HasIlike<B> & HasContains<B> & HasEq<B
   queryBuilder: B,
   filters: gqlTypes.SubmissionSearchFilters
 ): B {
-  let query = queryBuilder
+    let query = queryBuilder
 
-  if (filters.googleMapsUrl) {
-    query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`)
-  }
+    if (filters.googleMapsUrl) {
+        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`)
+    }
 
-  if (filters.healthcareProfessionalName) {
-    query = query.ilike('healthcareProfessionalName', `%${filters.healthcareProfessionalName}%`)
-  }
+    if (filters.healthcareProfessionalName) {
+        query = query.ilike('healthcareProfessionalName', `%${filters.healthcareProfessionalName}%`)
+    }
 
-  // 👇 niente contains qui (lo facciamo dopo)
+    // 👇 niente contains qui (lo facciamo dopo)
 
-  const trueFlags = [
-    filters.isUnderReview ? 'under_review' : null,
-    filters.isApproved ? 'approved' : null,
-    filters.isRejected ? 'rejected' : null
-  ].filter(Boolean) as Array<'under_review' | 'approved' | 'rejected'>
+    const trueFlags = [
+        filters.isUnderReview ? 'under_review' : null,
+        filters.isApproved ? 'approved' : null,
+        filters.isRejected ? 'rejected' : null
+    ].filter(Boolean) as Array<'under_review' | 'approved' | 'rejected'>
 
-  if (trueFlags.length > 1) {
-    throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
-  }
+    if (trueFlags.length > 1) {
+        throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
+    }
 
-  if (trueFlags.length === 1) {
-    query = query.eq('status', trueFlags[0])
-  }
+    if (trueFlags.length === 1) {
+        query = query.eq('status', trueFlags[0])
+    }
 
-  if (filters.createdDate) {
-    query = query.eq('createdDate', filters.createdDate)
-  }
+    if (filters.createdDate) {
+        query = query.eq('createdDate', filters.createdDate)
+    }
 
-  if (filters.updatedDate) {
-    query = query.eq('updatedDate', filters.updatedDate)
-  }
+    if (filters.updatedDate) {
+        query = query.eq('updatedDate', filters.updatedDate)
+    }
 
-  return query
+    return query
 }
 
 /**
@@ -164,60 +164,62 @@ export const getSubmissionById = async (
 export async function searchSubmissions(
   filters: gqlTypes.SubmissionSearchFilters = {}
 ): Promise<Result<gqlTypes.Submission[]>> {
-  try {
-    const validation = validateSubmissionSearchFilters(filters)
-    if (validation.hasErrors) {
-      return { data: [], hasErrors: true, errors: validation.errors }
+    try {
+        const validation = validateSubmissionSearchFilters(filters)
+
+        if (validation.hasErrors) {
+            return { data: [], hasErrors: true, errors: validation.errors }
+        }
+
+        const limit = filters.limit ?? 20
+        const offset = filters.offset ?? 0
+
+        const supabase = getSupabaseClient()
+
+        let base = applySubmissionFilters(
+            supabase.from('submissions').select('*'),
+            filters
+        )
+
+        // order by
+        const orderBy = filters.orderBy?.[0]
+
+        if (orderBy?.fieldToOrder) {
+            base = base.order(orderBy.fieldToOrder, {
+                ascending: orderBy.orderDirection !== 'desc'
+            })
+        } else {
+            base = base.order('createdDate', { ascending: false })
+        }
+
+        const { data: rows, error } = await base.range(offset, offset + limit - 1)
+
+        if (error) { throw error }
+
+        let listSubmissions = (rows ?? []).map(row => mapDbEntityTogqlEntity(row as dbSchema.SubmissionRow))
+
+        // 👇 filtro lingua lato JS per evitare errori SQL
+        const langs = (filters.spokenLanguages ?? []).filter((l): l is gqlTypes.Locale => !!l)
+
+        if (langs.length > 0) {
+            listSubmissions = listSubmissions.filter(sub =>
+                (sub.spokenLanguages ?? []).some(l => langs.includes(l)))
+        }
+
+        return { data: listSubmissions, hasErrors: false }
+    } catch (err) {
+        logger.error(`ERROR: searchSubmissions ${JSON.stringify(filters)} -> ${err}`)
+        return {
+            data: [],
+            hasErrors: true,
+            errors: [{
+                field: 'searchSubmissions',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
-
-    const limit = filters.limit ?? 20
-    const offset = filters.offset ?? 0
-
-    const supabase = getSupabaseClient()
-
-    let base = applySubmissionFilters(
-      supabase.from('submissions').select('*'),
-      filters
-    )
-
-    // order by
-    const orderBy = filters.orderBy?.[0]
-    if (orderBy?.fieldToOrder) {
-      base = base.order(orderBy.fieldToOrder, {
-        ascending: orderBy.orderDirection !== 'desc'
-      })
-    } else {
-      base = base.order('createdDate', { ascending: false })
-    }
-
-    const { data: rows, error } = await base.range(offset, offset + limit - 1)
-    if (error) throw error
-
-    let listSubmissions = (rows ?? []).map(row => mapDbEntityTogqlEntity(row as dbSchema.SubmissionRow))
-
-    // 👇 filtro lingua lato JS per evitare errori SQL
-    const langs = (filters.spokenLanguages ?? []).filter((l): l is gqlTypes.Locale => !!l)
-    if (langs.length > 0) {
-      listSubmissions = listSubmissions.filter(sub =>
-        (sub.spokenLanguages ?? []).some(l => langs.includes(l))
-      )
-    }
-
-    return { data: listSubmissions, hasErrors: false }
-  } catch (err) {
-    logger.error(`ERROR: searchSubmissions ${JSON.stringify(filters)} -> ${err}`)
-    return {
-      data: [],
-      hasErrors: true,
-      errors: [{
-        field: 'searchSubmissions',
-        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-        httpStatus: 500
-      }]
-    }
-  }
 }
-
 
 /**
  * Gets the total count of submissions matching the given filters.
@@ -264,57 +266,56 @@ export async function countSubmissions(
 }
 
 export const createSubmission = async (
-  submissionInput: gqlTypes.CreateSubmissionInput,
-  updatedBy: string
+    submissionInput: gqlTypes.CreateSubmissionInput,
+    updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
-  try {
-    const validationResults = validateCreateSubmissionInputs(submissionInput)
+    try {
+        const validationResults = validateCreateSubmissionInputs(submissionInput)
 
-    const filteredErrors = (validationResults.errors ?? []).filter(e => e.field !== 'id')
+        const filteredErrors = (validationResults.errors ?? []).filter(e => e.field !== 'id')
 
-    if (validationResults.hasErrors && filteredErrors.length > 0) {
-      return {
-        data: {} as gqlTypes.Submission,
-        hasErrors: true,
-        errors: filteredErrors
-      }
+        if (validationResults.hasErrors && filteredErrors.length > 0) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: filteredErrors
+            }
+        }
+
+        const newSubmission = mapGqlEntityToDbEntity(submissionInput)
+
+        const supabase = getSupabaseClient()
+        const { data: inserted, error } = await supabase
+            .from('submissions')
+            .insert(newSubmission)
+            .select('*')
+            .single()
+
+        if (error) { throw error }
+
+        const gqlSubmission = mapDbEntityTogqlEntity(inserted as dbSchema.SubmissionRow)
+
+        await createAuditLogSQL({
+            actionType: 'CREATE',
+            objectType: 'Submission',
+            updatedBy,
+            newValue: gqlSubmission
+        })
+
+        return { data: gqlSubmission, hasErrors: false }
+    } catch (error) {
+        logger.error(`ERROR: Error creating submission: ${error}`)
+        return {
+            data: {} as gqlTypes.Submission,
+            hasErrors: true,
+            errors: [{
+                field: 'createSubmission',
+                errorCode: ErrorCode.SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
-
-    const newSubmission = mapGqlEntityToDbEntity(submissionInput)
-
-    const supabase = getSupabaseClient()
-    const { data: inserted, error } = await supabase
-      .from('submissions')
-      .insert(newSubmission)
-      .select('*')
-      .single()
-
-    if (error) throw error
-
-    const gqlSubmission = mapDbEntityTogqlEntity(inserted as dbSchema.SubmissionRow)
-
-    await createAuditLogSQL({
-      actionType: 'CREATE',
-      objectType: 'Submission',
-      updatedBy,
-      newValue: gqlSubmission
-    })
-
-    return { data: gqlSubmission, hasErrors: false }
-  } catch (error) {
-    logger.error(`ERROR: Error creating submission: ${error}`)
-    return {
-      data: {} as gqlTypes.Submission,
-      hasErrors: true,
-      errors: [{
-        field: 'createSubmission',
-        errorCode: ErrorCode.SERVER_ERROR,
-        httpStatus: 500
-      }]
-    }
-  }
 }
-
 
 /**
  * Updates a submission.
@@ -323,111 +324,112 @@ export const createSubmission = async (
  * @returns The submission that was updated.
  */
 export const updateSubmission = async (
-  submissionId: string,
-  fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>,
-  updatedBy: string
+    submissionId: string,
+    fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>,
+    updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
-  try {
-    if (fieldsToUpdate.isApproved === true) {
-      return await approveSubmission(submissionId, updatedBy)
-    }
+    try {
+        if (fieldsToUpdate.isApproved === true) {
+            return await approveSubmission(submissionId, updatedBy)
+        }
 
-    const supabase = getSupabaseClient()
-    const { data: current, error: readErr } = await supabase
-      .from('submissions')
-      .select('*')
-      .eq('id', submissionId)
-      .single()
+        const supabase = getSupabaseClient()
+        const { data: current, error: readErr } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', submissionId)
+            .single()
 
-    if (readErr || !current) {
-      return {
-        data: {} as gqlTypes.Submission,
-        hasErrors: true,
-        errors: [{ field: 'id', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
-      }
-    }
+        if (readErr || !current) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'id', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
+            }
+        }
 
-    if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && current.autofillPlaceFromSubmissionUrl) {
-      return {
-        data: {} as gqlTypes.Submission,
-        hasErrors: true,
-        errors: [{
-          field: 'autofillPlaceFromSubmissionUrl',
-          errorCode: ErrorCode.AUTOFILL_FAILURE,
-          httpStatus: 400
-        }]
-      }
-    }
-    if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !current.autofillPlaceFromSubmissionUrl) {
-      return await autoFillPlacesInformation(
-        submissionId,
-        fieldsToUpdate.googleMapsUrl ?? current.googleMapsUrl,
-        updatedBy
-      )
-    }
+        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && current.autofillPlaceFromSubmissionUrl) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{
+                    field: 'autofillPlaceFromSubmissionUrl',
+                    errorCode: ErrorCode.AUTOFILL_FAILURE,
+                    httpStatus: 400
+                }]
+            }
+        }
+        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !current.autofillPlaceFromSubmissionUrl) {
+            return await autoFillPlacesInformation(
+                submissionId,
+                fieldsToUpdate.googleMapsUrl ?? current.googleMapsUrl,
+                updatedBy
+            )
+        }
 
-    const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
+        const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
-    const statusFlags = [
-      fieldsToUpdate.isUnderReview ? 'under_review' : null,
-      fieldsToUpdate.isApproved ? 'approved' : null,
-      fieldsToUpdate.isRejected ? 'rejected' : null
-    ].filter(Boolean) as Array<'under_review' | 'approved' | 'rejected'>
+        const statusFlags = [
+            fieldsToUpdate.isUnderReview ? 'under_review' : null,
+            fieldsToUpdate.isApproved ? 'approved' : null,
+            fieldsToUpdate.isRejected ? 'rejected' : null
+        ].filter(Boolean) as Array<'under_review' | 'approved' | 'rejected'>
 
-    if (statusFlags.length > 1) {
-      return {
-        data: {} as gqlTypes.Submission,
-        hasErrors: true,
-        errors: [{
-          field: 'status',
-          errorCode: ErrorCode.INVALID_ID,
-          httpStatus: 400
-        }]
-      }
-    }
+        if (statusFlags.length > 1) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{
+                    field: 'status',
+                    errorCode: ErrorCode.INVALID_ID,
+                    httpStatus: 400
+                }]
+            }
+        }
 
-    const newStatus = statusFlags.length === 1 ? statusFlags[0] : current.status
+        const newStatus = statusFlags.length === 1 ? statusFlags[0] : current.status
 
-    const patch: Partial<dbSchema.SubmissionRow> = {
-      googleMapsUrl: fieldsToUpdate.googleMapsUrl ?? current.googleMapsUrl,
-      healthcareProfessionalName: fieldsToUpdate.healthcareProfessionalName ?? current.healthcareProfessionalName,
-      spokenLanguages: fieldsToUpdate.spokenLanguages ?? current.spokenLanguages,
-      notes: fieldsToUpdate.notes ?? current.notes,
-      autofillPlaceFromSubmissionUrl:
+        const patch: Partial<dbSchema.SubmissionRow> = {
+            googleMapsUrl: fieldsToUpdate.googleMapsUrl ?? current.googleMapsUrl,
+            healthcareProfessionalName: fieldsToUpdate.healthcareProfessionalName ?? current.healthcareProfessionalName,
+            spokenLanguages: fieldsToUpdate.spokenLanguages ?? current.spokenLanguages,
+            notes: fieldsToUpdate.notes ?? current.notes,
+            autofillPlaceFromSubmissionUrl:
         fieldsToUpdate.autofillPlaceFromSubmissionUrl ?? current.autofillPlaceFromSubmissionUrl,
-      status: newStatus,
-      updatedDate: new Date().toISOString()
+            status: newStatus,
+            updatedDate: new Date().toISOString()
+        }
+
+        const { error: updErr } = await supabase
+            .from('submissions')
+            .update(patch)
+            .eq('id', submissionId)
+
+        if (updErr) { throw updErr }
+
+        const refreshed = await getSubmissionById(submissionId)
+
+        if (refreshed.hasErrors || !refreshed.data) {
+            throw new Error('Could not reload updated submission.')
+        }
+
+        await createAuditLogSQL({
+            actionType: 'UPDATE',
+            objectType: 'Submission',
+            updatedBy,
+            oldValue,
+            newValue: refreshed.data
+        })
+
+        return { data: refreshed.data, hasErrors: false }
+    } catch (error) {
+        logger.error(`ERROR: Error updating submission ${submissionId}: ${error}`)
+        return {
+            data: {} as gqlTypes.Submission,
+            hasErrors: true,
+            errors: [{ field: 'updateSubmission', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
+        }
     }
-
-    const { error: updErr } = await supabase
-      .from('submissions')
-      .update(patch)
-      .eq('id', submissionId)
-
-    if (updErr) throw updErr
-
-    const refreshed = await getSubmissionById(submissionId)
-    if (refreshed.hasErrors || !refreshed.data) {
-      throw new Error('Could not reload updated submission.')
-    }
-
-    await createAuditLogSQL({
-      actionType: 'UPDATE',
-      objectType: 'Submission',
-      updatedBy,
-      oldValue,
-      newValue: refreshed.data
-    })
-
-    return { data: refreshed.data, hasErrors: false }
-  } catch (error) {
-    logger.error(`ERROR: Error updating submission ${submissionId}: ${error}`)
-    return {
-      data: {} as gqlTypes.Submission,
-      hasErrors: true,
-      errors: [{ field: 'updateSubmission', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
-    }
-  }
 }
 
 export const autoFillPlacesInformation = async (
@@ -539,204 +541,206 @@ export const autoFillPlacesInformation = async (
 }
 
 function isValidHpInput(hp: gqlTypes.CreateHealthcareProfessionalInput | null | undefined): boolean {
-  if (!hp) return false
-  if (!Array.isArray(hp.names) || hp.names.length === 0) return false
+    if (!hp) { return false }
+    if (!Array.isArray(hp.names) || hp.names.length === 0) { return false }
 
-  const first = hp.names[0]
-  if (!first.locale) return false
-  if (!first.firstName) return false
-  if (!first.lastName) return false
+    const first = hp.names[0]
 
-  return true
+    if (!first.locale) { return false }
+    if (!first.firstName) { return false }
+    if (!first.lastName) { return false }
+
+    return true
 }
 
 export const approveSubmission = async (
-  submissionId: string,
-  updatedBy: string
+    submissionId: string,
+    updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
-  try {
-    const supabase = getSupabaseClient()
-    const { data: current, error: readErr } = await supabase
-      .from('submissions')
-      .select('*')
-      .eq('id', submissionId)
-      .single()
+    try {
+        const supabase = getSupabaseClient()
+        const { data: current, error: readErr } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', submissionId)
+            .single()
 
-    if (readErr || !current) {
-      return {
-        data: {} as gqlTypes.Submission,
-        hasErrors: true,
-        errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
-      }
-    }
-
-    if (current.status === 'approved') {
-      return {
-        data: {} as gqlTypes.Submission,
-        hasErrors: true,
-        errors: [{ field: 'status', errorCode: ErrorCode.SUBMISSION_ALREADY_APPROVED, httpStatus: 400 }]
-      }
-    }
-
-    const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
-
-    let createdFacilityId: string | undefined
-    let finalFacilityId: string | null = current.facilities_id
-    let createdHpId: string | undefined
-
-    // 1) facility
-    if (!finalFacilityId) {
-      let facilityInput: gqlTypes.CreateFacilityInput
-      if (current.facility_partial) {
-        facilityInput = current.facility_partial as gqlTypes.CreateFacilityInput
-      } else {
-        facilityInput = {
-          nameEn: 'Unknown Facility',
-          nameJa: 'Unknown Facility',
-          contact: makeMinimalContact(current.googleMapsUrl ?? ''),
-          mapLatitude: 0,
-          mapLongitude: 0,
-          healthcareProfessionalIds: []
+        if (readErr || !current) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
+            }
         }
-      }
 
-      const facilityRes = await createFacility(facilityInput, updatedBy)
-      if (facilityRes.hasErrors || !facilityRes.data) {
+        if (current.status === 'approved') {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'status', errorCode: ErrorCode.SUBMISSION_ALREADY_APPROVED, httpStatus: 400 }]
+            }
+        }
+
+        const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
+
+        let createdFacilityId: string | undefined
+        let finalFacilityId: string | null = current.facilities_id
+        let createdHpId: string | undefined
+
+        // 1) facility
+        if (!finalFacilityId) {
+            let facilityInput: gqlTypes.CreateFacilityInput
+
+            if (current.facility_partial) {
+                facilityInput = current.facility_partial as gqlTypes.CreateFacilityInput
+            } else {
+                facilityInput = {
+                    nameEn: 'Unknown Facility',
+                    nameJa: 'Unknown Facility',
+                    contact: makeMinimalContact(current.googleMapsUrl ?? ''),
+                    mapLatitude: 0,
+                    mapLongitude: 0,
+                    healthcareProfessionalIds: []
+                }
+            }
+
+            const facilityRes = await createFacility(facilityInput, updatedBy)
+
+            if (facilityRes.hasErrors || !facilityRes.data) {
+                return {
+                    data: {} as gqlTypes.Submission,
+                    hasErrors: true,
+                    errors: [{ field: 'facility', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
+                }
+            }
+            finalFacilityId = facilityRes.data.id
+            createdFacilityId = finalFacilityId
+        }
+
+        // 2) HP (solo se riusciamo a montare un input valido)
+        if (!current.hps_id && finalFacilityId) {
+            let hpInput: gqlTypes.CreateHealthcareProfessionalInput | null = null
+
+            if (current.healthcare_professionals_partial && current.healthcare_professionals_partial.length > 0) {
+                const firstHp = current.healthcare_professionals_partial[0]
+                const hasNames = Array.isArray(firstHp.names) && firstHp.names.length > 0
+
+                if (hasNames) {
+                    hpInput = {
+                        names: firstHp.names!,
+                        spokenLanguages: dedupeLocales(
+                            (firstHp.spokenLanguages ?? []) as (gqlTypes.Locale | null | undefined)[]
+                        ),
+                        degrees: firstHp.degrees ?? [],
+                        specialties: firstHp.specialties ?? [],
+                        acceptedInsurance: firstHp.acceptedInsurance ?? [],
+                        additionalInfoForPatients: firstHp.additionalInfoForPatients ?? '',
+                        facilityIds: [finalFacilityId]
+                    }
+                } else if (current.healthcareProfessionalName?.trim()) {
+                    const parsed = splitPersonName(current.healthcareProfessionalName.trim())
+                    const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale)
+                        ?? gqlTypes.Locale.EnUs
+
+                    hpInput = {
+                        names: [{
+                            locale: localeFromSubmission,
+                            firstName: parsed.firstName,
+                            lastName: parsed.lastName,
+                            ...(parsed.middleName ? { middleName: parsed.middleName } : {})
+                        }],
+                        degrees: [],
+                        specialties: [],
+                        spokenLanguages: dedupeLocales(
+                            current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
+                        ),
+                        acceptedInsurance: [],
+                        additionalInfoForPatients: current.notes ?? null,
+                        facilityIds: [finalFacilityId]
+                    }
+                }
+            } else if (current.healthcareProfessionalName?.trim()) {
+                const parsed = splitPersonName(current.healthcareProfessionalName.trim())
+                const localeFromSubmission =
+                    (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
+
+                hpInput = {
+                    names: [{
+                        locale: localeFromSubmission,
+                        firstName: parsed.firstName,
+                        lastName: parsed.lastName,
+                        ...(parsed.middleName ? { middleName: parsed.middleName } : {})
+                    }],
+                    degrees: [],
+                    specialties: [],
+                    spokenLanguages: dedupeLocales(
+                        current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
+                    ),
+                    acceptedInsurance: [],
+                    additionalInfoForPatients: current.notes ?? null,
+                    facilityIds: [finalFacilityId]
+                }
+            }
+
+            // 👇 QUI la guardia decisiva
+            if (isValidHpInput(hpInput)) {
+                const hpRes = await createHealthcareProfessional(hpInput!, updatedBy)
+
+                if (hpRes.hasErrors || !hpRes.data) {
+                    // invece di far fallire tutto, approviamo lo stesso
+                    logger.warn(`approveSubmission: could not create HP for submission ${submissionId}, continuing anyway`)
+                } else {
+                    createdHpId = hpRes.data.id
+                }
+            } else {
+                // niente dati buoni → non provo nemmeno
+                logger.info(`approveSubmission: skipping HP creation for submission ${submissionId} due to insufficient data`)
+            }
+        }
+
+        // 3) update submission
+        const patch: Partial<dbSchema.SubmissionRow> = {
+            status: 'approved',
+            //eslint-disable-next-line
+            facilities_id: createdFacilityId ?? current.facilities_id ?? finalFacilityId,
+            //eslint-disable-next-line
+            hps_id: createdHpId ?? current.hps_id ?? null,
+            updatedDate: new Date().toISOString()
+        }
+
+        const { error: updatedErr } = await supabase
+            .from('submissions')
+            .update(patch)
+            .eq('id', submissionId)
+
+        if (updatedErr) {
+            throw updatedErr
+        }
+
+        const refreshed = await getSubmissionById(submissionId)
+
+        if (refreshed.hasErrors || !refreshed.data) {
+            throw new Error('Could not reload approved submission.')
+        }
+
+        await createAuditLogSQL({
+            actionType: 'UPDATE',
+            objectType: 'Submission',
+            updatedBy,
+            oldValue,
+            newValue: refreshed.data
+        })
+
+        return { data: refreshed.data, hasErrors: false }
+    } catch (error) {
+        logger.error(`Error approving submission ${submissionId}: ${error}`)
         return {
-          data: {} as gqlTypes.Submission,
-          hasErrors: true,
-          errors: [{ field: 'facility', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
+            data: {} as gqlTypes.Submission,
+            hasErrors: true,
+            errors: [{ field: 'status', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
         }
-      }
-      finalFacilityId = facilityRes.data.id
-      createdFacilityId = finalFacilityId
     }
-
-    // 2) HP (solo se riusciamo a montare un input valido)
-    if (!current.hps_id && finalFacilityId) {
-      let hpInput: gqlTypes.CreateHealthcareProfessionalInput | null = null
-
-      // caso: c'è il partial
-      if (current.healthcare_professionals_partial && current.healthcare_professionals_partial.length > 0) {
-        const firstHp = current.healthcare_professionals_partial[0]
-        const hasNames = Array.isArray(firstHp.names) && firstHp.names.length > 0
-
-        if (hasNames) {
-          hpInput = {
-            names: firstHp.names!,
-            spokenLanguages: dedupeLocales(
-              (firstHp.spokenLanguages ?? []) as (gqlTypes.Locale | null | undefined)[]
-            ),
-            degrees: firstHp.degrees ?? [],
-            specialties: firstHp.specialties ?? [],
-            acceptedInsurance: firstHp.acceptedInsurance ?? [],
-            additionalInfoForPatients: firstHp.additionalInfoForPatients ?? '',
-            facilityIds: [finalFacilityId]
-          }
-        } else if (current.healthcareProfessionalName?.trim()) {
-          const parsed = splitPersonName(current.healthcareProfessionalName.trim())
-          const localeFromSubmission =
-            (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
-
-          hpInput = {
-            names: [{
-              locale: localeFromSubmission,
-              firstName: parsed.firstName,
-              lastName: parsed.lastName,
-              ...(parsed.middleName ? { middleName: parsed.middleName } : {})
-            }],
-            degrees: [],
-            specialties: [],
-            spokenLanguages: dedupeLocales(
-              current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
-            ),
-            acceptedInsurance: [],
-            additionalInfoForPatients: current.notes ?? null,
-            facilityIds: [finalFacilityId]
-          }
-        }
-      }
-      // caso: niente partial ma c’è la stringa nome
-      else if (current.healthcareProfessionalName?.trim()) {
-        const parsed = splitPersonName(current.healthcareProfessionalName.trim())
-        const localeFromSubmission =
-          (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
-
-        hpInput = {
-          names: [{
-            locale: localeFromSubmission,
-            firstName: parsed.firstName,
-            lastName: parsed.lastName,
-            ...(parsed.middleName ? { middleName: parsed.middleName } : {})
-          }],
-          degrees: [],
-          specialties: [],
-          spokenLanguages: dedupeLocales(
-            current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
-          ),
-          acceptedInsurance: [],
-          additionalInfoForPatients: current.notes ?? null,
-          facilityIds: [finalFacilityId]
-        }
-      }
-
-      // 👇 QUI la guardia decisiva
-      if (isValidHpInput(hpInput)) {
-        const hpRes = await createHealthcareProfessional(hpInput!, updatedBy)
-        if (hpRes.hasErrors || !hpRes.data) {
-          // invece di far fallire tutto, approviamo lo stesso
-          logger.warn(`approveSubmission: could not create HP for submission ${submissionId}, continuing anyway`)
-        } else {
-          createdHpId = hpRes.data.id
-        }
-      } else {
-        // niente dati buoni → non provo nemmeno
-        logger.info(`approveSubmission: skipping HP creation for submission ${submissionId} due to insufficient data`)
-      }
-    }
-
-    // 3) update submission
-    const patch: Partial<dbSchema.SubmissionRow> = {
-      status: 'approved',
-      facilities_id: createdFacilityId ?? current.facilities_id ?? finalFacilityId,
-      hps_id: createdHpId ?? current.hps_id ?? null,
-      updatedDate: new Date().toISOString()
-    }
-
-    const { error: updatedErr } = await supabase
-      .from('submissions')
-      .update(patch)
-      .eq('id', submissionId)
-
-    if (updatedErr) {
-      throw updatedErr
-    }
-
-    const refreshed = await getSubmissionById(submissionId)
-    if (refreshed.hasErrors || !refreshed.data) {
-      throw new Error('Could not reload approved submission.')
-    }
-
-    await createAuditLogSQL({
-      actionType: 'UPDATE',
-      objectType: 'Submission',
-      updatedBy,
-      oldValue,
-      newValue: refreshed.data
-    })
-
-    return { data: refreshed.data, hasErrors: false }
-  } catch (error) {
-    logger.error(`Error approving submission ${submissionId}: ${error}`)
-    return {
-      data: {} as gqlTypes.Submission,
-      hasErrors: true,
-      errors: [{ field: 'status', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
-    }
-  }
 }
-
-
 
 /**
  * This deletes a Submission from the database. If the submission doesn't exist, it will return a validation error.

@@ -66,7 +66,7 @@ const isTestEnv =
 export let supabaseClient: SupabaseClient | null = null
 
 const testSupabaseIsInitialized = async () => {
-    if (!supabaseClient) return
+    if (!supabaseClient) { return }
 
     try {
         const { error } = await supabaseClient.from('user').select('id').limit(1)
@@ -76,6 +76,7 @@ const testSupabaseIsInitialized = async () => {
         }
     } catch (ex) {
         const msg = typeof ex === 'object' ? JSON.stringify(ex) : String(ex)
+
         logger.error(`❌ Supabase is not connecting... ❌ ${msg}`)
 
         if (isTestEnv) {
@@ -95,9 +96,9 @@ export const initializeSupabaseClient = async () => {
     }
 
     if (initializingPromise) {
-        return initializingPromise
+        await initializingPromise
+        return
     }
-
     initializingPromise = (async () => {
         if (!url || !serviceKey) {
             logger.error('❌ Missing supabase env variables, abandoning supabase client initialization ❌')
@@ -114,7 +115,7 @@ export const initializeSupabaseClient = async () => {
         logger.info('✅ Supabase client is initialized! ✅ \n')
     })()
 
-    return initializingPromise
+    await initializingPromise
 }
 
 export function getSupabaseClient(): SupabaseClient {

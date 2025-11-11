@@ -157,6 +157,7 @@ export async function getHealthcareProfessionalById(
     try {
         // 1. Validate the incoming id
         const validationResult = validateIdInput(id)
+
         if (validationResult.hasErrors) {
             logger.warn(`Validation Error: User passed invalid HP id: ${id}`)
 
@@ -256,39 +257,41 @@ export async function getHealthcareProfessionalById(
 export async function searchProfessionals(
   filters: gqlTypes.HealthcareProfessionalSearchFilters = {}
 ): Promise<Result<gqlTypes.HealthcareProfessional[]>> {
-  try {
+    try {
     // 1. Validate incoming filters
-    const validation = validateProfessionalsSearchInput(filters)
-    if (validation.hasErrors) {
-      return { data: [], hasErrors: true, errors: validation.errors }
-    }
+        const validation = validateProfessionalsSearchInput(filters)
 
-    if (Array.isArray(filters.ids) && filters.ids.length === 0) {
-      return { data: [], hasErrors: false }
-    }
+        if (validation.hasErrors) {
+            return { data: [], hasErrors: true, errors: validation.errors }
+        }
 
-    // 👇 2) se c'è un ids NON uuid (e i test lo fanno), NON andare su supabase
-    if (Array.isArray(filters.ids) && filters.ids.length > 0) {
-      const looksInvalid = filters.ids.some(id => !/^[0-9a-fA-F-]{36}$/.test(id))
-      if (looksInvalid) {
-        // in Firestore questo avrebbe semplicemente dato "nessun risultato"
-        return { data: [], hasErrors: false }
-      }
-    }
+        if (Array.isArray(filters.ids) && filters.ids.length === 0) {
+            return { data: [], hasErrors: false }
+        }
 
-    const limit = filters.limit ?? 20
-    const offset = filters.offset ?? 0
+        // 👇 2) se c'è un ids NON uuid (e i test lo fanno), NON andare su supabase
+        if (Array.isArray(filters.ids) && filters.ids.length > 0) {
+            const looksInvalid = filters.ids.some(id => !/^[0-9a-fA-F-]{36}$/.test(id))
 
-    const supabase = getSupabaseClient()
+            if (looksInvalid) {
+                // in Firestore questo avrebbe semplicemente dato "nessun risultato"
+                return { data: [], hasErrors: false }
+            }
+        }
 
-    /**
+        const limit = filters.limit ?? 20
+        const offset = filters.offset ?? 0
+
+        const supabase = getSupabaseClient()
+
+        /**
      * 2. Start building the base query.
      * We keep your JSONB/custom filters applied through applyHpFilters
      * so we don't break other tests.
      */
-    let hpQuery = applyHpFilters(supabase.from('hps').select('*'), filters)
+        let hpQuery = applyHpFilters(supabase.from('hps').select('*'), filters)
 
-    /**
+        /**
      * 3. NEW: explicit filter by IDs
      *
      * The tests create 2 HPs, pass exactly those 2 IDs in the filters,
@@ -298,112 +301,117 @@ export async function searchProfessionals(
      *  - and it's a non-empty array → we MUST restrict the query to those IDs
      *  - and it's an empty array → the test expects an empty result, not 20 rows
      */
-    if (Array.isArray(filters.ids)) {
-      if (filters.ids.length === 0) {
-        // user explicitly asked for "no ids" → return empty list right away
-        return { data: [], hasErrors: false }
-      }
+        if (Array.isArray(filters.ids)) {
+            if (filters.ids.length === 0) {
+                // user explicitly asked for "no ids" → return empty list right away
+                return { data: [], hasErrors: false }
+            }
 
-      // only return the professionals whose id is in filters.ids
-      hpQuery = hpQuery.in('id', filters.ids)
-    }
+            // only return the professionals whose id is in filters.ids
+            hpQuery = hpQuery.in('id', filters.ids)
+        }
 
-    /**
+        /**
      * 4. Ordering
      *
      * Keep your current logic: if the client asked for a specific order,
      * use it; otherwise, fallback to createdDate DESC.
      */
-    const orderBy = filters.orderBy?.[0]
-    if (orderBy?.fieldToOrder) {
-      hpQuery = hpQuery.order(orderBy.fieldToOrder, {
-        ascending: orderBy.orderDirection !== 'desc'
-      })
-    } else {
-      hpQuery = hpQuery.order('createdDate', { ascending: false })
-    }
+        const orderBy = filters.orderBy?.[0]
 
-    /**
+        if (orderBy?.fieldToOrder) {
+            hpQuery = hpQuery.order(orderBy.fieldToOrder, {
+                ascending: orderBy.orderDirection !== 'desc'
+            })
+        } else {
+            hpQuery = hpQuery.order('createdDate', { ascending: false })
+        }
+
+        /**
      * 5. Pagination
      *
      * We page *after* applying ids / custom filters, so limit/offset
      * applies on the filtered result set — this is also what the tests check.
      */
-    const { data: hpRows, error: hpRowsError } = await hpQuery.range(
-      offset,
-      offset + limit - 1
-    )
+        const { data: hpRows, error: hpRowsError } = await hpQuery.range(
+            offset,
+            offset + limit - 1
+        )
 
-    if (hpRowsError) {
-      throw hpRowsError
-    }
+        if (hpRowsError) {
+            throw hpRowsError
+        }
 
-    // 6. If this page is empty, we're done.
-    if (!hpRows?.length) {
-      return { data: [], hasErrors: false }
-    }
+        // 6. If this page is empty, we're done.
+        if (!hpRows?.length) {
+            return { data: [], hasErrors: false }
+        }
 
-    /**
+        /**
      * 7. Collect HP IDs for this page to fetch related facilities in a single query
      */
-    const hpIds = hpRows.map(row => row.id as string)
+        const hpIds = hpRows.map(row => row.id as string)
 
-    if (hpIds.length === 0) {
-      // extremely defensive; should not happen, but keeps the function safe
-      const list = (hpRows as dbSchema.DbHealthcareProfessionalRow[])
-        .map(hp => mapDbHpToGql(hp, []))
-      return { data: list, hasErrors: false }
-    }
+        if (hpIds.length === 0) {
+            // extremely defensive; should not happen, but keeps the function safe
+            const list = (hpRows as dbSchema.DbHealthcareProfessionalRow[])
+                .map(hp => mapDbHpToGql(hp, []))
 
-    /**
+            return { data: list, hasErrors: false }
+        }
+
+        /**
      * 8. Load relations from the junction table only for the IDs on this page
      */
-    const {
-      data: facilityRelationsForHPs,
-      error: facilityRelationsForHPsError,
-    } = await supabase
-      .from('hps_facilities')
-      .select('hps_id, facilities_id')
-      .in('hps_id', hpIds)
+        const {
+            data: facilityRelationsForHPs,
+            error: facilityRelationsForHPsError
+        } = await supabase
+            .from('hps_facilities')
+            .select('hps_id, facilities_id')
+            .in('hps_id', hpIds)
 
-    if (facilityRelationsForHPsError) {
-      throw facilityRelationsForHPsError
-    }
+        if (facilityRelationsForHPsError) {
+            throw facilityRelationsForHPsError
+        }
 
-    /**
+        /**
      * 9. Build a lookup map: hpId → [facilityId, ...]
      */
-    const facilityIdsByHp = new Map<string, string[]>()
-    for (const rel of facilityRelationsForHPs ?? []) {
-      const hpId = rel.hps_id as string
-      const list = facilityIdsByHp.get(hpId) ?? []
-      list.push(rel.facilities_id as string)
-      facilityIdsByHp.set(hpId, list)
-    }
+        const facilityIdsByHp = new Map<string, string[]>()
 
-    /**
+        for (const rel of facilityRelationsForHPs ?? []) {
+            const hpId = rel.hps_id as string
+            const list = facilityIdsByHp.get(hpId) ?? []
+
+            list.push(rel.facilities_id as string)
+            facilityIdsByHp.set(hpId, list)
+        }
+
+        /**
      * 10. Map DB rows → GraphQL shape, injecting facilityIds we just loaded
      */
-    const result: gqlTypes.HealthcareProfessional[] =
+        const result: gqlTypes.HealthcareProfessional[] =
       (hpRows as dbSchema.DbHealthcareProfessionalRow[])
-        .map(hp => {
-          const facilityIds = facilityIdsByHp.get(hp.id) ?? []
-          return mapDbHpToGql(hp, facilityIds)
-        })
+          .map(hp => {
+              const facilityIds = facilityIdsByHp.get(hp.id) ?? []
 
-    return { data: result, hasErrors: false }
-  } catch (err) {
-    logger.error(`ERROR: searchProfessionals ${JSON.stringify(filters)} -> ${err}`)
-    return {
-      data: [],
-      hasErrors: true,
-      errors: [{
-        field: 'searchProfessionals',
-        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-        httpStatus: 500,
-      }],
+              return mapDbHpToGql(hp, facilityIds)
+          })
+
+        return { data: result, hasErrors: false }
+    } catch (err) {
+        logger.error(`ERROR: searchProfessionals ${JSON.stringify(filters)} -> ${err}`)
+        return {
+            data: [],
+            hasErrors: true,
+            errors: [{
+                field: 'searchProfessionals',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
     }
-  }
 }
 
 /**

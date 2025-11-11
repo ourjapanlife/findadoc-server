@@ -1,7 +1,6 @@
 
 import request from 'supertest'
 import { expect, beforeAll, afterAll } from 'vitest'
-import fs from 'fs'
 import { gqlMutation } from '../utils/gqlTool.js'
 import { CreateFacilityInput, Facility } from '../src/typeDefs/gqlTypes.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
@@ -9,7 +8,6 @@ import { createFacilityMutation } from './facilities.test.js'
 import { createApolloFastifyServer } from '../src/server.js'
 import { initializeLogger, logger } from '../src/logger.js'
 import { initializeSupabaseClient } from '../src/supabaseClient.js'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
 // import { createTestUser, deleteTestUser } from './auth.test.js'
 
 // These ids can be used in any of the tests so they don't have to recreate the same data. 
