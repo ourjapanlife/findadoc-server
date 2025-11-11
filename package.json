@@ -7,7 +7,7 @@
         "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && supabase start && supabase db reset && yarn generate:seed && yarn dev:seeddb && concurrently --raw \"yarn dev:startlocaldb\" \"yarn dev:startserver\"",
         "dev:startserver": "echo '💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon --exec 'node --inspect --loader ts-node/esm src/index.ts'",
         "dev:startlocaldb": "supabase start -f",
-        "test": "echo '🧶 Installing yarn dependencies...🧶' && yarn && vitest",
+        "test": "vitest",
         "test:dockerstart": "docker compose -f docker/docker-compose-test.yml up -d --build",
         "test:dockerstop": "docker compose -f docker/docker-compose-test.yml down",
         "prepare": "husky install",

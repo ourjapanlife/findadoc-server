@@ -2,6 +2,10 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
 
+// Used for v4 uuid
+const UUID_REGEX =
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
 /**
  * Validates the ID input for database queries, checking for length and special characters.
  */
@@ -12,6 +16,10 @@ export function validateIdInput(id: string): Result<unknown> {
         errors: []
     }
 
+    if (UUID_REGEX.test(id)) {
+        return validationResults
+    }
+    
     if (id && (hasSpecialCharacters(id) || id.length > 4096)) {
         validationResults.hasErrors = true
         validationResults.errors?.push({

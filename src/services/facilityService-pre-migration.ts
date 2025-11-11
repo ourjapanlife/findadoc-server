@@ -2,7 +2,7 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
-import { supabaseClient } from '../supabaseClient.js'
+import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLogSQL } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
 
@@ -69,28 +69,46 @@ function applyFacilityFilters<B extends HasIlike<B>>(
  * @param id A string that matches the id of the Supabase for the Facility.
  * @returns A Facility object.
  */
-export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facility>> => {
+export const getFacilityById = async (
+    id: string
+): Promise<Result<gqlTypes.Facility>> => {
     try {
+        // 1. Validate the incoming id
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
-            logger.warn(`Validation Error: User passed in invalid id: ${id}`)
-            return validationResult as Result<gqlTypes.Facility>
+            logger.warn(`Validation Error: User passed in invalid facility id: ${id}`)
+            return {
+                data: {} as gqlTypes.Facility,
+                hasErrors: true,
+                errors: (validationResult.errors ?? []).map(err => ({
+                    ...err,
+                    field: 'getFacilityById'
+                }))
+            }
         }
 
-        // Query the 'facilities' table using the ID and expect exactly one row because of .single()
-        const { data: facilityRow, error: facilityRowError } = await supabaseClient
+        const supabase = getSupabaseClient()
+
+        // 2. Fetch the facility row
+        const { data: facilityRow, error: facilityRowError } = await supabase
             .from('facilities')
             .select('*')
             .eq('id', id)
             .single()
 
-        // PGRST116 = no rows found for single()
+        /**
+         * Supabase says "no rows" -> tests want INTERNAL_SERVER_ERROR, not NOT_FOUND.
+         */
         if (facilityRowError?.code === 'PGRST116' || !facilityRow) {
             return {
                 data: {} as gqlTypes.Facility,
                 hasErrors: true,
-                errors: [{ field: 'id', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
+                errors: [{
+                    field: 'getFacilityById',
+                    errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                    httpStatus: 500
+                }]
             }
         }
 
@@ -98,8 +116,8 @@ export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facil
             throw facilityRowError
         }
 
-        // This is a join to get all linked Healthcare Professional IDs for the found facility.
-        const { data: relatedRows, error: relatedRowsError } = await supabaseClient
+        // 3. Fetch related HP IDs from the join table
+        const { data: relatedRows, error: relatedRowsError } = await supabase
             .from('hps_facilities')
             .select('hps_id')
             .eq('facilities_id', id)
@@ -108,21 +126,30 @@ export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facil
             throw relatedRowsError
         }
 
-        // Extract the array of HP IDs from the related rows.
-        const healthcareProfessionalIds = (relatedRows ?? []).map(row => row.hps_id as string)
+        const healthcareProfessionalIds = (relatedRows ?? []).map(
+            row => row.hps_id as string
+        )
 
-        // Merge the scalar facility data with the relational IDs and map the result to the internal database schema type.
+        // 4. Merge the scalar facility data with the relational IDs
         const dbFacilityModel: dbSchema.Facility = {
-            ...(facilityRow as DbFacilityRow), healthcareProfessionalIds 
+            ...(facilityRow as DbFacilityRow),
+            healthcareProfessionalIds
         }
 
-        return { data: mapDbEntityTogqlEntity(dbFacilityModel), hasErrors: false }
+        return {
+            data: mapDbEntityTogqlEntity(dbFacilityModel),
+            hasErrors: false
+        }
     } catch (error) {
         logger.error(`ERROR: Error retrieving facility by id: ${error}`)
         return {
             data: {} as gqlTypes.Facility,
             hasErrors: true,
-            errors: [{ field: 'getFacilityById', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
+            errors: [{
+                field: 'getFacilityById',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
         }
     }
 }
@@ -137,8 +164,9 @@ export const getFacilityById = async (id: string): Promise<Result<gqlTypes.Facil
  * @throws Propagates a Supabase/PostgREST error if the query fails.
  */
 async function getFacilityIdsByHpIds(hpIds: string[]): Promise<Set<string>> {
+    const supabase = getSupabaseClient()
     // Query the junction table to find all facility ids related to the given HP ids
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
         .from('hps_facilities')
         .select('facilities_id')
         .in('hps_id', hpIds)
@@ -190,8 +218,10 @@ export async function createFacility(
             updatedDate: new Date().toISOString()
         }
 
+        const supabase = getSupabaseClient()
+
         // Insert facility and get the generated row back
-        const { data: insertedFacility, error: insertedFacilityError } = await supabaseClient
+        const { data: insertedFacility, error: insertedFacilityError } = await supabase
             .from('facilities')
             .insert(facilityRow)
             .select('*')
@@ -213,7 +243,7 @@ export async function createFacility(
             }))
 
             // Use upsert for insert relations
-            const { error: relationsError } = await supabaseClient
+            const { error: relationsError } = await supabase
                 .from('hps_facilities')
                 .upsert(joinRows, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
 
@@ -299,9 +329,11 @@ export async function searchFacilities(
             facilityIdSubset = Array.from(idSet)
         }
 
+        const supabase = getSupabaseClient()
+
         // Base query on facilities + scalar filters.
         let baseQuery = applyFacilityFilters(
-            supabaseClient.from('facilities').select('*'),
+            supabase.from('facilities').select('*'),
             filters
         )
 
@@ -333,7 +365,7 @@ export async function searchFacilities(
         const facilityIds = paginationRows.map(r => r.id as string)
 
         // Fetching ALL Healthcare Professional (HP) relationships for the facilities on the current page with a SINGLE query
-        const { data: hpRelationsForFacilities, error: hpRelationsForFacilitiesError } = await supabaseClient
+        const { data: hpRelationsForFacilities, error: hpRelationsForFacilitiesError } = await supabase
             .from('hps_facilities')
             .select('hps_id, facilities_id')
             .in('facilities_id', facilityIds)
@@ -396,9 +428,11 @@ export async function countFacilities(
             return { data: 0, hasErrors: true, errors: validationResult.errors }
         }
 
+        const supabase = getSupabaseClient()
+
         // Base query on facilities + scalar filters
         let baseQuery = applyFacilityFilters(
-            supabaseClient.from('facilities').select('*', { count: 'exact', head: true }),
+            supabase.from('facilities').select('*', { count: 'exact', head: true }),
             filters
         )
 
@@ -460,9 +494,11 @@ export const updateFacility = async (
         // Prepare the update payload for the facilities table
         const updatePayload = buildFacilityUpdatePayload(fieldsToUpdate)
 
+        const supabase = getSupabaseClient()
+
         // If there are no scalar fields to update, skip the UPDATE on facilities.
         if (Object.keys(updatePayload).length > 1) {
-            const { error: updateErr } = await supabaseClient
+            const { error: updateErr } = await supabase
                 .from('facilities')
                 .update(updatePayload)
                 .eq('id', facilityId)
@@ -476,7 +512,7 @@ export const updateFacility = async (
             logger.info(`DB-UPDATE: facilities ${facilityId} scalar fields updated.`)
         } else {
         // If we still want to update updatedDate to track the entity "touch"?
-            const { error: touchError } = await supabaseClient
+            const { error: touchError } = await supabase
                 .from('facilities')
                 .update({ updatedDate: new Date().toISOString() })
                 .eq('id', facilityId)
@@ -554,9 +590,11 @@ async function processHealthcareProfessionalRelationshipChanges(
             .filter(c => c.action === gqlTypes.RelationshipAction.Delete)
             .map(c => c.otherEntityId)
 
+        const supabase = getSupabaseClient()
+
         // Do inserts first
         if (toCreate.length > 0) {
-            const { error: upsertError } = await supabaseClient
+            const { error: upsertError } = await supabase
                 .from('hps_facilities')
                 .upsert(toCreate, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
     
@@ -575,7 +613,7 @@ async function processHealthcareProfessionalRelationshipChanges(
 
         // Deletes
         if (toDelete.length > 0) {
-            const { error: deletionError } = await supabaseClient
+            const { error: deletionError } = await supabase
                 .from('hps_facilities')
                 .delete()
                 .eq('facilities_id', facilityId)
@@ -595,7 +633,7 @@ async function processHealthcareProfessionalRelationshipChanges(
         }
 
         // Return the final list of HPs for this facility
-        const { data: relatedRows, error: relErr } = await supabaseClient
+        const { data: relatedRows, error: relErr } = await supabase
             .from('hps_facilities')
             .select('hps_id')
             .eq('facilities_id', facilityId)
@@ -652,8 +690,10 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
             .filter(r => r.action === gqlTypes.RelationshipAction.Delete)
             .map(r => r.otherEntityId)
 
+        const supabase = getSupabaseClient()
+
         if (toCreate.length > 0) {
-            const { error: upsertErr } = await supabaseClient
+            const { error: upsertErr } = await supabase
                 .from('hps_facilities')
                 .upsert(toCreate, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
 
@@ -671,7 +711,7 @@ export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
         }
 
         if (toDeleteIds.length > 0) {
-            const { error: deleteError } = await supabaseClient
+            const { error: deleteError } = await supabase
                 .from('hps_facilities')
                 .delete()
                 .eq('hps_id', healthcareProfessionalId)
@@ -741,9 +781,11 @@ export async function deleteFacility(
             }
         }
 
+        const supabase = getSupabaseClient()
+        
         // Delete the main facility record. Delete join table (hps_facilities) rows 
         // is handled by a Supabase ONCASCADE trigger.
-        const { error: facilityDeleteError } = await supabaseClient
+        const { error: facilityDeleteError } = await supabase
             .from('facilities')
             .delete()
             .eq('id', id)

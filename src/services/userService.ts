@@ -2,7 +2,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
-import { supabaseClient } from '../supabaseClient.js'
+import { getSupabaseClient } from '../supabaseClient.js'
 
 /**
  * Gets a user from the database that matches on the id.
@@ -12,7 +12,8 @@ import { supabaseClient } from '../supabaseClient.js'
 export async function getUserById(id: string)
     : Promise<Result<gqlTypes.User>> {
     try {
-        const { data } = await supabaseClient
+        const supabase = getSupabaseClient()
+        const { data } = await supabase
             .from('user')
             .select('*')
             .eq('id', id) 
@@ -71,7 +72,9 @@ export async function createUser(
             profilePicUrl: input.profilePicUrl
         }
 
-        const { data } = await supabaseClient
+        const supabase = getSupabaseClient()
+
+        const { data } = await supabase
             .from('user')
             .insert([{created_date: userToCreate.createdDate,
                 updated_date: userToCreate.updatedDate,
@@ -135,7 +138,9 @@ export async function updateUser(
             id: '' // dont update this
         }
 
-        const { data } = await supabaseClient
+        const supabase = getSupabaseClient()
+        
+        const { data } = await supabase
             .from('user')
             .update({
                 updated_date: userToUpdate.updatedDate,

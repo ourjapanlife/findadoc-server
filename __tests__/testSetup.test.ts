@@ -6,10 +6,10 @@ import { gqlMutation } from '../utils/gqlTool.js'
 import { CreateFacilityInput, Facility } from '../src/typeDefs/gqlTypes.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
 import { createFacilityMutation } from './facilities.test.js'
-import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import { createApolloFastifyServer } from '../src/server.js'
 import { initializeLogger, logger } from '../src/logger.js'
 import { initializeSupabaseClient } from '../src/supabaseClient.js'
+import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
 // import { createTestUser, deleteTestUser } from './auth.test.js'
 
 // These ids can be used in any of the tests so they don't have to recreate the same data. 
@@ -32,14 +32,6 @@ beforeAll(async () => {
     await initializeSupabaseClient()
     serverUrl = await createApolloFastifyServer(testPort)
     gqlApiUrl = `${serverUrl}/`
-
-    //this sets up the firebase test environment
-    await initializeTestEnvironment({
-        projectId: process.env.FIRESTORE_PROJECT_ID,
-        firestore: {
-            rules: fs.readFileSync('./firestore.rules', 'utf8')
-        }
-    })
 
     //let's create a logged in user for the tests
     // const { testUserId } = await createTestUser()
