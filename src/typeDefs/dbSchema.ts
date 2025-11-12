@@ -11,6 +11,9 @@ export type Facility = Omit<gqlType.Facility, 'contact'> & {
     contact: Contact
 }
 
+// Row shape as returned from Supabase "facilities" table (no healthcareProfessionalIds yet).
+export type DbFacilityRow = Omit<gqlType.Facility, 'healthcareProfessionalIds'>
+
 export type HealthcareProfessional =
     Omit<gqlType.HealthcareProfessional,
         'names' | 'specialties' | 'degrees' | 'acceptedInsurance'>

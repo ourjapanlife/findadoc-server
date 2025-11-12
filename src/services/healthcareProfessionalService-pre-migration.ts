@@ -6,143 +6,50 @@ import { validateIdInput } from '../validation/validateFacility.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLogSQL } from './auditLogServiceSupabase.js'
-
-// Build only provided scalar fields for UPDATE
-function buildHpUpdatePayload(fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>) {
-    const payload: Partial<dbSchema.DbHealthcareProfessionalRow> = {}
-
-    if (fields.names !== null) { payload.names = fields.names }
-    if (fields.degrees !== null) { payload.degrees = fields.degrees }
-    if (fields.spokenLanguages !== null) { payload.spokenLanguages = fields.spokenLanguages }
-    if (fields.specialties !== null) { payload.specialties = fields.specialties }
-    if (fields.acceptedInsurance !== null) { payload.acceptedInsurance = fields.acceptedInsurance }
-    if (fields.additionalInfoForPatients !== undefined) {
-        payload.additionalInfoForPatients = fields.additionalInfoForPatients
-    }
-    payload.updatedDate = new Date().toISOString()
-    return payload
-}
+import { applyHpFilters, mapCreateInputToHpInsertRow, resolveFacilityIdFromRelationships, buildHpUpdatePatch} from './helperFunctionsServices.js'
 
 // Sets the single facility for an HP
-async function setHpFacility(hpId: string, facilityId: string | null): Promise<void> {
+async function setSingleFacilityForHp(hpId: string, facilityId: string | null): Promise<void> {
     if (!facilityId) {
         throw new Error('HealthcareProfessional must be linked to at least one Facility')
     }
+
     const supabase = getSupabaseClient()
-    // remove all current links for the HP
-    const { error: delErr } = await supabase
+
+    // First remove all existing links for this HP from the junction table
+    const { error: deleteError } = await supabase
         .from('hps_facilities')
         .delete()
         .eq('hps_id', hpId)
 
-    if (delErr) { throw delErr }
+    if (deleteError) { throw deleteError }
 
+    // If we have a facilityId, insert the new link
     if (facilityId) {
-        const { error: upsertErr } = await supabase
+        const { error: upsertError } = await supabase
             .from('hps_facilities')
+            // Upsert ensures idempotency; ignoreDuplicates avoids conflicts on existing unique pairs
             //eslint-disable-next-line
             .upsert([{ hps_id: hpId, facilities_id: facilityId }],
                     { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
-
-        if (upsertErr) { throw upsertErr }
+        // If insertion/upsert fails, propagate the error
+        if (upsertError) { throw upsertError }
     }
 }
 
-type Containsable<B> = {
-    contains: (
-        column: string,
-        //eslint-disable-next-line
-        value: string | readonly any[] | Record<string, unknown>
-    ) => B
-}
-
-function applyHpFilters<B extends Containsable<B>>(
-  hpSelect: B,
-  filters: gqlTypes.HealthcareProfessionalSearchFilters
-): B {
-    let query = hpSelect
-
-    if (filters.degrees?.length) {
-        query = query.contains('degrees', filters.degrees as gqlTypes.Degree[])
-    }
-    if (filters.specialties?.length) {
-        query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[])
-    }
-    if (filters.spokenLanguages?.length) {
-        query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[])
-    }
-    if (filters.acceptedInsurance?.length) {
-        query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[])
-    }
-
-    return query
-}
-
-function toHpInsertPayload(
-  input: gqlTypes.CreateHealthcareProfessionalInput
-): dbSchema.HealthcareProfessionalInsertRow {
-    return {
-        names: input.names,
-        degrees: input.degrees!,
-        spokenLanguages: input.spokenLanguages!,
-        specialties: input.specialties!,
-        acceptedInsurance: input.acceptedInsurance!,
-        additionalInfoForPatients: input.additionalInfoForPatients ?? null,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    }
-}
-
-function resolveFacilityIdFromRelationships(
-  relationss: gqlTypes.Relationship[] | null | undefined
-): { newFacilityId: string | null; error?: { field: string; httpStatus: number } } {
-    if (!relationss || relationss.length === 0) {
-        return {
-            newFacilityId: null
-        }
-    }
-
-    const creates = relationss.filter(relation => relation.action === gqlTypes.RelationshipAction.Create)
-    const deletes = relationss.filter(relation => relation.action === gqlTypes.RelationshipAction.Delete)
-
-    if (creates.length > 1) { 
-        return {
-            newFacilityId: null,
-            error: {
-                field: 'facilityIds',
-                httpStatus: 400
-            } 
-        }
-    }
-    if (creates.length === 0 && deletes.length > 0) {
-        return { newFacilityId: null, error: { field: 'facilityIds', httpStatus: 400 } }
-    }
-    if (creates.length === 1) { 
-        return {
-            newFacilityId: creates[0].otherEntityId
-        }
-    }
-    if (deletes.length > 0) {
-        return {
-            newFacilityId: null
-        }
-    }
-    return {
-        newFacilityId: null
-    }
-}
-
-async function getHpFacilityCount(hpId: string): Promise<number> {
+// Returns how many facilities are currently linked to a given HP
+async function countFacilitiesForHp(hpId: string): Promise<number> {
     const supabase = getSupabaseClient()
+     // Count the number of rows in the junction table for this HP
     const { count: facilityCount, error: facilityCountError } = await supabase
         .from('hps_facilities')
         .select('hps_id', { count: 'exact', head: true })
         .eq('hps_id', hpId)
-        
+  
     if (facilityCountError) {
         throw facilityCountError
     }
-
+    // Normalize to 0 when count is null/undefined
     return facilityCount ?? 0
 }
 
@@ -155,7 +62,7 @@ export async function getHealthcareProfessionalById(
     id: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
-        // 1. Validate the incoming id
+        // Validate the incoming id
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
@@ -166,7 +73,6 @@ export async function getHealthcareProfessionalById(
                 hasErrors: true,
                 errors: (validationResult.errors ?? []).map(err => ({
                     ...err,
-                    // tests want this exact field name
                     field: 'getHealthcareProfessionalById'
                 }))
             }
@@ -174,18 +80,14 @@ export async function getHealthcareProfessionalById(
 
         const supabase = getSupabaseClient()
 
-        // 2. Fetch the HP row
+        // Fetch the HP row by primary key; .single() requires exactly one row
         const { data: hpRow, error: hpRowError } = await supabase
             .from('hps')
             .select('*')
             .eq('id', id)
             .single()
 
-        /**
-         * Supabase returns PGRST116 when .single() finds no rows.
-         * The tests, however, expect an INTERNAL_SERVER_ERROR here,
-         * not a NOT_FOUND.
-         */
+        // Supabase returns PGRST116 when .single() finds no rows.
         if (hpRowError?.code === 'PGRST116' || !hpRow) {
             return {
                 data: {} as gqlTypes.HealthcareProfessional,
@@ -198,25 +100,24 @@ export async function getHealthcareProfessionalById(
             }
         }
 
-        // Any other DB error should bubble up as 500 too
         if (hpRowError) {
             throw hpRowError
         }
 
-        // 3. Fetch related facilities from the junction table
-        const { data: relatedRows, error: relatedRowsError } = await supabase
+        // Load relations from junction table (facility links for this HP)
+        const { data: facilityLinkRows, error: facilityLinkRowsError } = await supabase
             .from('hps_facilities')
             .select('facilities_id')
             .eq('hps_id', id)
 
-        if (relatedRowsError) {
-            throw relatedRowsError
+        if (facilityLinkRowsError) {
+            throw facilityLinkRowsError
         }
 
-        // 4. Normalize facility IDs to a string array
-        const facilityIds = (relatedRows ?? []).map(row => row.facilities_id as string)
+        // Normalize facility IDs to a string array
+        const facilityIds = (facilityLinkRows ?? []).map(row => row.facilities_id as string)
 
-        // 5. Map DB shape -> GraphQL shape
+        // Cast DB row to internal schema and map to GraphQL shape including relations
         const dbHp = hpRow as dbSchema.DbHealthcareProfessionalRow
         const gqlHp = mapDbHpToGql(dbHp, facilityIds)
 
@@ -248,17 +149,11 @@ export async function getHealthcareProfessionalById(
  * @param filters Optional search and pagination filters for HP.
  * @returns A Promise that resolves to a Result object containing an array of HPs.
  */
-/**
- * Searches for a paginated list of HealthcareProfessionals based on various criteria.
- * This version also handles filtering by a specific list of HP IDs (filters.ids),
- * which is what the tests "searches for healthcare professionals by ids filter"
- * and "returns empty array when no professionals match ids" expect.
- */
 export async function searchProfessionals(
   filters: gqlTypes.HealthcareProfessionalSearchFilters = {}
 ): Promise<Result<gqlTypes.HealthcareProfessional[]>> {
     try {
-    // 1. Validate incoming filters
+    // Validate incoming filters
         const validation = validateProfessionalsSearchInput(filters)
 
         if (validation.hasErrors) {
@@ -269,7 +164,6 @@ export async function searchProfessionals(
             return { data: [], hasErrors: false }
         }
 
-        // 👇 2) se c'è un ids NON uuid (e i test lo fanno), NON andare su supabase
         if (Array.isArray(filters.ids) && filters.ids.length > 0) {
             const looksInvalid = filters.ids.some(id => !/^[0-9a-fA-F-]{36}$/.test(id))
 
@@ -284,23 +178,9 @@ export async function searchProfessionals(
 
         const supabase = getSupabaseClient()
 
-        /**
-     * 2. Start building the base query.
-     * We keep your JSONB/custom filters applied through applyHpFilters
-     * so we don't break other tests.
-     */
-        let hpQuery = applyHpFilters(supabase.from('hps').select('*'), filters)
+        // Start base query on hps table and apply JSONB filters via helper
+        let hpSelect = applyHpFilters(supabase.from('hps').select('*'), filters)
 
-        /**
-     * 3. NEW: explicit filter by IDs
-     *
-     * The tests create 2 HPs, pass exactly those 2 IDs in the filters,
-     * and expect the result length to be 2.
-     *
-     * If filters.ids is present:
-     *  - and it's a non-empty array → we MUST restrict the query to those IDs
-     *  - and it's an empty array → the test expects an empty result, not 20 rows
-     */
         if (Array.isArray(filters.ids)) {
             if (filters.ids.length === 0) {
                 // user explicitly asked for "no ids" → return empty list right away
@@ -308,32 +188,25 @@ export async function searchProfessionals(
             }
 
             // only return the professionals whose id is in filters.ids
-            hpQuery = hpQuery.in('id', filters.ids)
+            hpSelect = hpSelect.in('id', filters.ids)
         }
 
-        /**
-     * 4. Ordering
-     *
-     * Keep your current logic: if the client asked for a specific order,
-     * use it; otherwise, fallback to createdDate DESC.
-     */
+        // Fallback to createdDate DESC.
         const orderBy = filters.orderBy?.[0]
 
         if (orderBy?.fieldToOrder) {
-            hpQuery = hpQuery.order(orderBy.fieldToOrder, {
+            hpSelect = hpSelect.order(orderBy.fieldToOrder, {
                 ascending: orderBy.orderDirection !== 'desc'
             })
         } else {
-            hpQuery = hpQuery.order('createdDate', { ascending: false })
+            hpSelect = hpSelect.order('createdDate', { ascending: false })
         }
 
         /**
-     * 5. Pagination
-     *
-     * We page *after* applying ids / custom filters, so limit/offset
-     * applies on the filtered result set — this is also what the tests check.
-     */
-        const { data: hpRows, error: hpRowsError } = await hpQuery.range(
+         * Perform paged fetch after all filters are applied so the page is computed
+         * on the correctly filtered set — this matches test expectations.
+         */
+        const { data: hpRows, error: hpRowsError } = await hpSelect.range(
             offset,
             offset + limit - 1
         )
@@ -342,14 +215,12 @@ export async function searchProfessionals(
             throw hpRowsError
         }
 
-        // 6. If this page is empty, we're done.
+        /// If there’s no data on this page, return early
         if (!hpRows?.length) {
             return { data: [], hasErrors: false }
         }
 
-        /**
-     * 7. Collect HP IDs for this page to fetch related facilities in a single query
-     */
+        // Extract IDs from this page to batch-load relations from the junction table
         const hpIds = hpRows.map(row => row.id as string)
 
         if (hpIds.length === 0) {
@@ -360,13 +231,8 @@ export async function searchProfessionals(
             return { data: list, hasErrors: false }
         }
 
-        /**
-     * 8. Load relations from the junction table only for the IDs on this page
-     */
-        const {
-            data: facilityRelationsForHPs,
-            error: facilityRelationsForHPsError
-        } = await supabase
+        // Load facilities relations for these HPs to avoid N+1 queries
+        const { data: facilityRelationsForHPs, error: facilityRelationsForHPsError} = await supabase
             .from('hps_facilities')
             .select('hps_id, facilities_id')
             .in('hps_id', hpIds)
@@ -375,30 +241,25 @@ export async function searchProfessionals(
             throw facilityRelationsForHPsError
         }
 
-        /**
-     * 9. Build a lookup map: hpId → [facilityId, ...]
-     */
-        const facilityIdsByHp = new Map<string, string[]>()
+        // Build a lookup map: hpId → [facilityId, ...]
+        const facilityIdsByHpId = new Map<string, string[]>()
 
-        for (const rel of facilityRelationsForHPs ?? []) {
-            const hpId = rel.hps_id as string
-            const list = facilityIdsByHp.get(hpId) ?? []
+        for (const relation of facilityRelationsForHPs ?? []) {
+            const hpId = relation.hps_id as string
+            const list = facilityIdsByHpId.get(hpId) ?? []
 
-            list.push(rel.facilities_id as string)
-            facilityIdsByHp.set(hpId, list)
+            list.push(relation.facilities_id as string)
+            facilityIdsByHpId.set(hpId, list)
         }
 
-        /**
-     * 10. Map DB rows → GraphQL shape, injecting facilityIds we just loaded
-     */
+         // Map DB rows to GraphQL shape, merging each HP row with its facilityIds
         const result: gqlTypes.HealthcareProfessional[] =
-      (hpRows as dbSchema.DbHealthcareProfessionalRow[])
-          .map(hp => {
-              const facilityIds = facilityIdsByHp.get(hp.id) ?? []
+            (hpRows as dbSchema.DbHealthcareProfessionalRow[])
+            .map(hp => {
+                const facilityIds = facilityIdsByHpId.get(hp.id) ?? []
 
-              return mapDbHpToGql(hp, facilityIds)
-          })
-
+                return mapDbHpToGql(hp, facilityIds)
+            })
         return { data: result, hasErrors: false }
     } catch (err) {
         logger.error(`ERROR: searchProfessionals ${JSON.stringify(filters)} -> ${err}`)
@@ -433,17 +294,19 @@ export async function countProfessionals(
 
         const supabase = getSupabaseClient()
 
-        // Build a COUNT(*) query with the same JSONB filters used in search
+        // Build a COUNT(*) query with the same JSONB-based filters used in the search endpoint.
+        // The 'head: true' flag means no rows are actually returned, only metadata.
         const countQuery = applyHpFilters(
             supabase.from('hps').select('*', { count: 'exact', head: true }),
             filters
         )
 
-        // Execute the count query
+        // Execute the count query and extract count 
         const { count: hpCount, error: hpCountError } = await countQuery
 
         if (hpCountError) { throw hpCountError }
 
+        // Return normalized result (0 fallback if count is null)
         return { data: hpCount ?? 0, hasErrors: false }
     } catch (err) {
         logger.error(`ERROR: countProfessionals ${JSON.stringify(filters)} -> ${err}`)
@@ -462,11 +325,13 @@ export async function countProfessionals(
 /**
  * Creates a Healthcare Professional (Supabase/Postgres).
  * Business rule: an HP can be linked to at least ONE facility.
+ * This function inserts a new HP row and optionally creates a single facility link.
  */
 export async function createHealthcareProfessional(
     input: gqlTypes.CreateHealthcareProfessionalInput,
     updatedBy: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
+    // Keep reference to created HP id for audit/logging even if something fails
     let createdHpId: string | null = null
 
     try {
@@ -476,11 +341,12 @@ export async function createHealthcareProfessional(
             return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
-        //Business rule: HP → at least ONE facility
+        // Business rule: HP must be linked to at least one Facility (and at most one for now)
         const requestedFacilityIds: string[] = Array.isArray(input.facilityIds)
             ? (input.facilityIds as unknown[]).filter((facId): facId is string => typeof facId === 'string')
             : []
 
+        // Enforce single facility rule — multiple IDs are invalid input
         if (requestedFacilityIds.length > 1) {
             return {
                 data: {} as gqlTypes.HealthcareProfessional,
@@ -493,10 +359,12 @@ export async function createHealthcareProfessional(
             }
         }
 
-        const insertPayload = toHpInsertPayload(input)
+        // Convert GraphQL input → DB insert shape (adds timestamps)
+        const insertPayload = mapCreateInputToHpInsertRow(input)
 
         const supabase = getSupabaseClient()
 
+        // Insert the HP record, returning the inserted row
         const { data: insertedRow, error: insertErr } = await supabase
             .from('hps')
             .insert(insertPayload)
@@ -510,8 +378,9 @@ export async function createHealthcareProfessional(
         createdHpId = insertedRow.id as string
         
         //Join: enforce at most one facility link
-        let facilityIdsForResponse: string[] = []
+        let linkedFacilityIds: string[] = []
 
+        // If exactly one facility ID was requested, create the join record
         if (requestedFacilityIds.length === 1) {
             const oneFacilityId = requestedFacilityIds[0]
 
@@ -527,13 +396,14 @@ export async function createHealthcareProfessional(
             if (upsertRelationErr) {
                 logger.error(`Join hps_facilities failed for HP ${createdHpId}: ${upsertRelationErr.message}`)
             } else {
-                facilityIdsForResponse = [oneFacilityId]
+                linkedFacilityIds = [oneFacilityId]
             }
         }
         
+        // Map inserted DB row into GraphQL shape including related facility ids
         const gqlHealthcareProfessional = mapDbHpToGql(
             insertedRow as dbSchema.DbHealthcareProfessionalRow,
-            facilityIdsForResponse
+            linkedFacilityIds
         )
         
         await createAuditLogSQL({
@@ -597,7 +467,7 @@ export const updateHealthcareProfessional = async (
         const oldValue = currentState.data
 
         // prepare the update payload for the hps tables
-        const updatePayload = buildHpUpdatePayload(fieldsToUpdate)
+        const updatePayload = buildHpUpdatePatch(fieldsToUpdate)
 
         // If there are scalar fields (besides updatedDate) we issue a normal UPDATE,
         // otherwise we just "touch" updatedDate.
@@ -633,7 +503,7 @@ export const updateHealthcareProfessional = async (
                 }
             }
             // This clears existing links and optionally sets a new one
-            await setHpFacility(id, newFacilityId)
+            await setSingleFacilityForHp(id, newFacilityId)
         }
 
         // Return the refreshed HP with relations included
@@ -761,7 +631,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
         }
 
-        // 1) Split incoming relationships into ids to create/delete
+        // Split incoming relationships into ids to create/delete
         const hpIdsToCreate: string[] = professionalRelationshipsToUpdate
             .filter(r => r.action === gqlTypes.RelationshipAction.Create)
             .map(r => r.otherEntityId)
@@ -822,7 +692,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
 
             const hpCounts = await Promise.all(idsToDelete.map(async hpId => ({
                 hpId,
-                count: await getHpFacilityCount(hpId)
+                count: await countFacilitiesForHp(hpId)
             })))
 
             // If HP has count === 1 and we are deleting this link

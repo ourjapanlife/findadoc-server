@@ -115,7 +115,7 @@ export const initializeSupabaseClient = async () => {
         logger.info('✅ Supabase client is initialized! ✅ \n')
     })()
 
-    await initializingPromise
+    return await initializingPromise
 }
 
 export function getSupabaseClient(): SupabaseClient {

@@ -5,64 +5,7 @@ import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLogSQL } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
-
-// Row shape as returned from Supabase "facilities" table (no healthcareProfessionalIds yet).
-type DbFacilityRow = Omit<dbSchema.Facility, 'healthcareProfessionalIds'>
-
-/**
- * Builds a payload for a Supabase update operation, including only the fields that are defined in the input.
- * It also automatically adds the `updatedDate` timestamp.
- */
-function buildFacilityUpdatePayload(fields: Partial<gqlTypes.UpdateFacilityInput>) {
-    const payload: Record<string, unknown> = {}
-
-    // Map only requested field
-    if (fields.nameEn !== undefined) {
-        payload.nameEn = fields.nameEn
-    }
-    if (fields.nameJa !== undefined) {
-        payload.nameJa = fields.nameJa
-    }
-    if (fields.contact !== undefined) {
-        payload.contact = fields.contact
-    }
-    if (fields.mapLatitude !== undefined) {
-        payload.mapLatitude = fields.mapLatitude
-    }
-    if (fields.mapLongitude !== undefined) {
-        payload.mapLongitude = fields.mapLongitude
-    }
-
-    // business rule: always timestamp when the entity is updated
-    payload.updatedDate = new Date().toISOString()
-
-    return payload
-}
-
-type HasIlike<B> = {
-    ilike: (column: string, pattern: string) => B
-}
-
-/**
- * Applies text-based search filters (`ilike`) to a Supabase query builder for facilities.
- * This is a generic utility to be used by both search and count functions.
- */
-function applyFacilityFilters<B extends HasIlike<B>>(
-  facilitySelect: B,
-  filters: gqlTypes.FacilitySearchFilters
-): B {
-    let query = facilitySelect
-
-    // text filters (case-insensitive contains)
-    if (filters.nameEn) {
-        query = query.ilike('nameEn', `%${filters.nameEn}%`)
-    }
-    if (filters.nameJa) {
-        query = query.ilike('nameJa', `%${filters.nameJa}%`)
-    }
-
-    return query
-}
+import { buildFacilityUpdatePatch, applyFacilityFilters } from './helperFunctionsServices.js'
 
 /**
  * Gets the Facility from the database that matches on the id.
@@ -73,7 +16,7 @@ export const getFacilityById = async (
     id: string
 ): Promise<Result<gqlTypes.Facility>> => {
     try {
-        // 1. Validate the incoming id
+        // Validate the incoming id
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
@@ -90,16 +33,14 @@ export const getFacilityById = async (
 
         const supabase = getSupabaseClient()
 
-        // 2. Fetch the facility row
+        // Fetch the facility row
         const { data: facilityRow, error: facilityRowError } = await supabase
             .from('facilities')
             .select('*')
             .eq('id', id)
             .single()
 
-        /**
-         * Supabase says "no rows" -> tests want INTERNAL_SERVER_ERROR, not NOT_FOUND.
-         */
+        // Supabase says "no rows" and tests want INTERNAL_SERVER_ERROR, not NOT_FOUND.
         if (facilityRowError?.code === 'PGRST116' || !facilityRow) {
             return {
                 data: {} as gqlTypes.Facility,
@@ -116,7 +57,7 @@ export const getFacilityById = async (
             throw facilityRowError
         }
 
-        // 3. Fetch related HP IDs from the join table
+        // Fetch related HP IDs from the join table
         const { data: relatedRows, error: relatedRowsError } = await supabase
             .from('hps_facilities')
             .select('hps_id')
@@ -130,9 +71,9 @@ export const getFacilityById = async (
             row => row.hps_id as string
         )
 
-        // 4. Merge the scalar facility data with the relational IDs
+        // Merge the scalar facility data with the relational IDs
         const dbFacilityModel: dbSchema.Facility = {
-            ...(facilityRow as DbFacilityRow),
+            ...(facilityRow as dbSchema.DbFacilityRow),
             healthcareProfessionalIds
         }
 
@@ -177,15 +118,15 @@ async function getFacilityIdsByHpIds(hpIds: string[]): Promise<Set<string>> {
     }
 
     // Use a Set to ensure each facility id appears only once
-    const ids = new Set<string>()
+    const idsList = new Set<string>()
 
     //data may be null
     for (const row of data ?? []) {
         if (row.facilities_id) {
-            ids.add(row.facilities_id as string)
+            idsList.add(row.facilities_id as string)
         }
     }
-    return ids
+    return idsList
 }
 
 /**
@@ -357,6 +298,7 @@ export async function searchFacilities(
         if (paginationRowsError) {
             throw paginationRowsError
         }
+
         if (!paginationRows || paginationRows.length === 0) {
             return { data: [], hasErrors: false }
         }
@@ -376,17 +318,17 @@ export async function searchFacilities(
         const hpIdsByFacility = new Map<string, string[]>()
 
         for (const relationshipRow of hpRelationsForFacilities ?? []) {
-            const facId = relationshipRow.facilities_id as string
+            const facilityId = relationshipRow.facilities_id as string
             // All the Hps ID related to the Facility ID
-            const list = hpIdsByFacility.get(facId) ?? []
+            const list = hpIdsByFacility.get(facilityId) ?? []
 
             // Add the current HP ID to the list associated with the facility.
             list.push(relationshipRow.hps_id as string)
-            hpIdsByFacility.set(facId, list)
+            hpIdsByFacility.set(facilityId, list)
         }
 
         // Map the paginated DB rows to the final GraphQL shape, injecting the associated HP IDs
-        const list: gqlTypes.Facility[] = (paginationRows ?? []).map((facility: DbFacilityRow) => {
+        const list: gqlTypes.Facility[] = (paginationRows ?? []).map((facility: dbSchema.DbFacilityRow) => {
             const dbFacility: dbSchema.Facility = {
                 ...facility,
                 healthcareProfessionalIds: hpIdsByFacility.get(facility.id) ?? []
@@ -492,7 +434,7 @@ export const updateFacility = async (
         const originalHpIds = currentState.data.healthcareProfessionalIds ?? []
 
         // Prepare the update payload for the facilities table
-        const updatePayload = buildFacilityUpdatePayload(fieldsToUpdate)
+        const updatePayload = buildFacilityUpdatePatch(fieldsToUpdate)
 
         const supabase = getSupabaseClient()
 
