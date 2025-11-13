@@ -108,21 +108,23 @@ export function applyHpFilters<B extends JsonbContainsCapable<B>>(
   return query
 }
 
+// Maps GQL Create input → DB insert row; defaults arrays to [] to avoid `!`.
 export function mapCreateInputToHpInsertRow(
   input: gqlTypes.CreateHealthcareProfessionalInput
 ): dbSchema.HealthcareProfessionalInsertRow {
-    return {
-        names: input.names,
-        degrees: input.degrees!,
-        spokenLanguages: input.spokenLanguages!,
-        specialties: input.specialties!,
-        acceptedInsurance: input.acceptedInsurance!,
-        additionalInfoForPatients: input.additionalInfoForPatients ?? null,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    }
+  return {
+    names: input.names,
+    degrees: input.degrees ?? [],
+    spokenLanguages: input.spokenLanguages ?? [],
+    specialties: input.specialties ?? [],
+    acceptedInsurance: input.acceptedInsurance ?? [],
+    additionalInfoForPatients: input.additionalInfoForPatients ?? null,
+    createdDate: new Date().toISOString(),
+    updatedDate: new Date().toISOString(),
+  }
 }
 
+// Derives the facilityId to associate from relationship edits (create/delete).
 export function resolveFacilityIdFromRelationships(
   relationss: gqlTypes.Relationship[] | null | undefined
 ): { newFacilityId: string | null; error?: { field: string; httpStatus: number } } {
@@ -161,3 +163,9 @@ export function resolveFacilityIdFromRelationships(
         newFacilityId: null
     }
 }
+
+/** 
+*===================================
+*- Submissions section helpers function
+*===================================
+*/
