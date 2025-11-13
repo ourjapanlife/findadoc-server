@@ -1,7 +1,6 @@
 import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/fakeHealthcareProfessionals.ts'
 import { generateRandomCreateFacilityInputArray } from '../src/fakeData/fakeFacilities.ts'
 import { generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.ts'
-import { logger } from '../src/logger.ts'
 import * as fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import * as path from 'path'

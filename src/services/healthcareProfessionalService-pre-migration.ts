@@ -33,6 +33,7 @@ async function setSingleFacilityForHp(hpId: string, facilityId: string | null): 
             .upsert([{ hps_id: hpId, facilities_id: facilityId }],
                     { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
         // If insertion/upsert fails, propagate the error
+
         if (upsertError) { throw upsertError }
     }
 }
@@ -40,7 +41,7 @@ async function setSingleFacilityForHp(hpId: string, facilityId: string | null): 
 // Returns how many facilities are currently linked to a given HP
 async function countFacilitiesForHp(hpId: string): Promise<number> {
     const supabase = getSupabaseClient()
-     // Count the number of rows in the junction table for this HP
+    // Count the number of rows in the junction table for this HP
     const { count: facilityCount, error: facilityCountError } = await supabase
         .from('hps_facilities')
         .select('hps_id', { count: 'exact', head: true })
@@ -168,7 +169,6 @@ export async function searchProfessionals(
             const looksInvalid = filters.ids.some(id => !/^[0-9a-fA-F-]{36}$/.test(id))
 
             if (looksInvalid) {
-                // in Firestore questo avrebbe semplicemente dato "nessun risultato"
                 return { data: [], hasErrors: false }
             }
         }
@@ -252,14 +252,15 @@ export async function searchProfessionals(
             facilityIdsByHpId.set(hpId, list)
         }
 
-         // Map DB rows to GraphQL shape, merging each HP row with its facilityIds
+        // Map DB rows to GraphQL shape, merging each HP row with its facilityIds
         const result: gqlTypes.HealthcareProfessional[] =
             (hpRows as dbSchema.DbHealthcareProfessionalRow[])
-            .map(hp => {
-                const facilityIds = facilityIdsByHpId.get(hp.id) ?? []
+                .map(hp => {
+                    const facilityIds = facilityIdsByHpId.get(hp.id) ?? []
 
-                return mapDbHpToGql(hp, facilityIds)
-            })
+                    return mapDbHpToGql(hp, facilityIds)
+                })
+
         return { data: result, hasErrors: false }
     } catch (err) {
         logger.error(`ERROR: searchProfessionals ${JSON.stringify(filters)} -> ${err}`)

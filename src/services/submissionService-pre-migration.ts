@@ -1,113 +1,14 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
-import { validateSubmissionSearchFilters, validateCreateSubmissionInputs } from '../validation/validateSubmissions.js'
+import { validateSubmissionSearchFilters, validateCreateSubmissionInputs, validateIdInput } from '../validation/validateSubmissions.js'
 import { logger } from '../logger.js'
 import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLogSQL } from './auditLogServiceSupabase.js'
 import { createFacility } from './facilityService-pre-migration.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService-pre-migration.js'
-
-function makeMinimalAddress(): gqlTypes.PhysicalAddressInput {
-    return {
-        addressLine1En: '',
-        addressLine2En: '',
-        addressLine1Ja: '',
-        addressLine2Ja: '',
-        cityEn: '',
-        cityJa: '',
-        prefectureEn: '',
-        prefectureJa: '',
-        postalCode: ''
-    }
-}
-
-function makeMinimalContact(googleMapsUrl?: string): gqlTypes.ContactInput {
-    return {
-        address: makeMinimalAddress(),
-        email: '',
-        phone: '',
-        website: '',
-        googleMapsUrl: googleMapsUrl ?? ''
-    }
-}
-
-function dedupeLocales(locales: (gqlTypes.Locale | null | undefined)[] | null | undefined): gqlTypes.Locale[] {
-    if (!locales) { return [] }
-    const clean = locales.filter((l): l is gqlTypes.Locale => !!l)
-
-    return Array.from(new Set(clean))
-}
-
-function splitPersonName(full: string): { firstName: string; lastName: string; middleName?: string } {
-    const parts = full.trim().split(/\s+/).filter(Boolean)
-
-    if (parts.length === 1) {
-        return { firstName: parts[0], lastName: 'Unknown' }
-    }
-    if (parts.length === 2) {
-        return { firstName: parts[0], lastName: parts[1] }
-    }
-    return {
-        firstName: parts[0],
-        lastName: parts[parts.length - 1],
-        middleName: parts.slice(1, -1).join(' ')
-    }    
-}
-
-type HasIlike<B> = { 
-    ilike: (column: string, pattern: string) => B
-}
-type HasContains<B> = {
-    //eslint-disable-next-line
-    contains: (column: string, value: string | readonly any[] | Record<string, unknown>) => B
-}
-type HasEq<B> = {
-    eq: (column: string, value: unknown) => B
-}
-
-//Applies filters to a Supabase query builder for the submissions table
-function applySubmissionFilters<B extends HasIlike<B> & HasContains<B> & HasEq<B>>(
-  queryBuilder: B,
-  filters: gqlTypes.SubmissionSearchFilters
-): B {
-    let query = queryBuilder
-
-    if (filters.googleMapsUrl) {
-        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`)
-    }
-
-    if (filters.healthcareProfessionalName) {
-        query = query.ilike('healthcareProfessionalName', `%${filters.healthcareProfessionalName}%`)
-    }
-
-    // 👇 niente contains qui (lo facciamo dopo)
-
-    const trueFlags = [
-        filters.isUnderReview ? 'under_review' : null,
-        filters.isApproved ? 'approved' : null,
-        filters.isRejected ? 'rejected' : null
-    ].filter(Boolean) as Array<'under_review' | 'approved' | 'rejected'>
-
-    if (trueFlags.length > 1) {
-        throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
-    }
-
-    if (trueFlags.length === 1) {
-        query = query.eq('status', trueFlags[0])
-    }
-
-    if (filters.createdDate) {
-        query = query.eq('createdDate', filters.createdDate)
-    }
-
-    if (filters.updatedDate) {
-        query = query.eq('updatedDate', filters.updatedDate)
-    }
-
-    return query
-}
+import { createBlankContact, dedupeLocales, splitPersonName, applySubmissionQueryFilters } from './helperFunctionsServices.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -176,12 +77,11 @@ export async function searchSubmissions(
 
         const supabase = getSupabaseClient()
 
-        let base = applySubmissionFilters(
+        let base = applySubmissionQueryFilters(
             supabase.from('submissions').select('*'),
             filters
         )
 
-        // order by
         const orderBy = filters.orderBy?.[0]
 
         if (orderBy?.fieldToOrder) {
@@ -198,7 +98,6 @@ export async function searchSubmissions(
 
         let listSubmissions = (rows ?? []).map(row => mapDbEntityTogqlEntity(row as dbSchema.SubmissionRow))
 
-        // 👇 filtro lingua lato JS per evitare errori SQL
         const langs = (filters.spokenLanguages ?? []).filter((l): l is gqlTypes.Locale => !!l)
 
         if (langs.length > 0) {
@@ -241,12 +140,11 @@ export async function countSubmissions(
 
         const supabase = getSupabaseClient()
 
-        //PostgrestFilterBuilder
         const headSelect = supabase
             .from('submissions')
             .select('id', { count: 'exact', head: true })
 
-        const { count: countSubs, error: countSubsErr } = await applySubmissionFilters(headSelect, filters)
+        const { count: countSubs, error: countSubsErr } = await applySubmissionQueryFilters(headSelect, filters)
 
         if (countSubsErr) { throw countSubsErr }
 
@@ -587,7 +485,7 @@ export const approveSubmission = async (
         let finalFacilityId: string | null = current.facilities_id
         let createdHpId: string | undefined
 
-        // 1) facility
+        // Facility
         if (!finalFacilityId) {
             let facilityInput: gqlTypes.CreateFacilityInput
 
@@ -597,7 +495,7 @@ export const approveSubmission = async (
                 facilityInput = {
                     nameEn: 'Unknown Facility',
                     nameJa: 'Unknown Facility',
-                    contact: makeMinimalContact(current.googleMapsUrl ?? ''),
+                    contact: createBlankContact(current.googleMapsUrl ?? ''),
                     mapLatitude: 0,
                     mapLongitude: 0,
                     healthcareProfessionalIds: []
@@ -617,7 +515,7 @@ export const approveSubmission = async (
             createdFacilityId = finalFacilityId
         }
 
-        // 2) HP (solo se riusciamo a montare un input valido)
+        // HP
         if (!current.hps_id && finalFacilityId) {
             let hpInput: gqlTypes.CreateHealthcareProfessionalInput | null = null
 
@@ -682,23 +580,20 @@ export const approveSubmission = async (
                 }
             }
 
-            // 👇 QUI la guardia decisiva
             if (isValidHpInput(hpInput)) {
                 const hpRes = await createHealthcareProfessional(hpInput!, updatedBy)
 
                 if (hpRes.hasErrors || !hpRes.data) {
-                    // invece di far fallire tutto, approviamo lo stesso
                     logger.warn(`approveSubmission: could not create HP for submission ${submissionId}, continuing anyway`)
                 } else {
                     createdHpId = hpRes.data.id
                 }
             } else {
-                // niente dati buoni → non provo nemmeno
                 logger.info(`approveSubmission: skipping HP creation for submission ${submissionId} due to insufficient data`)
             }
         }
 
-        // 3) update submission
+        // Update submission
         const patch: Partial<dbSchema.SubmissionRow> = {
             status: 'approved',
             //eslint-disable-next-line
@@ -835,37 +730,6 @@ export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Su
         updatedDate: row.updatedDate,
         notes: row.notes ?? undefined
     }
-}
-
-function validateIdInput(id: string): Result<unknown> {
-    const validationResults: Result<unknown> = {
-        data: undefined,
-        hasErrors: false,
-        errors: []
-    }
-
-    if (!id) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'id',
-            errorCode: ErrorCode.INVALID_ID,
-            httpStatus: 400
-        })
-        return validationResults
-    }
-
-    const okId = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
-
-    if (!okId.test(id) || id.length > 4096) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'id',
-            errorCode: ErrorCode.INVALID_ID,
-            httpStatus: 400
-        })
-    }
-
-    return validationResults
 }
 
 export function mapGqlEntityToDbEntity(

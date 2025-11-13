@@ -1,6 +1,24 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 
+// Capabilities for Supabase-like query builders
+export type HasIlike = {
+    ilike: (column: string, pattern: string) => unknown
+}
+
+export type HasContains = {
+    contains: (
+        column: string,
+        //eslint-disable-next-line
+        value: string | readonly any[] | Record<string, unknown>
+    ) => unknown
+}
+
+export type HasEq = {
+    eq: (column: string, value: unknown) => unknown
+}
+
+export type SupabaseFilterBuilder = HasIlike & HasContains & HasEq
 
 /** 
 *===================================
@@ -34,11 +52,6 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
     return updatePatch
 }
 
-// <B> rappresent the genereic type of Supabase
-type HasIlike<B> = {
-    ilike: (column: string, pattern: string) => B
-}
-
 /**
  * Applies text-based filters to a Supabase query builder for Facilities.
  * Can be reused by both search and count queries.
@@ -47,7 +60,7 @@ type HasIlike<B> = {
  * @param filters - The facility search filters from GraphQL input.
  * @returns The same query builder instance, modified with applied filters.
  */
-export function applyFacilityFilters<B extends HasIlike<B>>(
+export function applyFacilityFilters<B extends HasIlike>(
   facilitySelect: B,
   filters: gqlTypes.FacilitySearchFilters
 ): B {
@@ -55,10 +68,10 @@ export function applyFacilityFilters<B extends HasIlike<B>>(
 
     // text filters (case-insensitive contains)
     if (filters.nameEn) {
-        query = query.ilike('nameEn', `%${filters.nameEn}%`)
+        query = query.ilike('nameEn', `%${filters.nameEn}%`) as B
     }
     if (filters.nameJa) {
-        query = query.ilike('nameJa', `%${filters.nameJa}%`)
+        query = query.ilike('nameJa', `%${filters.nameJa}%`) as B
     }
 
     return query
@@ -86,42 +99,34 @@ export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProf
     return updatePatch
 }
 
-// Fluent builder type with JSONB `contains` support (PostgREST/Supabase)
-type JsonbContainsCapable<B> = {
-  contains: (
-    column: string,
-    // eslint-disable-next-line
-    value: string | readonly any[] | Record<string, unknown>
-  ) => B
-}
-
 // Applies JSONB array filters to an HP query builder (degrees, specialties, languages, insurance).
-export function applyHpFilters<B extends JsonbContainsCapable<B>>(
+export function applyHpFilters<B extends HasContains>(
   builder: B,
   filters: gqlTypes.HealthcareProfessionalSearchFilters
 ): B {
-  let query = builder
-  if (filters.degrees?.length) query = query.contains('degrees', filters.degrees as gqlTypes.Degree[])
-  if (filters.specialties?.length) query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[])
-  if (filters.spokenLanguages?.length) query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[])
-  if (filters.acceptedInsurance?.length) query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[])
-  return query
+    let query = builder
+
+    if (filters.degrees?.length) { query = query.contains('degrees', filters.degrees as gqlTypes.Degree[]) as B }
+    if (filters.specialties?.length) { query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[]) as B }
+    if (filters.spokenLanguages?.length) { query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[]) as B }
+    if (filters.acceptedInsurance?.length) { query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as B }
+    return query
 }
 
 // Maps GQL Create input → DB insert row; defaults arrays to [] to avoid `!`.
 export function mapCreateInputToHpInsertRow(
   input: gqlTypes.CreateHealthcareProfessionalInput
 ): dbSchema.HealthcareProfessionalInsertRow {
-  return {
-    names: input.names,
-    degrees: input.degrees ?? [],
-    spokenLanguages: input.spokenLanguages ?? [],
-    specialties: input.specialties ?? [],
-    acceptedInsurance: input.acceptedInsurance ?? [],
-    additionalInfoForPatients: input.additionalInfoForPatients ?? null,
-    createdDate: new Date().toISOString(),
-    updatedDate: new Date().toISOString(),
-  }
+    return {
+        names: input.names,
+        degrees: input.degrees ?? [],
+        spokenLanguages: input.spokenLanguages ?? [],
+        specialties: input.specialties ?? [],
+        acceptedInsurance: input.acceptedInsurance ?? [],
+        additionalInfoForPatients: input.additionalInfoForPatients ?? null,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
+    }
 }
 
 // Derives the facilityId to associate from relationship edits (create/delete).
@@ -169,3 +174,133 @@ export function resolveFacilityIdFromRelationships(
 *- Submissions section helpers function
 *===================================
 */
+
+/**
+ * Builds a minimal, empty address object.
+ * Used when a submission does not contain address details,
+ * but a complete shape is required to avoid null references.
+ */
+export function createBlankAddress(): gqlTypes.PhysicalAddressInput {
+    return {
+        addressLine1En: '',
+        addressLine2En: '',
+        addressLine1Ja: '',
+        addressLine2Ja: '',
+        cityEn: '',
+        cityJa: '',
+        prefectureEn: '',
+        prefectureJa: '',
+        postalCode: ''
+    }
+}
+
+/**
+ * Builds a minimal contact object.
+ * Ensures all required fields are defined, even if empty.
+ * @param googleMapsUrl Optional pre-filled Google Maps URL.
+ */
+
+export function createBlankContact(googleMapsUrl?: string): gqlTypes.ContactInput {
+    return {
+        address: createBlankAddress(),
+        email: '',
+        phone: '',
+        website: '',
+        googleMapsUrl: googleMapsUrl ?? ''
+    }
+}
+
+/**
+ * Deduplicates and sanitizes a list of locale codes.
+ * Removes null/undefined entries and returns unique Locale values.
+ * @param locales Possibly null or undefined list of Locale values.
+ * @returns Array of unique, valid locales.
+ */
+export function dedupeLocales(locales: (gqlTypes.Locale | null | undefined)[] | null | undefined): gqlTypes.Locale[] {
+    if (!locales) { return [] }
+    // Filter out null/undefined entries
+    const clean = locales.filter((local): local is gqlTypes.Locale => !!local)
+
+    return Array.from(new Set(clean))
+}
+
+/**
+ * Splits a full name string into first, last, and optional middle name parts.
+ * If only one part is found, assigns 'Unknown' as a fallback last name.
+ * @example
+ * splitPersonName("John Smith") → { firstName: "John", lastName: "Smith" }
+ * splitPersonName("Madonna") → { firstName: "Madonna", lastName: "Unknown" }
+ */
+export function splitPersonName(full: string): { firstName: string; lastName: string; middleName?: string } {
+    // Split by any whitespace and remove empty parts
+    const parts = full.trim().split(/\s+/).filter(Boolean)
+
+    if (parts.length === 1) {
+        return { firstName: parts[0], lastName: 'Unknown' }
+    }
+    if (parts.length === 2) {
+        return { firstName: parts[0], lastName: parts[1] }
+    }
+    // For 3+ parts: treat the first as firstName, last as lastName, and join the rest as middleName
+    return {
+        firstName: parts[0],
+        lastName: parts[parts.length - 1],
+        middleName: parts.slice(1, -1).join(' ')
+    }    
+}
+
+/**
+ * Applies filtering logic to a Supabase query builder for the `submissions` table.
+ * It handles text search, status flag logic, and date equality filters.
+ *
+ * @template T
+ * @param queryBuilder The base Supabase query builder instance.
+ * @param filters Filters provided via GraphQL submission search input.
+ * @returns Modified query builder with applied filters.
+ */
+export function applySubmissionQueryFilters<T>(
+  queryBuilder: T,
+  filters: gqlTypes.SubmissionSearchFilters
+): T {
+    // He i need 'any' only for call supabase method,
+    // I'm also passing <T> for avoid an infinite loop on searchSubmission
+    // It could need a refactor 
+    //eslint-disable-next-line
+    let query: any = queryBuilder
+
+    // Apply case-insensitive partial match on googleMapsUrl
+    if (filters.googleMapsUrl) {
+        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`)
+    }
+
+    if (filters.healthcareProfessionalName) {
+        query = query.ilike(
+            'healthcareProfessionalName',
+            `%${filters.healthcareProfessionalName}%`
+        )
+    }
+
+    const trueFlags = [
+        filters.isUnderReview ? 'under_review' : null,
+        filters.isApproved ? 'approved' : null,
+        filters.isRejected ? 'rejected' : null
+    ].filter(Boolean) as Array<'under_review' | 'approved' | 'rejected'>
+
+    if (trueFlags.length > 1) {
+        throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
+    }
+
+    if (trueFlags.length === 1) {
+        query = query.eq('status', trueFlags[0])
+    }
+
+    if (filters.createdDate) {
+        query = query.eq('createdDate', filters.createdDate)
+    }
+
+    if (filters.updatedDate) {
+        query = query.eq('updatedDate', filters.updatedDate)
+    }
+
+    return query as T
+}

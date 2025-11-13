@@ -4,6 +4,5 @@ import { createApolloFastifyServer } from './server.js'
 import { initializeSupabaseClient } from './supabaseClient.js'
 
 initializeLogger()
-//await initiatilizeFirebaseInstance()
 await initializeSupabaseClient()
 await createApolloFastifyServer()

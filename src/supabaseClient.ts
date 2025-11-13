@@ -50,7 +50,6 @@ export const initializeSupabaseClient = async () => {
 }
 */
 
-// src/supabaseClient.ts
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { envVariables } from '../utils/environmentVariables.js'
 import { logger } from './logger.js'
@@ -80,7 +79,7 @@ const testSupabaseIsInitialized = async () => {
         logger.error(`❌ Supabase is not connecting... ❌ ${msg}`)
 
         if (isTestEnv) {
-            logger.warn('🟡 Test env: Supabase non raggiungibile, ma non blocco i test.')
+            logger.warn('🟡 Test env: Supabase not found')
             return
         }
 
@@ -115,7 +114,7 @@ export const initializeSupabaseClient = async () => {
         logger.info('✅ Supabase client is initialized! ✅ \n')
     })()
 
-    return await initializingPromise
+    await initializingPromise
 }
 
 export function getSupabaseClient(): SupabaseClient {

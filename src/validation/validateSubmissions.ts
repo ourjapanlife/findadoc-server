@@ -2,6 +2,37 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { hasScriptTags, isInvalidName } from '../../utils/stringUtils.js'
 
+export function validateIdInput(id: string): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
+        hasErrors: false,
+        errors: []
+    }
+
+    if (!id) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'id',
+            errorCode: ErrorCode.INVALID_ID,
+            httpStatus: 400
+        })
+        return validationResults
+    }
+
+    const okId = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
+    if (!okId.test(id) || id.length > 4096) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'id',
+            errorCode: ErrorCode.INVALID_ID,
+            httpStatus: 400
+        })
+    }
+
+    return validationResults
+}
+
 function validateSubmissionOrderBy(
     filters: gqlTypes.SubmissionSearchFilters,
     validateSearchResults: Result<unknown>
