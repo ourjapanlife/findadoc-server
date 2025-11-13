@@ -306,3 +306,16 @@ export function validateCreateSubmissionInputs(input:gqlTypes.CreateSubmissionIn
 
     return validateSubmissionInputs
 }
+
+export function isValidHpInput(hp: gqlTypes.CreateHealthcareProfessionalInput | null | undefined): boolean {
+    if (!hp) { return false }
+    if (!Array.isArray(hp.names) || hp.names.length === 0) { return false }
+
+    const first = hp.names[0]
+
+    if (!first.locale) { return false }
+    if (!first.firstName) { return false }
+    if (!first.lastName) { return false }
+
+    return true
+}

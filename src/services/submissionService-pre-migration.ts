@@ -1,7 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
-import { validateSubmissionSearchFilters, validateCreateSubmissionInputs, validateIdInput } from '../validation/validateSubmissions.js'
+import { validateSubmissionSearchFilters, validateCreateSubmissionInputs, validateIdInput, isValidHpInput } from '../validation/validateSubmissions.js'
 import { logger } from '../logger.js'
 import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
 import { getSupabaseClient } from '../supabaseClient.js'
@@ -92,10 +92,12 @@ export async function searchSubmissions(
             base = base.order('createdDate', { ascending: false })
         }
 
-        const { data: rows, error } = await base.range(offset, offset + limit - 1)
+        // Apply pagination
+        const { data: rows, error: paginationError } = await base.range(offset, offset + limit - 1)
 
-        if (error) { throw error }
+        if (paginationError) { throw paginationError }
 
+        // Convert DB → GQL
         let listSubmissions = (rows ?? []).map(row => mapDbEntityTogqlEntity(row as dbSchema.SubmissionRow))
 
         const langs = (filters.spokenLanguages ?? []).filter((l): l is gqlTypes.Locale => !!l)
@@ -140,10 +142,12 @@ export async function countSubmissions(
 
         const supabase = getSupabaseClient()
 
+        // Build a HEAD query that returns only the count
         const headSelect = supabase
             .from('submissions')
             .select('id', { count: 'exact', head: true })
 
+        // Apply the same filtering logic as searchSubmissions
         const { count: countSubs, error: countSubsErr } = await applySubmissionQueryFilters(headSelect, filters)
 
         if (countSubsErr) { throw countSubsErr }
@@ -170,6 +174,7 @@ export const createSubmission = async (
     try {
         const validationResults = validateCreateSubmissionInputs(submissionInput)
 
+        // Filter out validation errors related to ID (not user-supplied)
         const filteredErrors = (validationResults.errors ?? []).filter(e => e.field !== 'id')
 
         if (validationResults.hasErrors && filteredErrors.length > 0) {
@@ -180,17 +185,19 @@ export const createSubmission = async (
             }
         }
 
+        // Convert GraphQL → DB row
         const newSubmission = mapGqlEntityToDbEntity(submissionInput)
 
         const supabase = getSupabaseClient()
-        const { data: inserted, error } = await supabase
+        const { data: inserted, error: insertedError } = await supabase
             .from('submissions')
             .insert(newSubmission)
             .select('*')
             .single()
 
-        if (error) { throw error }
+        if (insertedError) { throw insertedError }
 
+        // Convert DB → GQL for client response
         const gqlSubmission = mapDbEntityTogqlEntity(inserted as dbSchema.SubmissionRow)
 
         await createAuditLogSQL({
@@ -216,10 +223,19 @@ export const createSubmission = async (
 }
 
 /**
- * Updates a submission.
- * @param submissionId the submission to update
- * @param fieldsToUpdate the fields to update
- * @returns The submission that was updated.
+ * Updates a submission record in the database.
+ * Check if this update request implies an approval → redirect to approveSubmission().
+ * Load the existing submission row.
+ * Validate mutually exclusive fields (e.g., autofill logic).
+ * Determine the new status (only one status flag may be set).
+ * Build a patch object merging old values with updated ones.
+ * Persist changes to Supabase.
+ * Re-fetch the row to return the updated version.
+ * Write an audit log entry comparing old/new values.
+ *
+ * @param submissionId - ID of the submission to update.
+ * @param fieldsToUpdate - Partial update object from the GraphQL input.
+ * @returns The updated submission as a GraphQL entity.
  */
 export const updateSubmission = async (
     submissionId: string,
@@ -232,6 +248,10 @@ export const updateSubmission = async (
         }
 
         const supabase = getSupabaseClient()
+        /**
+         * Load the current submission state.
+         * `.single()` ensures that exactly one row must match.
+         */
         const { data: current, error: readErr } = await supabase
             .from('submissions')
             .select('*')
@@ -246,6 +266,12 @@ export const updateSubmission = async (
             }
         }
 
+        /**
+         * AUTOFILL VALIDATION
+         * A submission can autofill itself only once.
+         * If the DB already has autofillPlaceFromSubmissionUrl=true,
+         * and the user requests autofill again, reject the update.
+         */
         if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && current.autofillPlaceFromSubmissionUrl) {
             return {
                 data: {} as gqlTypes.Submission,
@@ -257,6 +283,11 @@ export const updateSubmission = async (
                 }]
             }
         }
+        /**
+         * If the user is requesting autofill and this submission has NOT used autofill yet,
+         * redirect to the dedicated autofill handler.
+         * This path extracts Google Places data and updates the submission.
+         */
         if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !current.autofillPlaceFromSubmissionUrl) {
             return await autoFillPlacesInformation(
                 submissionId,
@@ -265,6 +296,10 @@ export const updateSubmission = async (
             )
         }
 
+        /**
+         * Before applying updates, we map the current DB record to GQL format
+         * so that audit logs can compare old/new values accurately.
+         */
         const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
         const statusFlags = [
@@ -287,13 +322,20 @@ export const updateSubmission = async (
 
         const newStatus = statusFlags.length === 1 ? statusFlags[0] : current.status
 
+        /**
+         * BUILDING THE PATCH
+         * For each editable field, we fallback to the existing value
+         * if the client did not provide a new one. This ensures no field
+         * is accidentally nulled or removed.
+         * updatedDate is always set to "now".
+         */
         const patch: Partial<dbSchema.SubmissionRow> = {
             googleMapsUrl: fieldsToUpdate.googleMapsUrl ?? current.googleMapsUrl,
             healthcareProfessionalName: fieldsToUpdate.healthcareProfessionalName ?? current.healthcareProfessionalName,
             spokenLanguages: fieldsToUpdate.spokenLanguages ?? current.spokenLanguages,
             notes: fieldsToUpdate.notes ?? current.notes,
             autofillPlaceFromSubmissionUrl:
-        fieldsToUpdate.autofillPlaceFromSubmissionUrl ?? current.autofillPlaceFromSubmissionUrl,
+                fieldsToUpdate.autofillPlaceFromSubmissionUrl ?? current.autofillPlaceFromSubmissionUrl,
             status: newStatus,
             updatedDate: new Date().toISOString()
         }
@@ -330,6 +372,15 @@ export const updateSubmission = async (
     }
 }
 
+/**
+ * Performs an automatic enrichment of a Submission using Google Maps / Places data.
+ * Load the existing submission.
+ * Validate presence of googleMapsUrl.
+ * Fetch place data from external APIs (via getFacilityDetailsForSubmission).
+ * Construct a partial "facility-like" structure called facility_partial.
+ * Update the submission with new geolocation + extracted details.
+ * Write audit logs comparing old/new values.
+ */
 export const autoFillPlacesInformation = async (
     submissionId: string,
     googleMapsUrl: gqlTypes.InputMaybe<string> | undefined,
@@ -337,6 +388,7 @@ export const autoFillPlacesInformation = async (
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
         const supabase = getSupabaseClient()
+        // Load current submission
         const { data: current, error: readErr } = await supabase
             .from('submissions')
             .select('*')
@@ -359,6 +411,7 @@ export const autoFillPlacesInformation = async (
             }
         }
 
+        // Save the old state for audit logs
         const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
         const places = await getFacilityDetailsForSubmission(googleMapsUrl as string)
@@ -371,6 +424,12 @@ export const autoFillPlacesInformation = async (
             }
         }
 
+        /**
+        * Construct the “facility_partial” field.
+        * This is a lightweight structure modeling a Facility but not persisted
+        * in the facilities table. It is used for UI review before approving a real facility.
+        * Many values may be undefined if Places does not provide them.
+        */
         const facilityPartial: gqlTypes.FacilitySubmission = {
             id: undefined,
             nameEn: places.extractedNameEn,
@@ -397,6 +456,14 @@ export const autoFillPlacesInformation = async (
             healthcareProfessionalIds: []
         }
 
+        /**
+         * Build DB patch:
+         * - Update Google Maps URL
+         * - Store facility_partial blob
+         * - Mark status = "under_review"
+         * - Mark autofillPlaceFromSubmissionUrl = true
+         * - Always refresh updatedDate
+         */
         const patch: Partial<dbSchema.SubmissionRow> = {
             googleMapsUrl: places.extractedGoogleMapsURI ?? current.googleMapsUrl,
             //eslint-disable-next-line
@@ -438,19 +505,17 @@ export const autoFillPlacesInformation = async (
     }
 }
 
-function isValidHpInput(hp: gqlTypes.CreateHealthcareProfessionalInput | null | undefined): boolean {
-    if (!hp) { return false }
-    if (!Array.isArray(hp.names) || hp.names.length === 0) { return false }
-
-    const first = hp.names[0]
-
-    if (!first.locale) { return false }
-    if (!first.firstName) { return false }
-    if (!first.lastName) { return false }
-
-    return true
-}
-
+/**
+ * Approves a pending submission and, if needed, creates:
+ * - a Facility (from facility_partial or fallback data)
+ * - a HealthcareProfessional (from partial data or name string)
+ * Load current submission.
+ * Short-circuit if already approved.
+ * Ensure we have a Facility ID (create one if missing).
+ * Ensure we optionally create an HP if enough data is present.
+ * Update submission status to "approved" and link created entities.
+ * Log an audit entry with old/new values.
+ */
 export const approveSubmission = async (
     submissionId: string,
     updatedBy: string
@@ -479,13 +544,25 @@ export const approveSubmission = async (
             }
         }
 
+        // Preserve original submission for audit logs
         const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
+        /**
+         * These hold IDs created during the approval flow.
+         * - createdFacilityId: only set if we create a new Facility now.
+         * - finalFacilityId: resolved facility to associate with this submission.
+         * - createdHpId: only set if we manage to create a new HP now.
+         */
         let createdFacilityId: string | undefined
         let finalFacilityId: string | null = current.facilities_id
         let createdHpId: string | undefined
 
-        // Facility
+        /**
+         * If the submission is not linked to any Facility yet (facilities_id is null),we must create one.
+         * Priority:
+         *   a) If facility_partial exists → build a CreateFacilityInput from that.
+         *   b) Otherwise → create a minimal "Unknown Facility" using the submission's Google Maps URL.
+         */
         if (!finalFacilityId) {
             let facilityInput: gqlTypes.CreateFacilityInput
 
@@ -493,6 +570,7 @@ export const approveSubmission = async (
                 facilityInput = current.facility_partial as gqlTypes.CreateFacilityInput
             } else {
                 facilityInput = {
+                    // Fallback: create a generic placeholder facility
                     nameEn: 'Unknown Facility',
                     nameJa: 'Unknown Facility',
                     contact: createBlankContact(current.googleMapsUrl ?? ''),
@@ -515,10 +593,18 @@ export const approveSubmission = async (
             createdFacilityId = finalFacilityId
         }
 
-        // HP
+        /**
+         * Only attempt to create an HP if:
+         * - The submission is not already linked to an HP (hps_id is null)
+         * - We have a facility to associate it with (finalFacilityId)
+         */
         if (!current.hps_id && finalFacilityId) {
             let hpInput: gqlTypes.CreateHealthcareProfessionalInput | null = null
 
+            /**
+             * Case A: We have healthcare_professionals_partial data.
+             * We only look at the first entry for HP creation.
+             */
             if (current.healthcare_professionals_partial && current.healthcare_professionals_partial.length > 0) {
                 const firstHp = current.healthcare_professionals_partial[0]
                 const hasNames = Array.isArray(firstHp.names) && firstHp.names.length > 0
@@ -536,6 +622,11 @@ export const approveSubmission = async (
                         facilityIds: [finalFacilityId]
                     }
                 } else if (current.healthcareProfessionalName?.trim()) {
+                    /**
+                     * Fallback: partial HP has no names array,
+                     * but submission still has a healthcareProfessionalName string.
+                     * We parse "First [Middle] Last" format and build a single LocalizedName.
+                     */
                     const parsed = splitPersonName(current.healthcareProfessionalName.trim())
                     const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale)
                         ?? gqlTypes.Locale.EnUs
@@ -558,6 +649,10 @@ export const approveSubmission = async (
                     }
                 }
             } else if (current.healthcareProfessionalName?.trim()) {
+                /**
+                 * Case B: No partial array, but we do have a free-text name string.
+                 * Same parsing logic as above, but without partial HP metadata.
+                 */
                 const parsed = splitPersonName(current.healthcareProfessionalName.trim())
                 const localeFromSubmission =
                     (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
@@ -593,7 +688,16 @@ export const approveSubmission = async (
             }
         }
 
-        // Update submission
+        /**
+         *UPDATE SUBMISSION ROW
+         * - Mark status = "approved"
+         * - Link facilities_id to either:
+         *     newly created Facility ID
+         *     or the existing one on the submission
+         * - Link hps_id if we created an HP (or keep existing)
+         * - Refresh updatedDate
+         */
+
         const patch: Partial<dbSchema.SubmissionRow> = {
             status: 'approved',
             //eslint-disable-next-line
