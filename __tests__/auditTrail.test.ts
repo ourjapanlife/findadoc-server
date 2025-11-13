@@ -10,14 +10,14 @@ describe('createAuditLog', () => {
         const newSubmission: gqlTypes.CreateSubmissionInput = generateRandomCreateSubmissionInput()
         const newAuditLog: dbSchema.SubmissionInsertRow = mapGqlEntityToDbEntity(newSubmission)
         
-        await createAuditLogSQL({
-            actionType: 'CREATE',
-            objectType: 'Submission',
-            updatedBy: 'user123',
-            newValue: newAuditLog,
-            oldValue: null
-        })
-
-        expect(true).toBe(true)
+        await expect(
+            createAuditLogSQL({
+                actionType: 'CREATE',
+                objectType: 'Submission',
+                updatedBy: 'user123',
+                newValue: newAuditLog,
+                oldValue: null
+            })
+        ).resolves.not.toThrow()
     })
 })
