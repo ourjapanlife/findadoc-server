@@ -182,3 +182,65 @@ export async function updateUser(
     }
 }
 
+/**
+ * This deletes a User from the database. If the User doesn't exist, it will return a validation error.
+ * @param id The ID of the professional in the database to delete.
+ */
+export async function deleteUser(
+    id: string
+): Promise<Result<gqlTypes.DeleteResult>> {
+    try {
+        // validate if user with that id exists before attempting deletion 
+        const { data } = await supabaseClient
+            .from('user')
+            .select('id')
+            .eq('id', id)
+
+        if (!data || data.length === 0) {
+            logger.warn(`Validation Error: tried deleting non-existant user: ${id}`)
+
+            return {
+                data: {
+                    isSuccessful: false
+                },
+                hasErrors: true,
+                errors: [{
+                    field: 'deleteUser',
+                    errorCode: ErrorCode.INVALID_ID,
+                    httpStatus: 404
+                }]
+            }
+        }
+        // if no validation error, attempt deletion
+        const { error } = await supabaseClient
+            .from('user')
+            .delete()
+            .eq('id', id)
+
+        if (error) {
+            throw new Error(`supabase error: ${JSON.stringify(error.message)}`)
+        }
+
+        return {
+            data: {
+                isSuccessful: true
+            },
+            hasErrors: false
+        }
+    } catch (ex) {
+        logger.error(`Error deleting user: ${ex}`)
+
+        return {
+            data: {
+                isSuccessful: false
+            },
+            hasErrors: true,
+            errors: [{
+                field: 'deleteUser',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
