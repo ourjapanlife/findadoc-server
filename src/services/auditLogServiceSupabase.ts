@@ -1,19 +1,11 @@
-/* eslint-disable */
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-    process.env.SUPABASE_URL as string,
-    process.env.SUPABASE_SERVICE_ROLE_KEY as string
-)
-
-export type ActionType = 'CREATE' | 'UPDATE' | 'DELETE'
-export type ObjectType = 'Facility' | 'HealthcareProfessional' | 'Submission'
-export type SchemaVersion = 'V1'
+import * as gqlTypes from '../typeDefs/gqlTypes.js'
+import { logger } from '../logger.js'
+import { getSupabaseClient } from '../supabaseClient.js'
 
 type InsertAuditLog = {
-    actionType: ActionType
-    objectType: ObjectType
-    schemaVersion?: SchemaVersion
+    actionType: gqlTypes.ActionType
+    objectType: gqlTypes.ObjectType
+    schemaVersion?: gqlTypes.SchemaVersion
     updatedBy: string
     newValue?: unknown
     oldValue?: unknown
@@ -25,16 +17,31 @@ export async function createAuditLogSQL({
     updatedBy,
     newValue,
     oldValue,
-    schemaVersion = 'V1'
+    schemaVersion = gqlTypes.SchemaVersion.V1
 }: InsertAuditLog): Promise<void> {
-    const { error } = await supabase.from('audit_logs').insert({
-        action_type: actionType,
-        object_type: objectType,
-        schema_version: schemaVersion,
-        new_value: newValue ?? null,
-        old_value: oldValue ?? null,
-        updated_by: updatedBy
-    })
+    try {
+        const supabase = getSupabaseClient()
+        
+        const { error } = await supabase
+            .from('audit_logs')
+            .insert({
+                action_type: actionType,
+                object_type: objectType,
+                schema_version: schemaVersion,
+                new_value: newValue ?? null,
+                old_value: oldValue ?? null,
+                updated_by: updatedBy,
+                updated_date: new Date().toISOString()
+            })
 
-    if (error) { throw error }
+        if (error) {
+            logger.error(`ERROR: Failed to create audit log: ${error.message}`)
+            throw error
+        }
+
+        logger.info(`Audit log created: ${actionType} ${objectType}`)
+    } catch (error) {
+        logger.error(`ERROR: Error creating audit log: ${error}`)
+        throw error
+    }
 }

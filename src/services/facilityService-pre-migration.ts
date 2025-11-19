@@ -140,6 +140,10 @@ export async function createFacility(
     facilityInput: gqlTypes.CreateFacilityInput,
     updatedBy: string
 ): Promise<Result<gqlTypes.Facility>> {
+    // Tracking variables for rollback
+    let createdFacilityId: string | null = null
+    let createdRelations = false
+
     try {
         const validationResult = validateCreateFacilityInput(facilityInput)
 
@@ -172,15 +176,15 @@ export async function createFacility(
             throw insertedFacilityError
         }
 
-        const facilityId = insertedFacility.id as string
-
+        // Track that facility was created
+        createdFacilityId = insertedFacility.id as string
         const hpIds = (facilityInput.healthcareProfessionalIds ?? []) as string[]
 
         // If HPs were provided, create rows in join table
         if (hpIds.length > 0) {
             const joinRows = hpIds.map(hpsId => ({
                 //eslint-disable-next-line
-                hps_id: hpsId, facilities_id: facilityId
+                hps_id: hpsId, facilities_id: createdFacilityId
             }))
 
             // Use upsert for insert relations
@@ -191,11 +195,43 @@ export async function createFacility(
             if (relationsError) {
                 throw relationsError
             }
+
+            // Track that relations were created
+            createdRelations = true
+        }
+
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Create,
+                objectType: gqlTypes.ObjectType.Facility,
+                updatedBy,
+                newValue: { ...insertedFacility, healthcareProfessionalIds: hpIds }
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for facility ${createdFacilityId}: ${auditError}`)
+            logger.warn(`Rolling back facility ${createdFacilityId} due to audit log failure`)
+            
+            // Delete relations first (foreign key constraint)
+            if (createdRelations && hpIds.length > 0) {
+                await supabase
+                    .from('hps_facilities')
+                    .delete()
+                    .eq('facilities_id', createdFacilityId)
+            }
+            
+            // Then delete the facility
+            await supabase
+                .from('facilities')
+                .delete()
+                .eq('id', createdFacilityId)
+            
+            // Return error to caller
+            throw new Error(`Failed to create audit log: ${auditError}`)
         }
 
         // Build GraphQL shape (include HP ids )
         const gqlFacility: gqlTypes.Facility = {
-            id: facilityId,
+            id: createdFacilityId,
             nameEn: insertedFacility.nameEn,
             nameJa: insertedFacility.nameJa,
             contact: insertedFacility.contact,
@@ -206,14 +242,7 @@ export async function createFacility(
             updatedDate: insertedFacility.updatedDate
         }
 
-        await createAuditLogSQL({
-            actionType: 'CREATE',
-            objectType: 'Facility',
-            updatedBy,
-            newValue: { ...insertedFacility, healthcareProfessionalIds: hpIds }
-        })
-
-        logger.info(`\nDB-CREATE: CREATE facility ${facilityId}.\nEntity: ${JSON.stringify(insertedFacility)}`)
+        logger.info(`\nDB-CREATE: CREATE facility ${createdFacilityId}.\nEntity: ${JSON.stringify(insertedFacility)}`)
 
         return {
             data: gqlFacility,
@@ -418,6 +447,12 @@ export const updateFacility = async (
     fieldsToUpdate: Partial<gqlTypes.UpdateFacilityInput>,
     updatedBy: string
 ): Promise<Result<gqlTypes.Facility>> => {
+    // Track original state for rollback
+    let originalFacility: gqlTypes.Facility | null = null
+    let originalRelations: string[] = []
+    let facilityWasUpdated = false
+    let relationsWereUpdated = false
+
     try {
         const validationResult = validateUpdateFacilityInput(fieldsToUpdate)
 
@@ -425,13 +460,14 @@ export const updateFacility = async (
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        // Retrieve current state
+        // Retrieve current state (for rollback)
         const currentState = await getFacilityById(facilityId)
 
         if (currentState.hasErrors || !currentState.data) {
             throw new Error(`Could not find facility with id ${facilityId} to update.`)
         }
-        const originalHpIds = currentState.data.healthcareProfessionalIds ?? []
+        originalFacility = currentState.data
+        originalRelations = currentState.data.healthcareProfessionalIds ?? []
 
         // Prepare the update payload for the facilities table
         const updatePayload = buildFacilityUpdatePatch(fieldsToUpdate)
@@ -451,6 +487,7 @@ export const updateFacility = async (
                 throw updateErr
             }
 
+            facilityWasUpdated = true
             logger.info(`DB-UPDATE: facilities ${facilityId} scalar fields updated.`)
         } else {
         // If we still want to update updatedDate to track the entity "touch"?
@@ -469,12 +506,14 @@ export const updateFacility = async (
             const relResult = await processHealthcareProfessionalRelationshipChanges(
                 facilityId,
                 fieldsToUpdate.healthcareProfessionalIds,
-                originalHpIds
+                originalRelations
             )
 
             if (relResult.hasErrors) {
                 throw new Error('Error updating facility healthcareProfessionalIds')
             }
+
+            relationsWereUpdated = true
         }
 
         // Return the updated HP with relations included
@@ -484,13 +523,60 @@ export const updateFacility = async (
             throw new Error('Error updating facility. Couldnt query the updated facility.')
         }
 
-        await createAuditLogSQL({
-            actionType: 'UPDATE',
-            objectType: 'Facility',
-            updatedBy,
-            oldValue: currentState.data,
-            newValue: refreshed.data
-        })
+        // Create audit log with error handling and rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Update,
+                objectType: gqlTypes.ObjectType.Facility,
+                updatedBy,
+                oldValue: originalFacility,
+                newValue: refreshed.data
+            })
+        } catch (auditError) {
+            // Audit log failed
+            logger.error(`CRITICAL: Audit log failed for facility ${facilityId}: ${auditError}`)
+            logger.warn(`Rolling back facility ${facilityId} update due to audit log failure`)
+
+            // ROLLBACK: Restore original state
+            
+            // Rollback relations if they were updated
+            if (relationsWereUpdated && fieldsToUpdate.healthcareProfessionalIds) {
+                // Delete current relations
+                await supabase
+                    .from('hps_facilities')
+                    .delete()
+                    .eq('facilities_id', facilityId)
+
+                // Restore original relations
+                if (originalRelations.length > 0) {
+                    const originalJoinRows = originalRelations.map(hpId => ({
+                        hps_id: hpId,
+                        facilities_id: facilityId
+                    }))
+                    
+                    await supabase
+                        .from('hps_facilities')
+                        .insert(originalJoinRows)
+                }
+            }
+
+            // Rollback facility fields if they were updated
+            if (facilityWasUpdated && originalFacility) {
+                await supabase
+                    .from('facilities')
+                    .update({
+                        nameEn: originalFacility.nameEn,
+                        nameJa: originalFacility.nameJa,
+                        contact: originalFacility.contact,
+                        mapLatitude: originalFacility.mapLatitude,
+                        mapLongitude: originalFacility.mapLongitude,
+                        updatedDate: originalFacility.updatedDate
+                    })
+                    .eq('id', facilityId)
+            }
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
 
         return { data: refreshed.data, hasErrors: false }
     } catch (error) {
@@ -695,6 +781,9 @@ export async function deleteFacility(
     id: string,
     updatedBy: string
 ): Promise<Result<gqlTypes.DeleteResult>> {
+    // Track what we delete for potential restore
+    let deletedFacility: gqlTypes.Facility | null = null
+    let deletedRelations: Array<{ hps_id: string, facilities_id: string }> = []
     try {
         const validationResult = validateIdInput(id)
 
@@ -723,8 +812,20 @@ export async function deleteFacility(
             }
         }
 
+        deletedFacility = existingFacility.data
+
         const supabase = getSupabaseClient()
         
+        // Save relations for potential restore
+        const { data: relations } = await supabase
+            .from('hps_facilities')
+            .select('hps_id, facilities_id')
+            .eq('facilities_id', id)
+
+        if (relations) {
+            deletedRelations = relations as Array<{ hps_id: string, facilities_id: string }>
+        }
+
         // Delete the main facility record. Delete join table (hps_facilities) rows 
         // is handled by a Supabase ONCASCADE trigger.
         const { error: facilityDeleteError } = await supabase
@@ -736,19 +837,49 @@ export async function deleteFacility(
             throw new Error(`Failed to delete facility: ${facilityDeleteError.message}`)
         }
 
-        await createAuditLogSQL({
-            actionType: 'DELETE',
-            objectType: 'Facility',
-            updatedBy,
-            oldValue: existingFacility.data
-        })
+        // Create audit log with error handling and rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Delete,
+                objectType: gqlTypes.ObjectType.Facility,
+                updatedBy,
+                oldValue: deletedFacility
+            })
+        } catch (auditError) {
+            //Audit log failed
+            logger.error(`CRITICAL: Audit log failed for deleted facility ${id}: ${auditError}`)
+            logger.warn(`Rolling back facility ${id} deletion due to audit log failure`)
+
+            // ROLLBACK: Restore the deleted facility
+            
+            // Restore facility
+            await supabase
+                .from('facilities')
+                .insert({
+                    id: deletedFacility.id,
+                    nameEn: deletedFacility.nameEn,
+                    nameJa: deletedFacility.nameJa,
+                    contact: deletedFacility.contact,
+                    mapLatitude: deletedFacility.mapLatitude,
+                    mapLongitude: deletedFacility.mapLongitude,
+                    createdDate: deletedFacility.createdDate,
+                    updatedDate: deletedFacility.updatedDate
+                })
+
+            // Restore relations
+            if (deletedRelations.length > 0) {
+                await supabase
+                    .from('hps_facilities')
+                    .insert(deletedRelations)
+            }
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
 
         logger.info(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(id)}`)
 
         return {
-            data: {
-                isSuccessful: true
-            },
+            data: { isSuccessful: true },
             hasErrors: false
         }
     } catch (error) {
