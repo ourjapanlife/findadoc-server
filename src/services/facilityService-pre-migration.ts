@@ -200,6 +200,7 @@ export async function createFacility(
             createdRelations = true
         }
 
+        // Wrap audit log in try-catch with rollback
         try {
             await createAuditLogSQL({
                 actionType: gqlTypes.ActionType.Create,

@@ -333,7 +333,9 @@ export async function createHealthcareProfessional(
     updatedBy: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
     // Keep reference to created HP id for audit/logging even if something fails
+    // Tracking variables for rollback
     let createdHpId: string | null = null
+    let createdRelation = false
 
     try {
         const validationResult = validateCreateProfessionalInput(input)
@@ -395,10 +397,12 @@ export async function createHealthcareProfessional(
                 )
 
             if (upsertRelationErr) {
-                logger.error(`Join hps_facilities failed for HP ${createdHpId}: ${upsertRelationErr.message}`)
-            } else {
-                linkedFacilityIds = [oneFacilityId]
+                throw upsertRelationErr
             }
+
+            // Track created relation
+            createdRelation = true
+            linkedFacilityIds = [oneFacilityId]
         }
         
         // Map inserted DB row into GraphQL shape including related facility ids
@@ -407,12 +411,34 @@ export async function createHealthcareProfessional(
             linkedFacilityIds
         )
         
-        await createAuditLogSQL({
-            actionType: 'CREATE',
-            objectType: 'HealthcareProfessional',
-            updatedBy,
-            newValue: gqlHealthcareProfessional
-        })
+        // Wrap audit log in try-catch with rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Create,
+                objectType: gqlTypes.ObjectType.HealthcareProfessional,
+                updatedBy,
+                newValue: gqlHealthcareProfessional
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for HP ${createdHpId}: ${auditError}`)
+            logger.warn(`Rolling back HP ${createdHpId} due to audit log failure`)
+
+            // ROLLBACK: Delete relation first
+            if (createdRelation) {
+                await supabase
+                    .from('hps_facilities')
+                    .delete()
+                    .eq('hps_id', createdHpId)
+            }
+
+            // Then delete the HP
+            await supabase
+                .from('hps')
+                .delete()
+                .eq('id', createdHpId)
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
 
         logger.info(`DB-CREATE: Created healthcare professional ${createdHpId}.`)
 
@@ -447,6 +473,12 @@ export const updateHealthcareProfessional = async (
     fieldsToUpdate: Partial<gqlTypes.UpdateHealthcareProfessionalInput>,
     updatedBy: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> => {
+    // Tracking variables for rollback
+    let originalHp: gqlTypes.HealthcareProfessional | null = null
+    let originalFacilityIds: string[] = []
+    let hpWasUpdated = false
+    let relationsWereUpdated = false
+
     try {
         const validationResult = validateUpdateProfessionalInput(fieldsToUpdate)
 
@@ -465,7 +497,8 @@ export const updateHealthcareProfessional = async (
             }
         }
 
-        const oldValue = currentState.data
+        originalHp = currentState.data
+        originalFacilityIds = currentState.data.facilityIds ?? []
 
         // prepare the update payload for the hps tables
         const updatePayload = buildHpUpdatePatch(fieldsToUpdate)
@@ -483,6 +516,8 @@ export const updateHealthcareProfessional = async (
                 .eq('id', id)
 
             if (updateErr) { throw updateErr }
+
+            hpWasUpdated = true
         } else {
         // If we still want to update updatedDate to track the entity "touch"?
             const { error: touchErr } = await supabase
@@ -505,6 +540,7 @@ export const updateHealthcareProfessional = async (
             }
             // This clears existing links and optionally sets a new one
             await setSingleFacilityForHp(id, newFacilityId)
+            relationsWereUpdated = true
         }
 
         // Return the refreshed HP with relations included
@@ -514,13 +550,58 @@ export const updateHealthcareProfessional = async (
             throw new Error('Could not reload updated healthcare professional.')
         }
 
-        await createAuditLogSQL({
-            actionType: 'UPDATE',
-            objectType: 'HealthcareProfessional',
-            updatedBy,
-            oldValue,
-            newValue: refreshedResult.data
-        })
+        // Wrap audit log in try-catch with rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Update,
+                objectType: gqlTypes.ObjectType.HealthcareProfessional,
+                updatedBy,
+                oldValue: originalHp,
+                newValue: refreshedResult.data
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for HP ${id}: ${auditError}`)
+            logger.warn(`Rolling back HP ${id} update due to audit log failure`)
+
+            // ROLLBACK: Restore relations if they were updated
+            if (relationsWereUpdated) {
+                // Delete current relations
+                await supabase
+                    .from('hps_facilities')
+                    .delete()
+                    .eq('hps_id', id)
+
+                // Restore original relations
+                if (originalFacilityIds.length > 0) {
+                    const originalRelations = originalFacilityIds.map(facId => ({
+                        hps_id: id,
+                        facilities_id: facId
+                    }))
+
+                    await supabase
+                        .from('hps_facilities')
+                        .insert(originalRelations)
+                }
+            }
+
+            // Rollback scalar fields if they were updated
+            if (hpWasUpdated && originalHp) {
+                await supabase
+                    .from('hps')
+                    .update({
+                        names: originalHp.names,
+                        degrees: originalHp.degrees,
+                        spokenLanguages: originalHp.spokenLanguages,
+                        specialties: originalHp.specialties,
+                        acceptedInsurance: originalHp.acceptedInsurance,
+                        additionalInfoForPatients: originalHp.additionalInfoForPatients,
+                        updatedDate: originalHp.updatedDate
+                    })
+                    .eq('id', id)
+            }
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
 
         return { data: refreshedResult.data, hasErrors: false }
     } catch (error) {
@@ -546,6 +627,10 @@ export async function deleteHealthcareProfessional(
     id: string,
     updatedBy: string
 ): Promise<Result<gqlTypes.DeleteResult>> {
+    // Tracking variables for rollback
+    let deletedHp: gqlTypes.HealthcareProfessional | null = null
+    let deletedRelations: Array<{ hps_id: string, facilities_id: string }> = []
+
     try {
         const validationResult = validateIdInput(id)
 
@@ -574,7 +659,19 @@ export async function deleteHealthcareProfessional(
             }
         }
 
+        deletedHp = existingHp.data
+
         const supabase = getSupabaseClient()
+
+        // Save relations for potential restore
+        const { data: relations } = await supabase
+            .from('hps_facilities')
+            .select('hps_id, facilities_id')
+            .eq('hps_id', id)
+
+        if (relations) {
+            deletedRelations = relations as Array<{ hps_id: string, facilities_id: string }>
+        }
 
         const { error: hpDeleteErr } = await supabase
             .from('hps')
@@ -585,12 +682,41 @@ export async function deleteHealthcareProfessional(
             throw new Error(`Failed to delete professional: ${hpDeleteErr.message}`)
         }
 
-        await createAuditLogSQL({
-            actionType: 'DELETE',
-            objectType: 'HealthcareProfessional',
-            updatedBy,
-            oldValue: existingHp.data
-        })
+         try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Delete,
+                objectType: gqlTypes.ObjectType.HealthcareProfessional,
+                updatedBy,
+                oldValue: deletedHp
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for deleted HP ${id}: ${auditError}`)
+            logger.warn(`Rolling back HP ${id} deletion due to audit log failure`)
+
+            // ROLLBACK: Restore the deleted HP
+            await supabase
+                .from('hps')
+                .insert({
+                    id: deletedHp.id,
+                    names: deletedHp.names,
+                    degrees: deletedHp.degrees,
+                    spokenLanguages: deletedHp.spokenLanguages,
+                    specialties: deletedHp.specialties,
+                    acceptedInsurance: deletedHp.acceptedInsurance,
+                    additionalInfoForPatients: deletedHp.additionalInfoForPatients,
+                    createdDate: deletedHp.createdDate,
+                    updatedDate: deletedHp.updatedDate
+                })
+
+            // Restore relations
+            if (deletedRelations.length > 0) {
+                await supabase
+                    .from('hps_facilities')
+                    .insert(deletedRelations)
+            }
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
 
         logger.info(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(id)}`)
 
@@ -598,6 +724,7 @@ export async function deleteHealthcareProfessional(
             data: { isSuccessful: true },
             hasErrors: false
         }
+
     } catch (error) {
         logger.error(`ERROR: Error deleting professional ${id}: ${error}`)
 
