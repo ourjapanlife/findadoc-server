@@ -173,6 +173,7 @@ export const createSubmission = async (
 ): Promise<Result<gqlTypes.Submission>> => {
     // Tracking variable for rollback
     let createdSubmissionId: string | null = null
+
     try {
         const validationResults = validateCreateSubmissionInputs(submissionInput)
 
@@ -265,6 +266,7 @@ export const updateSubmission = async (
 ): Promise<Result<gqlTypes.Submission>> => {
     // Tracking variables for rollback
     let originalSubmission: gqlTypes.Submission | null = null
+
     try {
         if (fieldsToUpdate.isApproved === true) {
             return await approveSubmission(submissionId, updatedBy)
@@ -396,7 +398,7 @@ export const updateSubmission = async (
                     notes: originalSubmission.notes ?? null,
                     autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
                     status: originalSubmission.isApproved ? 'approved' : 
-                            originalSubmission.isRejected ? 'rejected' : 
+                        originalSubmission.isRejected ? 'rejected' : 
                             originalSubmission.isUnderReview ? 'under_review' : 'pending',
                     updatedDate: originalSubmission.updatedDate
                 })
@@ -432,6 +434,7 @@ export const autoFillPlacesInformation = async (
 ): Promise<Result<gqlTypes.Submission>> => {
     // Tracking variable for rollback
     let originalSubmission: gqlTypes.Submission | null = null
+
     try {
         const supabase = getSupabaseClient()
         // Load current submission
@@ -553,7 +556,7 @@ export const autoFillPlacesInformation = async (
                     //eslint-disable-next-line
                     facility_partial: originalSubmission.facility as any ?? null,
                     status: originalSubmission.isApproved ? 'approved' : 
-                            originalSubmission.isRejected ? 'rejected' : 
+                        originalSubmission.isRejected ? 'rejected' : 
                             originalSubmission.isUnderReview ? 'under_review' : 'pending',
                     autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
                     updatedDate: originalSubmission.updatedDate
@@ -575,6 +578,117 @@ export const autoFillPlacesInformation = async (
 }
 
 /**
+ * Helper: Attempts to create an HP for the submission if needed.
+ * Handles all the complex logic of parsing HP data from various sources.
+ * Returns the created HP ID or undefined if creation was skipped/failed.
+ */
+async function tryCreateHealthcareProfessionalForSubmission(
+    current: dbSchema.SubmissionRow,
+    finalFacilityId: string,
+    submissionId: string,
+    updatedBy: string
+): Promise<string | undefined> {
+    /**
+     * Only attempt to create an HP if:
+     * - The submission is not already linked to an HP (hps_id is null)
+     * - We have a facility to associate it with (finalFacilityId)
+     */
+    if (current.hps_id) {
+        return undefined
+    }
+
+    let hpInput: gqlTypes.CreateHealthcareProfessionalInput | null = null
+
+    /**
+     * Case A: We have healthcare_professionals_partial data.
+     * We only look at the first entry for HP creation.
+     */
+    if (current.healthcare_professionals_partial && current.healthcare_professionals_partial.length > 0) {
+        const firstHp = current.healthcare_professionals_partial[0]
+        const hasNames = Array.isArray(firstHp.names) && firstHp.names.length > 0
+
+        if (hasNames) {
+            hpInput = {
+                names: firstHp.names!,
+                spokenLanguages: sanitizeLocales(
+                    (firstHp.spokenLanguages ?? []) as (gqlTypes.Locale | null | undefined)[]
+                ),
+                degrees: firstHp.degrees ?? [],
+                specialties: firstHp.specialties ?? [],
+                acceptedInsurance: firstHp.acceptedInsurance ?? [],
+                additionalInfoForPatients: firstHp.additionalInfoForPatients ?? '',
+                facilityIds: [finalFacilityId]
+            }
+        } else if (current.healthcareProfessionalName?.trim()) {
+            /**
+             * Fallback: partial HP has no names array,
+             * but submission still has a healthcareProfessionalName string.
+             * We parse "First [Middle] Last" format and build a single LocalizedName.
+             */
+            const parsed = splitPersonName(current.healthcareProfessionalName.trim())
+            const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale)
+                ?? gqlTypes.Locale.EnUs
+
+            hpInput = {
+                names: [{
+                    locale: localeFromSubmission,
+                    firstName: parsed.firstName,
+                    lastName: parsed.lastName,
+                    ...(parsed.middleName ? { middleName: parsed.middleName } : {})
+                }],
+                degrees: [],
+                specialties: [],
+                spokenLanguages: sanitizeLocales(
+                    current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
+                ),
+                acceptedInsurance: [],
+                additionalInfoForPatients: current.notes ?? null,
+                facilityIds: [finalFacilityId]
+            }
+        }
+    } else if (current.healthcareProfessionalName?.trim()) {
+        /**
+         * Case B: No partial array, but we do have a free-text name string.
+         * Same parsing logic as above, but without partial HP metadata.
+         */
+        const parsed = splitPersonName(current.healthcareProfessionalName.trim())
+        const localeFromSubmission =
+            (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
+
+        hpInput = {
+            names: [{
+                locale: localeFromSubmission,
+                firstName: parsed.firstName,
+                lastName: parsed.lastName,
+                ...(parsed.middleName ? { middleName: parsed.middleName } : {})
+            }],
+            degrees: [],
+            specialties: [],
+            spokenLanguages: sanitizeLocales(
+                current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
+            ),
+            acceptedInsurance: [],
+            additionalInfoForPatients: current.notes ?? null,
+            facilityIds: [finalFacilityId]
+        }
+    }
+
+    if (isValidHpInput(hpInput)) {
+        const hpRes = await createHealthcareProfessional(hpInput!, updatedBy)
+
+        if (hpRes.hasErrors || !hpRes.data) {
+            logger.warn(`approveSubmission: could not create HP for submission ${submissionId}, continuing anyway`)
+        } else {
+            return hpRes.data.id
+        }
+    } else {
+        logger.info(`approveSubmission: skipping HP creation for submission ${submissionId} due to insufficient data`)
+    }
+
+    return undefined
+}
+
+/**
  * Approves a pending submission and, if needed, creates:
  * - a Facility (from facility_partial or fallback data)
  * - a HealthcareProfessional (from partial data or name string)
@@ -593,6 +707,7 @@ export const approveSubmission = async (
     let originalSubmission: gqlTypes.Submission | null = null
     let createdFacilityId: string | undefined
     let createdHpId: string | undefined
+
     try {
         const supabase = getSupabaseClient()
         const { data: current, error: readErr } = await supabase
@@ -659,99 +774,14 @@ export const approveSubmission = async (
             createdFacilityId = finalFacilityId
         }
 
-        /**
-         * Only attempt to create an HP if:
-         * - The submission is not already linked to an HP (hps_id is null)
-         * - We have a facility to associate it with (finalFacilityId)
-         */
-        if (!current.hps_id && finalFacilityId) {
-            let hpInput: gqlTypes.CreateHealthcareProfessionalInput | null = null
-
-            /**
-             * Case A: We have healthcare_professionals_partial data.
-             * We only look at the first entry for HP creation.
-             */
-            if (current.healthcare_professionals_partial && current.healthcare_professionals_partial.length > 0) {
-                const firstHp = current.healthcare_professionals_partial[0]
-                const hasNames = Array.isArray(firstHp.names) && firstHp.names.length > 0
-
-                if (hasNames) {
-                    hpInput = {
-                        names: firstHp.names!,
-                        spokenLanguages: sanitizeLocales(
-                            (firstHp.spokenLanguages ?? []) as (gqlTypes.Locale | null | undefined)[]
-                        ),
-                        degrees: firstHp.degrees ?? [],
-                        specialties: firstHp.specialties ?? [],
-                        acceptedInsurance: firstHp.acceptedInsurance ?? [],
-                        additionalInfoForPatients: firstHp.additionalInfoForPatients ?? '',
-                        facilityIds: [finalFacilityId]
-                    }
-                } else if (current.healthcareProfessionalName?.trim()) {
-                    /**
-                     * Fallback: partial HP has no names array,
-                     * but submission still has a healthcareProfessionalName string.
-                     * We parse "First [Middle] Last" format and build a single LocalizedName.
-                     */
-                    const parsed = splitPersonName(current.healthcareProfessionalName.trim())
-                    const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale)
-                        ?? gqlTypes.Locale.EnUs
-
-                    hpInput = {
-                        names: [{
-                            locale: localeFromSubmission,
-                            firstName: parsed.firstName,
-                            lastName: parsed.lastName,
-                            ...(parsed.middleName ? { middleName: parsed.middleName } : {})
-                        }],
-                        degrees: [],
-                        specialties: [],
-                        spokenLanguages: sanitizeLocales(
-                            current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
-                        ),
-                        acceptedInsurance: [],
-                        additionalInfoForPatients: current.notes ?? null,
-                        facilityIds: [finalFacilityId]
-                    }
-                }
-            } else if (current.healthcareProfessionalName?.trim()) {
-                /**
-                 * Case B: No partial array, but we do have a free-text name string.
-                 * Same parsing logic as above, but without partial HP metadata.
-                 */
-                const parsed = splitPersonName(current.healthcareProfessionalName.trim())
-                const localeFromSubmission =
-                    (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
-
-                hpInput = {
-                    names: [{
-                        locale: localeFromSubmission,
-                        firstName: parsed.firstName,
-                        lastName: parsed.lastName,
-                        ...(parsed.middleName ? { middleName: parsed.middleName } : {})
-                    }],
-                    degrees: [],
-                    specialties: [],
-                    spokenLanguages: sanitizeLocales(
-                        current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
-                    ),
-                    acceptedInsurance: [],
-                    additionalInfoForPatients: current.notes ?? null,
-                    facilityIds: [finalFacilityId]
-                }
-            }
-
-            if (isValidHpInput(hpInput)) {
-                const hpRes = await createHealthcareProfessional(hpInput!, updatedBy)
-
-                if (hpRes.hasErrors || !hpRes.data) {
-                    logger.warn(`approveSubmission: could not create HP for submission ${submissionId}, continuing anyway`)
-                } else {
-                    createdHpId = hpRes.data.id
-                }
-            } else {
-                logger.info(`approveSubmission: skipping HP creation for submission ${submissionId} due to insufficient data`)
-            }
+        // Helper for create HP, made for having a complexity less than 40
+        if (finalFacilityId) {
+            createdHpId = await tryCreateHealthcareProfessionalForSubmission(
+                current,
+                finalFacilityId,
+                submissionId,
+                updatedBy
+            )
         }
 
         /**
@@ -826,7 +856,7 @@ export const approveSubmission = async (
                 .from('submissions')
                 .update({
                     status: originalSubmission.isApproved ? 'approved' : 
-                            originalSubmission.isRejected ? 'rejected' : 
+                        originalSubmission.isRejected ? 'rejected' : 
                             originalSubmission.isUnderReview ? 'under_review' : 'pending',
                     //eslint-disable-next-line
                     facilities_id: current.facilities_id,
@@ -860,6 +890,7 @@ export async function deleteSubmission(
 ): Promise<Result<gqlTypes.DeleteResult>> {
     // Tracking variable for rollback
     let deletedSubmission: gqlTypes.Submission | null = null
+
     try {
         const validation = validateIdInput(id)
 
