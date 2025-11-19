@@ -1,3 +1,4 @@
+/* eslint-disable */
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'

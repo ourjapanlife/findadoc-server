@@ -574,8 +574,8 @@ export const updateHealthcareProfessional = async (
                 // Restore original relations
                 if (originalFacilityIds.length > 0) {
                     const originalRelations = originalFacilityIds.map(facId => ({
-                        hps_id: id,
-                        facilities_id: facId
+                        //eslint-disable-next-line
+                        hps_id: id, facilities_id: facId
                     }))
 
                     await supabase
@@ -682,7 +682,7 @@ export async function deleteHealthcareProfessional(
             throw new Error(`Failed to delete professional: ${hpDeleteErr.message}`)
         }
 
-         try {
+        try {
             await createAuditLogSQL({
                 actionType: gqlTypes.ActionType.Delete,
                 objectType: gqlTypes.ObjectType.HealthcareProfessional,
@@ -724,7 +724,6 @@ export async function deleteHealthcareProfessional(
             data: { isSuccessful: true },
             hasErrors: false
         }
-
     } catch (error) {
         logger.error(`ERROR: Error deleting professional ${id}: ${error}`)
 

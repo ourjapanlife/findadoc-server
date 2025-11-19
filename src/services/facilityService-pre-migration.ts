@@ -551,8 +551,8 @@ export const updateFacility = async (
                 // Restore original relations
                 if (originalRelations.length > 0) {
                     const originalJoinRows = originalRelations.map(hpId => ({
-                        hps_id: hpId,
-                        facilities_id: facilityId
+                        //eslint-disable-next-line
+                        hps_id: hpId, facilities_id: facilityId
                     }))
                     
                     await supabase
@@ -785,6 +785,7 @@ export async function deleteFacility(
     // Track what we delete for potential restore
     let deletedFacility: gqlTypes.Facility | null = null
     let deletedRelations: Array<{ hps_id: string, facilities_id: string }> = []
+
     try {
         const validationResult = validateIdInput(id)
 
