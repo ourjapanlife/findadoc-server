@@ -6,7 +6,6 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY as string
 )
 
-// Tipi “string literal” allineati agli ENUM Postgres
 export type ActionType = 'CREATE' | 'UPDATE' | 'DELETE'
 export type ObjectType = 'Facility' | 'HealthcareProfessional' | 'Submission'
 export type SchemaVersion = 'V1'
