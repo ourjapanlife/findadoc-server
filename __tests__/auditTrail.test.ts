@@ -12,8 +12,8 @@ describe('createAuditLog', () => {
         
         await expect(
             createAuditLogSQL({
-                actionType: 'CREATE',
-                objectType: 'Submission',
+                actionType: gqlTypes.ActionType.Create,
+                objectType: gqlTypes.ObjectType.Submission,
                 updatedBy: 'user123',
                 newValue: newAuditLog,
                 oldValue: null
