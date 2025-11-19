@@ -63,12 +63,12 @@ describe('Audit Log System', () => {
 
     describe('Rollback on Audit Log Failure', () => {
         afterEach(() => {
-            // ✅ Restore all mocks after each test
+            // Restore all mocks after each test
             vi.restoreAllMocks()
         })
 
         it('should rollback submission creation if audit log fails', async () => {
-            // ✅ Mock using vi.spyOn - more controlled than vi.mock
+            // Mock using vi.spyOn
             const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
                 .mockRejectedValue(new Error('Audit log failed'))
 
@@ -115,7 +115,7 @@ describe('Audit Log System', () => {
                 .eq('id', submissionId)
                 .single()
 
-            // ✅ NOW mock the audit log to fail
+            // NOW mock the audit log to fail
             const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
                 .mockRejectedValue(new Error('Audit log failed'))
 
@@ -160,7 +160,7 @@ describe('Audit Log System', () => {
                 .eq('id', submissionId)
                 .single()
 
-            // ✅ Mock audit log to fail
+            // Mock audit log to fail
             const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
                 .mockRejectedValue(new Error('Audit log failed'))
 

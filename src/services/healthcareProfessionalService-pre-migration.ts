@@ -740,6 +740,43 @@ export async function deleteHealthcareProfessional(
 }
 
 /**
+ * Batch version: counts facilities for multiple HPs in a single query
+ */
+async function countFacilitiesForMultipleHps(hpIds: string[]): Promise<Map<string, number>> {
+    if (hpIds.length === 0) {
+        return new Map()
+    }
+
+    const supabase = getSupabaseClient()
+    
+    // Single batch query for all HPs
+    const { data, error } = await supabase
+        .from('hps_facilities')
+        .select('hps_id')
+        .in('hps_id', hpIds)
+
+    if (error) {
+        throw error
+    }
+
+    // Count occurrences
+    const counts = new Map<string, number>()
+    
+    // Initialize all with 0
+    for (const hpId of hpIds) {
+        counts.set(hpId, 0)
+    }
+    
+    // Count from results
+    for (const row of data ?? []) {
+        const hpId = row.hps_id as string
+        counts.set(hpId, (counts.get(hpId) ?? 0) + 1)
+    }
+
+    return counts
+}
+
+/**
     * This function updates the facilityIds list for each healthcare professional listed.
     * Based on the action, it will add or remove the facility id from the existing list of facilityIds.
     * @param professionalRelationshipsToUpdate - The list of healthcare professionals to update.
@@ -811,19 +848,14 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
         }
         // DELETE relations
         if (idsToDelete.length > 0) {
-            const { error: deleteErr } = await supabase
-                .from('hps_facilities')
-                .delete()
-                .eq('facilities_id', facilityId)
-                .in('hps_id', idsToDelete)
+            // Batched Single query for all HPs
+            const facilityCounts = await countFacilitiesForMultipleHps(idsToDelete)
 
-            const hpCounts = await Promise.all(idsToDelete.map(async hpId => ({
-                hpId,
-                count: await countFacilitiesForHp(hpId)
-            })))
-
-            // If HP has count === 1 and we are deleting this link
-            const wouldBreak = hpCounts.filter(x => x.count <= 1)
+            // Check if any HP would be left without facilities
+            const wouldBreak = idsToDelete.filter(hpId => {
+                const count = facilityCounts.get(hpId) ?? 0
+                return count <= 1  // Would have 0 facilities after deletion
+            })
 
             if (wouldBreak.length > 0) {
                 return {
@@ -836,6 +868,14 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                     }]
                 }
             }
+
+            // Delete relations
+            const { error: deleteErr } = await supabase
+                .from('hps_facilities')
+                .delete()
+                .eq('facilities_id', facilityId)
+                .in('hps_id', idsToDelete)
+
             if (deleteErr) {
                 return {
                     data: undefined,

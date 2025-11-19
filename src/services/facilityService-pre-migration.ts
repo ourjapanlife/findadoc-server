@@ -334,7 +334,7 @@ export async function searchFacilities(
         }
 
         // Extract the IDs of only the facilities that are present on the current, paginated results
-        const facilityIds = paginationRows.map(r => r.id as string)
+        const facilityIds = paginationRows.map(relatedRow => relatedRow.id as string)
 
         // Fetching ALL Healthcare Professional (HP) relationships for the facilities on the current page with a SINGLE query
         const { data: hpRelationsForFacilities, error: hpRelationsForFacilitiesError } = await supabase
