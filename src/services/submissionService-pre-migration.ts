@@ -171,6 +171,8 @@ export const createSubmission = async (
     submissionInput: gqlTypes.CreateSubmissionInput,
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
+    // Tracking variable for rollback
+    let createdSubmissionId: string | null = null
     try {
         const validationResults = validateCreateSubmissionInputs(submissionInput)
 
@@ -197,15 +199,34 @@ export const createSubmission = async (
 
         if (insertedError) { throw insertedError }
 
+        // Track created submission
+        createdSubmissionId = inserted.id as string
+
         // Convert DB → GQL for client response
         const gqlSubmission = mapDbEntityTogqlEntity(inserted as dbSchema.SubmissionRow)
 
-        await createAuditLogSQL({
-            actionType: 'CREATE',
-            objectType: 'Submission',
-            updatedBy,
-            newValue: gqlSubmission
-        })
+        // Wrap audit log in try-catch with rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Create,
+                objectType: gqlTypes.ObjectType.Submission,
+                updatedBy,
+                newValue: gqlSubmission
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for submission ${createdSubmissionId}: ${auditError}`)
+            logger.warn(`Rolling back submission ${createdSubmissionId} due to audit log failure`)
+
+            // ROLLBACK: Delete the submission
+            await supabase
+                .from('submissions')
+                .delete()
+                .eq('id', createdSubmissionId)
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
+
+        logger.info(`DB-CREATE: submission ${createdSubmissionId} created with audit log`)
 
         return { data: gqlSubmission, hasErrors: false }
     } catch (error) {
@@ -242,6 +263,8 @@ export const updateSubmission = async (
     fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>,
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
+    // Tracking variables for rollback
+    let originalSubmission: gqlTypes.Submission | null = null
     try {
         if (fieldsToUpdate.isApproved === true) {
             return await approveSubmission(submissionId, updatedBy)
@@ -296,11 +319,8 @@ export const updateSubmission = async (
             )
         }
 
-        /**
-         * Before applying updates, we map the current DB record to GQL format
-         * so that audit logs can compare old/new values accurately.
-         */
-        const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
+        // Store original state for rollback
+        originalSubmission = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
         const statusFlags = [
             fieldsToUpdate.isUnderReview ? 'under_review' : null,
@@ -353,13 +373,37 @@ export const updateSubmission = async (
             throw new Error('Could not reload updated submission.')
         }
 
-        await createAuditLogSQL({
-            actionType: 'UPDATE',
-            objectType: 'Submission',
-            updatedBy,
-            oldValue,
-            newValue: refreshed.data
-        })
+        // Wrap audit log in try-catch with rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Update,
+                objectType: gqlTypes.ObjectType.Submission,
+                updatedBy,
+                oldValue: originalSubmission,
+                newValue: refreshed.data
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for submission ${submissionId}: ${auditError}`)
+            logger.warn(`Rolling back submission ${submissionId} update due to audit log failure`)
+
+            // ROLLBACK: Restore original state
+            await supabase
+                .from('submissions')
+                .update({
+                    googleMapsUrl: originalSubmission.googleMapsUrl,
+                    healthcareProfessionalName: originalSubmission.healthcareProfessionalName,
+                    spokenLanguages: originalSubmission.spokenLanguages,
+                    notes: originalSubmission.notes ?? null,
+                    autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
+                    status: originalSubmission.isApproved ? 'approved' : 
+                            originalSubmission.isRejected ? 'rejected' : 
+                            originalSubmission.isUnderReview ? 'under_review' : 'pending',
+                    updatedDate: originalSubmission.updatedDate
+                })
+                .eq('id', submissionId)
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
 
         return { data: refreshed.data, hasErrors: false }
     } catch (error) {
@@ -386,6 +430,8 @@ export const autoFillPlacesInformation = async (
     googleMapsUrl: gqlTypes.InputMaybe<string> | undefined,
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
+    // Tracking variable for rollback
+    let originalSubmission: gqlTypes.Submission | null = null
     try {
         const supabase = getSupabaseClient()
         // Load current submission
@@ -411,8 +457,8 @@ export const autoFillPlacesInformation = async (
             }
         }
 
-        // Save the old state for audit logs
-        const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
+        // Store original state for rollback
+        originalSubmission = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
         const places = await getFacilityDetailsForSubmission(googleMapsUrl as string)
 
@@ -486,13 +532,36 @@ export const autoFillPlacesInformation = async (
             throw new Error('Could not reload updated submission after autofill.')
         }
 
-        await createAuditLogSQL({
-            actionType: 'UPDATE',
-            objectType: 'Submission',
-            updatedBy,
-            oldValue,
-            newValue: refreshed.data
-        })
+        // Wrap audit log in try-catch with rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Update,
+                objectType: gqlTypes.ObjectType.Submission,
+                updatedBy,
+                oldValue: originalSubmission,
+                newValue: refreshed.data
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for submission ${submissionId} autofill: ${auditError}`)
+            logger.warn(`Rolling back submission ${submissionId} autofill due to audit log failure`)
+
+            // ROLLBACK: Restore original state
+            await supabase
+                .from('submissions')
+                .update({
+                    googleMapsUrl: originalSubmission.googleMapsUrl,
+                    //eslint-disable-next-line
+                    facility_partial: originalSubmission.facility as any ?? null,
+                    status: originalSubmission.isApproved ? 'approved' : 
+                            originalSubmission.isRejected ? 'rejected' : 
+                            originalSubmission.isUnderReview ? 'under_review' : 'pending',
+                    autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
+                    updatedDate: originalSubmission.updatedDate
+                })
+                .eq('id', submissionId)
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
 
         return { data: refreshed.data, hasErrors: false }
     } catch (error) {
@@ -520,6 +589,10 @@ export const approveSubmission = async (
     submissionId: string,
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
+    // Tracking variables for rollback
+    let originalSubmission: gqlTypes.Submission | null = null
+    let createdFacilityId: string | undefined
+    let createdHpId: string | undefined
     try {
         const supabase = getSupabaseClient()
         const { data: current, error: readErr } = await supabase
@@ -544,18 +617,10 @@ export const approveSubmission = async (
             }
         }
 
-        // Preserve original submission for audit logs
-        const oldValue = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
+        // Store original state for rollback
+        originalSubmission = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
-        /**
-         * These hold IDs created during the approval flow.
-         * - createdFacilityId: only set if we create a new Facility now.
-         * - finalFacilityId: resolved facility to associate with this submission.
-         * - createdHpId: only set if we manage to create a new HP now.
-         */
-        let createdFacilityId: string | undefined
         let finalFacilityId: string | null = current.facilities_id
-        let createdHpId: string | undefined
 
         /**
          * If the submission is not linked to any Facility yet (facilities_id is null),we must create one.
@@ -590,6 +655,7 @@ export const approveSubmission = async (
                 }
             }
             finalFacilityId = facilityRes.data.id
+            // Track created facility
             createdFacilityId = finalFacilityId
         }
 
@@ -722,13 +788,56 @@ export const approveSubmission = async (
             throw new Error('Could not reload approved submission.')
         }
 
-        await createAuditLogSQL({
-            actionType: 'UPDATE',
-            objectType: 'Submission',
-            updatedBy,
-            oldValue,
-            newValue: refreshed.data
-        })
+        // Wrap audit log in try-catch with rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Update,
+                objectType: gqlTypes.ObjectType.Submission,
+                updatedBy,
+                oldValue: originalSubmission,
+                newValue: refreshed.data
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for submission ${submissionId} approval: ${auditError}`)
+            logger.warn(`Rolling back submission ${submissionId} approval due to audit log failure`)
+
+            // ROLLBACK: Complex rollback
+            
+            // Delete created HP if exists
+            if (createdHpId) {
+                await supabase
+                    .from('hps')
+                    .delete()
+                    .eq('id', createdHpId)
+                logger.info(`Rolled back HP ${createdHpId}`)
+            }
+
+            // Delete created Facility if exists
+            if (createdFacilityId) {
+                await supabase
+                    .from('facilities')
+                    .delete()
+                    .eq('id', createdFacilityId)
+                logger.info(`Rolled back Facility ${createdFacilityId}`)
+            }
+
+            // Restore submission original state
+            await supabase
+                .from('submissions')
+                .update({
+                    status: originalSubmission.isApproved ? 'approved' : 
+                            originalSubmission.isRejected ? 'rejected' : 
+                            originalSubmission.isUnderReview ? 'under_review' : 'pending',
+                    //eslint-disable-next-line
+                    facilities_id: current.facilities_id,
+                    //eslint-disable-next-line
+                    hps_id: current.hps_id,
+                    updatedDate: originalSubmission.updatedDate
+                })
+                .eq('id', submissionId)
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
 
         return { data: refreshed.data, hasErrors: false }
     } catch (error) {
@@ -749,6 +858,8 @@ export async function deleteSubmission(
   id: string,
   updatedBy: string
 ): Promise<Result<gqlTypes.DeleteResult>> {
+    // Tracking variable for rollback
+    let deletedSubmission: gqlTypes.Submission | null = null
     try {
         const validation = validateIdInput(id)
 
@@ -761,7 +872,7 @@ export async function deleteSubmission(
             }
         }
 
-        // Ensure the submission exists (utile per messaggi e audit)
+        // Store original state for rollback
         const existing = await getSubmissionById(id)
 
         if (existing.hasErrors || !existing.data) {
@@ -777,8 +888,17 @@ export async function deleteSubmission(
             }
         }
 
+        deletedSubmission = existing.data
+
         const supabase = getSupabaseClient()
-        // Delete
+        
+        // Get original row for restore
+        const { data: originalRow } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', id)
+            .single()
+
         const { error: delErr } = await supabase
             .from('submissions')
             .delete()
@@ -788,14 +908,29 @@ export async function deleteSubmission(
             throw new Error(`Failed to delete submission: ${delErr.message}`)
         }
 
-        await createAuditLogSQL({
-            actionType: 'DELETE',
-            objectType: 'Submission',
-            updatedBy,
-            oldValue: existing.data
-        })
+        // Wrap audit log in try-catch with rollback
+        try {
+            await createAuditLogSQL({
+                actionType: gqlTypes.ActionType.Delete,
+                objectType: gqlTypes.ObjectType.Submission,
+                updatedBy,
+                oldValue: deletedSubmission
+            })
+        } catch (auditError) {
+            logger.error(`CRITICAL: Audit log failed for deleted submission ${id}: ${auditError}`)
+            logger.warn(`Rolling back submission ${id} deletion due to audit log failure`)
 
-        logger.info(`\nDB-DELETE: submission ${id} was deleted.\nEntity: ${JSON.stringify(id)}`)
+            // ROLLBACK: Restore deleted submission
+            if (originalRow) {
+                await supabase
+                    .from('submissions')
+                    .insert(originalRow as dbSchema.SubmissionRow)
+            }
+
+            throw new Error(`Failed to create audit log: ${auditError}`)
+        }
+
+        logger.info(`DB-DELETE: submission ${id} was deleted with audit log`)
 
         return {
             data: { isSuccessful: true },
