@@ -39,9 +39,18 @@ export type Submission = Omit<gqlType.Submission, 'facility' | 'healthcareProfes
     healthcareProfessionals: gqlType.HealthcareProfessionalSubmission[]
 }
 
+export const SUBMISSION_STATUS = {
+    PENDING: 'pending',
+    UNDER_REVIEW: 'under_review',
+    APPROVED: 'approved',
+    REJECTED: 'rejected'
+} as const
+
+export type SubmissionStatusValue = typeof SUBMISSION_STATUS[keyof typeof SUBMISSION_STATUS]
+
 export interface SubmissionRow {
     id: string
-    status: 'pending' | 'under_review' | 'approved' | 'rejected'
+    status: SubmissionStatusValue
     googleMapsUrl: string
     healthcareProfessionalName: string
     spokenLanguages: gqlType.Locale[]

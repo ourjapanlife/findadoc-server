@@ -253,54 +253,59 @@ export function splitPersonName(full: string): { firstName: string; lastName: st
  * Applies filtering logic to a Supabase query builder for the `submissions` table.
  * It handles text search, status flag logic, and date equality filters.
  *
- * @template T
+ * @template B Query builder type
  * @param queryBuilder The base Supabase query builder instance.
  * @param filters Filters provided via GraphQL submission search input.
  * @returns Modified query builder with applied filters.
  */
-export function applySubmissionQueryFilters<T>(
-  queryBuilder: T,
+export function applySubmissionQueryFilters<B extends Record<string, any>>(
+  queryBuilder: B,
   filters: gqlTypes.SubmissionSearchFilters
-): T {
-    // He i need 'any' only for call supabase method,
-    // I'm also passing <T> for avoid an infinite loop on searchSubmission
-    // It could need a refactor 
-    //eslint-disable-next-line
-    let query: any = queryBuilder
+): B {
+    let query = queryBuilder
 
     // Apply case-insensitive partial match on googleMapsUrl
     if (filters.googleMapsUrl) {
-        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`)
+        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`) as B
     }
 
     if (filters.healthcareProfessionalName) {
         query = query.ilike(
             'healthcareProfessionalName',
             `%${filters.healthcareProfessionalName}%`
-        )
+        ) as B
     }
 
-    const trueFlags = [
-        filters.isUnderReview ? 'under_review' : null,
-        filters.isApproved ? 'approved' : null,
-        filters.isRejected ? 'rejected' : null
-    ].filter(Boolean) as Array<'under_review' | 'approved' | 'rejected'>
+    // Build array of requested status filters using constants
+    const requestedStatuses: dbSchema.SubmissionStatusValue[] = []
 
-    if (trueFlags.length > 1) {
+    if (filters.isUnderReview) {
+        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.UNDER_REVIEW)
+    }
+    if (filters.isApproved) {
+        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.APPROVED)
+    }
+    if (filters.isRejected) {
+        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.REJECTED)
+    }
+
+    // Validate: conflicting status filters
+    if (requestedStatuses.length > 1) {
         throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
     }
 
-    if (trueFlags.length === 1) {
-        query = query.eq('status', trueFlags[0])
+    // Apply status filter if exactly one was requested
+    if (requestedStatuses.length === 1) {
+        query = query.eq('status', requestedStatuses[0]) as B
     }
 
     if (filters.createdDate) {
-        query = query.eq('createdDate', filters.createdDate)
+        query = query.eq('createdDate', filters.createdDate) as B
     }
 
     if (filters.updatedDate) {
-        query = query.eq('updatedDate', filters.updatedDate)
+        query = query.eq('updatedDate', filters.updatedDate) as B
     }
 
-    return query as T
+    return query
 }

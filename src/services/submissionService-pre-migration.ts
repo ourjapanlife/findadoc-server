@@ -324,25 +324,39 @@ export const updateSubmission = async (
         // Store original state for rollback
         originalSubmission = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
 
-        const statusFlags = [
-            fieldsToUpdate.isUnderReview ? 'under_review' : null,
-            fieldsToUpdate.isApproved ? 'approved' : null,
-            fieldsToUpdate.isRejected ? 'rejected' : null
-        ].filter(Boolean) as Array<'under_review' | 'approved' | 'rejected'>
+        // Refactored: Map boolean flags to status value
+        let newStatus: dbSchema.SubmissionStatusValue = current.status
 
-        if (statusFlags.length > 1) {
+        // Build array of requested status changes
+        const requestedStatuses: dbSchema.SubmissionStatusValue[] = []
+        
+        if (fieldsToUpdate.isUnderReview) {
+            requestedStatuses.push(dbSchema.SUBMISSION_STATUS.UNDER_REVIEW)
+        }
+        if (fieldsToUpdate.isApproved) {
+            requestedStatuses.push(dbSchema.SUBMISSION_STATUS.APPROVED)
+        }
+        if (fieldsToUpdate.isRejected) {
+            requestedStatuses.push(dbSchema.SUBMISSION_STATUS.REJECTED)
+        }
+
+        // Validate: only one status can be set at a time
+        if (requestedStatuses.length > 1) {
             return {
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
                 errors: [{
                     field: 'status',
-                    errorCode: ErrorCode.INVALID_ID,
+                    errorCode: ErrorCode.INVALID_INPUT,
                     httpStatus: 400
                 }]
             }
         }
 
-        const newStatus = statusFlags.length === 1 ? statusFlags[0] : current.status
+        // Apply the new status if one was requested
+        if (requestedStatuses.length === 1) {
+            newStatus = requestedStatuses[0]
+        }
 
         /**
          * BUILDING THE PATCH
@@ -397,9 +411,9 @@ export const updateSubmission = async (
                     spokenLanguages: originalSubmission.spokenLanguages,
                     notes: originalSubmission.notes ?? null,
                     autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
-                    status: originalSubmission.isApproved ? 'approved' : 
-                        originalSubmission.isRejected ? 'rejected' : 
-                            originalSubmission.isUnderReview ? 'under_review' : 'pending',
+                    status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
+                        originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
+                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : dbSchema.SUBMISSION_STATUS.PENDING,
                     updatedDate: originalSubmission.updatedDate
                 })
                 .eq('id', submissionId)
@@ -517,7 +531,7 @@ export const autoFillPlacesInformation = async (
             googleMapsUrl: places.extractedGoogleMapsURI ?? current.googleMapsUrl,
             //eslint-disable-next-line
             facility_partial: facilityPartial as any,
-            status: 'under_review',
+            status: dbSchema.SUBMISSION_STATUS.UNDER_REVIEW,
             autofillPlaceFromSubmissionUrl: true,
             updatedDate: new Date().toISOString()
         }
@@ -555,9 +569,9 @@ export const autoFillPlacesInformation = async (
                     googleMapsUrl: originalSubmission.googleMapsUrl,
                     //eslint-disable-next-line
                     facility_partial: originalSubmission.facility as any ?? null,
-                    status: originalSubmission.isApproved ? 'approved' : 
-                        originalSubmission.isRejected ? 'rejected' : 
-                            originalSubmission.isUnderReview ? 'under_review' : 'pending',
+                    status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
+                        originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
+                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : dbSchema.SUBMISSION_STATUS.PENDING,
                     autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
                     updatedDate: originalSubmission.updatedDate
                 })
@@ -724,7 +738,7 @@ export const approveSubmission = async (
             }
         }
 
-        if (current.status === 'approved') {
+        if (current.status === dbSchema.SUBMISSION_STATUS.APPROVED) {
             return {
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
@@ -795,7 +809,7 @@ export const approveSubmission = async (
          */
 
         const patch: Partial<dbSchema.SubmissionRow> = {
-            status: 'approved',
+            status: dbSchema.SUBMISSION_STATUS.APPROVED,
             //eslint-disable-next-line
             facilities_id: createdFacilityId ?? current.facilities_id ?? finalFacilityId,
             //eslint-disable-next-line
@@ -855,9 +869,9 @@ export const approveSubmission = async (
             await supabase
                 .from('submissions')
                 .update({
-                    status: originalSubmission.isApproved ? 'approved' : 
-                        originalSubmission.isRejected ? 'rejected' : 
-                            originalSubmission.isUnderReview ? 'under_review' : 'pending',
+                    status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
+                        originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
+                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : dbSchema.SUBMISSION_STATUS.PENDING,
                     //eslint-disable-next-line
                     facilities_id: current.facilities_id,
                     //eslint-disable-next-line
@@ -993,9 +1007,9 @@ export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Su
             healthcareProfessionalIds: row.facility_partial.healthcareProfessionalIds ?? [] // ← FIX!
         } : undefined,
         healthcareProfessionals: row.healthcare_professionals_partial ?? [],
-        isUnderReview: row.status === 'under_review',
-        isApproved: row.status === 'approved',
-        isRejected: row.status === 'rejected',
+        isUnderReview: row.status === dbSchema.SUBMISSION_STATUS.UNDER_REVIEW,
+        isApproved: row.status === dbSchema.SUBMISSION_STATUS.APPROVED,
+        isRejected: row.status === dbSchema.SUBMISSION_STATUS.REJECTED,
         createdDate: row.createdDate,
         updatedDate: row.updatedDate,
         notes: row.notes ?? undefined
@@ -1006,7 +1020,7 @@ export function mapGqlEntityToDbEntity(
     input: gqlTypes.CreateSubmissionInput
 ): dbSchema.SubmissionInsertRow {
     return {
-        status: 'pending',
+        status: dbSchema.SUBMISSION_STATUS.PENDING,
         googleMapsUrl: input.googleMapsUrl ?? '',
         healthcareProfessionalName: input.healthcareProfessionalName ?? '',
         spokenLanguages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
