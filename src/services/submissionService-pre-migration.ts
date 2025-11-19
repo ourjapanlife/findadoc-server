@@ -8,7 +8,7 @@ import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLogSQL } from './auditLogServiceSupabase.js'
 import { createFacility } from './facilityService-pre-migration.js'
 import { createHealthcareProfessional } from './healthcareProfessionalService-pre-migration.js'
-import { createBlankContact, dedupeLocales, splitPersonName, applySubmissionQueryFilters } from './helperFunctionsServices.js'
+import { createBlankContact, sanitizeLocales, splitPersonName, applySubmissionQueryFilters } from './helperFunctionsServices.js'
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -612,7 +612,7 @@ export const approveSubmission = async (
                 if (hasNames) {
                     hpInput = {
                         names: firstHp.names!,
-                        spokenLanguages: dedupeLocales(
+                        spokenLanguages: sanitizeLocales(
                             (firstHp.spokenLanguages ?? []) as (gqlTypes.Locale | null | undefined)[]
                         ),
                         degrees: firstHp.degrees ?? [],
@@ -640,7 +640,7 @@ export const approveSubmission = async (
                         }],
                         degrees: [],
                         specialties: [],
-                        spokenLanguages: dedupeLocales(
+                        spokenLanguages: sanitizeLocales(
                             current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
                         ),
                         acceptedInsurance: [],
@@ -666,7 +666,7 @@ export const approveSubmission = async (
                     }],
                     degrees: [],
                     specialties: [],
-                    spokenLanguages: dedupeLocales(
+                    spokenLanguages: sanitizeLocales(
                         current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
                     ),
                     acceptedInsurance: [],

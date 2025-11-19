@@ -14,7 +14,7 @@ env:
 jobs:
   tests:
     name: Running Tests
-    timeout-minutes: 10
+    timeout-minutes: 8
     runs-on: ubuntu-latest
     
     strategy:

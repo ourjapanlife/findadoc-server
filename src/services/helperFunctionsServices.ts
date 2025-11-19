@@ -46,7 +46,7 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
         updatePatch.mapLongitude = fields.mapLongitude
     }
 
-    // business rule: always timestamp when the entity is updated
+    // Business rule: always timestamp when the entity is updated
     updatePatch.updatedDate = new Date().toISOString()
 
     return updatePatch
@@ -66,7 +66,7 @@ export function applyFacilityFilters<B extends HasIlike>(
 ): B {
     let query = facilitySelect
 
-    // text filters (case-insensitive contains)
+    // Text filters (case-insensitive contains)
     if (filters.nameEn) {
         query = query.ilike('nameEn', `%${filters.nameEn}%`) as B
     }
@@ -131,18 +131,18 @@ export function mapCreateInputToHpInsertRow(
 
 // Derives the facilityId to associate from relationship edits (create/delete).
 export function resolveFacilityIdFromRelationships(
-  relationss: gqlTypes.Relationship[] | null | undefined
+  relations: gqlTypes.Relationship[] | null | undefined
 ): { newFacilityId: string | null; error?: { field: string; httpStatus: number } } {
-    if (!relationss || relationss.length === 0) {
+    if (!relations || relations.length === 0) {
         return {
             newFacilityId: null
         }
     }
 
-    const creates = relationss.filter(relation => relation.action === gqlTypes.RelationshipAction.Create)
-    const deletes = relationss.filter(relation => relation.action === gqlTypes.RelationshipAction.Delete)
+    const creations = relations.filter(relation => relation.action === gqlTypes.RelationshipAction.Create)
+    const deletions = relations.filter(relation => relation.action === gqlTypes.RelationshipAction.Delete)
 
-    if (creates.length > 1) { 
+    if (creations.length > 1) { 
         return {
             newFacilityId: null,
             error: {
@@ -151,15 +151,15 @@ export function resolveFacilityIdFromRelationships(
             } 
         }
     }
-    if (creates.length === 0 && deletes.length > 0) {
+    if (creations.length === 0 && deletions.length > 0) {
         return { newFacilityId: null, error: { field: 'facilityIds', httpStatus: 400 } }
     }
-    if (creates.length === 1) { 
+    if (creations.length === 1) { 
         return {
-            newFacilityId: creates[0].otherEntityId
+            newFacilityId: creations[0].otherEntityId
         }
     }
-    if (deletes.length > 0) {
+    if (deletions.length > 0) {
         return {
             newFacilityId: null
         }
@@ -216,7 +216,7 @@ export function createBlankContact(googleMapsUrl?: string): gqlTypes.ContactInpu
  * @param locales Possibly null or undefined list of Locale values.
  * @returns Array of unique, valid locales.
  */
-export function dedupeLocales(locales: (gqlTypes.Locale | null | undefined)[] | null | undefined): gqlTypes.Locale[] {
+export function sanitizeLocales(locales: (gqlTypes.Locale | null | undefined)[] | null | undefined): gqlTypes.Locale[] {
     if (!locales) { return [] }
     // Filter out null/undefined entries
     const clean = locales.filter((local): local is gqlTypes.Locale => !!local)
