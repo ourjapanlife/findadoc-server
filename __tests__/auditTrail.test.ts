@@ -1,6 +1,6 @@
 import * as gqlTypes from '../src/typeDefs/gqlTypes.js'
 import * as dbSchema from '../src/typeDefs/dbSchema.js'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import * as auditLogService from '../src/services/auditLogServiceSupabase.js'
 import { generateRandomCreateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
 import { mapGqlEntityToDbEntity } from '../src/services/submissionService-pre-migration.js'

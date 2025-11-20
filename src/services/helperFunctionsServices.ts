@@ -258,6 +258,7 @@ export function splitPersonName(full: string): { firstName: string; lastName: st
  * @param filters Filters provided via GraphQL submission search input.
  * @returns Modified query builder with applied filters.
  */
+//eslint-disable-next-line
 export function applySubmissionQueryFilters<B extends Record<string, any>>(
   queryBuilder: B,
   filters: gqlTypes.SubmissionSearchFilters

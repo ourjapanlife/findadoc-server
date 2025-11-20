@@ -38,22 +38,6 @@ async function setSingleFacilityForHp(hpId: string, facilityId: string | null): 
     }
 }
 
-// Returns how many facilities are currently linked to a given HP
-async function countFacilitiesForHp(hpId: string): Promise<number> {
-    const supabase = getSupabaseClient()
-    // Count the number of rows in the junction table for this HP
-    const { count: facilityCount, error: facilityCountError } = await supabase
-        .from('hps_facilities')
-        .select('hps_id', { count: 'exact', head: true })
-        .eq('hps_id', hpId)
-  
-    if (facilityCountError) {
-        throw facilityCountError
-    }
-    // Normalize to 0 when count is null/undefined
-    return facilityCount ?? 0
-}
-
 /**
  * Gets the Healthcare Professional from the database that matches on the id.
  * @param id A string that matches the id of the Supabase for the professional.
@@ -770,6 +754,7 @@ async function countFacilitiesForMultipleHps(hpIds: string[]): Promise<Map<strin
     // Count from results
     for (const row of data ?? []) {
         const hpId = row.hps_id as string
+
         counts.set(hpId, (counts.get(hpId) ?? 0) + 1)
     }
 
@@ -854,7 +839,8 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             // Check if any HP would be left without facilities
             const wouldBreak = idsToDelete.filter(hpId => {
                 const count = facilityCounts.get(hpId) ?? 0
-                return count <= 1  // Would have 0 facilities after deletion
+
+                return count <= 1 // Would have 0 facilities after deletion
             })
 
             if (wouldBreak.length > 0) {

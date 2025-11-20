@@ -413,7 +413,8 @@ export const updateSubmission = async (
                     autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
                     status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
                         originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
-                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : dbSchema.SUBMISSION_STATUS.PENDING,
+                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : 
+                                dbSchema.SUBMISSION_STATUS.PENDING,
                     updatedDate: originalSubmission.updatedDate
                 })
                 .eq('id', submissionId)
@@ -571,7 +572,8 @@ export const autoFillPlacesInformation = async (
                     facility_partial: originalSubmission.facility as any ?? null,
                     status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
                         originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
-                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : dbSchema.SUBMISSION_STATUS.PENDING,
+                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : 
+                                dbSchema.SUBMISSION_STATUS.PENDING,
                     autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
                     updatedDate: originalSubmission.updatedDate
                 })
@@ -871,7 +873,8 @@ export const approveSubmission = async (
                 .update({
                     status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
                         originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
-                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : dbSchema.SUBMISSION_STATUS.PENDING,
+                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : 
+                                dbSchema.SUBMISSION_STATUS.PENDING,
                     //eslint-disable-next-line
                     facilities_id: current.facilities_id,
                     //eslint-disable-next-line
