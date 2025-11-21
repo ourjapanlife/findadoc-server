@@ -29,7 +29,7 @@
         "migrate:prod:dry": "echo '🔍 DRY RUN: PRODUCTION migration (no data written)...' && cross-env NODE_ENV=production DRY_RUN=true node --loader ts-node/esm src/migration.ts",
         "generate:seed": "node --loader ts-node/esm utils/generateSqlSeed.ts",
         "dev:seeddb": "node --loader ts-node/esm utils/runSeed.ts",
-        "db:types": "supabase gen types typescript --local > src/typeDefs/supabase-generated.ts"
+        "db:types": "npx supabase gen types typescript --local > src/typeDefs/supabase-generated.ts"
     },
     "repository": {
         "type": "git",
