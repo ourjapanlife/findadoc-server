@@ -421,145 +421,130 @@ export async function countFacilities(
  * - Scalar fields are updated on facilities
  * - Relationship changes (HPs) are applied in hps_facilities via the provided actions
  * - Returns the updated Facility
- */
+*/
 export const updateFacility = async (
     facilityId: string,
     fieldsToUpdate: Partial<gqlTypes.UpdateFacilityInput>,
     updatedBy: string
 ): Promise<Result<gqlTypes.Facility>> => {
-    // Track original state for rollback
-    let originalFacility: gqlTypes.Facility | null = null
-    let originalRelations: string[] = []
-    let facilityWasUpdated = false
-    let relationsWereUpdated = false
-
     try {
+        // Validate input before attempting database operations
         const validationResult = validateUpdateFacilityInput(fieldsToUpdate)
 
         if (validationResult.hasErrors) {
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        // Retrieve current state (for rollback)
-        const currentState = await getFacilityById(facilityId)
+        // Execute all database operations in a single atomic transaction
+        const result = await db.transaction().execute(async (trx) => {
+            // Step 1: Fetch the current facility state (for audit log and validation)
+            const originalFacility = await trx
+                .selectFrom('facilities')
+                .selectAll()
+                .where('id', '=', facilityId)
+                .executeTakeFirst()
 
-        if (currentState.hasErrors || !currentState.data) {
-            throw new Error(`Could not find facility with id ${facilityId} to update.`)
-        }
-        originalFacility = currentState.data
-        originalRelations = currentState.data.healthcareProfessionalIds ?? []
-
-        // Prepare the update payload for the facilities table
-        const updatePayload = buildFacilityUpdatePatch(fieldsToUpdate)
-
-        const supabase = getSupabaseClient()
-
-        // If there are no scalar fields to update, skip the UPDATE on facilities.
-        if (Object.keys(updatePayload).length > 1) {
-            const { error: updateErr } = await supabase
-                .from('facilities')
-                .update(updatePayload)
-                .eq('id', facilityId)
-                .select('*')
-                .single()
-
-            if (updateErr) {
-                throw updateErr
+            if (!originalFacility) {
+                throw new Error(`Could not find facility with id ${facilityId} to update.`)
             }
 
-            facilityWasUpdated = true
-            logger.info(`DB-UPDATE: facilities ${facilityId} scalar fields updated.`)
-        } else {
-        // If we still want to update updatedDate to track the entity "touch"?
-            const { error: touchError } = await supabase
-                .from('facilities')
-                .update({ updatedDate: new Date().toISOString() })
-                .eq('id', facilityId)
+            // Fetch original HP relations
+            const originalRelations = await trx
+                .selectFrom('hps_facilities')
+                .select('hps_id')
+                .where('facilities_id', '=', facilityId)
+                .execute()
 
-            if (touchError) {
-                throw touchError
-            }
-        }
+            const originalHpIds = originalRelations.map(r => r.hps_id)
 
-        // Here we expect an array of Relationship with Create/Delete actions.
-        if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
-            const relResult = await processHealthcareProfessionalRelationshipChanges(
-                facilityId,
-                fieldsToUpdate.healthcareProfessionalIds,
-                originalRelations
-            )
-
-            if (relResult.hasErrors) {
-                throw new Error('Error updating facility healthcareProfessionalIds')
-            }
-
-            relationsWereUpdated = true
-        }
-
-        // Return the updated HP with relations included
-        const refreshed = await getFacilityById(facilityId)
-
-        if (refreshed.hasErrors || !refreshed.data) {
-            throw new Error('Error updating facility. Couldnt query the updated facility.')
-        }
-
-        // Create audit log with error handling and rollback
-        try {
-            await createAuditLogSQL({
-                actionType: gqlTypes.ActionType.Update,
-                objectType: gqlTypes.ObjectType.Facility,
-                updatedBy,
-                oldValue: originalFacility,
-                newValue: refreshed.data
-            })
-        } catch (auditError) {
-            // Audit log failed
-            logger.error(`CRITICAL: Audit log failed for facility ${facilityId}: ${auditError}`)
-            logger.warn(`Rolling back facility ${facilityId} update due to audit log failure`)
-
-            // ROLLBACK: Restore original state
+            // Update scalar fields on facilities table (if any provided)
+            const updatePayload = buildFacilityUpdatePatch(fieldsToUpdate)
             
-            // Rollback relations if they were updated
-            if (relationsWereUpdated && fieldsToUpdate.healthcareProfessionalIds) {
-                // Delete current relations
-                await supabase
-                    .from('hps_facilities')
-                    .delete()
-                    .eq('facilities_id', facilityId)
+            let updatedFacility = originalFacility
 
-                // Restore original relations
-                if (originalRelations.length > 0) {
-                    const originalJoinRows = originalRelations.map(hpId => ({
-                        //eslint-disable-next-line
-                        hps_id: hpId, facilities_id: facilityId
-                    }))
-                    
-                    await supabase
-                        .from('hps_facilities')
-                        .insert(originalJoinRows)
-                }
+            if (Object.keys(updatePayload).length > 1) {
+                // Has fields to update beyond just updatedDate
+                updatedFacility = await trx
+                    .updateTable('facilities')
+                    .set(updatePayload)
+                    .where('id', '=', facilityId)
+                    .returningAll()
+                    .executeTakeFirstOrThrow()
+
+                logger.info(`DB-UPDATE: facilities ${facilityId} scalar fields updated.`)
+            } else {
+                // No scalar fields to update, but touch updatedDate to track the change
+                updatedFacility = await trx
+                    .updateTable('facilities')
+                    .set({ updatedDate: new Date().toISOString() })
+                    .where('id', '=', facilityId)
+                    .returningAll()
+                    .executeTakeFirstOrThrow()
             }
 
-            // Rollback facility fields if they were updated
-            if (facilityWasUpdated && originalFacility) {
-                await supabase
-                    .from('facilities')
-                    .update({
-                        nameEn: originalFacility.nameEn,
-                        nameJa: originalFacility.nameJa,
-                        contact: originalFacility.contact,
-                        mapLatitude: originalFacility.mapLatitude,
-                        mapLongitude: originalFacility.mapLongitude,
-                        updatedDate: originalFacility.updatedDate
+            // Update relationships (if any provided)
+            let finalHpIds = originalHpIds
+
+            if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
+                finalHpIds = await processHealthcareProfessionalRelationshipChanges(
+                    trx,
+                    facilityId,
+                    fieldsToUpdate.healthcareProfessionalIds
+                )
+            }
+
+            // Create audit log entry
+            // If this fails, the entire transaction (including updates) is rolled back
+            await trx
+                .insertInto('audit_logs')
+                .values({
+                    action_type: gqlTypes.ActionType.Update,
+                    object_type: gqlTypes.ObjectType.Facility,
+                    schema_version: gqlTypes.SchemaVersion.V1,
+                    updated_by: updatedBy,
+                    old_value: JSON.stringify({
+                        ...originalFacility,
+                        healthcareProfessionalIds: originalHpIds
+                    }),
+                    new_value: JSON.stringify({
+                        ...updatedFacility,
+                        healthcareProfessionalIds: finalHpIds
                     })
-                    .eq('id', facilityId)
-            }
+                })
+                .execute()
 
-            throw new Error(`Failed to create audit log: ${auditError}`)
+            // Return the updated facility and final HP IDs for mapping
+            return { facility: updatedFacility, hpIds: finalHpIds }
+        })
+
+        // Map database result to GraphQL type
+        const dbFacility: dbSchema.Facility = {
+            ...result.facility,
+            contact: result.facility.contact as unknown as gqlTypes.Contact,
+            healthcareProfessionalIds: result.hpIds
         }
 
-        return { data: refreshed.data, hasErrors: false }
+        const gqlFacility = mapDbEntityTogqlEntity(dbFacility)
+
+        return { data: gqlFacility, hasErrors: false }
     } catch (error) {
+        // If we reach here, the transaction was automatically rolled back
+        // The facility remains in its original state
+        const errorMessage = (error as Error).message
+        
+        if (errorMessage.includes('Could not find facility')) {
+            logger.warn(`updateFacility: facility not found: ${facilityId}`)
+            return {
+                data: {} as gqlTypes.Facility,
+                hasErrors: true,
+                errors: [{
+                    field: 'updateFacility',
+                    errorCode: ErrorCode.INVALID_ID,
+                    httpStatus: 404
+                }]
+            }
+        }
+
         logger.error(`ERROR: Error updating facility ${facilityId}: ${error}`)
         return {
             data: {} as gqlTypes.Facility,
@@ -579,167 +564,122 @@ export const updateFacility = async (
  * @returns the final list of HP ids for that facility
  */
 async function processHealthcareProfessionalRelationshipChanges(
-  facilityId: string,
-  changes: gqlTypes.Relationship[],
-  originalHpIds: string[] = []
-): Promise<Result<string[]>> {
-    try {
-        if (!changes || changes.length === 0) {
-            return { data: originalHpIds, hasErrors: false }
-        }
-
-        // Split creates / deletes
-        const toCreate = changes
-            .filter(c => c.action === gqlTypes.RelationshipAction.Create)
-            //eslint-disable-next-line
-            .map(c => ({ hps_id: c.otherEntityId, facilities_id: facilityId }))
-
-        const toDelete = changes
-            .filter(c => c.action === gqlTypes.RelationshipAction.Delete)
-            .map(c => c.otherEntityId)
-
-        const supabase = getSupabaseClient()
-
-        // Do inserts first
-        if (toCreate.length > 0) {
-            const { error: upsertError } = await supabase
-                .from('hps_facilities')
-                .upsert(toCreate, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
-    
-            if (upsertError) {
-                return {
-                    data: originalHpIds,
-                    hasErrors: true,
-                    errors: [{ 
-                        field: 'processHealthcareProfessionalRelationshipChanges',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500
-                    }]
-                }
-            }
-        }
-
-        // Deletes
-        if (toDelete.length > 0) {
-            const { error: deletionError } = await supabase
-                .from('hps_facilities')
-                .delete()
-                .eq('facilities_id', facilityId)
-                .in('hps_id', toDelete)
-
-            if (deletionError) {
-                return {
-                    data: originalHpIds,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'processHealthcareProfessionalRelationshipChanges',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500
-                    }]
-                }
-            }
-        }
-
-        // Return the final list of HPs for this facility
-        const { data: relatedRows, error: relErr } = await supabase
-            .from('hps_facilities')
+    trx: any, // Kysely Transaction type
+    facilityId: string,
+    changes: gqlTypes.Relationship[]
+): Promise<string[]> {
+    if (!changes || changes.length === 0) {
+        // No changes, return current state
+        const currentRelations = await trx
+            .selectFrom('hps_facilities')
             .select('hps_id')
-            .eq('facilities_id', facilityId)
-
-        if (relErr) {
-            return {
-                data: originalHpIds,
-                hasErrors: true,
-                errors: [{
-                    field: 'processHealthcareProfessionalRelationshipChanges',
-                    errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                    httpStatus: 500
-                }]
-            }
-        }
-
-        const finalHpIds = (relatedRows ?? []).map(related => related.hps_id as string)
-
-        return { data: finalHpIds, hasErrors: false }
-    } catch (e) {
-        return {
-            data: originalHpIds,
-            hasErrors: true,
-            errors: [{
-                field: 'processHealthcareProfessionalRelationshipChanges',
-                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                httpStatus: 500
-            }]
-        }
+            .where('facilities_id', '=', facilityId)
+            .execute()
+        
+        return currentRelations.map((r: any) => r.hps_id)
     }
+
+    // Split creates and deletes
+    const toCreate = changes
+        .filter(c => c.action === gqlTypes.RelationshipAction.Create)
+        .map(c => ({
+            hps_id: c.otherEntityId,
+            facilities_id: facilityId
+        }))
+
+    const toDelete = changes
+        .filter(c => c.action === gqlTypes.RelationshipAction.Delete)
+        .map(c => c.otherEntityId)
+
+    // Process inserts (if any)
+    if (toCreate.length > 0) {
+        await trx
+            .insertInto('hps_facilities')
+            .values(toCreate)
+            .onConflict((oc: any) => oc
+                .columns(['hps_id', 'facilities_id'])
+                .doNothing() // Ignore duplicates
+            )
+            .execute()
+    }
+
+    // Process deletes (if any)
+    if (toDelete.length > 0) {
+        await trx
+            .deleteFrom('hps_facilities')
+            .where('facilities_id', '=', facilityId)
+            .where('hps_id', 'in', toDelete)
+            .execute()
+    }
+
+    // Return the final list of HPs for this facility
+    const finalRelations = await trx
+        .selectFrom('hps_facilities')
+        .select('hps_id')
+        .where('facilities_id', '=', facilityId)
+        .execute()
+
+    return finalRelations.map((r: any) => r.hps_id)
 }
 
 /**
-    * This function updates the facilityIds list for each facilities listed.
-    * Based on the action, it will add or remove the hp id from the existing list of HpIds.
-    * @param healthcareProfessionalId - The id of the facility that is being added or removed.
-    * @returns Result containing any errors that occurred.
-*/
+ * Updates the facility associations for a healthcare professional.
+ * Based on the action, it will add or remove the HP from facilities.
+ * This is used when updating an HP's associated facilities.
+ * NOTE: This function creates its own transaction since it's called independently
+ * (not part of a larger update operation).
+ * @param facilitiesToUpdate - Array of relationship actions for facilities
+ * @param healthcareProfessionalId - The HP ID whose facilities are being updated
+ * @returns Result indicating success or failure
+ */
 export async function updateFacilitiesWithHealthcareProfessionalIdChanges(
-  facilitiesToUpdate: gqlTypes.Relationship[],
-  healthcareProfessionalId: string
+    facilitiesToUpdate: gqlTypes.Relationship[],
+    healthcareProfessionalId: string
 ): Promise<Result<void>> {
     try {
         if (!facilitiesToUpdate || facilitiesToUpdate.length === 0) {
             return { data: undefined, hasErrors: false }
         }
 
-        const toCreate = facilitiesToUpdate
-            .filter(r => r.action === gqlTypes.RelationshipAction.Create)
-            //eslint-disable-next-line
-            .map(r => ({ hps_id: healthcareProfessionalId, facilities_id: r.otherEntityId }))
+        // Execute relationship changes in a transaction
+        await db.transaction().execute(async (trx) => {
+            // Split creates and deletes
+            const toCreate = facilitiesToUpdate
+                .filter(r => r.action === gqlTypes.RelationshipAction.Create)
+                .map(r => ({
+                    hps_id: healthcareProfessionalId,
+                    facilities_id: r.otherEntityId
+                }))
 
-        const toDeleteIds = facilitiesToUpdate
-            .filter(r => r.action === gqlTypes.RelationshipAction.Delete)
-            .map(r => r.otherEntityId)
+            const toDeleteIds = facilitiesToUpdate
+                .filter(r => r.action === gqlTypes.RelationshipAction.Delete)
+                .map(r => r.otherEntityId)
 
-        const supabase = getSupabaseClient()
-
-        if (toCreate.length > 0) {
-            const { error: upsertErr } = await supabase
-                .from('hps_facilities')
-                .upsert(toCreate, { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
-
-            if (upsertErr) {
-                return {
-                    data: undefined,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'updateFacilitiesWithHealthcareProfessionalIdChanges',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500
-                    }]
-                }
+            // Process inserts (if any)
+            if (toCreate.length > 0) {
+                await trx
+                    .insertInto('hps_facilities')
+                    .values(toCreate)
+                    .onConflict((oc) => oc
+                        .columns(['hps_id', 'facilities_id'])
+                        .doNothing() // Ignore duplicates
+                    )
+                    .execute()
             }
-        }
 
-        if (toDeleteIds.length > 0) {
-            const { error: deleteError } = await supabase
-                .from('hps_facilities')
-                .delete()
-                .eq('hps_id', healthcareProfessionalId)
-                .in('facilities_id', toDeleteIds)
-
-            if (deleteError) {
-                return {
-                    data: undefined,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'updateFacilitiesWithHealthcareProfessionalIdChanges',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500 
-                    }]
-                }
+            // Process deletes (if any)
+            if (toDeleteIds.length > 0) {
+                await trx
+                    .deleteFrom('hps_facilities')
+                    .where('hps_id', '=', healthcareProfessionalId)
+                    .where('facilities_id', 'in', toDeleteIds)
+                    .execute()
             }
-        }
+        })
 
         return { data: undefined, hasErrors: false }
-    } catch (e) {
+    } catch (error) {
+        logger.error(`ERROR: updateFacilitiesWithHealthcareProfessionalIdChanges: ${error}`)
         return {
             data: undefined,
             hasErrors: true,
@@ -761,11 +701,8 @@ export async function deleteFacility(
     id: string,
     updatedBy: string
 ): Promise<Result<gqlTypes.DeleteResult>> {
-    // Track what we delete for potential restore
-    let deletedFacility: gqlTypes.Facility | null = null
-    let deletedRelations: Array<{ hps_id: string, facilities_id: string }> = []
-
     try {
+        // Validate the facility ID format
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
@@ -777,10 +714,68 @@ export async function deleteFacility(
             }
         }
 
-        // Ensure the facility exists
-        const existingFacility = await getFacilityById(id)
+        // Execute deletion and audit log in a single atomic transaction
+        await db.transaction().execute(async (trx) => {
+            // Fetch the existing facility to verify it exists and for audit log
+            const existingFacility = await trx
+                .selectFrom('facilities')
+                .selectAll()
+                .where('id', '=', id)
+                .executeTakeFirst()
 
-        if (existingFacility.hasErrors || !existingFacility.data) {
+            // If facility doesn't exist, throw error to rollback transaction
+            if (!existingFacility) {
+                throw new Error(`Facility not found: ${id}`)
+            }
+
+            // Fetch related HP IDs for the audit log
+            // (Relations will be deleted automatically by ON DELETE CASCADE)
+            const relations = await trx
+                .selectFrom('hps_facilities')
+                .select('hps_id')
+                .where('facilities_id', '=', id)
+                .execute()
+
+            const hpIds = relations.map(r => r.hps_id)
+
+            // Delete the facility
+            // ON DELETE CASCADE will automatically delete rows in hps_facilities
+            await trx
+                .deleteFrom('facilities')
+                .where('id', '=', id)
+                .execute()
+
+            //Create audit log entry
+            // If this fails, the entire transaction (including the delete) is rolled back
+            await trx
+                .insertInto('audit_logs')
+                .values({
+                    action_type: gqlTypes.ActionType.Delete,
+                    object_type: gqlTypes.ObjectType.Facility,
+                    schema_version: gqlTypes.SchemaVersion.V1,
+                    updated_by: updatedBy,
+                    old_value: JSON.stringify({
+                        ...existingFacility,
+                        healthcareProfessionalIds: hpIds
+                    }),
+                    new_value: null // No new value for DELETE operations
+                })
+                .execute()
+        })
+
+        logger.info(`\nDB-DELETE: facility ${id} was deleted.`)
+
+        return {
+            data: { isSuccessful: true },
+            hasErrors: false
+        }
+    } catch (error) {
+        // If we reach here, the transaction was automatically rolled back
+        // The facility still exists in the database no manual cleanup needed
+        
+        // Check if it's a "not found" error vs other database errors
+        const errorMessage = (error as Error).message
+        if (errorMessage.includes('Facility not found')) {
             logger.warn(`deleteFacility: facility not found: ${id}`)
             return {
                 data: { isSuccessful: false },
@@ -793,83 +788,10 @@ export async function deleteFacility(
             }
         }
 
-        deletedFacility = existingFacility.data
-
-        const supabase = getSupabaseClient()
-        
-        // Save relations for potential restore
-        const { data: relations } = await supabase
-            .from('hps_facilities')
-            .select('hps_id, facilities_id')
-            .eq('facilities_id', id)
-
-        if (relations) {
-            deletedRelations = relations as Array<{ hps_id: string, facilities_id: string }>
-        }
-
-        // Delete the main facility record. Delete join table (hps_facilities) rows 
-        // is handled by a Supabase ONCASCADE trigger.
-        const { error: facilityDeleteError } = await supabase
-            .from('facilities')
-            .delete()
-            .eq('id', id)
-
-        if (facilityDeleteError) {
-            throw new Error(`Failed to delete facility: ${facilityDeleteError.message}`)
-        }
-
-        // Create audit log with error handling and rollback
-        try {
-            await createAuditLogSQL({
-                actionType: gqlTypes.ActionType.Delete,
-                objectType: gqlTypes.ObjectType.Facility,
-                updatedBy,
-                oldValue: deletedFacility
-            })
-        } catch (auditError) {
-            //Audit log failed
-            logger.error(`CRITICAL: Audit log failed for deleted facility ${id}: ${auditError}`)
-            logger.warn(`Rolling back facility ${id} deletion due to audit log failure`)
-
-            // ROLLBACK: Restore the deleted facility
-            
-            // Restore facility
-            await supabase
-                .from('facilities')
-                .insert({
-                    id: deletedFacility.id,
-                    nameEn: deletedFacility.nameEn,
-                    nameJa: deletedFacility.nameJa,
-                    contact: deletedFacility.contact,
-                    mapLatitude: deletedFacility.mapLatitude,
-                    mapLongitude: deletedFacility.mapLongitude,
-                    createdDate: deletedFacility.createdDate,
-                    updatedDate: deletedFacility.updatedDate
-                })
-
-            // Restore relations
-            if (deletedRelations.length > 0) {
-                await supabase
-                    .from('hps_facilities')
-                    .insert(deletedRelations)
-            }
-
-            throw new Error(`Failed to create audit log: ${auditError}`)
-        }
-
-        logger.info(`\nDB-DELETE: facility ${id} was deleted.\nEntity: ${JSON.stringify(id)}`)
-
-        return {
-            data: { isSuccessful: true },
-            hasErrors: false
-        }
-    } catch (error) {
         logger.error(`ERROR: Error deleting facility ${id}: ${error}`)
 
         return {
-            data: {
-                isSuccessful: false
-            },
+            data: { isSuccessful: false },
             hasErrors: true,
             errors: [{
                 field: 'deleteFacility',
