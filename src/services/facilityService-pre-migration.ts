@@ -4,9 +4,65 @@ import { db } from '../kyselyClient.js'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
-import { createAuditLogSQL } from './auditLogServiceSupabase.js'
+import { createAuditLog } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
-import { buildFacilityUpdatePatch, applyFacilityFilters } from './helperFunctionsServices.js'
+
+// Capabilities for Supabase-like query builders
+export type HasIlike = {
+    ilike: (column: string, pattern: string) => unknown
+}
+
+// Builds a partial update patch for Facility rows.
+export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacilityInput>) {
+    const updatePatch: Record<string, unknown> = {}
+
+    // Map only requested field
+    if (fields.nameEn !== undefined) {
+        updatePatch.nameEn = fields.nameEn
+    }
+    if (fields.nameJa !== undefined) {
+        updatePatch.nameJa = fields.nameJa
+    }
+    if (fields.contact !== undefined) {
+        updatePatch.contact = fields.contact
+    }
+    if (fields.mapLatitude !== undefined) {
+        updatePatch.mapLatitude = fields.mapLatitude
+    }
+    if (fields.mapLongitude !== undefined) {
+        updatePatch.mapLongitude = fields.mapLongitude
+    }
+
+    // Business rule: always timestamp when the entity is updated
+    updatePatch.updatedDate = new Date().toISOString()
+
+    return updatePatch
+}
+
+/**
+ * Applies text-based filters to a Supabase query builder for Facilities.
+ * Can be reused by both search and count queries.
+ *
+ * @param facilitySelect - The base query builder instance.
+ * @param filters - The facility search filters from GraphQL input.
+ * @returns The same query builder instance, modified with applied filters.
+ */
+export function applyFacilityFilters<B extends HasIlike>(
+  facilitySelect: B,
+  filters: gqlTypes.FacilitySearchFilters
+): B {
+    let query = facilitySelect
+
+    // Text filters (case-insensitive contains)
+    if (filters.nameEn) {
+        query = query.ilike('nameEn', `%${filters.nameEn}%`) as B
+    }
+    if (filters.nameJa) {
+        query = query.ilike('nameJa', `%${filters.nameJa}%`) as B
+    }
+
+    return query
+}
 
 /**
  * Gets the Facility from the database that matches on the id.
@@ -191,20 +247,12 @@ export async function createFacility(
             }
 
             // Create audit log entry
-            await trx
-                .insertInto('audit_logs')
-                .values({
-                    action_type: gqlTypes.ActionType.Create,
-                    object_type: gqlTypes.ObjectType.Facility,
-                    schema_version: gqlTypes.SchemaVersion.V1,
-                    updated_by: updatedBy,
-                    new_value: JSON.stringify({
-                        ...insertedFacility,
-                        healthcareProfessionalIds: hpIds
-                    }),
-                    old_value: null // No old value for CREATE operations
-                })
-                .execute()
+            await createAuditLog(trx, {
+                actionType: gqlTypes.ActionType.Create,
+                objectType: gqlTypes.ObjectType.Facility,
+                updatedBy,
+                newValue: { ...insertedFacility, healthcareProfessionalIds: hpIds }
+            })
 
             // Return the inserted facility for mapping
             return insertedFacility
@@ -495,23 +543,13 @@ export const updateFacility = async (
 
             // Create audit log entry
             // If this fails, the entire transaction (including updates) is rolled back
-            await trx
-                .insertInto('audit_logs')
-                .values({
-                    action_type: gqlTypes.ActionType.Update,
-                    object_type: gqlTypes.ObjectType.Facility,
-                    schema_version: gqlTypes.SchemaVersion.V1,
-                    updated_by: updatedBy,
-                    old_value: JSON.stringify({
-                        ...originalFacility,
-                        healthcareProfessionalIds: originalHpIds
-                    }),
-                    new_value: JSON.stringify({
-                        ...updatedFacility,
-                        healthcareProfessionalIds: finalHpIds
-                    })
-                })
-                .execute()
+            await createAuditLog(trx, {
+                actionType: gqlTypes.ActionType.Update,
+                objectType: gqlTypes.ObjectType.Facility,
+                updatedBy,
+                oldValue: { ...originalFacility, healthcareProfessionalIds: originalHpIds },
+                newValue: { ...updatedFacility, healthcareProfessionalIds: finalHpIds }
+            })
 
             // Return the updated facility and final HP IDs for mapping
             return { facility: updatedFacility, hpIds: finalHpIds }
@@ -677,20 +715,13 @@ export async function deleteFacility(
 
             //Create audit log entry
             // If this fails, the entire transaction (including the delete) is rolled back
-            await trx
-                .insertInto('audit_logs')
-                .values({
-                    action_type: gqlTypes.ActionType.Delete,
-                    object_type: gqlTypes.ObjectType.Facility,
-                    schema_version: gqlTypes.SchemaVersion.V1,
-                    updated_by: updatedBy,
-                    old_value: JSON.stringify({
-                        ...existingFacility,
-                        healthcareProfessionalIds: hpIds
-                    }),
-                    new_value: null // No new value for DELETE operations
-                })
-                .execute()
+            await createAuditLog(trx, {
+                actionType: gqlTypes.ActionType.Delete,
+                objectType: gqlTypes.ObjectType.Facility,
+                updatedBy,
+                oldValue: { ...existingFacility, healthcareProfessionalIds: hpIds }
+            })
+
         })
 
         logger.info(`\nDB-DELETE: facility ${id} was deleted.`)
