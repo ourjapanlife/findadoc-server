@@ -1,40 +1,104 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
+import { db } from '../kyselyClient.js'
 import { ErrorCode, Result } from '../result.js'
 import { validateProfessionalsSearchInput, validateUpdateProfessionalInput, validateCreateProfessionalInput } from '../validation/validationHealthcareProfessional.js'
 import { validateIdInput } from '../validation/validateFacility.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
-import { createAuditLogSQL } from './auditLogServiceSupabase.js'
-import { applyHpFilters, mapCreateInputToHpInsertRow, resolveFacilityIdFromRelationships, buildHpUpdatePatch} from './helperFunctionsServices.js'
+import { createAuditLog } from './auditLogServiceSupabase.js'
 
-// Sets the single facility for an HP
-async function setSingleFacilityForHp(hpId: string, facilityId: string | null): Promise<void> {
-    if (!facilityId) {
-        throw new Error('HealthcareProfessional must be linked to at least one Facility')
+export type HasContains = {
+    contains: (
+        column: string,
+        //eslint-disable-next-line
+        value: string | readonly any[] | Record<string, unknown>
+    ) => unknown
+}
+
+// Builds a partial update patch for Healthcare Professional rows.
+export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>) {
+    const updatePatch: Partial<dbSchema.DbHealthcareProfessionalRow> = {}
+
+    if (fields.names !== null) { updatePatch.names = fields.names }
+    if (fields.degrees !== null) { updatePatch.degrees = fields.degrees }
+    if (fields.spokenLanguages !== null) { updatePatch.spokenLanguages = fields.spokenLanguages }
+    if (fields.specialties !== null) { updatePatch.specialties = fields.specialties }
+    if (fields.acceptedInsurance !== null) { updatePatch.acceptedInsurance = fields.acceptedInsurance }
+    if (fields.additionalInfoForPatients !== undefined) {
+        updatePatch.additionalInfoForPatients = fields.additionalInfoForPatients
+    }
+    updatePatch.updatedDate = new Date().toISOString()
+    return updatePatch
+}
+
+// Applies JSONB array filters to an HP query builder (degrees, specialties, languages, insurance).
+export function applyHpFilters<B extends HasContains>(
+  builder: B,
+  filters: gqlTypes.HealthcareProfessionalSearchFilters
+): B {
+    let query = builder
+
+    if (filters.degrees?.length) { query = query.contains('degrees', filters.degrees as gqlTypes.Degree[]) as B }
+    if (filters.specialties?.length) { query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[]) as B }
+    if (filters.spokenLanguages?.length) { query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[]) as B }
+    if (filters.acceptedInsurance?.length) { query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as B }
+    return query
+}
+
+// Maps GQL Create input → DB insert row; defaults arrays to [] to avoid `!`.
+export function mapCreateInputToHpInsertRow(
+  input: gqlTypes.CreateHealthcareProfessionalInput
+): dbSchema.HealthcareProfessionalInsertRow {
+    return {
+        names: input.names,
+        degrees: input.degrees ?? [],
+        spokenLanguages: input.spokenLanguages ?? [],
+        specialties: input.specialties ?? [],
+        acceptedInsurance: input.acceptedInsurance ?? [],
+        additionalInfoForPatients: input.additionalInfoForPatients ?? null,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
+    }
+}
+
+// Derives the facilityId to associate from relationship edits (create/delete).
+export function resolveFacilityIdFromRelationships(
+  relations: gqlTypes.Relationship[] | null | undefined
+): { newFacilityId: string | null; error?: { field: string; httpStatus: number } } {
+    if (!relations || relations.length === 0) {
+        return {
+            newFacilityId: null
+        }
     }
 
-    const supabase = getSupabaseClient()
+    const creations = relations.filter(relation => relation.action === gqlTypes.RelationshipAction.Create)
+    const deletions = relations.filter(relation => relation.action === gqlTypes.RelationshipAction.Delete)
 
-    // First remove all existing links for this HP from the junction table
-    const { error: deleteError } = await supabase
-        .from('hps_facilities')
-        .delete()
-        .eq('hps_id', hpId)
-
-    if (deleteError) { throw deleteError }
-
-    // If we have a facilityId, insert the new link
-    if (facilityId) {
-        const { error: upsertError } = await supabase
-            .from('hps_facilities')
-            // Upsert ensures idempotency; ignoreDuplicates avoids conflicts on existing unique pairs
-            //eslint-disable-next-line
-            .upsert([{ hps_id: hpId, facilities_id: facilityId }],
-                    { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
-        // If insertion/upsert fails, propagate the error
-
-        if (upsertError) { throw upsertError }
+    if (creations.length > 1) { 
+        return {
+            newFacilityId: null,
+            error: {
+                field: 'facilityIds',
+                httpStatus: 400
+            } 
+        }
+    }
+    if (creations.length === 0 && deletions.length > 0) {
+        return { newFacilityId: null, error: { field: 'facilityIds', httpStatus: 400 } }
+    }
+    if (creations.length === 1) { 
+        return {
+            newFacilityId: creations[0].otherEntityId
+        }
+    }
+    if (deletions.length > 0) {
+        return {
+            newFacilityId: null
+        }
+    }
+    return {
+        newFacilityId: null
     }
 }
 
@@ -316,12 +380,8 @@ export async function createHealthcareProfessional(
     input: gqlTypes.CreateHealthcareProfessionalInput,
     updatedBy: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
-    // Keep reference to created HP id for audit/logging even if something fails
-    // Tracking variables for rollback
-    let createdHpId: string | null = null
-    let createdRelation = false
-
     try {
+        // Validate input before attempting database operations
         const validationResult = validateCreateProfessionalInput(input)
 
         if (validationResult.hasErrors) {
@@ -346,91 +406,89 @@ export async function createHealthcareProfessional(
             }
         }
 
-        // Convert GraphQL input → DB insert shape (adds timestamps)
-        const insertPayload = mapCreateInputToHpInsertRow(input)
+        // Execute all database operations in a single atomic transaction
+        // If any operation fails, everything is automatically rolled back
+        const result = await db.transaction().execute(async (trx) => {
+            // Insert the HP record
+            // Convert GraphQL input → DB insert shape (adds timestamps)
+            const insertPayload = mapCreateInputToHpInsertRow(input)
 
-        const supabase = getSupabaseClient()
+            const insertedHp = await trx
+                .insertInto('hps')
+                .values({
+                    names: insertPayload.names,
+                    degrees: insertPayload.degrees,
+                    spokenLanguages: insertPayload.spokenLanguages,
+                    specialties: insertPayload.specialties,
+                    acceptedInsurance: insertPayload.acceptedInsurance,
+                    additionalInfoForPatients: insertPayload.additionalInfoForPatients ?? null,
+                    createdDate: insertPayload.createdDate,
+                    updatedDate: insertPayload.updatedDate
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow() // Throws if insert fails
 
-        // Insert the HP record, returning the inserted row
-        const { data: insertedRow, error: insertErr } = await supabase
-            .from('hps')
-            .insert(insertPayload)
-            .select('*')
-            .single()
+            // Create facility link (if exactly one facility was provided)
+            let linkedFacilityIds: string[] = []
 
-        if (insertErr) {
-            throw insertErr
-        }
+            if (requestedFacilityIds.length === 1) {
+                const oneFacilityId = requestedFacilityIds[0]
 
-        createdHpId = insertedRow.id as string
-        
-        //Join: enforce at most one facility link
-        let linkedFacilityIds: string[] = []
+                // Insert into junction table with duplicate prevention
+                await trx
+                    .insertInto('hps_facilities')
+                    .values({
+                        hps_id: insertedHp.id,
+                        facilities_id: oneFacilityId
+                    })
+                    .onConflict((oc) => oc
+                        .columns(['hps_id', 'facilities_id'])
+                        .doNothing() // Ignore if already exists
+                    )
+                    .execute()
 
-        // If exactly one facility ID was requested, create the join record
-        if (requestedFacilityIds.length === 1) {
-            const oneFacilityId = requestedFacilityIds[0]
-
-            // Idempotent upsert on the junction table
-            const { error: upsertRelationErr } = await supabase
-                .from('hps_facilities')
-                .upsert(
-                    //eslint-disable-next-line
-                    [{ hps_id: createdHpId, facilities_id: oneFacilityId }],
-                    { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true }
-                )
-
-            if (upsertRelationErr) {
-                throw upsertRelationErr
+                linkedFacilityIds = [oneFacilityId]
             }
 
-            // Track created relation
-            createdRelation = true
-            linkedFacilityIds = [oneFacilityId]
-        }
-        
-        // Map inserted DB row into GraphQL shape including related facility ids
+            // Map DB row to GraphQL shape for audit log
+            const gqlHealthcareProfessional = mapDbHpToGql(
+                insertedHp as dbSchema.DbHealthcareProfessionalRow,
+                linkedFacilityIds
+            )
+
+            // Create audit log entry
+            // If this fails, the entire transaction (including HP insert) is rolled back
+            await trx
+                .insertInto('audit_logs')
+                .values({
+                    action_type: gqlTypes.ActionType.Create,
+                    object_type: gqlTypes.ObjectType.HealthcareProfessional,
+                    schema_version: gqlTypes.SchemaVersion.V1,
+                    updated_by: updatedBy,
+                    new_value: JSON.stringify(gqlHealthcareProfessional),
+                    old_value: null // No old value for CREATE operations
+                })
+                .execute()
+
+            // Return both the inserted HP and linked facility IDs
+            return { hp: insertedHp, facilityIds: linkedFacilityIds }
+        })
+
+        // Map the database result to GraphQL type
         const gqlHealthcareProfessional = mapDbHpToGql(
-            insertedRow as dbSchema.DbHealthcareProfessionalRow,
-            linkedFacilityIds
+            result.hp as dbSchema.DbHealthcareProfessionalRow,
+            result.facilityIds
         )
-        
-        // Wrap audit log in try-catch with rollback
-        try {
-            await createAuditLogSQL({
-                actionType: gqlTypes.ActionType.Create,
-                objectType: gqlTypes.ObjectType.HealthcareProfessional,
-                updatedBy,
-                newValue: gqlHealthcareProfessional
-            })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for HP ${createdHpId}: ${auditError}`)
-            logger.warn(`Rolling back HP ${createdHpId} due to audit log failure`)
 
-            // ROLLBACK: Delete relation first
-            if (createdRelation) {
-                await supabase
-                    .from('hps_facilities')
-                    .delete()
-                    .eq('hps_id', createdHpId)
-            }
-
-            // Then delete the HP
-            await supabase
-                .from('hps')
-                .delete()
-                .eq('id', createdHpId)
-
-            throw new Error(`Failed to create audit log: ${auditError}`)
-        }
-
-        logger.info(`DB-CREATE: Created healthcare professional ${createdHpId}.`)
+        logger.info(`DB-CREATE: Created healthcare professional ${result.hp.id}.`)
 
         return {
             data: gqlHealthcareProfessional,
             hasErrors: false
         }
     } catch (error) {
+        // If we reach here, the transaction was automatically rolled back
+        // No need for manual cleanup - the database guarantees consistency
         logger.error(`ERROR: Error creating healthcare professional: ${error}`)
 
         return {
@@ -599,6 +657,36 @@ export const updateHealthcareProfessional = async (
                 httpStatus: 500
             }]
         }
+    }
+}
+
+// Sets the single facility for an HP
+async function setSingleFacilityForHp(hpId: string, facilityId: string | null): Promise<void> {
+    if (!facilityId) {
+        throw new Error('HealthcareProfessional must be linked to at least one Facility')
+    }
+
+    const supabase = getSupabaseClient()
+
+    // First remove all existing links for this HP from the junction table
+    const { error: deleteError } = await supabase
+        .from('hps_facilities')
+        .delete()
+        .eq('hps_id', hpId)
+
+    if (deleteError) { throw deleteError }
+
+    // If we have a facilityId, insert the new link
+    if (facilityId) {
+        const { error: upsertError } = await supabase
+            .from('hps_facilities')
+            // Upsert ensures idempotency; ignoreDuplicates avoids conflicts on existing unique pairs
+            //eslint-disable-next-line
+            .upsert([{ hps_id: hpId, facilities_id: facilityId }],
+                    { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
+        // If insertion/upsert fails, propagate the error
+
+        if (upsertError) { throw upsertError }
     }
 }
 

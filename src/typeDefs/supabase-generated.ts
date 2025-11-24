@@ -71,38 +71,38 @@ export type Database = {
         Row: {
           code: string | null
           contact: Json
-          createdDate: string | null
+          createdDate: string
           firestore_id: string | null
           id: string
           mapLatitude: number
           mapLongitude: number
-          nameEn: string | null
-          nameJa: string | null
-          updatedDate: string | null
+          nameEn: string
+          nameJa: string
+          updatedDate: string
         }
         Insert: {
           code?: string | null
           contact: Json
-          createdDate?: string | null
+          createdDate: string
           firestore_id?: string | null
           id?: string
           mapLatitude: number
           mapLongitude: number
-          nameEn?: string | null
-          nameJa?: string | null
-          updatedDate?: string | null
+          nameEn: string
+          nameJa: string
+          updatedDate: string
         }
         Update: {
           code?: string | null
           contact?: Json
-          createdDate?: string | null
+          createdDate?: string
           firestore_id?: string | null
           id?: string
           mapLatitude?: number
           mapLongitude?: number
-          nameEn?: string | null
-          nameJa?: string | null
-          updatedDate?: string | null
+          nameEn?: string
+          nameJa?: string
+          updatedDate?: string
         }
         Relationships: []
       }

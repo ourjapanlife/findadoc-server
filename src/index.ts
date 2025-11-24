@@ -2,7 +2,9 @@
 import { initializeLogger } from './logger.js'
 import { createApolloFastifyServer } from './server.js'
 import { initializeSupabaseClient } from './supabaseClient.js'
+import { initializeKyselyClient } from './kyselyClient.js'
 
 initializeLogger()
 await initializeSupabaseClient()
+await initializeKyselyClient()
 await createApolloFastifyServer()
