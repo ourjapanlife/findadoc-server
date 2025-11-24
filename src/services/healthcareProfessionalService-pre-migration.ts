@@ -375,7 +375,7 @@ export async function countProfessionals(
  * Creates a Healthcare Professional (Supabase/Postgres).
  * Business rule: an HP can be linked to at least ONE facility.
  * This function inserts a new HP row and optionally creates a single facility link.
- */
+ 
 export async function createHealthcareProfessional(
     input: gqlTypes.CreateHealthcareProfessionalInput,
     updatedBy: string
@@ -502,14 +502,14 @@ export async function createHealthcareProfessional(
         }
     }
 }
-
+*/
 /*
  * Updates a Healthcare Professional.
  * Rules:
  * - Scalar fields are updated on `hps`
  * - Relationship: accepts at least ONE facility. If provided, it replaces any existing link
  * - return the updated Healthcare Professional
- */
+ 
 export const updateHealthcareProfessional = async (
     id: string,
     fieldsToUpdate: Partial<gqlTypes.UpdateHealthcareProfessionalInput>,
@@ -659,7 +659,7 @@ export const updateHealthcareProfessional = async (
         }
     }
 }
-
+*/
 // Sets the single facility for an HP
 async function setSingleFacilityForHp(hpId: string, facilityId: string | null): Promise<void> {
     if (!facilityId) {
@@ -694,7 +694,7 @@ async function setSingleFacilityForHp(hpId: string, facilityId: string | null): 
  * This deletes a Healthcare Professional from the database.
  * If the Healthcare Professional doesn't exist, it will return a validation error.
  * @param id The ID of the professional in the database to delete.
- */
+ 
 export async function deleteHealthcareProfessional(
     id: string,
     updatedBy: string
@@ -810,7 +810,7 @@ export async function deleteHealthcareProfessional(
         }
     }
 }
-
+*/
 /**
  * Batch version: counts facilities for multiple HPs in a single query
  */
