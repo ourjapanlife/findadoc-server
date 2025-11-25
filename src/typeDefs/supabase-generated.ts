@@ -71,38 +71,38 @@ export type Database = {
         Row: {
           code: string | null
           contact: Json
-          createdDate: string | null
+          createdDate: string
           firestore_id: string | null
           id: string
           mapLatitude: number
           mapLongitude: number
-          nameEn: string | null
-          nameJa: string | null
-          updatedDate: string | null
+          nameEn: string
+          nameJa: string
+          updatedDate: string
         }
         Insert: {
           code?: string | null
           contact: Json
-          createdDate?: string | null
+          createdDate: string
           firestore_id?: string | null
           id?: string
           mapLatitude: number
           mapLongitude: number
-          nameEn?: string | null
-          nameJa?: string | null
-          updatedDate?: string | null
+          nameEn: string
+          nameJa: string
+          updatedDate: string
         }
         Update: {
           code?: string | null
           contact?: Json
-          createdDate?: string | null
+          createdDate?: string
           firestore_id?: string | null
           id?: string
           mapLatitude?: number
           mapLongitude?: number
-          nameEn?: string | null
-          nameJa?: string | null
-          updatedDate?: string | null
+          nameEn?: string
+          nameJa?: string
+          updatedDate?: string
         }
         Relationships: []
       }
@@ -110,7 +110,7 @@ export type Database = {
         Row: {
           acceptedInsurance: Json
           additionalInfoForPatients: string | null
-          createdDate: string | null
+          createdDate: string
           degrees: Json
           email: string | null
           firestore_id: string | null
@@ -118,12 +118,12 @@ export type Database = {
           names: Json
           specialties: Json
           spokenLanguages: Json
-          updatedDate: string | null
+          updatedDate: string
         }
         Insert: {
           acceptedInsurance: Json
           additionalInfoForPatients?: string | null
-          createdDate?: string | null
+          createdDate: string
           degrees: Json
           email?: string | null
           firestore_id?: string | null
@@ -131,12 +131,12 @@ export type Database = {
           names: Json
           specialties: Json
           spokenLanguages: Json
-          updatedDate?: string | null
+          updatedDate: string
         }
         Update: {
           acceptedInsurance?: Json
           additionalInfoForPatients?: string | null
-          createdDate?: string | null
+          createdDate?: string
           degrees?: Json
           email?: string | null
           firestore_id?: string | null
@@ -144,7 +144,7 @@ export type Database = {
           names?: Json
           specialties?: Json
           spokenLanguages?: Json
-          updatedDate?: string | null
+          updatedDate?: string
         }
         Relationships: []
       }
@@ -274,7 +274,7 @@ export type Database = {
       submissions: {
         Row: {
           autofillPlaceFromSubmissionUrl: boolean
-          createdDate: string | null
+          createdDate: string
           facilities_id: string | null
           facility_partial: Json | null
           firestore_id: string | null
@@ -285,12 +285,12 @@ export type Database = {
           id: string
           notes: string | null
           spokenLanguages: Json | null
-          status: string
-          updatedDate: string | null
+          status: Database["public"]["Enums"]["submission_status_enum"]
+          updatedDate: string
         }
         Insert: {
           autofillPlaceFromSubmissionUrl?: boolean
-          createdDate?: string | null
+          createdDate: string
           facilities_id?: string | null
           facility_partial?: Json | null
           firestore_id?: string | null
@@ -301,12 +301,12 @@ export type Database = {
           id?: string
           notes?: string | null
           spokenLanguages?: Json | null
-          status: string
-          updatedDate?: string | null
+          status?: Database["public"]["Enums"]["submission_status_enum"]
+          updatedDate: string
         }
         Update: {
           autofillPlaceFromSubmissionUrl?: boolean
-          createdDate?: string | null
+          createdDate?: string
           facilities_id?: string | null
           facility_partial?: Json | null
           firestore_id?: string | null
@@ -317,8 +317,8 @@ export type Database = {
           id?: string
           notes?: string | null
           spokenLanguages?: Json | null
-          status?: string
-          updatedDate?: string | null
+          status?: Database["public"]["Enums"]["submission_status_enum"]
+          updatedDate?: string
         }
         Relationships: [
           {
@@ -372,6 +372,11 @@ export type Database = {
       action_type_enum: "CREATE" | "UPDATE" | "DELETE"
       object_type_enum: "Facility" | "HealthcareProfessional" | "Submission"
       schema_version_enum: "V1"
+      submission_status_enum:
+        | "pending"
+        | "under_review"
+        | "approved"
+        | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -505,6 +510,12 @@ export const Constants = {
       action_type_enum: ["CREATE", "UPDATE", "DELETE"],
       object_type_enum: ["Facility", "HealthcareProfessional", "Submission"],
       schema_version_enum: ["V1"],
+      submission_status_enum: [
+        "pending",
+        "under_review",
+        "approved",
+        "rejected",
+      ],
     },
   },
 } as const
