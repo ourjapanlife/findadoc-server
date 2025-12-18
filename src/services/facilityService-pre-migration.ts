@@ -205,79 +205,82 @@ export async function createFacility(
     updatedBy: string
 ): Promise<Result<gqlTypes.Facility>> {
     try {
+        // Validate input before attempting database operations
         const validationResult = validateCreateFacilityInput(facilityInput)
 
         if (validationResult.hasErrors) {
             return validationResult as Result<gqlTypes.Facility>
         }
 
+        // Extract HP IDs for convenience
         const hpIds = (facilityInput.healthcareProfessionalIds ?? []) as string[]
 
-        // 🔍 DEBUG 1: Log l'input originale
-        console.log('🔍 DEBUG 1 - facilityInput.contact:', facilityInput.contact)
-        console.log('🔍 DEBUG 1 - has #props?:', facilityInput.contact && '#props' in facilityInput.contact)
-
-        // ✅ Clean the input
-        const cleanContact = JSON.parse(JSON.stringify(facilityInput.contact))
-        
-        // 🔍 DEBUG 2: Log dopo la pulizia
-        console.log('🔍 DEBUG 2 - cleanContact:', cleanContact)
-        console.log('🔍 DEBUG 2 - has #props?:', cleanContact && '#props' in cleanContact)
-
+        // Execute all database operations in a single atomic transaction.
+        // The transaction returns the final plain GraphQL object (not the Kysely result).
+        // If any operation fails, everything is automatically rolled back.
         const gqlFacility = await db.transaction().execute(async (trx) => {
-            console.log('🔍 DEBUG 3 - Inizio transaction')
-            
-            // 🔍 DEBUG 4: Log prima dell'insert
-            console.log('🔍 DEBUG 4 - About to insert with contact:', cleanContact)
-            
+            // Step 1: Insert facility into PostgreSQL
+            // PostgreSQL generates UUID automatically via DEFAULT gen_random_uuid()
             const insertedFacility = await trx
                 .insertInto('facilities')
                 .values({
                     nameEn: facilityInput.nameEn,
                     nameJa: facilityInput.nameJa,
-                    contact: cleanContact,
+                    contact: facilityInput.contact,
                     mapLatitude: facilityInput.mapLatitude ?? 0,
                     mapLongitude: facilityInput.mapLongitude ?? 0,
                     createdDate: new Date().toISOString(),
                     updatedDate: new Date().toISOString()
                 })
                 .returningAll()
-                .executeTakeFirstOrThrow()
+                .executeTakeFirstOrThrow() // Throws if insert fails
 
-            console.log('🔍 DEBUG 5 - Insert successful, insertedFacility:', insertedFacility)
-            console.log('🔍 DEBUG 5 - insertedFacility.contact has #props?:', insertedFacility.contact && '#props' in insertedFacility.contact)
-
+            // Step 2: Create associations with healthcare professionals (if any provided)
             if (hpIds.length > 0) {
+                // Build junction table rows for the many-to-many relationship
                 const joinRows = hpIds.map(hpsId => ({
                     hps_id: hpsId,
                     facilities_id: insertedFacility.id
                 }))
 
+                // Insert relations into junction table
+                // onConflict handles duplicate prevention (composite primary key protection)
                 await trx
                     .insertInto('hps_facilities')
                     .values(joinRows)
                     .onConflict((oc) => oc
                         .columns(['hps_id', 'facilities_id'])
-                        .doNothing()
+                        .doNothing() // Ignore duplicates instead of failing
                     )
                     .execute()
             }
 
-            console.log('🔍 DEBUG 6 - About to call mapKyselyFacilityToGraphQL')
+            // Step 3: Convert Kysely result to plain GraphQL object
+            // IMPORTANT: This removes Kysely's internal private members (#props)
+            // which would cause serialization errors in GraphQL responses
             const plainGqlFacility = mapKyselyFacilityToGraphQL(insertedFacility, hpIds)
-            console.log('🔍 DEBUG 7 - After mapKyselyFacilityToGraphQL, plainGqlFacility:', plainGqlFacility)
 
-            console.log('🔍 DEBUG 8 - About to call createAuditLog')
+            // Step 4: Record this creation in the audit log
+            // Uses the same transaction (trx) to ensure atomicity:
+            // - If audit log fails, the facility creation is also rolled back
+            // - If audit log succeeds, both operations are committed together
             await createAuditLog(trx, {
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                newValue: plainGqlFacility
+                newValue: plainGqlFacility  // Plain object is safe to serialize
             })
-            console.log('🔍 DEBUG 9 - After createAuditLog')
 
+            // Return the plain GraphQL object from the transaction
+            // CRITICAL: We return plainGqlFacility (plain object), NOT insertedFacility (Kysely object)
+            // This ensures GraphQL receives a serializable object without private members
             return plainGqlFacility
         })
+
+        // At this point:
+        // - Transaction completed successfully (committed)
+        // - gqlFacility is a plain JavaScript object (safe for GraphQL)
+        // - All three operations (insert, relations, audit) succeeded atomically
 
         logger.info(`\nDB-CREATE: CREATE facility ${gqlFacility.id}.\nEntity: ${JSON.stringify(gqlFacility)}`)
 
@@ -286,10 +289,9 @@ export async function createFacility(
             hasErrors: false
         }
     } catch (error) {
-        console.log('🔍 DEBUG ERROR - Caught error:', error)
-        console.log('🔍 DEBUG ERROR - Error message:', (error as Error).message)
-        console.log('🔍 DEBUG ERROR - Error stack:', (error as Error).stack)
-        
+        // If we reach here, the transaction was automatically rolled back
+        // No manual cleanup needed - PostgreSQL guarantees consistency
+        // The database state is exactly as it was before the transaction started
         logger.error(`ERROR: Error creating facility: ${error}`)
 
         return {
@@ -790,14 +792,13 @@ function mapKyselyFacilityToGraphQL(
     facilityRow: Selectable<FacilitiesTable>,
     healthcareProfessionalIds: string[]
 ): gqlTypes.Facility {
-    // ✅ JSON round-trip rimuove TUTTI i #props, incluso quelli nested nel contact
     const cleanRow = JSON.parse(JSON.stringify(facilityRow))
     
     return {
         id: cleanRow.id,
         nameEn: cleanRow.nameEn,
         nameJa: cleanRow.nameJa,
-        contact: cleanRow.contact,  // ✅ Ora è plain object
+        contact: cleanRow.contact,
         mapLatitude: cleanRow.mapLatitude,
         mapLongitude: cleanRow.mapLongitude,
         healthcareProfessionalIds,
