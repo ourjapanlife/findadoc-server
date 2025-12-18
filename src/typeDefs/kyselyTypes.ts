@@ -1,7 +1,7 @@
 // src/typeDefs/kyselyTypes.ts
 
 import type { ColumnType, Generated } from 'kysely'
-import * as gqlTypes from './gqlTypes.js'  // ✅ import normale, NON 'import type'
+import * as gqlTypes from './gqlTypes.js'
 import type { Database as SupabaseDatabase } from './supabase-generated.js'
 
 /**

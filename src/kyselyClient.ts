@@ -100,7 +100,8 @@ export function getKyselyClient(): Kysely<Database> {
 export const db = new Proxy({} as Kysely<Database>, {
   get(_target, prop) {
     const instance = getKyselyClient()
-    return instance[prop as keyof Kysely<Database>]
+    const value = instance[prop as keyof Kysely<Database>]
+    return typeof value === 'function' ? value.bind(instance) : value
   }
 })
 
