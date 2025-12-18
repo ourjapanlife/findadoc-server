@@ -1,5 +1,5 @@
 /* eslint-disable */
-// src/services/auditLogService.ts
+// src/services/auditLogServiceSupabase.ts
 import type { Transaction } from 'kysely'
 import type { Database } from '../typeDefs/kyselyTypes.js'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'

@@ -5,8 +5,104 @@ import { validateProfessionalsSearchInput, validateUpdateProfessionalInput, vali
 import { validateIdInput } from '../validation/validateFacility.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
-import { createAuditLogSQL } from './auditLogServiceSupabase.js'
-import { applyHpFilters, mapCreateInputToHpInsertRow, resolveFacilityIdFromRelationships, buildHpUpdatePatch} from './helperFunctionsServices.js'
+import { createAuditLog } from './auditLogServiceSupabase.js'
+import { db } from '../kyselyClient.js'
+import type { HpsTable, Database } from '../typeDefs/kyselyTypes.js'
+import type { Selectable, Transaction } from 'kysely'
+
+export type HasContains = {
+    contains: (
+        column: string,
+        //eslint-disable-next-line
+        value: string | readonly any[] | Record<string, unknown>
+    ) => unknown
+}
+
+// Builds a partial update patch for Healthcare Professional rows.
+export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>) {
+    const updatePatch: Partial<dbSchema.DbHealthcareProfessionalRow> = {}
+
+    if (fields.names !== null) { updatePatch.names = fields.names }
+    if (fields.degrees !== null) { updatePatch.degrees = fields.degrees }
+    if (fields.spokenLanguages !== null) { updatePatch.spokenLanguages = fields.spokenLanguages }
+    if (fields.specialties !== null) { updatePatch.specialties = fields.specialties }
+    if (fields.acceptedInsurance !== null) { updatePatch.acceptedInsurance = fields.acceptedInsurance }
+    if (fields.additionalInfoForPatients !== undefined) {
+        updatePatch.additionalInfoForPatients = fields.additionalInfoForPatients
+    }
+    updatePatch.updatedDate = new Date().toISOString()
+    return updatePatch
+}
+
+// Applies JSONB array filters to an HP query builder (degrees, specialties, languages, insurance).
+export function applyHpFilters<B extends HasContains>(
+  builder: B,
+  filters: gqlTypes.HealthcareProfessionalSearchFilters
+): B {
+    let query = builder
+
+    if (filters.degrees?.length) { query = query.contains('degrees', filters.degrees as gqlTypes.Degree[]) as B }
+    if (filters.specialties?.length) { query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[]) as B }
+    if (filters.spokenLanguages?.length) { query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[]) as B }
+    if (filters.acceptedInsurance?.length) { query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as B }
+    return query
+}
+
+// Maps GQL Create input → DB insert row; defaults arrays to [] to avoid `!`.
+export function mapCreateInputToHpInsertRow(
+  input: gqlTypes.CreateHealthcareProfessionalInput
+): dbSchema.HealthcareProfessionalInsertRow {
+    return {
+        names: input.names,
+        degrees: input.degrees ?? [],
+        spokenLanguages: input.spokenLanguages ?? [],
+        specialties: input.specialties ?? [],
+        acceptedInsurance: input.acceptedInsurance ?? [],
+        additionalInfoForPatients: input.additionalInfoForPatients ?? null,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
+    }
+}
+
+// Derives the facilityId to associate from relationship edits (create/delete).
+export function resolveFacilityIdFromRelationships(
+  relations: gqlTypes.Relationship[] | null | undefined
+): { newFacilityId: string | null; error?: { field: string; httpStatus: number } } {
+    if (!relations || relations.length === 0) {
+        return {
+            newFacilityId: null
+        }
+    }
+
+    const creations = relations.filter(relation => relation.action === gqlTypes.RelationshipAction.Create)
+    const deletions = relations.filter(relation => relation.action === gqlTypes.RelationshipAction.Delete)
+
+    if (creations.length > 1) { 
+        return {
+            newFacilityId: null,
+            error: {
+                field: 'facilityIds',
+                httpStatus: 400
+            } 
+        }
+    }
+    if (creations.length === 0 && deletions.length > 0) {
+        return { newFacilityId: null, error: { field: 'facilityIds', httpStatus: 400 } }
+    }
+    if (creations.length === 1) { 
+        return {
+            newFacilityId: creations[0].otherEntityId
+        }
+    }
+    if (deletions.length > 0) {
+        return {
+            newFacilityId: null
+        }
+    }
+    return {
+        newFacilityId: null
+    }
+}
 
 // Sets the single facility for an HP
 async function setSingleFacilityForHp(hpId: string, facilityId: string | null): Promise<void> {
@@ -308,32 +404,46 @@ export async function countProfessionals(
 }
 
 /**
- * Creates a Healthcare Professional (Supabase/Postgres).
- * Business rule: an HP can be linked to at least ONE facility.
- * This function inserts a new HP row and optionally creates a single facility link.
+ * Creates a Healthcare Professional (HP) with Kysely transaction.
+ * BUSINESS RULES:
+ * - HP must be linked to EXACTLY ONE facility (enforced at creation)
+ * - Multiple facilities not supported (returns validation error)
+ * - Zero facilities not supported (returns validation error)
+ * @param input - GraphQL CreateHealthcareProfessionalInput
+ * @param updatedBy - User performing the creation (for audit)
+ * @returns Result with created HealthcareProfessional or errors
  */
 export async function createHealthcareProfessional(
     input: gqlTypes.CreateHealthcareProfessionalInput,
     updatedBy: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
-    // Keep reference to created HP id for audit/logging even if something fails
-    // Tracking variables for rollback
-    let createdHpId: string | null = null
-    let createdRelation = false
-
     try {
+        // Validate input before starting transaction
         const validationResult = validateCreateProfessionalInput(input)
 
         if (validationResult.hasErrors) {
             return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
-        // Business rule: HP must be linked to at least one Facility (and at most one for now)
+        // Business rule - validate facility IDs
+        // HP must be linked to EXACTLY ONE facility
         const requestedFacilityIds: string[] = Array.isArray(input.facilityIds)
             ? (input.facilityIds as unknown[]).filter((facId): facId is string => typeof facId === 'string')
             : []
 
-        // Enforce single facility rule — multiple IDs are invalid input
+        // Enforce single facility rule multiple IDs are invalid input
+        if (requestedFacilityIds.length === 0) {
+            return {
+                data: {} as gqlTypes.HealthcareProfessional,
+                hasErrors: true,
+                errors: [{
+                    field: 'facilityIds',
+                    errorCode: ErrorCode.CREATEPROFFESIONAL_FACILITYIDS_REQUIRED,
+                    httpStatus: 400
+                }]
+            }
+        }
+
         if (requestedFacilityIds.length > 1) {
             return {
                 data: {} as gqlTypes.HealthcareProfessional,
@@ -346,91 +456,68 @@ export async function createHealthcareProfessional(
             }
         }
 
-        // Convert GraphQL input → DB insert shape (adds timestamps)
-        const insertPayload = mapCreateInputToHpInsertRow(input)
+        // Execute all operations in atomic transaction
+        const gqlHealthcareProfessional = await db.transaction().execute(async (trx) => {
+            // Insert HP into hps table
+            const insertedHp = await trx
+                .insertInto('hps')
+                .values({
+                    names: input.names as any,
+                    degrees: (input.degrees ?? []) as any,
+                    specialties: (input.specialties ?? []) as any,
+                    spokenLanguages: (input.spokenLanguages ?? []) as any,
+                    acceptedInsurance: (input.acceptedInsurance ?? []) as any,
+                    additionalInfoForPatients: input.additionalInfoForPatients ?? null,
+                    email: null,
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString()
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow()
 
-        const supabase = getSupabaseClient()
+            // Create HP-Facility relation
+            // We know there's exactly one facility ID (validated above)
+            const facilityId = requestedFacilityIds[0]
 
-        // Insert the HP record, returning the inserted row
-        const { data: insertedRow, error: insertErr } = await supabase
-            .from('hps')
-            .insert(insertPayload)
-            .select('*')
-            .single()
-
-        if (insertErr) {
-            throw insertErr
-        }
-
-        createdHpId = insertedRow.id as string
-        
-        //Join: enforce at most one facility link
-        let linkedFacilityIds: string[] = []
-
-        // If exactly one facility ID was requested, create the join record
-        if (requestedFacilityIds.length === 1) {
-            const oneFacilityId = requestedFacilityIds[0]
-
-            // Idempotent upsert on the junction table
-            const { error: upsertRelationErr } = await supabase
-                .from('hps_facilities')
-                .upsert(
-                    //eslint-disable-next-line
-                    [{ hps_id: createdHpId, facilities_id: oneFacilityId }],
-                    { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true }
+            await trx
+                .insertInto('hps_facilities')
+                .values({
+                    hps_id: insertedHp.id,
+                    facilities_id: facilityId
+                })
+                .onConflict((oc) => oc
+                    .columns(['hps_id', 'facilities_id'])
+                    .doNothing()  // Ignore duplicates (idempotent)
                 )
+                .execute()
 
-            if (upsertRelationErr) {
-                throw upsertRelationErr
-            }
+            // Map Kysely row to plain GraphQL object
+            // CRITICAL: This removes Kysely's internal #props members
+            const plainGqlHp = mapKyselyHpToGraphQL(insertedHp, [facilityId])
 
-            // Track created relation
-            createdRelation = true
-            linkedFacilityIds = [oneFacilityId]
-        }
-        
-        // Map inserted DB row into GraphQL shape including related facility ids
-        const gqlHealthcareProfessional = mapDbHpToGql(
-            insertedRow as dbSchema.DbHealthcareProfessionalRow,
-            linkedFacilityIds
-        )
-        
-        // Wrap audit log in try-catch with rollback
-        try {
-            await createAuditLogSQL({
+            // Create audit log entry
+            // Uses the same transaction (trx) to ensure atomicity
+            await createAuditLog(trx, {
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.HealthcareProfessional,
                 updatedBy,
-                newValue: gqlHealthcareProfessional
+                newValue: plainGqlHp  // Plain object is safe to serialize
             })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for HP ${createdHpId}: ${auditError}`)
-            logger.warn(`Rolling back HP ${createdHpId} due to audit log failure`)
 
-            // ROLLBACK: Delete relation first
-            if (createdRelation) {
-                await supabase
-                    .from('hps_facilities')
-                    .delete()
-                    .eq('hps_id', createdHpId)
-            }
+            // Return the plain GraphQL object from the transaction
+            return plainGqlHp
+        })
 
-            // Then delete the HP
-            await supabase
-                .from('hps')
-                .delete()
-                .eq('id', createdHpId)
-
-            throw new Error(`Failed to create audit log: ${auditError}`)
-        }
-
-        logger.info(`DB-CREATE: Created healthcare professional ${createdHpId}.`)
+        // Transaction committed successfully
+        logger.info(`DB-CREATE: Created healthcare professional ${gqlHealthcareProfessional.id}`)
 
         return {
             data: gqlHealthcareProfessional,
             hasErrors: false
         }
     } catch (error) {
+        // Transaction was automatically rolled back
+        // No HP, no relations, no audit log were created
         logger.error(`ERROR: Error creating healthcare professional: ${error}`)
 
         return {
@@ -445,150 +532,185 @@ export async function createHealthcareProfessional(
     }
 }
 
-/*
- * Updates a Healthcare Professional.
- * Rules:
- * - Scalar fields are updated on `hps`
- * - Relationship: accepts at least ONE facility. If provided, it replaces any existing link
- * - return the updated Healthcare Professional
+/**
+ * Updates a Healthcare Professional with Kysely transaction.
+ * - HP must always be linked to at least ONE facility
+ * - Can update scalar fields (names, degrees, specialties, etc.)
+ * - Can update facility relationship (but must keep at least one)
+ * - All changes are atomic (scalar + relations + audit log)
+ * @param id - HP ID to update
+ * @param fieldsToUpdate - Partial update input from GraphQL
+ * @param updatedBy - User performing the update (for audit)
+ * @returns Result with updated HealthcareProfessional or errors
  */
 export const updateHealthcareProfessional = async (
     id: string,
     fieldsToUpdate: Partial<gqlTypes.UpdateHealthcareProfessionalInput>,
     updatedBy: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> => {
-    // Tracking variables for rollback
-    let originalHp: gqlTypes.HealthcareProfessional | null = null
-    let originalFacilityIds: string[] = []
-    let hpWasUpdated = false
-    let relationsWereUpdated = false
-
     try {
+        // Validate input before starting transaction
         const validationResult = validateUpdateProfessionalInput(fieldsToUpdate)
 
         if (validationResult.hasErrors) {
             return validationResult as Result<gqlTypes.HealthcareProfessional>
         }
 
-        // Ensure the HP exists
-        const currentState = await getHealthcareProfessionalById(id)
+        // Execute all operations in atomic transaction
+        const gqlHealthcareProfessional = await db.transaction().execute(async (trx) => {
+            // Fetch current HP state
+            const currentHp = await trx
+                .selectFrom('hps')
+                .selectAll()
+                .where('id', '=', id)
+                .executeTakeFirst()
 
-        if (currentState.hasErrors || !currentState.data) {
-            return {
-                data: {} as gqlTypes.HealthcareProfessional,
-                hasErrors: true,
-                errors: [{ field: 'id', errorCode: ErrorCode.INVALID_ID, httpStatus: 404 }]
+            if (!currentHp) {
+                throw new Error('HP_NOT_FOUND')
             }
-        }
 
-        originalHp = currentState.data
-        originalFacilityIds = currentState.data.facilityIds ?? []
+            // Fetch current facility relations
+            const currentRelations = await trx
+                .selectFrom('hps_facilities')
+                .select('facilities_id')
+                .where('hps_id', '=', id)
+                .execute()
 
-        // prepare the update payload for the hps tables
-        const updatePayload = buildHpUpdatePatch(fieldsToUpdate)
+            const currentFacilityIds = currentRelations.map(r => r.facilities_id)
 
-        // If there are scalar fields (besides updatedDate) we issue a normal UPDATE,
-        // otherwise we just "touch" updatedDate.
-        const hasAnyScalarChange = Object.keys(updatePayload).length > 1
+            // Build update patch for scalar fields
+            const updatePatch = buildHpUpdatePatch(fieldsToUpdate)
 
-        const supabase = getSupabaseClient()
+            // Update scalar fields (always touch updatedDate)
+            const hasScalarChanges = Object.keys(updatePatch).length > 1  // More than just updatedDate
 
-        if (hasAnyScalarChange) {
-            const { error: updateErr } = await supabase
-                .from('hps')
-                .update(updatePayload)
-                .eq('id', id)
+            let updatedHp = currentHp
 
-            if (updateErr) { throw updateErr }
+            if (hasScalarChanges) {
+                updatedHp = await trx
+                    .updateTable('hps')
+                    .set(updatePatch)
+                    .where('id', '=', id)
+                    .returningAll()
+                    .executeTakeFirstOrThrow()
+            } else {
+                // Just touch updatedDate to track the change
+                updatedHp = await trx
+                    .updateTable('hps')
+                    .set({ updatedDate: new Date().toISOString() })
+                    .where('id', '=', id)
+                    .returningAll()
+                    .executeTakeFirstOrThrow()
+            }
 
-            hpWasUpdated = true
-        } else {
-        // If we still want to update updatedDate to track the entity "touch"?
-            const { error: touchErr } = await supabase
-                .from('hps')
-                .update({ updatedDate: new Date().toISOString() })
-                .eq('id', id)
+            // Handle facility relationship changes (if provided)
+            let finalFacilityIds = currentFacilityIds
 
-            if (touchErr) { throw touchErr }
-        }
+            if (fieldsToUpdate.facilityIds !== undefined) {
+                // Resolve new facility ID from relationship actions
+                const { newFacilityId, error } = resolveFacilityIdFromRelationships(fieldsToUpdate.facilityIds ?? null)
 
-        if (fieldsToUpdate.facilityIds !== undefined) {
-            const { newFacilityId, error } = resolveFacilityIdFromRelationships(fieldsToUpdate.facilityIds ?? null)
-
-            if (error) {
-                return {
-                    data: {} as gqlTypes.HealthcareProfessional,
-                    hasErrors: true,
-                    errors: [{ field: 'facilityIds', errorCode: ErrorCode.INVALID_INPUT, httpStatus: 400 }]
+                if (error) {
+                    throw new Error('INVALID_FACILITY_RELATIONSHIP')
                 }
+
+                // Apply facility relationship change
+                // This will delete all current relations and create the new one (if provided)
+                if (newFacilityId === null) {
+                    // User wants to delete the current facility
+                    // Business rule: HP must have at least one facility
+                    throw new Error('HP_REQUIRES_FACILITY')
+                }
+
+                // Delete all existing facility relations for this HP
+                await trx
+                    .deleteFrom('hps_facilities')
+                    .where('hps_id', '=', id)
+                    .execute()
+
+                // Insert new facility relation
+                await trx
+                    .insertInto('hps_facilities')
+                    .values({
+                        hps_id: id,
+                        facilities_id: newFacilityId
+                    })
+                    .onConflict((oc) => oc
+                        .columns(['hps_id', 'facilities_id'])
+                        .doNothing()  // Idempotent
+                    )
+                    .execute()
+
+                finalFacilityIds = [newFacilityId]
             }
-            // This clears existing links and optionally sets a new one
-            await setSingleFacilityForHp(id, newFacilityId)
-            relationsWereUpdated = true
-        }
 
-        // Return the refreshed HP with relations included
-        const refreshedResult = await getHealthcareProfessionalById(id)
+            // Map to GraphQL for audit log
+            const oldGqlHp = mapKyselyHpToGraphQL(currentHp, currentFacilityIds)
+            const newGqlHp = mapKyselyHpToGraphQL(updatedHp, finalFacilityIds)
 
-        if (refreshedResult.hasErrors || !refreshedResult.data) {
-            throw new Error('Could not reload updated healthcare professional.')
-        }
-
-        // Wrap audit log in try-catch with rollback
-        try {
-            await createAuditLogSQL({
+            // Create audit log entry
+            await createAuditLog(trx, {
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.HealthcareProfessional,
                 updatedBy,
-                oldValue: originalHp,
-                newValue: refreshedResult.data
+                oldValue: oldGqlHp,
+                newValue: newGqlHp
             })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for HP ${id}: ${auditError}`)
-            logger.warn(`Rolling back HP ${id} update due to audit log failure`)
 
-            // ROLLBACK: Restore relations if they were updated
-            if (relationsWereUpdated) {
-                // Delete current relations
-                await supabase
-                    .from('hps_facilities')
-                    .delete()
-                    .eq('hps_id', id)
+            // Return the updated GraphQL object
+            return newGqlHp
+        })
 
-                // Restore original relations
-                if (originalFacilityIds.length > 0) {
-                    const originalRelations = originalFacilityIds.map(facId => ({
-                        //eslint-disable-next-line
-                        hps_id: id, facilities_id: facId
-                    }))
+        // Transaction committed successfully
+        logger.info(`DB-UPDATE: Updated healthcare professional ${id}`)
 
-                    await supabase
-                        .from('hps_facilities')
-                        .insert(originalRelations)
-                }
+        return {
+            data: gqlHealthcareProfessional,
+            hasErrors: false
+        }
+    } catch (error) {
+        const errorMessage = (error as Error).message
+
+        // Handle HP_NOT_FOUND error
+        if (errorMessage === 'HP_NOT_FOUND') {
+            return {
+                data: {} as gqlTypes.HealthcareProfessional,
+                hasErrors: true,
+                errors: [{ 
+                    field: 'id', 
+                    errorCode: ErrorCode.INVALID_ID,
+                    httpStatus: 404 
+                }]
             }
-
-            // Rollback scalar fields if they were updated
-            if (hpWasUpdated && originalHp) {
-                await supabase
-                    .from('hps')
-                    .update({
-                        names: originalHp.names,
-                        degrees: originalHp.degrees,
-                        spokenLanguages: originalHp.spokenLanguages,
-                        specialties: originalHp.specialties,
-                        acceptedInsurance: originalHp.acceptedInsurance,
-                        additionalInfoForPatients: originalHp.additionalInfoForPatients,
-                        updatedDate: originalHp.updatedDate
-                    })
-                    .eq('id', id)
-            }
-
-            throw new Error(`Failed to create audit log: ${auditError}`)
         }
 
-        return { data: refreshedResult.data, hasErrors: false }
-    } catch (error) {
+        // Handle INVALID_FACILITY_RELATIONSHIP error
+        if (errorMessage === 'INVALID_FACILITY_RELATIONSHIP') {
+            return {
+                data: {} as gqlTypes.HealthcareProfessional,
+                hasErrors: true,
+                errors: [{
+                    field: 'facilityIds',
+                    errorCode: ErrorCode.INVALID_INPUT,
+                    httpStatus: 400
+                }]
+            }
+        }
+
+        // Handle HP_REQUIRES_FACILITY error
+        if (errorMessage === 'HP_REQUIRES_FACILITY') {
+            return {
+                data: {} as gqlTypes.HealthcareProfessional,
+                hasErrors: true,
+                errors: [{
+                    field: 'facilityIds',
+                    errorCode: ErrorCode.INVALID_INPUT,
+                    httpStatus: 400
+                }]
+            }
+        }
+
+        // Generic error
         logger.error(`ERROR: Error updating healthcareProfessional ${id}: ${error}`)
         return {
             data: {} as gqlTypes.HealthcareProfessional,
@@ -603,23 +725,29 @@ export const updateHealthcareProfessional = async (
 }
 
 /**
- * This deletes a Healthcare Professional from the database.
- * If the Healthcare Professional doesn't exist, it will return a validation error.
- * @param id The ID of the professional in the database to delete.
+ * Deletes a Healthcare Professional from the database.
+ * - Fetch existing HP (validation)
+ * - Delete HP (CASCADE automatically deletes hps_facilities relations)
+ * - Create audit log
+ * - All operations are atomic: if audit log fails, deletion is rolled back 
+ * ON DELETE CASCADE:
+ * The database schema has ON DELETE CASCADE on hps_facilities.hps_id,
+ * so when we delete the HP, all relations are automatically deleted.
+ * No need to manually delete from hps_facilities.
+ * @param id - The ID of the professional to delete
+ * @param updatedBy - User performing the deletion (for audit)
+ * @returns Result indicating success or failure
  */
 export async function deleteHealthcareProfessional(
     id: string,
     updatedBy: string
 ): Promise<Result<gqlTypes.DeleteResult>> {
-    // Tracking variables for rollback
-    let deletedHp: gqlTypes.HealthcareProfessional | null = null
-    let deletedRelations: Array<{ hps_id: string, facilities_id: string }> = []
-
     try {
+        // Validate ID format before starting transaction
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
-            logger.warn(`Validation Error: invalid id for deleteHealtchareProfessional: ${id}`)
+            logger.warn(`Validation Error: invalid id for deleteHealthcareProfessional: ${id}`)
             return {
                 data: { isSuccessful: false },
                 hasErrors: true,
@@ -627,13 +755,64 @@ export async function deleteHealthcareProfessional(
             }
         }
 
-        // Ensure the HP exists
-        const existingHp = await getHealthcareProfessionalById(id)
+        // Execute deletion in atomic transaction
+        await db.transaction().execute(async (trx) => {
+            // Fetch existing HP (for validation and audit log)
+            const existingHp = await trx
+                .selectFrom('hps')
+                .selectAll()
+                .where('id', '=', id)
+                .executeTakeFirst()
 
-        if (existingHp.hasErrors || !existingHp.data) {
+            if (!existingHp) {
+                throw new Error('HP_NOT_FOUND')
+            }
+
+            // Fetch related facility IDs (for audit log)
+            // Note: These will be automatically deleted by CASCADE,
+            // but we need them for the audit log's oldValue
+            const relations = await trx
+                .selectFrom('hps_facilities')
+                .select('facilities_id')
+                .where('hps_id', '=', id)
+                .execute()
+
+            const facilityIds = relations.map(row => row.facilities_id)
+
+            // Delete the HP
+            // CASCADE will automatically delete rows in hps_facilities
+            await trx
+                .deleteFrom('hps')
+                .where('id', '=', id)
+                .execute()
+
+            // Create audit log entry
+            // Map Kysely row to GraphQL for audit log
+            const oldGqlHp = mapKyselyHpToGraphQL(existingHp, facilityIds)
+
+            await createAuditLog(trx, {
+                actionType: gqlTypes.ActionType.Delete,
+                objectType: gqlTypes.ObjectType.HealthcareProfessional,
+                updatedBy,
+                oldValue: oldGqlHp
+            })
+
+        })
+
+        logger.info(`DB-DELETE: healthcare professional ${id} was deleted`)
+
+        return {
+            data: { isSuccessful: true },
+            hasErrors: false
+        }
+    } catch (error) {
+        const errorMessage = (error as Error).message
+
+        // Handle HP_NOT_FOUND error
+        if (errorMessage === 'HP_NOT_FOUND') {
             logger.warn(`deleteHealthcareProfessional: professional not found: ${id}`)
             return {
-                data: { isSuccessful: false},
+                data: { isSuccessful: false },
                 hasErrors: true,
                 errors: [{
                     field: 'deleteHealthcareProfessional',
@@ -643,74 +822,8 @@ export async function deleteHealthcareProfessional(
             }
         }
 
-        deletedHp = existingHp.data
-
-        const supabase = getSupabaseClient()
-
-        // Save relations for potential restore
-        const { data: relations } = await supabase
-            .from('hps_facilities')
-            .select('hps_id, facilities_id')
-            .eq('hps_id', id)
-
-        if (relations) {
-            deletedRelations = relations as Array<{ hps_id: string, facilities_id: string }>
-        }
-
-        const { error: hpDeleteErr } = await supabase
-            .from('hps')
-            .delete()
-            .eq('id', id)
-
-        if (hpDeleteErr) {
-            throw new Error(`Failed to delete professional: ${hpDeleteErr.message}`)
-        }
-
-        try {
-            await createAuditLogSQL({
-                actionType: gqlTypes.ActionType.Delete,
-                objectType: gqlTypes.ObjectType.HealthcareProfessional,
-                updatedBy,
-                oldValue: deletedHp
-            })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for deleted HP ${id}: ${auditError}`)
-            logger.warn(`Rolling back HP ${id} deletion due to audit log failure`)
-
-            // ROLLBACK: Restore the deleted HP
-            await supabase
-                .from('hps')
-                .insert({
-                    id: deletedHp.id,
-                    names: deletedHp.names,
-                    degrees: deletedHp.degrees,
-                    spokenLanguages: deletedHp.spokenLanguages,
-                    specialties: deletedHp.specialties,
-                    acceptedInsurance: deletedHp.acceptedInsurance,
-                    additionalInfoForPatients: deletedHp.additionalInfoForPatients,
-                    createdDate: deletedHp.createdDate,
-                    updatedDate: deletedHp.updatedDate
-                })
-
-            // Restore relations
-            if (deletedRelations.length > 0) {
-                await supabase
-                    .from('hps_facilities')
-                    .insert(deletedRelations)
-            }
-
-            throw new Error(`Failed to create audit log: ${auditError}`)
-        }
-
-        logger.info(`\nDB-DELETE: healthcare professional ${id} was deleted.\nEntity: ${JSON.stringify(id)}`)
-
-        return {
-            data: { isSuccessful: true },
-            hasErrors: false
-        }
-    } catch (error) {
+        // Generic error
         logger.error(`ERROR: Error deleting professional ${id}: ${error}`)
-
         return {
             data: { isSuccessful: false },
             hasErrors: true,
@@ -724,55 +837,27 @@ export async function deleteHealthcareProfessional(
 }
 
 /**
- * Batch version: counts facilities for multiple HPs in a single query
+ * Bulk updates HP-Facility relationships when a facility is modified.
+ * USE CASE:
+ * When a Facility is updated and its healthcareProfessionalIds change,
+ * this function updates the junction table (hps_facilities) accordingly.
+ * BUSINESS RULES:
+ * - HP must always be linked to at least ONE facility
+ * - Cannot delete a relation if it's the HP's last facility
+ * - Batch validation: checks all HPs before making any changes
+ * NOTE: No audit log in this function because it's called FROM updateFacility,
+ * which already creates an audit log for the facility change.
+ * 
+ * @param professionalRelationshipsToUpdate - Array of relationship changes (CREATE/DELETE)
+ * @param facilityId - The facility ID being linked/unlinked
+ * @returns Result indicating success or validation errors
  */
-async function countFacilitiesForMultipleHps(hpIds: string[]): Promise<Map<string, number>> {
-    if (hpIds.length === 0) {
-        return new Map()
-    }
-
-    const supabase = getSupabaseClient()
-    
-    // Single batch query for all HPs
-    const { data, error } = await supabase
-        .from('hps_facilities')
-        .select('hps_id')
-        .in('hps_id', hpIds)
-
-    if (error) {
-        throw error
-    }
-
-    // Count occurrences
-    const counts = new Map<string, number>()
-    
-    // Initialize all with 0
-    for (const hpId of hpIds) {
-        counts.set(hpId, 0)
-    }
-    
-    // Count from results
-    for (const row of data ?? []) {
-        const hpId = row.hps_id as string
-
-        counts.set(hpId, (counts.get(hpId) ?? 0) + 1)
-    }
-
-    return counts
-}
-
-/**
-    * This function updates the facilityIds list for each healthcare professional listed.
-    * Based on the action, it will add or remove the facility id from the existing list of facilityIds.
-    * @param professionalRelationshipsToUpdate - The list of healthcare professionals to update.
-    * @param facilityId - The id of the facility that is being added or removed.
-    * @returns Result containing any errors that occurred.
-*/
 export async function updateHealthcareProfessionalsWithFacilityIdChanges(
     professionalRelationshipsToUpdate: gqlTypes.Relationship[],
     facilityId: string
 ): Promise<Result<void>> {
     try {
+        // Early return if no changes requested
         if (!professionalRelationshipsToUpdate || professionalRelationshipsToUpdate.length < 1) {
             return {
                 data: undefined,
@@ -780,108 +865,115 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
         }
 
-        // Split incoming relationships into ids to create/delete
-        const hpIdsToCreate: string[] = professionalRelationshipsToUpdate
-            .filter(r => r.action === gqlTypes.RelationshipAction.Create)
-            .map(r => r.otherEntityId)
+        // Execute all operations in atomic transaction
+        await db.transaction().execute(async (trx) => {
+            // Split relationships into CREATE vs DELETE
+            const hpIdsToCreate: string[] = professionalRelationshipsToUpdate
+                .filter(r => r.action === gqlTypes.RelationshipAction.Create)
+                .map(r => r.otherEntityId)
 
-        const hpIdsToDelete: string[] = professionalRelationshipsToUpdate
-            .filter(r => r.action === gqlTypes.RelationshipAction.Delete)
-            .map(r => r.otherEntityId)
+            const hpIdsToDelete: string[] = professionalRelationshipsToUpdate
+                .filter(r => r.action === gqlTypes.RelationshipAction.Delete)
+                .map(r => r.otherEntityId)
 
-        const createSet = new Set<string>(hpIdsToCreate)
-        const deleteSet = new Set<string>(hpIdsToDelete)
+            // Resolve conflicts, if HP appears in both CREATE and DELETE, it's a no-op
+            const createSet = new Set<string>(hpIdsToCreate)
+            const deleteSet = new Set<string>(hpIdsToDelete)
 
-        // Resolve conflicts: if an HP is in both, remove from both (no-op)
-        for (const hpId of Array.from(createSet)) {
-            if (deleteSet.has(hpId)) {
-                createSet.delete(hpId)
-                deleteSet.delete(hpId)
+            for (const hpId of Array.from(createSet)) {
+                if (deleteSet.has(hpId)) {
+                    createSet.delete(hpId)
+                    deleteSet.delete(hpId)
+                }
             }
-        }
 
-        // Build rows for INSERT/UPSERT
-        const relationsToCreate =
-            Array.from(createSet).map(hpsId =>
-                //eslint-disable-next-line
-                ({ hps_id: hpsId, facilities_id: facilityId }))
+            const finalCreateIds = Array.from(createSet)
+            const finalDeleteIds = Array.from(deleteSet)
 
-        const idsToDelete = Array.from(deleteSet)
+            // Validation check if any HP would be left without facilities
+            if (finalDeleteIds.length > 0) {
+                // Batch query: count facilities for all HPs being deleted
+                const facilityCounts = await trx
+                    .selectFrom('hps_facilities')
+                    .select('hps_id')
+                    .select((eb) => eb.fn.count<number>('facilities_id').as('count'))
+                    .where('hps_id', 'in', finalDeleteIds)
+                    .groupBy('hps_id')
+                    .execute()
 
-        const supabase = getSupabaseClient()
+                // Build lookup map: hpId → count
+                const countsMap = new Map<string, number>()
+                for (const row of facilityCounts) {
+                    countsMap.set(row.hps_id, Number(row.count))
+                }
 
-        // INSERT/UPSERT relations first (idempotent)
-        if (relationsToCreate.length > 0) {
-            const { error: upsertErr } = await supabase
-                .from('hps_facilities')
-                .upsert(relationsToCreate, {
-                    onConflict: 'hps_id,facilities_id',
-                    ignoreDuplicates: true
+                // Check if any HP would be left without facilities (count <= 1)
+                const wouldBreak = finalDeleteIds.filter(hpId => {
+                    const count = countsMap.get(hpId) ?? 0
+                    return count <= 1  // Would have 0 facilities after deletion
                 })
 
-            if (upsertErr) {
-                return {
-                    data: undefined,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'updateHealthcareProfessionalsWithFacilityIdChanges',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500
-                    }]
-                }
-            }
-        }
-        // DELETE relations
-        if (idsToDelete.length > 0) {
-            // Batched Single query for all HPs
-            const facilityCounts = await countFacilitiesForMultipleHps(idsToDelete)
-
-            // Check if any HP would be left without facilities
-            const wouldBreak = idsToDelete.filter(hpId => {
-                const count = facilityCounts.get(hpId) ?? 0
-
-                return count <= 1 // Would have 0 facilities after deletion
-            })
-
-            if (wouldBreak.length > 0) {
-                return {
-                    data: undefined,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'facilityIds',
-                        errorCode: ErrorCode.INVALID_INPUT,
-                        httpStatus: 400
-                    }]
+                if (wouldBreak.length > 0) {
+                    throw new Error('HP_REQUIRES_FACILITY')
                 }
             }
 
-            // Delete relations
-            const { error: deleteErr } = await supabase
-                .from('hps_facilities')
-                .delete()
-                .eq('facilities_id', facilityId)
-                .in('hps_id', idsToDelete)
+            // Execute CREATE operations (if any)
+            if (finalCreateIds.length > 0) {
+                // Build rows for batch insert
+                const relationsToCreate = finalCreateIds.map(hpId => ({
+                    hps_id: hpId,
+                    facilities_id: facilityId
+                }))
 
-            if (deleteErr) {
-                return {
-                    data: undefined,
-                    hasErrors: true,
-                    errors: [{
-                        field: 'updateHealthcareProfessionalsWithFacilityIdChanges',
-                        errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-                        httpStatus: 500
-                    }]
-                }
+                // Batch insert with idempotency
+                await trx
+                    .insertInto('hps_facilities')
+                    .values(relationsToCreate)
+                    .onConflict((oc) => oc
+                        .columns(['hps_id', 'facilities_id'])
+                        .doNothing()  // Ignore duplicates (idempotent)
+                    )
+                    .execute()
             }
-        }
-       
+
+            // Execute DELETE operations (if any)
+            if (finalDeleteIds.length > 0) {
+                // Batch delete - single query for all HPs
+                await trx
+                    .deleteFrom('hps_facilities')
+                    .where('facilities_id', '=', facilityId)
+                    .where('hps_id', 'in', finalDeleteIds)
+                    .execute()
+            }
+
+            // Transaction commits here automatically if no errors
+        })
+
+        logger.info(`Bulk updated HP-Facility relations for facility ${facilityId}`)
+
         return {
             data: undefined,
             hasErrors: false
         }
     } catch (error) {
-        logger.error(`Error updating healthcareProfessional facilityId list: ${error}`)
+        const errorMessage = (error as Error).message
 
+        // Handle HP_REQUIRES_FACILITY error
+        if (errorMessage === 'HP_REQUIRES_FACILITY') {
+            return {
+                data: undefined,
+                hasErrors: true,
+                errors: [{
+                    field: 'facilityIds',
+                    errorCode: ErrorCode.INVALID_INPUT,
+                    httpStatus: 400
+                }]
+            }
+        }
+
+        // Generic error
+        logger.error(`Error updating healthcareProfessional facilityId list: ${error}`)
         return {
             data: undefined,
             hasErrors: true,
@@ -930,3 +1022,37 @@ export function mapDbHpToGql(
     }
 }
 
+/**
+ * Maps Kysely HP result to plain GraphQL HealthcareProfessional object.
+ * 
+ * PURPOSE:
+ * - Converts Kysely database row types to GraphQL types
+ * - Removes Kysely internal members (like #props) that would break GraphQL serialization
+ * - Handles nullable fields with proper fallbacks (?? operator)
+ * 
+ * CRITICAL FOR GRAPHQL:
+ * - GraphQL cannot serialize objects with private JavaScript members
+ * - Kysely rows returned from .returningAll() have internal #props
+ * - This function creates a "plain" JavaScript object safe for GraphQL responses
+ * 
+ * @param hpRow - Raw Kysely row from database
+ * @param facilityIds - Related facility IDs for this HP
+ * @returns Plain GraphQL HealthcareProfessional object (safe for serialization)
+ */
+function mapKyselyHpToGraphQL(
+    hpRow: Selectable<HpsTable>,
+    facilityIds: string[]
+): gqlTypes.HealthcareProfessional {
+    return {
+        id: hpRow.id,
+        names: hpRow.names ?? [],
+        degrees: hpRow.degrees ?? [],
+        spokenLanguages: hpRow.spokenLanguages ?? [],
+        specialties: hpRow.specialties ?? [],
+        acceptedInsurance: hpRow.acceptedInsurance ?? [],
+        facilityIds,
+        createdDate: hpRow.createdDate,
+        updatedDate: hpRow.updatedDate,
+        additionalInfoForPatients: hpRow.additionalInfoForPatients ?? null
+    }
+}

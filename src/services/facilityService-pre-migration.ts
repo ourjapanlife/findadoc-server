@@ -1,6 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
-import * as dbSchema from '../typeDefs/dbSchema.js'
 import { db } from '../kyselyClient.js'
+import type { FacilitiesTable } from '../typeDefs/kyselyTypes.js'
+import type { Selectable } from 'kysely'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
@@ -128,14 +129,20 @@ export const getFacilityById = async (
             row => row.hps_id as string
         )
 
-        // Merge the scalar facility data with the relational IDs
-        const dbFacilityModel: dbSchema.Facility = {
-            ...(facilityRow as dbSchema.DbFacilityRow),
-            healthcareProfessionalIds
+        const gqlFacility: gqlTypes.Facility = {
+            id: facilityRow.id as string,
+            nameEn: facilityRow.nameEn as string,
+            nameJa: facilityRow.nameJa as string,
+            contact: facilityRow.contact as gqlTypes.Contact,
+            mapLatitude: facilityRow.mapLatitude as number,
+            mapLongitude: facilityRow.mapLongitude as number,
+            healthcareProfessionalIds,
+            createdDate: facilityRow.createdDate as string,
+            updatedDate: facilityRow.updatedDate as string
         }
 
         return {
-            data: mapDbEntityTogqlEntity(dbFacilityModel),
+            data: gqlFacility,
             hasErrors: false
         }
     } catch (error) {
@@ -198,85 +205,91 @@ export async function createFacility(
     updatedBy: string
 ): Promise<Result<gqlTypes.Facility>> {
     try {
-        // Validate input before attempting database operations
         const validationResult = validateCreateFacilityInput(facilityInput)
 
         if (validationResult.hasErrors) {
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        // Extract HP IDs for convenience
         const hpIds = (facilityInput.healthcareProfessionalIds ?? []) as string[]
 
-        // Execute all database operations in a single atomic transaction
-        // If any operation fails, everything is automatically rolled back
-        const result = await db.transaction().execute(async (trx) => {
-            // Insert facility (PostgreSQL generates UUID automatically)
+        // 🔍 DEBUG 1: Log l'input originale
+        console.log('🔍 DEBUG 1 - facilityInput.contact:', facilityInput.contact)
+        console.log('🔍 DEBUG 1 - has #props?:', facilityInput.contact && '#props' in facilityInput.contact)
+
+        // ✅ Clean the input
+        const cleanContact = JSON.parse(JSON.stringify(facilityInput.contact))
+        
+        // 🔍 DEBUG 2: Log dopo la pulizia
+        console.log('🔍 DEBUG 2 - cleanContact:', cleanContact)
+        console.log('🔍 DEBUG 2 - has #props?:', cleanContact && '#props' in cleanContact)
+
+        const gqlFacility = await db.transaction().execute(async (trx) => {
+            console.log('🔍 DEBUG 3 - Inizio transaction')
+            
+            // 🔍 DEBUG 4: Log prima dell'insert
+            console.log('🔍 DEBUG 4 - About to insert with contact:', cleanContact)
+            
             const insertedFacility = await trx
                 .insertInto('facilities')
                 .values({
                     nameEn: facilityInput.nameEn,
                     nameJa: facilityInput.nameJa,
-                    contact: facilityInput.contact,
+                    contact: cleanContact,
                     mapLatitude: facilityInput.mapLatitude ?? 0,
                     mapLongitude: facilityInput.mapLongitude ?? 0,
                     createdDate: new Date().toISOString(),
                     updatedDate: new Date().toISOString()
                 })
                 .returningAll()
-                .executeTakeFirstOrThrow() // Throws if insert fails
+                .executeTakeFirstOrThrow()
 
-            // Create associations with healthcare professionals (if any)
+            console.log('🔍 DEBUG 5 - Insert successful, insertedFacility:', insertedFacility)
+            console.log('🔍 DEBUG 5 - insertedFacility.contact has #props?:', insertedFacility.contact && '#props' in insertedFacility.contact)
+
             if (hpIds.length > 0) {
-                // Build join table rows
                 const joinRows = hpIds.map(hpsId => ({
                     hps_id: hpsId,
                     facilities_id: insertedFacility.id
                 }))
 
-                // Insert relations into junction table
-                // onConflict handles duplicate prevention (composite primary key)
                 await trx
                     .insertInto('hps_facilities')
                     .values(joinRows)
                     .onConflict((oc) => oc
                         .columns(['hps_id', 'facilities_id'])
-                        .doNothing() // Ignore duplicates instead of failing, similar to ignoreDuplicates on supabase
+                        .doNothing()
                     )
                     .execute()
             }
 
-            // Create audit log entry
+            console.log('🔍 DEBUG 6 - About to call mapKyselyFacilityToGraphQL')
+            const plainGqlFacility = mapKyselyFacilityToGraphQL(insertedFacility, hpIds)
+            console.log('🔍 DEBUG 7 - After mapKyselyFacilityToGraphQL, plainGqlFacility:', plainGqlFacility)
+
+            console.log('🔍 DEBUG 8 - About to call createAuditLog')
             await createAuditLog(trx, {
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                newValue: { ...insertedFacility, healthcareProfessionalIds: hpIds }
+                newValue: plainGqlFacility
             })
+            console.log('🔍 DEBUG 9 - After createAuditLog')
 
-            // Return the inserted facility for mapping
-            return insertedFacility
+            return plainGqlFacility
         })
 
-        // Map database result to GraphQL type
-        // This separates database concerns from API concerns
-        const dbFacility: dbSchema.Facility = {
-            ...result,
-            contact: result.contact as gqlTypes.Contact,
-            healthcareProfessionalIds: hpIds
-        }
-
-        const gqlFacility = mapDbEntityTogqlEntity(dbFacility)
-
-        logger.info(`\nDB-CREATE: CREATE facility ${result.id}.\nEntity: ${JSON.stringify(result)}`)
+        logger.info(`\nDB-CREATE: CREATE facility ${gqlFacility.id}.\nEntity: ${JSON.stringify(gqlFacility)}`)
 
         return {
             data: gqlFacility,
             hasErrors: false
         }
     } catch (error) {
-        // If we reach here, the transaction was automatically rolled back
-        // No need for manual cleanup - the database guarantees consistency
+        console.log('🔍 DEBUG ERROR - Caught error:', error)
+        console.log('🔍 DEBUG ERROR - Error message:', (error as Error).message)
+        console.log('🔍 DEBUG ERROR - Error stack:', (error as Error).stack)
+        
         logger.error(`ERROR: Error creating facility: ${error}`)
 
         return {
@@ -290,7 +303,6 @@ export async function createFacility(
         }
     }
 }
-
 /**
  * Searches for a paginated list of Facilities based on various criteria.
  * This function handles multi-step filtering:
@@ -385,14 +397,17 @@ export async function searchFacilities(
         }
 
         // Map the paginated DB rows to the final GraphQL shape, injecting the associated HP IDs
-        const list: gqlTypes.Facility[] = (paginationRows ?? []).map((facility: dbSchema.DbFacilityRow) => {
-            const dbFacility: dbSchema.Facility = {
-                ...facility,
-                healthcareProfessionalIds: hpIdsByFacility.get(facility.id) ?? []
-            }
-
-            return mapDbEntityTogqlEntity(dbFacility)
-        })
+        const list: gqlTypes.Facility[] = (paginationRows ?? []).map((row) => ({
+            id: row.id as string,
+            nameEn: row.nameEn as string,
+            nameJa: row.nameJa as string,
+            contact: row.contact as gqlTypes.Contact,
+            mapLatitude: row.mapLatitude as number,
+            mapLongitude: row.mapLongitude as number,
+            healthcareProfessionalIds: hpIdsByFacility.get(row.id as string) ?? [],
+            createdDate: row.createdDate as string,
+            updatedDate: row.updatedDate as string
+        }))
 
         return { data: list, hasErrors: false }
     } catch (err) {
@@ -543,12 +558,15 @@ export const updateFacility = async (
 
             // Create audit log entry
             // If this fails, the entire transaction (including updates) is rolled back
+            const oldGqlFacility = mapKyselyFacilityToGraphQL(originalFacility, originalHpIds)
+            const newGqlFacility = mapKyselyFacilityToGraphQL(updatedFacility, finalHpIds)
+
             await createAuditLog(trx, {
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                oldValue: { ...originalFacility, healthcareProfessionalIds: originalHpIds },
-                newValue: { ...updatedFacility, healthcareProfessionalIds: finalHpIds }
+                oldValue: oldGqlFacility,  // ✅ Plain object
+                newValue: newGqlFacility   // ✅ Plain object
             })
 
             // Return the updated facility and final HP IDs for mapping
@@ -556,13 +574,7 @@ export const updateFacility = async (
         })
 
         // Map database result to GraphQL type
-        const dbFacility: dbSchema.Facility = {
-            ...result.facility,
-            contact: result.facility.contact as gqlTypes.Contact,
-            healthcareProfessionalIds: result.hpIds
-        }
-
-        const gqlFacility = mapDbEntityTogqlEntity(dbFacility)
+        const gqlFacility = mapKyselyFacilityToGraphQL(result.facility, result.hpIds)
 
         return { data: gqlFacility, hasErrors: false }
     } catch (error) {
@@ -715,11 +727,13 @@ export async function deleteFacility(
 
             //Create audit log entry
             // If this fails, the entire transaction (including the delete) is rolled back
+            const oldGqlFacility = mapKyselyFacilityToGraphQL(existingFacility, hpIds)
+
             await createAuditLog(trx, {
                 actionType: gqlTypes.ActionType.Delete,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                oldValue: { ...existingFacility, healthcareProfessionalIds: hpIds }
+                oldValue: oldGqlFacility  // ✅ Plain object
             })
 
         })
@@ -764,21 +778,30 @@ export async function deleteFacility(
 }
 
 /**
- * Maps a database entity (dbSchema.Facility) to its GraphQL representation (gqlTypes.Facility)
- * This function ensures the data shape matches the API contract.
+ * Maps Kysely Facility result to GraphQL Facility type
+ * Use this when you need to transform DB types to GraphQL types
  */
-export const mapDbEntityTogqlEntity = (dbEntity: dbSchema.Facility): gqlTypes.Facility => {
-    const gqlEntity = {
-        id: dbEntity.id,
-        nameEn: dbEntity.nameEn,
-        nameJa: dbEntity.nameJa,
-        contact: dbEntity.contact,
-        mapLatitude: dbEntity.mapLatitude,
-        mapLongitude: dbEntity.mapLongitude,
-        healthcareProfessionalIds: dbEntity.healthcareProfessionalIds,
-        createdDate: dbEntity.createdDate,
-        updatedDate: dbEntity.updatedDate
-    } satisfies gqlTypes.Facility
-
-    return gqlEntity
+/**
+ * Maps Kysely Facility result to plain GraphQL Facility object.
+ * CRITICAL: This function MUST return a plain JavaScript object without any
+ * Kysely internal members (#props) that would cause GraphQL serialization errors.
+ */
+function mapKyselyFacilityToGraphQL(
+    facilityRow: Selectable<FacilitiesTable>,
+    healthcareProfessionalIds: string[]
+): gqlTypes.Facility {
+    // ✅ JSON round-trip rimuove TUTTI i #props, incluso quelli nested nel contact
+    const cleanRow = JSON.parse(JSON.stringify(facilityRow))
+    
+    return {
+        id: cleanRow.id,
+        nameEn: cleanRow.nameEn,
+        nameJa: cleanRow.nameJa,
+        contact: cleanRow.contact,  // ✅ Ora è plain object
+        mapLatitude: cleanRow.mapLatitude,
+        mapLongitude: cleanRow.mapLongitude,
+        healthcareProfessionalIds,
+        createdDate: cleanRow.createdDate,
+        updatedDate: cleanRow.updatedDate
+    }
 }

@@ -5,10 +5,147 @@ import { validateSubmissionSearchFilters, validateCreateSubmissionInputs, valida
 import { logger } from '../logger.js'
 import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
 import { getSupabaseClient } from '../supabaseClient.js'
-import { createAuditLogSQL } from './auditLogServiceSupabase.js'
-import { createFacility } from './facilityService-pre-migration.js'
-import { createHealthcareProfessional } from './healthcareProfessionalService-pre-migration.js'
-import { createBlankContact, sanitizeLocales, splitPersonName, applySubmissionQueryFilters } from './helperFunctionsServices.js'
+import { createAuditLog } from './auditLogServiceSupabase.js'
+import type { Transaction } from 'kysely'
+import type { Database } from '../typeDefs/kyselyTypes.js'
+import type { SubmissionsTable } from '../typeDefs/kyselyTypes.js'
+import type { Selectable } from 'kysely'
+import { db } from '../kyselyClient.js'
+/**
+ * Builds a minimal, empty address object.
+ * Used when a submission does not contain address details,
+ * but a complete shape is required to avoid null references.
+ */
+function createBlankAddress(): gqlTypes.PhysicalAddressInput {
+    return {
+        addressLine1En: '',
+        addressLine2En: '',
+        addressLine1Ja: '',
+        addressLine2Ja: '',
+        cityEn: '',
+        cityJa: '',
+        prefectureEn: '',
+        prefectureJa: '',
+        postalCode: ''
+    }
+}
+
+/**
+ * Builds a minimal contact object.
+ * Ensures all required fields are defined, even if empty.
+ * @param googleMapsUrl Optional pre-filled Google Maps URL.
+ */
+
+function createBlankContact(googleMapsUrl?: string): gqlTypes.ContactInput {
+    return {
+        address: createBlankAddress(),
+        email: '',
+        phone: '',
+        website: '',
+        googleMapsUrl: googleMapsUrl ?? ''
+    }
+}
+
+/**
+ * Deduplicates and sanitizes a list of locale codes.
+ * Removes null/undefined entries and returns unique Locale values.
+ * @param locales Possibly null or undefined list of Locale values.
+ * @returns Array of unique, valid locales.
+ */
+function sanitizeLocales(locales: (gqlTypes.Locale | null | undefined)[] | null | undefined): gqlTypes.Locale[] {
+    if (!locales) { return [] }
+    // Filter out null/undefined entries
+    const clean = locales.filter((local): local is gqlTypes.Locale => !!local)
+
+    return Array.from(new Set(clean))
+}
+
+/**
+ * Splits a full name string into first, last, and optional middle name parts.
+ * If only one part is found, assigns 'Unknown' as a fallback last name.
+ * @example
+ * splitPersonName("John Smith") → { firstName: "John", lastName: "Smith" }
+ * splitPersonName("Madonna") → { firstName: "Madonna", lastName: "Unknown" }
+ */
+function splitPersonName(full: string): { firstName: string; lastName: string; middleName?: string } {
+    // Split by any whitespace and remove empty parts
+    const parts = full.trim().split(/\s+/).filter(Boolean)
+
+    if (parts.length === 1) {
+        return { firstName: parts[0], lastName: 'Unknown' }
+    }
+    if (parts.length === 2) {
+        return { firstName: parts[0], lastName: parts[1] }
+    }
+    // For 3+ parts: treat the first as firstName, last as lastName, and join the rest as middleName
+    return {
+        firstName: parts[0],
+        lastName: parts[parts.length - 1],
+        middleName: parts.slice(1, -1).join(' ')
+    }    
+}
+
+/**
+ * Applies filtering logic to a Supabase query builder for the `submissions` table.
+ * It handles text search, status flag logic, and date equality filters.
+ *
+ * @template B Query builder type
+ * @param queryBuilder The base Supabase query builder instance.
+ * @param filters Filters provided via GraphQL submission search input.
+ * @returns Modified query builder with applied filters.
+ */
+//eslint-disable-next-line
+function applySubmissionQueryFilters<B extends Record<string, any>>(
+  queryBuilder: B,
+  filters: gqlTypes.SubmissionSearchFilters
+): B {
+    let query = queryBuilder
+
+    // Apply case-insensitive partial match on googleMapsUrl
+    if (filters.googleMapsUrl) {
+        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`) as B
+    }
+
+    if (filters.healthcareProfessionalName) {
+        query = query.ilike(
+            'healthcareProfessionalName',
+            `%${filters.healthcareProfessionalName}%`
+        ) as B
+    }
+
+    // Build array of requested status filters using constants
+    const requestedStatuses: dbSchema.SubmissionStatusValue[] = []
+
+    if (filters.isUnderReview) {
+        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.UNDER_REVIEW)
+    }
+    if (filters.isApproved) {
+        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.APPROVED)
+    }
+    if (filters.isRejected) {
+        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.REJECTED)
+    }
+
+    // Validate: conflicting status filters
+    if (requestedStatuses.length > 1) {
+        throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
+    }
+
+    // Apply status filter if exactly one was requested
+    if (requestedStatuses.length === 1) {
+        query = query.eq('status', requestedStatuses[0]) as B
+    }
+
+    if (filters.createdDate) {
+        query = query.eq('createdDate', filters.createdDate) as B
+    }
+
+    if (filters.updatedDate) {
+        query = query.eq('updatedDate', filters.updatedDate) as B
+    }
+
+    return query
+}
 
 /**
  * Gets the Submission from the database that matches the id.
@@ -171,9 +308,6 @@ export const createSubmission = async (
     submissionInput: gqlTypes.CreateSubmissionInput,
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
-    // Tracking variable for rollback
-    let createdSubmissionId: string | null = null
-
     try {
         const validationResults = validateCreateSubmissionInputs(submissionInput)
 
@@ -188,47 +322,41 @@ export const createSubmission = async (
             }
         }
 
-        // Convert GraphQL → DB row
-        const newSubmission = mapGqlEntityToDbEntity(submissionInput)
+         const gqlSubmission = await db.transaction().execute(async (trx) => {
+            // Insert submission
+            const insertedSubmission = await trx
+                .insertInto('submissions')
+                .values({
+                    status: 'pending',
+                    googleMapsUrl: submissionInput.googleMapsUrl ?? '',
+                    healthcareProfessionalName: submissionInput.healthcareProfessionalName ?? '',
+                    spokenLanguages: (submissionInput.spokenLanguages ?? []) as gqlTypes.Locale[],
+                    autofillPlaceFromSubmissionUrl: false,
+                    facility_partial: null,
+                    healthcare_professionals_partial: null,
+                    hps_id: null,
+                    facilities_id: null,
+                    notes: submissionInput.notes ?? null,
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString()
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow()
 
-        const supabase = getSupabaseClient()
-        const { data: inserted, error: insertedError } = await supabase
-            .from('submissions')
-            .insert(newSubmission)
-            .select('*')
-            .single()
-
-        if (insertedError) { throw insertedError }
-
-        // Track created submission
-        createdSubmissionId = inserted.id as string
-
-        // Convert DB → GQL for client response
-        const gqlSubmission = mapDbEntityTogqlEntity(inserted as dbSchema.SubmissionRow)
-
-        // Wrap audit log in try-catch with rollback
-        try {
-            await createAuditLogSQL({
+            // Map to GraphQL
+            const plainGqlSubmission = mapKyselySubmissionToGraphQL(insertedSubmission)
+            
+            await createAuditLog(trx, {
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.Submission,
                 updatedBy,
-                newValue: gqlSubmission
+                newValue: plainGqlSubmission
             })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for submission ${createdSubmissionId}: ${auditError}`)
-            logger.warn(`Rolling back submission ${createdSubmissionId} due to audit log failure`)
 
-            // ROLLBACK: Delete the submission
-            await supabase
-                .from('submissions')
-                .delete()
-                .eq('id', createdSubmissionId)
+            return plainGqlSubmission
+        })
 
-            throw new Error(`Failed to create audit log: ${auditError}`)
-        }
-
-        logger.info(`DB-CREATE: submission ${createdSubmissionId} created with audit log`)
-
+        logger.info(`DB-CREATE: submission ${gqlSubmission.id} created`)
         return { data: gqlSubmission, hasErrors: false }
     } catch (error) {
         logger.error(`ERROR: Error creating submission: ${error}`)
@@ -246,44 +374,132 @@ export const createSubmission = async (
 
 /**
  * Updates a submission record in the database.
- * Check if this update request implies an approval → redirect to approveSubmission().
- * Load the existing submission row.
- * Validate mutually exclusive fields (e.g., autofill logic).
- * Determine the new status (only one status flag may be set).
- * Build a patch object merging old values with updated ones.
- * Persist changes to Supabase.
- * Re-fetch the row to return the updated version.
- * Write an audit log entry comparing old/new values.
- *
- * @param submissionId - ID of the submission to update.
- * @param fieldsToUpdate - Partial update object from the GraphQL input.
- * @returns The updated submission as a GraphQL entity.
+ * 
+ * IMPORTANT REDIRECT LOGIC:
+ * - If isApproved=true → redirects to approveSubmission()
+ * - If autofillPlaceFromSubmissionUrl=true → redirects to autoFillPlacesInformation()
+ * 
+ * These redirects happen BEFORE starting the transaction to avoid nested
+ * transaction complexity and external API calls (Google Places) inside transactions.
+ * 
+ * TRANSACTION BEHAVIOR:
+ * - Throws special error codes (NOT_FOUND, AUTOFILL_FAILURE, etc.) to signal specific failures
+ * - These are caught in the outer catch block and converted to proper Result objects
+ * - This pattern avoids multiple return statements inside the transaction
  */
 export const updateSubmission = async (
     submissionId: string,
     fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>,
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
-    // Tracking variables for rollback
-    let originalSubmission: gqlTypes.Submission | null = null
-
     try {
+        // Redirect to approveSubmission if isApproved flag is set
         if (fieldsToUpdate.isApproved === true) {
             return await approveSubmission(submissionId, updatedBy)
         }
 
-        const supabase = getSupabaseClient()
-        /**
-         * Load the current submission state.
-         * `.single()` ensures that exactly one row must match.
-         */
-        const { data: current, error: readErr } = await supabase
-            .from('submissions')
-            .select('*')
-            .eq('id', submissionId)
-            .single()
+        const gqlSubmission = await db.transaction().execute(async (trx) => {
+            // Load the current submission state
+            const currentSubmission = await trx
+                .selectFrom('submissions')
+                .selectAll()
+                .where('id', '=', submissionId)
+                .executeTakeFirst()
 
-        if (readErr || !current) {
+            if (!currentSubmission) {
+                throw new Error('NOT_FOUND')
+            }
+
+            /*
+            * AUTOFILL VALIDATION
+            * A submission can autofill itself only once.
+            * If the DB already has autofillPlaceFromSubmissionUrl=true,
+            * and the user requests autofill again, reject the update.
+            */
+            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && currentSubmission.autofillPlaceFromSubmissionUrl) {
+                throw new Error('AUTOFILL_FAILURE')
+            }
+
+            // If the user is requesting autofill and this submission has NOT used autofill yet,
+            // we need to redirect to autoFillPlacesInformation.
+            // 
+            // CRITICAL: We cannot call autoFillPlacesInformation directly here because:
+            // - It makes external API calls (Google Places) which should not be in transactions
+            // - It would create nested transactions (autoFillPlacesInformation starts its own transaction)
+            // 
+            // Solution: Throw a special error that the outer catch block will handle
+            // by calling autoFillPlacesInformation AFTER the transaction is rolled back.
+            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !currentSubmission.autofillPlaceFromSubmissionUrl) {
+                throw new Error('REDIRECT_TO_AUTOFILL')
+            }
+
+            // Map boolean flags to status value
+            let newStatus = currentSubmission.status
+
+            // Build array of requested status changes
+            const requestedStatuses: ('under_review' | 'approved' | 'rejected')[] = []
+            
+            if (fieldsToUpdate.isUnderReview) {
+                requestedStatuses.push('under_review')
+            }
+            if (fieldsToUpdate.isApproved) {
+                requestedStatuses.push('approved')
+            }
+            if (fieldsToUpdate.isRejected) {
+                requestedStatuses.push('rejected')
+            }
+
+            // Validate: only one status can be set at a time
+            if (requestedStatuses.length > 1) {
+                throw new Error('INVALID_INPUT')
+            }
+
+            // Apply the new status if one was requested
+            if (requestedStatuses.length === 1) {
+                newStatus = requestedStatuses[0]
+            }
+
+            // Build the patch
+            const patch = {
+                googleMapsUrl: fieldsToUpdate.googleMapsUrl ?? currentSubmission.googleMapsUrl,
+                healthcareProfessionalName: fieldsToUpdate.healthcareProfessionalName ?? currentSubmission.healthcareProfessionalName,
+                spokenLanguages: (fieldsToUpdate.spokenLanguages ?? currentSubmission.spokenLanguages),
+                notes: fieldsToUpdate.notes ?? currentSubmission.notes,
+                autofillPlaceFromSubmissionUrl: fieldsToUpdate.autofillPlaceFromSubmissionUrl ?? currentSubmission.autofillPlaceFromSubmissionUrl,
+                status: newStatus,
+                updatedDate: new Date().toISOString()
+            }
+
+            // Update the submission
+            const updatedSubmission = await trx
+                .updateTable('submissions')
+                .set(patch)
+                .where('id', '=', submissionId)
+                .returningAll()
+                .executeTakeFirstOrThrow()
+
+            // Map to GraphQL for audit log
+            const oldGqlSubmission = mapKyselySubmissionToGraphQL(currentSubmission)
+            const newGqlSubmission = mapKyselySubmissionToGraphQL(updatedSubmission)
+
+            // Create audit log entry
+            await createAuditLog(trx, {
+                actionType: gqlTypes.ActionType.Update,
+                objectType: gqlTypes.ObjectType.Submission,
+                updatedBy,
+                oldValue: oldGqlSubmission,
+                newValue: newGqlSubmission
+            })
+
+            return newGqlSubmission
+        })
+
+        return { data: gqlSubmission, hasErrors: false }
+    } catch (error) {
+        const errorMessage = (error as Error).message
+
+        // Handle NOT_FOUND error
+        if (errorMessage === 'NOT_FOUND') {
             return {
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
@@ -291,13 +507,8 @@ export const updateSubmission = async (
             }
         }
 
-        /**
-         * AUTOFILL VALIDATION
-         * A submission can autofill itself only once.
-         * If the DB already has autofillPlaceFromSubmissionUrl=true,
-         * and the user requests autofill again, reject the update.
-         */
-        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && current.autofillPlaceFromSubmissionUrl) {
+        // Handle AUTOFILL_FAILURE error
+        if (errorMessage === 'AUTOFILL_FAILURE') {
             return {
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
@@ -308,40 +519,18 @@ export const updateSubmission = async (
                 }]
             }
         }
-        /**
-         * If the user is requesting autofill and this submission has NOT used autofill yet,
-         * redirect to the dedicated autofill handler.
-         * This path extracts Google Places data and updates the submission.
-         */
-        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !current.autofillPlaceFromSubmissionUrl) {
+
+        // Handle REDIRECT_TO_AUTOFILL special case
+        if (errorMessage === 'REDIRECT_TO_AUTOFILL') {
             return await autoFillPlacesInformation(
                 submissionId,
-                fieldsToUpdate.googleMapsUrl ?? current.googleMapsUrl,
+                fieldsToUpdate.googleMapsUrl,
                 updatedBy
             )
         }
 
-        // Store original state for rollback
-        originalSubmission = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
-
-        // Refactored: Map boolean flags to status value
-        let newStatus: dbSchema.SubmissionStatusValue = current.status
-
-        // Build array of requested status changes
-        const requestedStatuses: dbSchema.SubmissionStatusValue[] = []
-        
-        if (fieldsToUpdate.isUnderReview) {
-            requestedStatuses.push(dbSchema.SUBMISSION_STATUS.UNDER_REVIEW)
-        }
-        if (fieldsToUpdate.isApproved) {
-            requestedStatuses.push(dbSchema.SUBMISSION_STATUS.APPROVED)
-        }
-        if (fieldsToUpdate.isRejected) {
-            requestedStatuses.push(dbSchema.SUBMISSION_STATUS.REJECTED)
-        }
-
-        // Validate: only one status can be set at a time
-        if (requestedStatuses.length > 1) {
+        // Handle INVALID_INPUT error (multiple status flags)
+        if (errorMessage === 'INVALID_INPUT') {
             return {
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
@@ -353,77 +542,7 @@ export const updateSubmission = async (
             }
         }
 
-        // Apply the new status if one was requested
-        if (requestedStatuses.length === 1) {
-            newStatus = requestedStatuses[0]
-        }
-
-        /**
-         * BUILDING THE PATCH
-         * For each editable field, we fallback to the existing value
-         * if the client did not provide a new one. This ensures no field
-         * is accidentally nulled or removed.
-         * updatedDate is always set to "now".
-         */
-        const patch: Partial<dbSchema.SubmissionRow> = {
-            googleMapsUrl: fieldsToUpdate.googleMapsUrl ?? current.googleMapsUrl,
-            healthcareProfessionalName: fieldsToUpdate.healthcareProfessionalName ?? current.healthcareProfessionalName,
-            spokenLanguages: fieldsToUpdate.spokenLanguages ?? current.spokenLanguages,
-            notes: fieldsToUpdate.notes ?? current.notes,
-            autofillPlaceFromSubmissionUrl:
-                fieldsToUpdate.autofillPlaceFromSubmissionUrl ?? current.autofillPlaceFromSubmissionUrl,
-            status: newStatus,
-            updatedDate: new Date().toISOString()
-        }
-
-        const { error: updErr } = await supabase
-            .from('submissions')
-            .update(patch)
-            .eq('id', submissionId)
-
-        if (updErr) { throw updErr }
-
-        const refreshed = await getSubmissionById(submissionId)
-
-        if (refreshed.hasErrors || !refreshed.data) {
-            throw new Error('Could not reload updated submission.')
-        }
-
-        // Wrap audit log in try-catch with rollback
-        try {
-            await createAuditLogSQL({
-                actionType: gqlTypes.ActionType.Update,
-                objectType: gqlTypes.ObjectType.Submission,
-                updatedBy,
-                oldValue: originalSubmission,
-                newValue: refreshed.data
-            })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for submission ${submissionId}: ${auditError}`)
-            logger.warn(`Rolling back submission ${submissionId} update due to audit log failure`)
-
-            // ROLLBACK: Restore original state
-            await supabase
-                .from('submissions')
-                .update({
-                    googleMapsUrl: originalSubmission.googleMapsUrl,
-                    healthcareProfessionalName: originalSubmission.healthcareProfessionalName,
-                    spokenLanguages: originalSubmission.spokenLanguages,
-                    notes: originalSubmission.notes ?? null,
-                    autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
-                    status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
-                        originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
-                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : 
-                                dbSchema.SUBMISSION_STATUS.PENDING,
-                    updatedDate: originalSubmission.updatedDate
-                })
-                .eq('id', submissionId)
-
-            throw new Error(`Failed to create audit log: ${auditError}`)
-        }
-
-        return { data: refreshed.data, hasErrors: false }
-    } catch (error) {
+        // Generic error
         logger.error(`ERROR: Error updating submission ${submissionId}: ${error}`)
         return {
             data: {} as gqlTypes.Submission,
@@ -434,39 +553,21 @@ export const updateSubmission = async (
 }
 
 /**
- * Performs an automatic enrichment of a Submission using Google Maps / Places data.
- * Load the existing submission.
- * Validate presence of googleMapsUrl.
- * Fetch place data from external APIs (via getFacilityDetailsForSubmission).
- * Construct a partial "facility-like" structure called facility_partial.
- * Update the submission with new geolocation + extracted details.
- * Write audit logs comparing old/new values.
+ * Performs automatic enrichment of a Submission using Google Maps / Places data.
+ * CRITICAL DESIGN PATTERN:
+ * - External API call happens OUTSIDE the transaction (getFacilityDetailsForSubmission)
+ * - Only after successful API response, we start the Kysely transaction
+ * - This prevents:
+ *    - Long-running transactions (bad for DB performance)
+ *    - Transaction timeout during slow API calls
+ *    - Unnecessary transaction rollback if API fails
  */
 export const autoFillPlacesInformation = async (
     submissionId: string,
     googleMapsUrl: gqlTypes.InputMaybe<string> | undefined,
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
-    // Tracking variable for rollback
-    let originalSubmission: gqlTypes.Submission | null = null
-
     try {
-        const supabase = getSupabaseClient()
-        // Load current submission
-        const { data: current, error: readErr } = await supabase
-            .from('submissions')
-            .select('*')
-            .eq('id', submissionId)
-            .single()
-
-        if (readErr || !current) {
-            return {
-                data: {} as gqlTypes.Submission,
-                hasErrors: true,
-                errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
-            }
-        }
-
         if (!googleMapsUrl) {
             return {
                 data: {} as gqlTypes.Submission,
@@ -475,9 +576,7 @@ export const autoFillPlacesInformation = async (
             }
         }
 
-        // Store original state for rollback
-        originalSubmission = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
-
+        // Fetch Google Places data (outside transaction - external API call)
         const places = await getFacilityDetailsForSubmission(googleMapsUrl as string)
 
         if (!places) {
@@ -488,102 +587,87 @@ export const autoFillPlacesInformation = async (
             }
         }
 
-        /**
-        * Construct the “facility_partial” field.
-        * This is a lightweight structure modeling a Facility but not persisted
-        * in the facilities table. It is used for UI review before approving a real facility.
-        * Many values may be undefined if Places does not provide them.
-        */
-        const facilityPartial: gqlTypes.FacilitySubmission = {
-            id: undefined,
-            nameEn: places.extractedNameEn,
-            nameJa: places.extractedNameJa ?? places.extractedNameEn,
-            contact: {
-                phone: places.extractedPhoneNumber,
-                email: undefined,
-                website: places.extractedWebsite,
-                googleMapsUrl: places.extractedGoogleMapsURI,
-                address: {
-                    addressLine1En: places.extractedAddressLine1En,
-                    addressLine2En: undefined,
-                    cityEn: places.extractedCityEn ?? '',
-                    prefectureEn: places.extractPrefectureEnFromInformation,
-                    postalCode: places.extractedPostalCodeFromInformation,
-                    addressLine1Ja: places.extractedAddressLine1Ja ?? '',
-                    addressLine2Ja: undefined,
-                    cityJa: places.extractedCityJa ?? '',
-                    prefectureJa: places.extractedPrefectureJa ?? ''
-                }
-            },
-            mapLatitude: places.extractedMapLatitude,
-            mapLongitude: places.extractedMapLongitude,
-            healthcareProfessionalIds: []
-        }
+        const gqlSubmission = await db.transaction().execute(async (trx) => {
+            // Fetch current submission
+            const currentSubmission = await trx
+                .selectFrom('submissions')
+                .selectAll()
+                .where('id', '=', submissionId)
+                .executeTakeFirst()
 
-        /**
-         * Build DB patch:
-         * - Update Google Maps URL
-         * - Store facility_partial blob
-         * - Mark status = "under_review"
-         * - Mark autofillPlaceFromSubmissionUrl = true
-         * - Always refresh updatedDate
-         */
-        const patch: Partial<dbSchema.SubmissionRow> = {
-            googleMapsUrl: places.extractedGoogleMapsURI ?? current.googleMapsUrl,
-            //eslint-disable-next-line
-            facility_partial: facilityPartial as any,
-            status: dbSchema.SUBMISSION_STATUS.UNDER_REVIEW,
-            autofillPlaceFromSubmissionUrl: true,
-            updatedDate: new Date().toISOString()
-        }
+            if (!currentSubmission) {
+                throw new Error(`Submission not found: ${submissionId}`)
+            }
 
-        const { error: updErr } = await supabase
-            .from('submissions')
-            .update(patch)
-            .eq('id', submissionId)
+            // Build facility partial
+            const facilityPartial: gqlTypes.FacilitySubmission = {
+                id: undefined,
+                nameEn: places.extractedNameEn,
+                nameJa: places.extractedNameJa ?? places.extractedNameEn,
+                contact: {
+                    phone: places.extractedPhoneNumber,
+                    email: undefined,
+                    website: places.extractedWebsite,
+                    googleMapsUrl: places.extractedGoogleMapsURI,
+                    address: {
+                        addressLine1En: places.extractedAddressLine1En,
+                        addressLine2En: undefined,
+                        cityEn: places.extractedCityEn ?? '',
+                        prefectureEn: places.extractPrefectureEnFromInformation,
+                        postalCode: places.extractedPostalCodeFromInformation,
+                        addressLine1Ja: places.extractedAddressLine1Ja ?? '',
+                        addressLine2Ja: undefined,
+                        cityJa: places.extractedCityJa ?? '',
+                        prefectureJa: places.extractedPrefectureJa ?? ''
+                    }
+                },
+                mapLatitude: places.extractedMapLatitude,
+                mapLongitude: places.extractedMapLongitude,
+                healthcareProfessionalIds: []
+            }
 
-        if (updErr) { throw updErr }
+            // Update submission with autofill data
+            const updatedSubmission = await trx
+                .updateTable('submissions')
+                .set({
+                    googleMapsUrl: places.extractedGoogleMapsURI ?? currentSubmission.googleMapsUrl,
+                    facility_partial: facilityPartial as any,
+                    status: 'under_review',
+                    autofillPlaceFromSubmissionUrl: true,
+                    updatedDate: new Date().toISOString()
+                })
+                .where('id', '=', submissionId)
+                .returningAll()
+                .executeTakeFirstOrThrow()
 
-        const refreshed = await getSubmissionById(submissionId)
+            // Map to GraphQL
+            const oldGqlSubmission = mapKyselySubmissionToGraphQL(currentSubmission)
+            const newGqlSubmission = mapKyselySubmissionToGraphQL(updatedSubmission)
 
-        if (refreshed.hasErrors || !refreshed.data) {
-            throw new Error('Could not reload updated submission after autofill.')
-        }
-
-        // Wrap audit log in try-catch with rollback
-        try {
-            await createAuditLogSQL({
+            // Audit log
+            await createAuditLog(trx, {
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.Submission,
                 updatedBy,
-                oldValue: originalSubmission,
-                newValue: refreshed.data
+                oldValue: oldGqlSubmission,
+                newValue: newGqlSubmission
             })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for submission ${submissionId} autofill: ${auditError}`)
-            logger.warn(`Rolling back submission ${submissionId} autofill due to audit log failure`)
 
-            // ROLLBACK: Restore original state
-            await supabase
-                .from('submissions')
-                .update({
-                    googleMapsUrl: originalSubmission.googleMapsUrl,
-                    //eslint-disable-next-line
-                    facility_partial: originalSubmission.facility as any ?? null,
-                    status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
-                        originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
-                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : 
-                                dbSchema.SUBMISSION_STATUS.PENDING,
-                    autofillPlaceFromSubmissionUrl: originalSubmission.autofillPlaceFromSubmissionUrl,
-                    updatedDate: originalSubmission.updatedDate
-                })
-                .eq('id', submissionId)
+            return newGqlSubmission
+        })
 
-            throw new Error(`Failed to create audit log: ${auditError}`)
+        return { data: gqlSubmission, hasErrors: false }
+    } catch (error) {
+        const errorMessage = (error as Error).message
+
+        if (errorMessage.includes('Submission not found')) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
+            }
         }
 
-        return { data: refreshed.data, hasErrors: false }
-    } catch (error) {
         logger.error(`Error updating submission ${submissionId} (autofill): ${error}`)
         return {
             data: {} as gqlTypes.Submission,
@@ -594,31 +678,35 @@ export const autoFillPlacesInformation = async (
 }
 
 /**
- * Helper: Attempts to create an HP for the submission if needed.
- * Handles all the complex logic of parsing HP data from various sources.
- * Returns the created HP ID or undefined if creation was skipped/failed.
+ * Creates HP within an existing Kysely transaction (for approveSubmission). 
+ * WHY THIS FUNCTION EXISTS:
+ * - The original tryCreateHealthcareProfessionalForSubmission uses Supabase
+ * - It cannot be called inside a Kysely transaction (different connection pools)
+ * - This version does inline INSERT using the same trx object
+ * 
+ * TRANSACTION-SAFE DESIGN:
+ * - Uses trx.insertInto() instead of Supabase client
+ * - Shares the same transaction as approveSubmission
+ * - If HP creation fails, entire approval is rolled back atomically
+ * @param trx - Kysely transaction object from parent function
+ * @param current - Current submission row from DB
+ * @param finalFacilityId - Facility ID to link the HP to
+ * @param updatedBy - User performing the action (for audit)
+ * @returns HP ID if created, undefined if skipped
  */
-async function tryCreateHealthcareProfessionalForSubmission(
-    current: dbSchema.SubmissionRow,
+async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
+    trx: Transaction<Database>,
+    current: Selectable<SubmissionsTable>,
     finalFacilityId: string,
-    submissionId: string,
     updatedBy: string
 ): Promise<string | undefined> {
-    /**
-     * Only attempt to create an HP if:
-     * - The submission is not already linked to an HP (hps_id is null)
-     * - We have a facility to associate it with (finalFacilityId)
-     */
     if (current.hps_id) {
         return undefined
     }
 
     let hpInput: gqlTypes.CreateHealthcareProfessionalInput | null = null
 
-    /**
-     * Case A: We have healthcare_professionals_partial data.
-     * We only look at the first entry for HP creation.
-     */
+    // Case A: healthcare_professionals_partial
     if (current.healthcare_professionals_partial && current.healthcare_professionals_partial.length > 0) {
         const firstHp = current.healthcare_professionals_partial[0]
         const hasNames = Array.isArray(firstHp.names) && firstHp.names.length > 0
@@ -636,14 +724,8 @@ async function tryCreateHealthcareProfessionalForSubmission(
                 facilityIds: [finalFacilityId]
             }
         } else if (current.healthcareProfessionalName?.trim()) {
-            /**
-             * Fallback: partial HP has no names array,
-             * but submission still has a healthcareProfessionalName string.
-             * We parse "First [Middle] Last" format and build a single LocalizedName.
-             */
             const parsed = splitPersonName(current.healthcareProfessionalName.trim())
-            const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale)
-                ?? gqlTypes.Locale.EnUs
+            const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
 
             hpInput = {
                 names: [{
@@ -654,22 +736,16 @@ async function tryCreateHealthcareProfessionalForSubmission(
                 }],
                 degrees: [],
                 specialties: [],
-                spokenLanguages: sanitizeLocales(
-                    current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
-                ),
+                spokenLanguages: sanitizeLocales(current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]),
                 acceptedInsurance: [],
                 additionalInfoForPatients: current.notes ?? null,
                 facilityIds: [finalFacilityId]
             }
         }
     } else if (current.healthcareProfessionalName?.trim()) {
-        /**
-         * Case B: No partial array, but we do have a free-text name string.
-         * Same parsing logic as above, but without partial HP metadata.
-         */
+        // Case B: Only healthcareProfessionalName
         const parsed = splitPersonName(current.healthcareProfessionalName.trim())
-        const localeFromSubmission =
-            (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
+        const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
 
         hpInput = {
             names: [{
@@ -680,28 +756,44 @@ async function tryCreateHealthcareProfessionalForSubmission(
             }],
             degrees: [],
             specialties: [],
-            spokenLanguages: sanitizeLocales(
-                current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]
-            ),
+            spokenLanguages: sanitizeLocales(current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]),
             acceptedInsurance: [],
             additionalInfoForPatients: current.notes ?? null,
             facilityIds: [finalFacilityId]
         }
     }
 
-    if (isValidHpInput(hpInput)) {
-        const hpRes = await createHealthcareProfessional(hpInput!, updatedBy)
-
-        if (hpRes.hasErrors || !hpRes.data) {
-            logger.warn(`approveSubmission: could not create HP for submission ${submissionId}, continuing anyway`)
-        } else {
-            return hpRes.data.id
-        }
-    } else {
-        logger.info(`approveSubmission: skipping HP creation for submission ${submissionId} due to insufficient data`)
+    if (!isValidHpInput(hpInput)) {
+        return undefined
     }
 
-    return undefined
+    // Create HP inline in transaction (NO Supabase calls!)
+    const insertedHp = await trx
+        .insertInto('hps')
+        .values({
+            names: hpInput!.names as any,
+            degrees: hpInput!.degrees as any,
+            specialties: hpInput!.specialties as any,
+            spokenLanguages: hpInput!.spokenLanguages as any,
+            acceptedInsurance: hpInput!.acceptedInsurance as any,
+            additionalInfoForPatients: hpInput!.additionalInfoForPatients ?? null,
+            email: null,
+            createdDate: new Date().toISOString(),
+            updatedDate: new Date().toISOString()
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow()
+
+    // Create HP-Facility relation
+    await trx
+        .insertInto('hps_facilities')
+        .values({
+            hps_id: insertedHp.id,
+            facilities_id: finalFacilityId
+        })
+        .execute()
+
+    return insertedHp.id
 }
 
 /**
@@ -719,28 +811,107 @@ export const approveSubmission = async (
     submissionId: string,
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
-    // Tracking variables for rollback
-    let originalSubmission: gqlTypes.Submission | null = null
-    let createdFacilityId: string | undefined
-    let createdHpId: string | undefined
-
     try {
-        const supabase = getSupabaseClient()
-        const { data: current, error: readErr } = await supabase
-            .from('submissions')
-            .select('*')
-            .eq('id', submissionId)
-            .single()
+        const gqlSubmission = await db.transaction().execute(async (trx) => {
+            // Fetch current submission
+            const currentSubmission = await trx
+                .selectFrom('submissions')
+                .selectAll()
+                .where('id', '=', submissionId)
+                .executeTakeFirst()
 
-        if (readErr || !current) {
-            return {
-                data: {} as gqlTypes.Submission,
-                hasErrors: true,
-                errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
+            if (!currentSubmission) {
+                throw new Error(`Submission not found: ${submissionId}`)
             }
-        }
 
-        if (current.status === dbSchema.SUBMISSION_STATUS.APPROVED) {
+            if (currentSubmission.status === 'approved') {
+                throw new Error('SUBMISSION_ALREADY_APPROVED')
+            }
+
+            let finalFacilityId = currentSubmission.facilities_id
+
+            // Create facility if needed
+            if (!finalFacilityId) {
+                let facilityInput: gqlTypes.CreateFacilityInput
+
+                if (currentSubmission.facility_partial) {
+                    facilityInput = currentSubmission.facility_partial as gqlTypes.CreateFacilityInput
+                } else {
+                    facilityInput = {
+                        nameEn: 'Unknown Facility',
+                        nameJa: 'Unknown Facility',
+                        contact: createBlankContact(currentSubmission.googleMapsUrl ?? ''),
+                        mapLatitude: 0,
+                        mapLongitude: 0,
+                        healthcareProfessionalIds: []
+                    }
+                }
+
+                // CRITICAL NESTED TRANSACTION
+                // I'm tryin inline inside trx
+                const insertedFacility = await trx
+                    .insertInto('facilities')
+                    .values({
+                        nameEn: facilityInput.nameEn,
+                        nameJa: facilityInput.nameJa,
+                        contact: facilityInput.contact,
+                        mapLatitude: facilityInput.mapLatitude ?? 0,
+                        mapLongitude: facilityInput.mapLongitude ?? 0,
+                        createdDate: new Date().toISOString(),
+                        updatedDate: new Date().toISOString()
+                    })
+                    .returningAll()
+                    .executeTakeFirstOrThrow()
+
+                finalFacilityId = insertedFacility.id
+            }
+
+            // Create HP if needed
+            let createdHpId: string | undefined
+
+            if (finalFacilityId && !currentSubmission.hps_id) {
+                createdHpId = await tryCreateHealthcareProfessionalForSubmissionInTransaction(
+                    trx,
+                    currentSubmission,
+                    finalFacilityId,
+                    updatedBy
+                )
+            }
+
+            // Update submission to be approved
+            const updated = await trx
+                .updateTable('submissions')
+                .set({
+                    status: 'approved',
+                    facilities_id: finalFacilityId,
+                    hps_id: createdHpId ?? currentSubmission.hps_id,
+                    updatedDate: new Date().toISOString()
+                })
+                .where('id', '=', submissionId)
+                .returningAll()
+                .executeTakeFirstOrThrow()
+
+            // Map to GraphQL
+            const oldGqlSubmission = mapKyselySubmissionToGraphQL(currentSubmission)
+            const newGqlSubmission = mapKyselySubmissionToGraphQL(updated)
+
+            // Audit log
+            await createAuditLog(trx, {
+                actionType: gqlTypes.ActionType.Update,
+                objectType: gqlTypes.ObjectType.Submission,
+                updatedBy,
+                oldValue: oldGqlSubmission,
+                newValue: newGqlSubmission
+            })
+
+            return newGqlSubmission
+        })
+
+        return { data: gqlSubmission, hasErrors: false }
+    } catch (error) {
+        const errorMessage = (error as Error).message
+
+        if (errorMessage === 'SUBMISSION_ALREADY_APPROVED') {
             return {
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
@@ -748,146 +919,14 @@ export const approveSubmission = async (
             }
         }
 
-        // Store original state for rollback
-        originalSubmission = mapDbEntityTogqlEntity(current as dbSchema.SubmissionRow)
-
-        let finalFacilityId: string | null = current.facilities_id
-
-        /**
-         * If the submission is not linked to any Facility yet (facilities_id is null),we must create one.
-         * Priority:
-         *   a) If facility_partial exists → build a CreateFacilityInput from that.
-         *   b) Otherwise → create a minimal "Unknown Facility" using the submission's Google Maps URL.
-         */
-        if (!finalFacilityId) {
-            let facilityInput: gqlTypes.CreateFacilityInput
-
-            if (current.facility_partial) {
-                facilityInput = current.facility_partial as gqlTypes.CreateFacilityInput
-            } else {
-                facilityInput = {
-                    // Fallback: create a generic placeholder facility
-                    nameEn: 'Unknown Facility',
-                    nameJa: 'Unknown Facility',
-                    contact: createBlankContact(current.googleMapsUrl ?? ''),
-                    mapLatitude: 0,
-                    mapLongitude: 0,
-                    healthcareProfessionalIds: []
-                }
+        if (errorMessage.includes('Submission not found')) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
             }
-
-            const facilityRes = await createFacility(facilityInput, updatedBy)
-
-            if (facilityRes.hasErrors || !facilityRes.data) {
-                return {
-                    data: {} as gqlTypes.Submission,
-                    hasErrors: true,
-                    errors: [{ field: 'facility', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
-                }
-            }
-            finalFacilityId = facilityRes.data.id
-            // Track created facility
-            createdFacilityId = finalFacilityId
         }
 
-        // Helper for create HP, made for having a complexity less than 40
-        if (finalFacilityId) {
-            createdHpId = await tryCreateHealthcareProfessionalForSubmission(
-                current,
-                finalFacilityId,
-                submissionId,
-                updatedBy
-            )
-        }
-
-        /**
-         *UPDATE SUBMISSION ROW
-         * - Mark status = "approved"
-         * - Link facilities_id to either:
-         *     newly created Facility ID
-         *     or the existing one on the submission
-         * - Link hps_id if we created an HP (or keep existing)
-         * - Refresh updatedDate
-         */
-
-        const patch: Partial<dbSchema.SubmissionRow> = {
-            status: dbSchema.SUBMISSION_STATUS.APPROVED,
-            //eslint-disable-next-line
-            facilities_id: createdFacilityId ?? current.facilities_id ?? finalFacilityId,
-            //eslint-disable-next-line
-            hps_id: createdHpId ?? current.hps_id ?? null,
-            updatedDate: new Date().toISOString()
-        }
-
-        const { error: updatedErr } = await supabase
-            .from('submissions')
-            .update(patch)
-            .eq('id', submissionId)
-
-        if (updatedErr) {
-            throw updatedErr
-        }
-
-        const refreshed = await getSubmissionById(submissionId)
-
-        if (refreshed.hasErrors || !refreshed.data) {
-            throw new Error('Could not reload approved submission.')
-        }
-
-        // Wrap audit log in try-catch with rollback
-        try {
-            await createAuditLogSQL({
-                actionType: gqlTypes.ActionType.Update,
-                objectType: gqlTypes.ObjectType.Submission,
-                updatedBy,
-                oldValue: originalSubmission,
-                newValue: refreshed.data
-            })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for submission ${submissionId} approval: ${auditError}`)
-            logger.warn(`Rolling back submission ${submissionId} approval due to audit log failure`)
-
-            // ROLLBACK: Complex rollback
-            
-            // Delete created HP if exists
-            if (createdHpId) {
-                await supabase
-                    .from('hps')
-                    .delete()
-                    .eq('id', createdHpId)
-                logger.info(`Rolled back HP ${createdHpId}`)
-            }
-
-            // Delete created Facility if exists
-            if (createdFacilityId) {
-                await supabase
-                    .from('facilities')
-                    .delete()
-                    .eq('id', createdFacilityId)
-                logger.info(`Rolled back Facility ${createdFacilityId}`)
-            }
-
-            // Restore submission original state
-            await supabase
-                .from('submissions')
-                .update({
-                    status: originalSubmission.isApproved ? dbSchema.SUBMISSION_STATUS.APPROVED : 
-                        originalSubmission.isRejected ? dbSchema.SUBMISSION_STATUS.REJECTED : 
-                            originalSubmission.isUnderReview ? dbSchema.SUBMISSION_STATUS.UNDER_REVIEW : 
-                                dbSchema.SUBMISSION_STATUS.PENDING,
-                    //eslint-disable-next-line
-                    facilities_id: current.facilities_id,
-                    //eslint-disable-next-line
-                    hps_id: current.hps_id,
-                    updatedDate: originalSubmission.updatedDate
-                })
-                .eq('id', submissionId)
-
-            throw new Error(`Failed to create audit log: ${auditError}`)
-        }
-
-        return { data: refreshed.data, hasErrors: false }
-    } catch (error) {
         logger.error(`Error approving submission ${submissionId}: ${error}`)
         return {
             data: {} as gqlTypes.Submission,
@@ -902,12 +941,9 @@ export const approveSubmission = async (
  * @param id The ID of the submission in the database to delete.
  */
 export async function deleteSubmission(
-  id: string,
-  updatedBy: string
+    id: string,
+    updatedBy: string
 ): Promise<Result<gqlTypes.DeleteResult>> {
-    // Tracking variable for rollback
-    let deletedSubmission: gqlTypes.Submission | null = null
-
     try {
         const validation = validateIdInput(id)
 
@@ -920,10 +956,45 @@ export async function deleteSubmission(
             }
         }
 
-        // Store original state for rollback
-        const existing = await getSubmissionById(id)
+        await db.transaction().execute(async (trx) => {
+            // Step 1: Fetch existing submission
+            const existing = await trx
+                .selectFrom('submissions')
+                .selectAll()
+                .where('id', '=', id)
+                .executeTakeFirst()
 
-        if (existing.hasErrors || !existing.data) {
+            if (!existing) {
+                throw new Error(`Submission not found: ${id}`)
+            }
+
+            // Step 2: Delete submission
+            await trx
+                .deleteFrom('submissions')
+                .where('id', '=', id)
+                .execute()
+
+            // Step 3: Audit log
+            const oldGqlSubmission = mapKyselySubmissionToGraphQL(existing)
+
+            await createAuditLog(trx, {
+                actionType: gqlTypes.ActionType.Delete,
+                objectType: gqlTypes.ObjectType.Submission,
+                updatedBy,
+                oldValue: oldGqlSubmission
+            })
+        })
+
+        logger.info(`DB-DELETE: submission ${id} was deleted`)
+
+        return {
+            data: { isSuccessful: true },
+            hasErrors: false
+        }
+    } catch (error) {
+        const errorMessage = (error as Error).message
+
+        if (errorMessage.includes('Submission not found')) {
             logger.warn(`deleteSubmission: submission not found: ${id}`)
             return {
                 data: { isSuccessful: false },
@@ -936,55 +1007,6 @@ export async function deleteSubmission(
             }
         }
 
-        deletedSubmission = existing.data
-
-        const supabase = getSupabaseClient()
-        
-        // Get original row for restore
-        const { data: originalRow } = await supabase
-            .from('submissions')
-            .select('*')
-            .eq('id', id)
-            .single()
-
-        const { error: delErr } = await supabase
-            .from('submissions')
-            .delete()
-            .eq('id', id)
-
-        if (delErr) {
-            throw new Error(`Failed to delete submission: ${delErr.message}`)
-        }
-
-        // Wrap audit log in try-catch with rollback
-        try {
-            await createAuditLogSQL({
-                actionType: gqlTypes.ActionType.Delete,
-                objectType: gqlTypes.ObjectType.Submission,
-                updatedBy,
-                oldValue: deletedSubmission
-            })
-        } catch (auditError) {
-            logger.error(`CRITICAL: Audit log failed for deleted submission ${id}: ${auditError}`)
-            logger.warn(`Rolling back submission ${id} deletion due to audit log failure`)
-
-            // ROLLBACK: Restore deleted submission
-            if (originalRow) {
-                await supabase
-                    .from('submissions')
-                    .insert(originalRow as dbSchema.SubmissionRow)
-            }
-
-            throw new Error(`Failed to create audit log: ${auditError}`)
-        }
-
-        logger.info(`DB-DELETE: submission ${id} was deleted with audit log`)
-
-        return {
-            data: { isSuccessful: true },
-            hasErrors: false
-        }
-    } catch (error) {
         logger.error(`ERROR: Error deleting submission ${id}: ${error}`)
         return {
             data: { isSuccessful: false },
@@ -1042,5 +1064,28 @@ export function mapGqlEntityToDbEntity(
         notes: input.notes ?? null,
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
+    }
+}
+
+function mapKyselySubmissionToGraphQL(
+    submissionRow: Selectable<SubmissionsTable>
+): gqlTypes.Submission {
+    return {
+        id: submissionRow.id,
+        googleMapsUrl: submissionRow.googleMapsUrl!,
+        healthcareProfessionalName: submissionRow.healthcareProfessionalName!,
+        spokenLanguages: submissionRow.spokenLanguages!,
+        autofillPlaceFromSubmissionUrl: submissionRow.autofillPlaceFromSubmissionUrl,
+        facility: submissionRow.facility_partial ? {
+            ...submissionRow.facility_partial,
+            healthcareProfessionalIds: submissionRow.facility_partial.healthcareProfessionalIds ?? []
+        } : undefined,
+        healthcareProfessionals: submissionRow.healthcare_professionals_partial ?? [],
+        isUnderReview: submissionRow.status === 'under_review',
+        isApproved: submissionRow.status === 'approved',
+        isRejected: submissionRow.status === 'rejected',
+        createdDate: submissionRow.createdDate,
+        updatedDate: submissionRow.updatedDate,
+        notes: submissionRow.notes ?? undefined
     }
 }
