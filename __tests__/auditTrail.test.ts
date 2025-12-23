@@ -69,7 +69,7 @@ describe('Audit Log System', () => {
 
         it('should rollback submission creation if audit log fails', async () => {
             // Mock using vi.spyOn
-            const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
+            const spy = vi.spyOn(auditLogService, 'createAuditLog')
                 .mockRejectedValue(new Error('Audit log failed'))
 
             const submissionInput = generateRandomCreateSubmissionInput()
@@ -116,7 +116,7 @@ describe('Audit Log System', () => {
                 .single()
 
             // NOW mock the audit log to fail
-            const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
+            const spy = vi.spyOn(auditLogService, 'createAuditLog')
                 .mockRejectedValue(new Error('Audit log failed'))
 
             // Try to update (should fail and rollback)
@@ -161,7 +161,7 @@ describe('Audit Log System', () => {
                 .single()
 
             // Mock audit log to fail
-            const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
+            const spy = vi.spyOn(auditLogService, 'createAuditLog')
                 .mockRejectedValue(new Error('Audit log failed'))
 
             // Try to delete (should fail and rollback)

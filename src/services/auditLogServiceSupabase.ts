@@ -4,6 +4,7 @@ import type { Transaction } from 'kysely'
 import type { Database } from '../typeDefs/kyselyTypes.js'
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { logger } from '../logger.js'
+import { db } from '../kyselyClient.js'
 
 type InsertAuditLog = {
     actionType: gqlTypes.ActionType
@@ -52,4 +53,10 @@ export async function createAuditLog(
         logger.error(`ERROR: Error creating audit log: ${error}`)
         throw error // Re-throw to trigger transaction rollback
     }
+}
+
+export async function createAuditLogSQL(params: InsertAuditLog): Promise<void> {
+  await db.transaction().execute(async (trx) => {
+    await createAuditLog(trx, params)
+  })
 }

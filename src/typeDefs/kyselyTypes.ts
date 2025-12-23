@@ -42,7 +42,7 @@ export interface FacilitiesTable {
  */
 export interface HpsTable {
   id: Generated<string>
-  names: ColumnType<gqlTypes.LocalizedName[], gqlTypes.LocalizedNameInput[], gqlTypes.LocalizedNameInput[]>
+  names: ColumnType<gqlTypes.LocalizedName[], gqlTypes.LocalizedName[], gqlTypes.LocalizedName[]>
   additionalInfoForPatients: string | null
   degrees: ColumnType<gqlTypes.Degree[], gqlTypes.Degree[], gqlTypes.Degree[]>
   specialties: ColumnType<gqlTypes.Specialty[], gqlTypes.Specialty[], gqlTypes.Specialty[]>

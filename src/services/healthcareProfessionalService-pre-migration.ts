@@ -9,6 +9,11 @@ import { createAuditLog } from './auditLogServiceSupabase.js'
 import { db } from '../kyselyClient.js'
 import type { HpsTable, Database } from '../typeDefs/kyselyTypes.js'
 import type { Selectable, Transaction } from 'kysely'
+import { sql } from 'kysely'
+
+// Helper function to properly serialize values as JSONB for PostgreSQL
+// This prevents double-encoding by explicitly stringifying and casting to ::jsonb
+const asJsonb = <T>(v: T) => sql<T>`${JSON.stringify(v)}::jsonb`
 
 export type HasContains = {
     contains: (
@@ -101,36 +106,6 @@ export function resolveFacilityIdFromRelationships(
     }
     return {
         newFacilityId: null
-    }
-}
-
-// Sets the single facility for an HP
-async function setSingleFacilityForHp(hpId: string, facilityId: string | null): Promise<void> {
-    if (!facilityId) {
-        throw new Error('HealthcareProfessional must be linked to at least one Facility')
-    }
-
-    const supabase = getSupabaseClient()
-
-    // First remove all existing links for this HP from the junction table
-    const { error: deleteError } = await supabase
-        .from('hps_facilities')
-        .delete()
-        .eq('hps_id', hpId)
-
-    if (deleteError) { throw deleteError }
-
-    // If we have a facilityId, insert the new link
-    if (facilityId) {
-        const { error: upsertError } = await supabase
-            .from('hps_facilities')
-            // Upsert ensures idempotency; ignoreDuplicates avoids conflicts on existing unique pairs
-            //eslint-disable-next-line
-            .upsert([{ hps_id: hpId, facilities_id: facilityId }],
-                    { onConflict: 'hps_id,facilities_id', ignoreDuplicates: true })
-        // If insertion/upsert fails, propagate the error
-
-        if (upsertError) { throw upsertError }
     }
 }
 
@@ -462,11 +437,11 @@ export async function createHealthcareProfessional(
             const insertedHp = await trx
                 .insertInto('hps')
                 .values({
-                    names: input.names as any,
-                    degrees: (input.degrees ?? []) as any,
-                    specialties: (input.specialties ?? []) as any,
-                    spokenLanguages: (input.spokenLanguages ?? []) as any,
-                    acceptedInsurance: (input.acceptedInsurance ?? []) as any,
+                    names: asJsonb(input.names),
+                    degrees: asJsonb(input.degrees ?? []),
+                    specialties: asJsonb(input.specialties ?? []),
+                    spokenLanguages: asJsonb(input.spokenLanguages ?? []),
+                    acceptedInsurance: asJsonb(input.acceptedInsurance ?? []),
                     additionalInfoForPatients: input.additionalInfoForPatients ?? null,
                     email: null,
                     createdDate: new Date().toISOString(),
@@ -1043,16 +1018,17 @@ function mapKyselyHpToGraphQL(
     hpRow: Selectable<HpsTable>,
     facilityIds: string[]
 ): gqlTypes.HealthcareProfessional {
+    const cleanHpRow = JSON.parse(JSON.stringify(hpRow))
     return {
-        id: hpRow.id,
-        names: hpRow.names ?? [],
-        degrees: hpRow.degrees ?? [],
-        spokenLanguages: hpRow.spokenLanguages ?? [],
-        specialties: hpRow.specialties ?? [],
-        acceptedInsurance: hpRow.acceptedInsurance ?? [],
+        id: cleanHpRow.id,
+        names: cleanHpRow.names ?? [],
+        degrees: cleanHpRow.degrees ?? [],
+        spokenLanguages: cleanHpRow.spokenLanguages ?? [],
+        specialties: cleanHpRow.specialties ?? [],
+        acceptedInsurance: cleanHpRow.acceptedInsurance ?? [],
         facilityIds,
-        createdDate: hpRow.createdDate,
-        updatedDate: hpRow.updatedDate,
-        additionalInfoForPatients: hpRow.additionalInfoForPatients ?? null
+        createdDate: cleanHpRow.createdDate,
+        updatedDate: cleanHpRow.updatedDate,
+        additionalInfoForPatients: cleanHpRow.additionalInfoForPatients ?? null
     }
 }

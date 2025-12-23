@@ -11,6 +11,12 @@ import type { Database } from '../typeDefs/kyselyTypes.js'
 import type { SubmissionsTable } from '../typeDefs/kyselyTypes.js'
 import type { Selectable } from 'kysely'
 import { db } from '../kyselyClient.js'
+import { sql } from 'kysely'
+
+// Helper function to properly serialize values as JSONB for PostgreSQL
+// This prevents double-encoding by explicitly stringifying and casting to ::jsonb
+const asJsonb = <T>(v: T) => sql<T>`${JSON.stringify(v)}::jsonb`
+
 /**
  * Builds a minimal, empty address object.
  * Used when a submission does not contain address details,
@@ -330,7 +336,7 @@ export const createSubmission = async (
                     status: 'pending',
                     googleMapsUrl: submissionInput.googleMapsUrl ?? '',
                     healthcareProfessionalName: submissionInput.healthcareProfessionalName ?? '',
-                    spokenLanguages: (submissionInput.spokenLanguages ?? []) as gqlTypes.Locale[],
+                    spokenLanguages: asJsonb<gqlTypes.Locale[]>(submissionInput.spokenLanguages ?? []),
                     autofillPlaceFromSubmissionUrl: false,
                     facility_partial: null,
                     healthcare_professionals_partial: null,
@@ -460,16 +466,30 @@ export const updateSubmission = async (
             }
 
             // Build the patch
-            const patch = {
-                googleMapsUrl: fieldsToUpdate.googleMapsUrl ?? currentSubmission.googleMapsUrl,
-                healthcareProfessionalName: fieldsToUpdate.healthcareProfessionalName ?? currentSubmission.healthcareProfessionalName,
-                spokenLanguages: (fieldsToUpdate.spokenLanguages ?? currentSubmission.spokenLanguages),
-                notes: fieldsToUpdate.notes ?? currentSubmission.notes,
-                autofillPlaceFromSubmissionUrl: fieldsToUpdate.autofillPlaceFromSubmissionUrl ?? currentSubmission.autofillPlaceFromSubmissionUrl,
+            const patch: Record<string, unknown> = {
+                updatedDate: new Date().toISOString(),
                 status: newStatus,
-                updatedDate: new Date().toISOString()
             }
 
+            if (fieldsToUpdate.googleMapsUrl !== undefined) {
+                patch.googleMapsUrl = fieldsToUpdate.googleMapsUrl
+            }
+
+            if (fieldsToUpdate.healthcareProfessionalName !== undefined) {
+                patch.healthcareProfessionalName = fieldsToUpdate.healthcareProfessionalName
+            }
+
+            if (fieldsToUpdate.notes !== undefined) {
+                patch.notes = fieldsToUpdate.notes
+            }
+
+            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl !== undefined) {
+                patch.autofillPlaceFromSubmissionUrl = fieldsToUpdate.autofillPlaceFromSubmissionUrl
+            }
+
+            if (fieldsToUpdate.spokenLanguages !== undefined) {
+                patch.spokenLanguages = asJsonb<gqlTypes.Locale[]>(fieldsToUpdate.spokenLanguages ?? [])
+            }
             // Update the submission
             const updatedSubmission = await trx
                 .updateTable('submissions')
@@ -631,7 +651,7 @@ export const autoFillPlacesInformation = async (
                 .updateTable('submissions')
                 .set({
                     googleMapsUrl: places.extractedGoogleMapsURI ?? currentSubmission.googleMapsUrl,
-                    facility_partial: facilityPartial as any,
+                    facility_partial: asJsonb<gqlTypes.FacilitySubmission>(facilityPartial),
                     status: 'under_review',
                     autofillPlaceFromSubmissionUrl: true,
                     updatedDate: new Date().toISOString()
@@ -771,12 +791,11 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
     const insertedHp = await trx
         .insertInto('hps')
         .values({
-            names: hpInput!.names as any,
-            degrees: hpInput!.degrees as any,
-            specialties: hpInput!.specialties as any,
-            spokenLanguages: hpInput!.spokenLanguages as any,
-            acceptedInsurance: hpInput!.acceptedInsurance as any,
-            additionalInfoForPatients: hpInput!.additionalInfoForPatients ?? null,
+        names: asJsonb<gqlTypes.LocalizedName[]>(hpInput!.names),
+        degrees: asJsonb<gqlTypes.Degree[]>(hpInput!.degrees ?? []),
+        specialties: asJsonb<gqlTypes.Specialty[]>(hpInput!.specialties ?? []),
+        spokenLanguages: asJsonb<gqlTypes.Locale[]>(hpInput!.spokenLanguages ?? []),
+        acceptedInsurance: asJsonb<gqlTypes.Insurance[]>(hpInput!.acceptedInsurance ?? []),
             email: null,
             createdDate: new Date().toISOString(),
             updatedDate: new Date().toISOString()
@@ -854,7 +873,7 @@ export const approveSubmission = async (
                     .values({
                         nameEn: facilityInput.nameEn,
                         nameJa: facilityInput.nameJa,
-                        contact: facilityInput.contact,
+                        contact: asJsonb<gqlTypes.ContactInput>(facilityInput.contact),
                         mapLatitude: facilityInput.mapLatitude ?? 0,
                         mapLongitude: facilityInput.mapLongitude ?? 0,
                         createdDate: new Date().toISOString(),
@@ -1070,22 +1089,26 @@ export function mapGqlEntityToDbEntity(
 function mapKyselySubmissionToGraphQL(
     submissionRow: Selectable<SubmissionsTable>
 ): gqlTypes.Submission {
+    // Test are failing because we didn't use
+    // clean and cleanInput inside functions
+    const cleanSubmissionRow = JSON.parse(JSON.stringify(submissionRow))
+
     return {
-        id: submissionRow.id,
-        googleMapsUrl: submissionRow.googleMapsUrl!,
-        healthcareProfessionalName: submissionRow.healthcareProfessionalName!,
-        spokenLanguages: submissionRow.spokenLanguages!,
-        autofillPlaceFromSubmissionUrl: submissionRow.autofillPlaceFromSubmissionUrl,
-        facility: submissionRow.facility_partial ? {
-            ...submissionRow.facility_partial,
-            healthcareProfessionalIds: submissionRow.facility_partial.healthcareProfessionalIds ?? []
+        id: cleanSubmissionRow.id,
+        googleMapsUrl: cleanSubmissionRow.googleMapsUrl!,
+        healthcareProfessionalName: cleanSubmissionRow.healthcareProfessionalName!,
+        spokenLanguages: cleanSubmissionRow.spokenLanguages!,
+        autofillPlaceFromSubmissionUrl: cleanSubmissionRow.autofillPlaceFromSubmissionUrl,
+        facility: cleanSubmissionRow.facility_partial ? {
+            ...cleanSubmissionRow.facility_partial,
+            healthcareProfessionalIds: cleanSubmissionRow.facility_partial.healthcareProfessionalIds ?? []
         } : undefined,
-        healthcareProfessionals: submissionRow.healthcare_professionals_partial ?? [],
-        isUnderReview: submissionRow.status === 'under_review',
-        isApproved: submissionRow.status === 'approved',
-        isRejected: submissionRow.status === 'rejected',
-        createdDate: submissionRow.createdDate,
-        updatedDate: submissionRow.updatedDate,
-        notes: submissionRow.notes ?? undefined
+        healthcareProfessionals: cleanSubmissionRow.healthcare_professionals_partial ?? [],
+        isUnderReview: cleanSubmissionRow.status === 'under_review',
+        isApproved: cleanSubmissionRow.status === 'approved',
+        isRejected: cleanSubmissionRow.status === 'rejected',
+        createdDate: cleanSubmissionRow.createdDate,
+        updatedDate: cleanSubmissionRow.updatedDate,
+        notes: cleanSubmissionRow.notes ?? undefined
     }
 }
