@@ -11,7 +11,6 @@ import { initializeSupabaseClient } from '../src/supabaseClient.js'
 import { initializeKyselyClient } from '../src/kyselyClient.js'
 // import { createTestUser, deleteTestUser } from './auth.test.js'
 
-
 // These ids can be used in any of the tests so they don't have to recreate the same data. 
 export const sharedFacilityIds = [] as string[]
 // This is the url of the graphql api. All supertest requests should be sent to this url.

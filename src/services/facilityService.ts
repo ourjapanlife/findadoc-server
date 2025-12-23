@@ -218,7 +218,7 @@ export async function createFacility(
         // Execute all database operations in a single atomic transaction.
         // The transaction returns the final plain GraphQL object (not the Kysely result).
         // If any operation fails, everything is automatically rolled back.
-        const gqlFacility = await db.transaction().execute(async (trx) => {
+        const gqlFacility = await db.transaction().execute(async trx => {
             // Step 1: Insert facility into PostgreSQL
             // PostgreSQL generates UUID automatically via DEFAULT gen_random_uuid()
             const insertedFacility = await trx
@@ -248,10 +248,9 @@ export async function createFacility(
                 await trx
                     .insertInto('hps_facilities')
                     .values(joinRows)
-                    .onConflict((oc) => oc
+                    .onConflict(oc => oc
                         .columns(['hps_id', 'facilities_id'])
-                        .doNothing() // Ignore duplicates instead of failing
-                    )
+                        .doNothing()) // Ignore duplicates instead of failing
                     .execute()
             }
 
@@ -268,7 +267,7 @@ export async function createFacility(
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                newValue: plainGqlFacility  // Plain object is safe to serialize
+                newValue: plainGqlFacility // Plain object is safe to serialize
             })
 
             // Return the plain GraphQL object from the transaction
@@ -399,7 +398,7 @@ export async function searchFacilities(
         }
 
         // Map the paginated DB rows to the final GraphQL shape, injecting the associated HP IDs
-        const list: gqlTypes.Facility[] = (paginationRows ?? []).map((row) => ({
+        const list: gqlTypes.Facility[] = (paginationRows ?? []).map(row => ({
             id: row.id as string,
             nameEn: row.nameEn as string,
             nameJa: row.nameJa as string,
@@ -501,7 +500,7 @@ export const updateFacility = async (
         }
 
         // Execute all database operations in a single atomic transaction
-        const result = await db.transaction().execute(async (trx) => {
+        const result = await db.transaction().execute(async trx => {
             // Step 1: Fetch the current facility state (for audit log and validation)
             const originalFacility = await trx
                 .selectFrom('facilities')
@@ -567,8 +566,8 @@ export const updateFacility = async (
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                oldValue: oldGqlFacility,  // ✅ Plain object
-                newValue: newGqlFacility   // ✅ Plain object
+                oldValue: oldGqlFacility, // ✅ Plain object
+                newValue: newGqlFacility // ✅ Plain object
             })
 
             // Return the updated facility and final HP IDs for mapping
@@ -650,8 +649,7 @@ async function processHealthcareProfessionalRelationshipChanges(
             .values(toCreate)
             .onConflict((oc: any) => oc
                 .columns(['hps_id', 'facilities_id'])
-                .doNothing() // Ignore duplicates
-            )
+                .doNothing())
             .execute()
     }
 
@@ -697,7 +695,7 @@ export async function deleteFacility(
         }
 
         // Execute deletion and audit log in a single atomic transaction
-        await db.transaction().execute(async (trx) => {
+        await db.transaction().execute(async trx => {
             // Fetch the existing facility to verify it exists and for audit log
             const existingFacility = await trx
                 .selectFrom('facilities')
@@ -735,9 +733,8 @@ export async function deleteFacility(
                 actionType: gqlTypes.ActionType.Delete,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                oldValue: oldGqlFacility  // ✅ Plain object
+                oldValue: oldGqlFacility // ✅ Plain object
             })
-
         })
 
         logger.info(`\nDB-DELETE: facility ${id} was deleted.`)
@@ -752,6 +749,7 @@ export async function deleteFacility(
         
         // Check if it's a "not found" error vs other database errors
         const errorMessage = (error as Error).message
+
         if (errorMessage.includes('Facility not found')) {
             logger.warn(`deleteFacility: facility not found: ${id}`)
             return {

@@ -7,8 +7,8 @@ import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { db } from '../kyselyClient.js'
-import type { HpsTable, Database } from '../typeDefs/kyselyTypes.js'
-import type { Selectable, Transaction } from 'kysely'
+import type { HpsTable } from '../typeDefs/kyselyTypes.js'
+import type { Selectable } from 'kysely'
 import { sql } from 'kysely'
 
 // Helper function to properly serialize values as JSONB for PostgreSQL
@@ -432,7 +432,7 @@ export async function createHealthcareProfessional(
         }
 
         // Execute all operations in atomic transaction
-        const gqlHealthcareProfessional = await db.transaction().execute(async (trx) => {
+        const gqlHealthcareProfessional = await db.transaction().execute(async trx => {
             // Insert HP into hps table
             const insertedHp = await trx
                 .insertInto('hps')
@@ -460,10 +460,9 @@ export async function createHealthcareProfessional(
                     hps_id: insertedHp.id,
                     facilities_id: facilityId
                 })
-                .onConflict((oc) => oc
+                .onConflict(oc => oc
                     .columns(['hps_id', 'facilities_id'])
-                    .doNothing()  // Ignore duplicates (idempotent)
-                )
+                    .doNothing())
                 .execute()
 
             // Map Kysely row to plain GraphQL object
@@ -476,7 +475,7 @@ export async function createHealthcareProfessional(
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.HealthcareProfessional,
                 updatedBy,
-                newValue: plainGqlHp  // Plain object is safe to serialize
+                newValue: plainGqlHp // Plain object is safe to serialize
             })
 
             // Return the plain GraphQL object from the transaction
@@ -532,7 +531,7 @@ export const updateHealthcareProfessional = async (
         }
 
         // Execute all operations in atomic transaction
-        const gqlHealthcareProfessional = await db.transaction().execute(async (trx) => {
+        const gqlHealthcareProfessional = await db.transaction().execute(async trx => {
             // Fetch current HP state
             const currentHp = await trx
                 .selectFrom('hps')
@@ -557,7 +556,7 @@ export const updateHealthcareProfessional = async (
             const updatePatch = buildHpUpdatePatch(fieldsToUpdate)
 
             // Update scalar fields (always touch updatedDate)
-            const hasScalarChanges = Object.keys(updatePatch).length > 1  // More than just updatedDate
+            const hasScalarChanges = Object.keys(updatePatch).length > 1 // More than just updatedDate
 
             let updatedHp = currentHp
 
@@ -610,10 +609,9 @@ export const updateHealthcareProfessional = async (
                         hps_id: id,
                         facilities_id: newFacilityId
                     })
-                    .onConflict((oc) => oc
+                    .onConflict(oc => oc
                         .columns(['hps_id', 'facilities_id'])
-                        .doNothing()  // Idempotent
-                    )
+                        .doNothing())
                     .execute()
 
                 finalFacilityIds = [newFacilityId]
@@ -731,7 +729,7 @@ export async function deleteHealthcareProfessional(
         }
 
         // Execute deletion in atomic transaction
-        await db.transaction().execute(async (trx) => {
+        await db.transaction().execute(async trx => {
             // Fetch existing HP (for validation and audit log)
             const existingHp = await trx
                 .selectFrom('hps')
@@ -771,7 +769,6 @@ export async function deleteHealthcareProfessional(
                 updatedBy,
                 oldValue: oldGqlHp
             })
-
         })
 
         logger.info(`DB-DELETE: healthcare professional ${id} was deleted`)
@@ -841,7 +838,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
         }
 
         // Execute all operations in atomic transaction
-        await db.transaction().execute(async (trx) => {
+        await db.transaction().execute(async trx => {
             // Split relationships into CREATE vs DELETE
             const hpIdsToCreate: string[] = professionalRelationshipsToUpdate
                 .filter(r => r.action === gqlTypes.RelationshipAction.Create)
@@ -871,13 +868,14 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                 const facilityCounts = await trx
                     .selectFrom('hps_facilities')
                     .select('hps_id')
-                    .select((eb) => eb.fn.count<number>('facilities_id').as('count'))
+                    .select(eb => eb.fn.count<number>('facilities_id').as('count'))
                     .where('hps_id', 'in', finalDeleteIds)
                     .groupBy('hps_id')
                     .execute()
 
                 // Build lookup map: hpId → count
                 const countsMap = new Map<string, number>()
+
                 for (const row of facilityCounts) {
                     countsMap.set(row.hps_id, Number(row.count))
                 }
@@ -885,7 +883,8 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                 // Check if any HP would be left without facilities (count <= 1)
                 const wouldBreak = finalDeleteIds.filter(hpId => {
                     const count = countsMap.get(hpId) ?? 0
-                    return count <= 1  // Would have 0 facilities after deletion
+
+                    return count <= 1 // Would have 0 facilities after deletion
                 })
 
                 if (wouldBreak.length > 0) {
@@ -905,10 +904,9 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                 await trx
                     .insertInto('hps_facilities')
                     .values(relationsToCreate)
-                    .onConflict((oc) => oc
+                    .onConflict(oc => oc
                         .columns(['hps_id', 'facilities_id'])
-                        .doNothing()  // Ignore duplicates (idempotent)
-                    )
+                        .doNothing())
                     .execute()
             }
 
@@ -1019,6 +1017,7 @@ function mapKyselyHpToGraphQL(
     facilityIds: string[]
 ): gqlTypes.HealthcareProfessional {
     const cleanHpRow = JSON.parse(JSON.stringify(hpRow))
+
     return {
         id: cleanHpRow.id,
         names: cleanHpRow.names ?? [],

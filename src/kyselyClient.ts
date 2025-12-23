@@ -11,21 +11,21 @@ let kyselyInstance: Kysely<Database> | null = null
  * Should be called once at application startup, after environment variables are loaded
  */
 export async function initializeKyselyClient(): Promise<void> {
-  if (kyselyInstance) {
-    logger.warn('Kysely client already initialized')
-    return
-  }
+    if (kyselyInstance) {
+        logger.warn('Kysely client already initialized')
+        return
+    }
 
-  const databaseUrl = process.env.DATABASE_URL
+    const databaseUrl = process.env.DATABASE_URL
 
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL environment variable is not set')
-  }
+    if (!databaseUrl) {
+        throw new Error('DATABASE_URL environment variable is not set')
+    }
 
-  logger.info('🔌 Initializing Kysely client...')
-  logger.debug(`Database URL: ${databaseUrl}`)
+    logger.info('🔌 Initializing Kysely client...')
+    logger.debug(`Database URL: ${databaseUrl}`)
 
-  /**
+    /**
  * PostgreSQL Connection Pool
  * The pool manages a set of reusable database connections.
  * Instead of opening a new connection for every query (slow and resource-intensive),
@@ -36,48 +36,48 @@ export async function initializeKyselyClient(): Promise<void> {
  * - idleTimeoutMillis: Close idle connections after 30 seconds to free resources
  * - connectionTimeoutMillis: Fail fast if can't acquire a connection within 2 seconds
  */
-  pool = new Pool({
-    connectionString: databaseUrl,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-  })
+    pool = new Pool({
+        connectionString: databaseUrl,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000
+    })
 
-  /**
+    /**
  * Pool error handler
  * Catches connection-level errors that happen outside of query execution.
  * Without this handler, pool errors could crash the entire application.
  */
-  pool.on('error', (err) => {
-    logger.error('Unexpected error on idle PostgreSQL client', err)
-  })
+    pool.on('error', err => {
+        logger.error('Unexpected error on idle PostgreSQL client', err)
+    })
 
-  // Create Kysely instance
-  kyselyInstance = new Kysely<Database>({
-    dialect: new PostgresDialect({ pool })
-  })
+    // Create Kysely instance
+    kyselyInstance = new Kysely<Database>({
+        dialect: new PostgresDialect({ pool })
+    })
 
-  // Test connection
-  try {
-    logger.info('🧪 Testing Kysely connection to PostgreSQL...')
+    // Test connection
+    try {
+        logger.info('🧪 Testing Kysely connection to PostgreSQL...')
     
-    await kyselyInstance
-      .selectFrom('facilities')
-      .select('id')
-      .limit(1)
-      .execute()
+        await kyselyInstance
+            .selectFrom('facilities')
+            .select('id')
+            .limit(1)
+            .execute()
     
-    logger.info('✅ Kysely client initialized and connected successfully!')
-  } catch (error) {
-    logger.error('❌ Kysely connection test failed:', error)
+        logger.info('✅ Kysely client initialized and connected successfully!')
+    } catch (error) {
+        logger.error('❌ Kysely connection test failed:', error)
     
-    // Cleanup on failure
-    await kyselyInstance.destroy()
-    kyselyInstance = null
-    pool = null
+        // Cleanup on failure
+        await kyselyInstance.destroy()
+        kyselyInstance = null
+        pool = null
     
-    throw new Error(`Failed to connect to PostgreSQL: ${error}`)
-  }
+        throw new Error(`Failed to connect to PostgreSQL: ${error}`)
+    }
 }
 
 /**
@@ -85,12 +85,12 @@ export async function initializeKyselyClient(): Promise<void> {
  * Throws an error if not initialized
  */
 export function getKyselyClient(): Kysely<Database> {
-  if (!kyselyInstance) {
-    throw new Error(
-      'Kysely client not initialized. Call initializeKyselyClient() first.'
-    )
-  }
-  return kyselyInstance
+    if (!kyselyInstance) {
+        throw new Error(
+            'Kysely client not initialized. Call initializeKyselyClient() first.'
+        )
+    }
+    return kyselyInstance
 }
 
 /**
@@ -98,11 +98,12 @@ export function getKyselyClient(): Kysely<Database> {
  * But this will throw if not initialized
  */
 export const db = new Proxy({} as Kysely<Database>, {
-  get(_target, prop) {
-    const instance = getKyselyClient()
-    const value = instance[prop as keyof Kysely<Database>]
-    return typeof value === 'function' ? value.bind(instance) : value
-  }
+    get(_target, prop) {
+        const instance = getKyselyClient()
+        const value = instance[prop as keyof Kysely<Database>]
+
+        return typeof value === 'function' ? value.bind(instance) : value
+    }
 })
 
 /**
@@ -115,21 +116,21 @@ export const db = new Proxy({} as Kysely<Database>, {
  * - The process hanging on exit
  */
 export async function closeDatabase(): Promise<void> {
-  if (!kyselyInstance) {
-    logger.warn('Kysely client not initialized, nothing to close')
-    return
-  }
+    if (!kyselyInstance) {
+        logger.warn('Kysely client not initialized, nothing to close')
+        return
+    }
 
-  try {
-    await kyselyInstance.destroy()
-    logger.info('✅ Database connection pool closed successfully')
-  } catch (error) {
-    logger.error('Error closing database connection pool:', error)
-    throw error
-  } finally {
-    kyselyInstance = null
-    pool = null
-  }
+    try {
+        await kyselyInstance.destroy()
+        logger.info('✅ Database connection pool closed successfully')
+    } catch (error) {
+        logger.error('Error closing database connection pool:', error)
+        throw error
+    } finally {
+        kyselyInstance = null
+        pool = null
+    }
 }
 
 /**
@@ -142,16 +143,16 @@ export async function closeDatabase(): Promise<void> {
  * - Monitoring systems
  */
 export async function checkDatabaseHealth(): Promise<boolean> {
-  if (!kyselyInstance) {
-    logger.error('Kysely client not initialized')
-    return false
-  }
+    if (!kyselyInstance) {
+        logger.error('Kysely client not initialized')
+        return false
+    }
 
-  try {
-    await kyselyInstance.selectFrom('facilities').select('id').limit(1).execute()
-    return true
-  } catch (error) {
-    logger.error('Database health check failed:', error)
-    return false
-  }
+    try {
+        await kyselyInstance.selectFrom('facilities').select('id').limit(1).execute()
+        return true
+    } catch (error) {
+        logger.error('Database health check failed:', error)
+        return false
+    }
 }

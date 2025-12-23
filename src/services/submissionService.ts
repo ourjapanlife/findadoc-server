@@ -328,7 +328,7 @@ export const createSubmission = async (
             }
         }
 
-         const gqlSubmission = await db.transaction().execute(async (trx) => {
+        const gqlSubmission = await db.transaction().execute(async trx => {
             // Insert submission
             const insertedSubmission = await trx
                 .insertInto('submissions')
@@ -404,7 +404,7 @@ export const updateSubmission = async (
             return await approveSubmission(submissionId, updatedBy)
         }
 
-        const gqlSubmission = await db.transaction().execute(async (trx) => {
+        const gqlSubmission = await db.transaction().execute(async trx => {
             // Load the current submission state
             const currentSubmission = await trx
                 .selectFrom('submissions')
@@ -468,7 +468,7 @@ export const updateSubmission = async (
             // Build the patch
             const patch: Record<string, unknown> = {
                 updatedDate: new Date().toISOString(),
-                status: newStatus,
+                status: newStatus
             }
 
             if (fieldsToUpdate.googleMapsUrl !== undefined) {
@@ -607,7 +607,7 @@ export const autoFillPlacesInformation = async (
             }
         }
 
-        const gqlSubmission = await db.transaction().execute(async (trx) => {
+        const gqlSubmission = await db.transaction().execute(async trx => {
             // Fetch current submission
             const currentSubmission = await trx
                 .selectFrom('submissions')
@@ -717,8 +717,8 @@ export const autoFillPlacesInformation = async (
 async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
     trx: Transaction<Database>,
     current: Selectable<SubmissionsTable>,
-    finalFacilityId: string,
-    updatedBy: string
+    finalFacilityId: string
+    //updatedBy: string
 ): Promise<string | undefined> {
     if (current.hps_id) {
         return undefined
@@ -791,11 +791,11 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
     const insertedHp = await trx
         .insertInto('hps')
         .values({
-        names: asJsonb<gqlTypes.LocalizedName[]>(hpInput!.names),
-        degrees: asJsonb<gqlTypes.Degree[]>(hpInput!.degrees ?? []),
-        specialties: asJsonb<gqlTypes.Specialty[]>(hpInput!.specialties ?? []),
-        spokenLanguages: asJsonb<gqlTypes.Locale[]>(hpInput!.spokenLanguages ?? []),
-        acceptedInsurance: asJsonb<gqlTypes.Insurance[]>(hpInput!.acceptedInsurance ?? []),
+            names: asJsonb<gqlTypes.LocalizedName[]>(hpInput!.names),
+            degrees: asJsonb<gqlTypes.Degree[]>(hpInput!.degrees ?? []),
+            specialties: asJsonb<gqlTypes.Specialty[]>(hpInput!.specialties ?? []),
+            spokenLanguages: asJsonb<gqlTypes.Locale[]>(hpInput!.spokenLanguages ?? []),
+            acceptedInsurance: asJsonb<gqlTypes.Insurance[]>(hpInput!.acceptedInsurance ?? []),
             email: null,
             createdDate: new Date().toISOString(),
             updatedDate: new Date().toISOString()
@@ -831,7 +831,7 @@ export const approveSubmission = async (
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
-        const gqlSubmission = await db.transaction().execute(async (trx) => {
+        const gqlSubmission = await db.transaction().execute(async trx => {
             // Fetch current submission
             const currentSubmission = await trx
                 .selectFrom('submissions')
@@ -975,7 +975,7 @@ export async function deleteSubmission(
             }
         }
 
-        await db.transaction().execute(async (trx) => {
+        await db.transaction().execute(async trx => {
             // Step 1: Fetch existing submission
             const existing = await trx
                 .selectFrom('submissions')
