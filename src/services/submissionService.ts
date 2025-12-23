@@ -717,8 +717,8 @@ export const autoFillPlacesInformation = async (
 async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
     trx: Transaction<Database>,
     current: Selectable<SubmissionsTable>,
-    finalFacilityId: string
-    //updatedBy: string
+    finalFacilityId: string,
+    updatedBy: string
 ): Promise<string | undefined> {
     if (current.hps_id) {
         return undefined
