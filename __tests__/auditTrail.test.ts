@@ -3,8 +3,8 @@ import * as dbSchema from '../src/typeDefs/dbSchema.js'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import * as auditLogService from '../src/services/auditLogServiceSupabase.js'
 import { generateRandomCreateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
-import { mapGqlEntityToDbEntity } from '../src/services/submissionService-pre-migration.js'
-import { createSubmission, updateSubmission, deleteSubmission } from '../src/services/submissionService-pre-migration.js'
+import { mapGqlEntityToDbEntity } from '../src/services/submissionService.js'
+import { createSubmission, updateSubmission, deleteSubmission } from '../src/services/submissionService.js'
 import { getSupabaseClient } from '../src/supabaseClient.js'
 
 describe('Audit Log System', () => {

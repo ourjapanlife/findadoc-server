@@ -1,11 +1,11 @@
-import { createHealthcareProfessional } from '../src/services/healthcareProfessionalService-pre-migration.js'
-import { createFacility } from '../src/services/facilityService-pre-migration.js'
+import { createHealthcareProfessional } from '../src/services/healthcareProfessionalService.js'
+import { createFacility } from '../src/services/facilityService.js'
 
 import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { generateRandomCreateFacilityInputArray } from '../src/fakeData/fakeFacilities.js'
 import { generateRandomCreateSubmissionInputArray, generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
 import { logger } from '../src/logger.js'
-import { createSubmission, updateSubmission } from '../src/services/submissionService-pre-migration.js'
+import { createSubmission, updateSubmission } from '../src/services/submissionService.js'
 
 export const seedDatabase = async () => {
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
