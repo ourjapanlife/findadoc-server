@@ -20,7 +20,7 @@
         "prod:dockerstart": "echo '🐳 🐳 🐳✨ Running docker compose...' && docker compose -f docker/docker-compose-api.yml up -d --build --remove-orphans --force-recreate",
         "prod:dockerstop": "echo '🐳 🐳 🐳✨ Stopping docker compose...' && docker compose -f docker/docker-compose-api.yml down",
         "prod:logs": "docker logs findadoc-api -f",
-        "generate": "echo '➡ ➡ ➡ Generating types from graphql schema ➡ ➡ ➡' && graphql-codegen --config ./typesgeneratorconfig.ts && yarn run db:types",
+        "generate": "echo '➡ ➡ ➡ Generating types from graphql schema ➡ ➡ ➡' && graphql-codegen --config ./typesgeneratorconfig.ts && yarn run generate:db",
         "lint": "cross-env ESLINT_USE_FLAT_CONFIG=true eslint -c eslint.config.js .",
         "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint .",
         "migrate:local": "echo '🔄 Running LOCAL migration (dev database)...' && cross-env NODE_ENV=development node --loader ts-node/esm src/migration.ts",

@@ -10,7 +10,9 @@ const gqlSchemaPath = './src/typeDefs/schema.graphql'
 export default [
     // GLOBAL configuration
     {
-        ignores: ['dist/*'],
+        ignores: ['dist/*',
+            'src/typeDefs/supabase-generated.ts'
+        ],
     },
     // TODO: get this linter working. For some reason, it's not picking up the schema file
     // GraphQL Linter for Operations and Fragments within code files
