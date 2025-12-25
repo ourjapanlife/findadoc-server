@@ -7,9 +7,8 @@ import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { db } from '../kyselyClient.js'
-import type { HpsTable } from '../typeDefs/kyselyTypes.js'
-import type { Selectable } from 'kysely'
 import { sql } from 'kysely'
+import { mapDbHpToGql, mapKyselyHpToGraphQL} from '../services/mappersEntityService.js'
 
 // Helper function to properly serialize values as JSONB for PostgreSQL
 // This prevents double-encoding by explicitly stringifying and casting to ::jsonb
@@ -887,7 +886,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                     return count <= 1 // Would have 0 facilities after deletion
                 })
 
-                if (wouldBreak.length > 0) {
+                if (wouldBreak.length) {
                     throw new Error('HP_REQUIRES_FACILITY')
                 }
             }
@@ -911,7 +910,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
 
             // Execute DELETE operations (if any)
-            if (finalDeleteIds.length > 0) {
+            if (finalDeleteIds.length) {
                 // Batch delete - single query for all HPs
                 await trx
                     .deleteFrom('hps_facilities')
@@ -959,75 +958,3 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
     }
 }
 
-export function mapGqlEntityToDbEntity(
-    input: gqlTypes.CreateHealthcareProfessionalInput
-)
-    : dbSchema.HealthcareProfessionalInsertRow {
-    return {
-        acceptedInsurance: input.acceptedInsurance as gqlTypes.Insurance[],
-        degrees: input.degrees as dbSchema.Degree[],
-        names: input.names as dbSchema.LocalizedName[],
-        specialties: input.specialties as dbSchema.Specialty[],
-        spokenLanguages: input.spokenLanguages as gqlTypes.Locale[],
-        //business rule: createdDate cannot be set by the user.
-        createdDate: new Date().toISOString(),
-        //business rule: updatedDate is updated on every change.
-        updatedDate: new Date().toISOString(),
-        additionalInfoForPatients: input.additionalInfoForPatients ?? null
-    } satisfies dbSchema.HealthcareProfessionalInsertRow
-}
-
-export function mapDbHpToGql(
-  hp: dbSchema.DbHealthcareProfessionalRow,
-  facilityIds: string[]
-): gqlTypes.HealthcareProfessional {
-    return {
-        id: hp.id,
-        names: hp.names ?? [],
-        degrees: hp.degrees ?? [],
-        spokenLanguages: hp.spokenLanguages ?? [],
-        specialties: hp.specialties ?? [],
-        acceptedInsurance: hp.acceptedInsurance ?? [],
-        facilityIds,
-        createdDate: hp.createdDate,
-        updatedDate: hp.updatedDate,
-        additionalInfoForPatients: hp.additionalInfoForPatients
-    }
-}
-
-/**
- * Maps Kysely HP result to plain GraphQL HealthcareProfessional object.
- * 
- * PURPOSE:
- * - Converts Kysely database row types to GraphQL types
- * - Removes Kysely internal members (like #props) that would break GraphQL serialization
- * - Handles nullable fields with proper fallbacks (?? operator)
- * 
- * CRITICAL FOR GRAPHQL:
- * - GraphQL cannot serialize objects with private JavaScript members
- * - Kysely rows returned from .returningAll() have internal #props
- * - This function creates a "plain" JavaScript object safe for GraphQL responses
- * 
- * @param hpRow - Raw Kysely row from database
- * @param facilityIds - Related facility IDs for this HP
- * @returns Plain GraphQL HealthcareProfessional object (safe for serialization)
- */
-function mapKyselyHpToGraphQL(
-    hpRow: Selectable<HpsTable>,
-    facilityIds: string[]
-): gqlTypes.HealthcareProfessional {
-    const cleanHpRow = JSON.parse(JSON.stringify(hpRow))
-
-    return {
-        id: cleanHpRow.id,
-        names: cleanHpRow.names ?? [],
-        degrees: cleanHpRow.degrees ?? [],
-        spokenLanguages: cleanHpRow.spokenLanguages ?? [],
-        specialties: cleanHpRow.specialties ?? [],
-        acceptedInsurance: cleanHpRow.acceptedInsurance ?? [],
-        facilityIds,
-        createdDate: cleanHpRow.createdDate,
-        updatedDate: cleanHpRow.updatedDate,
-        additionalInfoForPatients: cleanHpRow.additionalInfoForPatients ?? null
-    }
-}

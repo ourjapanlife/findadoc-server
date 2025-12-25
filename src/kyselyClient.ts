@@ -38,7 +38,7 @@ export async function initializeKyselyClient(): Promise<void> {
  */
     pool = new Pool({
         connectionString: databaseUrl,
-        max: 10,
+        max: 100,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000
     })

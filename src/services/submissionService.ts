@@ -12,6 +12,7 @@ import type { SubmissionsTable } from '../typeDefs/kyselyTypes.js'
 import type { Selectable } from 'kysely'
 import { db } from '../kyselyClient.js'
 import { sql } from 'kysely'
+import { mapKyselySubmissionToGraphQL, mapDbEntityTogqlEntity } from '../services/mappersEntityService.js'
 
 // Helper function to properly serialize values as JSONB for PostgreSQL
 // This prevents double-encoding by explicitly stringifying and casting to ::jsonb
@@ -651,6 +652,7 @@ export const autoFillPlacesInformation = async (
                 .updateTable('submissions')
                 .set({
                     googleMapsUrl: places.extractedGoogleMapsURI ?? currentSubmission.googleMapsUrl,
+                    //eslint-disable-next-line
                     facility_partial: asJsonb<gqlTypes.FacilitySubmission>(facilityPartial),
                     status: 'under_review',
                     autofillPlaceFromSubmissionUrl: true,
@@ -807,7 +809,9 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
     await trx
         .insertInto('hps_facilities')
         .values({
+            //eslint-disable-next-line
             hps_id: insertedHp.id,
+            //eslint-disable-next-line
             facilities_id: finalFacilityId
         })
         .execute()
@@ -1036,79 +1040,5 @@ export async function deleteSubmission(
                 httpStatus: 500
             }]
         }
-    }
-}
-
-export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Submission {
-    return {
-        id: row.id,
-        googleMapsUrl: row.googleMapsUrl,
-        healthcareProfessionalName: row.healthcareProfessionalName,
-        spokenLanguages: row.spokenLanguages as gqlTypes.Locale[],
-        autofillPlaceFromSubmissionUrl: row.autofillPlaceFromSubmissionUrl,
-        facility: row.facility_partial ? {
-            ...row.facility_partial,
-            healthcareProfessionalIds: row.facility_partial.healthcareProfessionalIds ?? [] // ← FIX!
-        } : undefined,
-        healthcareProfessionals: row.healthcare_professionals_partial ?? [],
-        isUnderReview: row.status === dbSchema.SUBMISSION_STATUS.UNDER_REVIEW,
-        isApproved: row.status === dbSchema.SUBMISSION_STATUS.APPROVED,
-        isRejected: row.status === dbSchema.SUBMISSION_STATUS.REJECTED,
-        createdDate: row.createdDate,
-        updatedDate: row.updatedDate,
-        notes: row.notes ?? undefined
-    }
-}
-
-export function mapGqlEntityToDbEntity(
-    input: gqlTypes.CreateSubmissionInput
-): dbSchema.SubmissionInsertRow {
-    return {
-        status: dbSchema.SUBMISSION_STATUS.PENDING,
-        googleMapsUrl: input.googleMapsUrl ?? '',
-        healthcareProfessionalName: input.healthcareProfessionalName ?? '',
-        spokenLanguages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
-        autofillPlaceFromSubmissionUrl: false,
-        
-        //eslint-disable-next-line
-        facility_partial: null,
-        //eslint-disable-next-line
-        healthcare_professionals_partial: null,
-        
-        //eslint-disable-next-line
-        hps_id: null,
-        //eslint-disable-next-line
-        facilities_id: null,
-        
-        notes: input.notes ?? null,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    }
-}
-
-function mapKyselySubmissionToGraphQL(
-    submissionRow: Selectable<SubmissionsTable>
-): gqlTypes.Submission {
-    // Test are failing because we didn't use
-    // clean and cleanInput inside functions
-    const cleanSubmissionRow = JSON.parse(JSON.stringify(submissionRow))
-
-    return {
-        id: cleanSubmissionRow.id,
-        googleMapsUrl: cleanSubmissionRow.googleMapsUrl!,
-        healthcareProfessionalName: cleanSubmissionRow.healthcareProfessionalName!,
-        spokenLanguages: cleanSubmissionRow.spokenLanguages!,
-        autofillPlaceFromSubmissionUrl: cleanSubmissionRow.autofillPlaceFromSubmissionUrl,
-        facility: cleanSubmissionRow.facility_partial ? {
-            ...cleanSubmissionRow.facility_partial,
-            healthcareProfessionalIds: cleanSubmissionRow.facility_partial.healthcareProfessionalIds ?? []
-        } : undefined,
-        healthcareProfessionals: cleanSubmissionRow.healthcare_professionals_partial ?? [],
-        isUnderReview: cleanSubmissionRow.status === 'under_review',
-        isApproved: cleanSubmissionRow.status === 'approved',
-        isRejected: cleanSubmissionRow.status === 'rejected',
-        createdDate: cleanSubmissionRow.createdDate,
-        updatedDate: cleanSubmissionRow.updatedDate,
-        notes: cleanSubmissionRow.notes ?? undefined
     }
 }

@@ -1,12 +1,11 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { db } from '../kyselyClient.js'
-import type { FacilitiesTable } from '../typeDefs/kyselyTypes.js'
-import type { Selectable } from 'kysely'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
+import { mapKyselyFacilityToGraphQL } from '../services/mappersEntityService.js'
 
 // Capabilities for Supabase-like query builders
 export type HasIlike = {
@@ -774,33 +773,5 @@ export async function deleteFacility(
                 httpStatus: 500
             }]
         }
-    }
-}
-
-/**
- * Maps Kysely Facility result to GraphQL Facility type
- * Use this when you need to transform DB types to GraphQL types
- */
-/**
- * Maps Kysely Facility result to plain GraphQL Facility object.
- * CRITICAL: This function MUST return a plain JavaScript object without any
- * Kysely internal members (#props) that would cause GraphQL serialization errors.
- */
-function mapKyselyFacilityToGraphQL(
-    facilityRow: Selectable<FacilitiesTable>,
-    healthcareProfessionalIds: string[]
-): gqlTypes.Facility {
-    const cleanRow = JSON.parse(JSON.stringify(facilityRow))
-    
-    return {
-        id: cleanRow.id,
-        nameEn: cleanRow.nameEn,
-        nameJa: cleanRow.nameJa,
-        contact: cleanRow.contact,
-        mapLatitude: cleanRow.mapLatitude,
-        mapLongitude: cleanRow.mapLongitude,
-        healthcareProfessionalIds,
-        createdDate: cleanRow.createdDate,
-        updatedDate: cleanRow.updatedDate
     }
 }
