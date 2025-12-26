@@ -217,10 +217,10 @@ export async function createFacility(
         // Execute all database operations in a single atomic transaction.
         // The transaction returns the final plain GraphQL object (not the Kysely result).
         // If any operation fails, everything is automatically rolled back.
-        const gqlFacility = await db.transaction().execute(async trx => {
+        const gqlFacility = await db.transaction().execute(async transaction => {
             // Step 1: Insert facility into PostgreSQL
             // PostgreSQL generates UUID automatically via DEFAULT gen_random_uuid()
-            const insertedFacility = await trx
+            const insertedFacility = await transaction
                 .insertInto('facilities')
                 .values({
                     nameEn: facilityInput.nameEn,
@@ -244,7 +244,7 @@ export async function createFacility(
 
                 // Insert relations into junction table
                 // onConflict handles duplicate prevention (composite primary key protection)
-                await trx
+                await transaction
                     .insertInto('hps_facilities')
                     .values(joinRows)
                     .onConflict(oc => oc
@@ -259,10 +259,10 @@ export async function createFacility(
             const plainGqlFacility = mapKyselyFacilityToGraphQL(insertedFacility, hpIds)
 
             // Step 4: Record this creation in the audit log
-            // Uses the same transaction (trx) to ensure atomicity:
+            // Uses the same transaction (transaction) to ensure atomicity:
             // - If audit log fails, the facility creation is also rolled back
             // - If audit log succeeds, both operations are committed together
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
@@ -499,9 +499,9 @@ export const updateFacility = async (
         }
 
         // Execute all database operations in a single atomic transaction
-        const result = await db.transaction().execute(async trx => {
+        const result = await db.transaction().execute(async transaction => {
             // Step 1: Fetch the current facility state (for audit log and validation)
-            const originalFacility = await trx
+            const originalFacility = await transaction
                 .selectFrom('facilities')
                 .selectAll()
                 .where('id', '=', facilityId)
@@ -512,7 +512,7 @@ export const updateFacility = async (
             }
 
             // Fetch original HP relations
-            const originalRelations = await trx
+            const originalRelations = await transaction
                 .selectFrom('hps_facilities')
                 .select('hps_id')
                 .where('facilities_id', '=', facilityId)
@@ -527,7 +527,7 @@ export const updateFacility = async (
 
             if (Object.keys(updatePayload).length > 1) {
                 // Has fields to update beyond just updatedDate
-                updatedFacility = await trx
+                updatedFacility = await transaction
                     .updateTable('facilities')
                     .set(updatePayload)
                     .where('id', '=', facilityId)
@@ -537,7 +537,7 @@ export const updateFacility = async (
                 logger.info(`DB-UPDATE: facilities ${facilityId} scalar fields updated.`)
             } else {
                 // No scalar fields to update, but touch updatedDate to track the change
-                updatedFacility = await trx
+                updatedFacility = await transaction
                     .updateTable('facilities')
                     .set({ updatedDate: new Date().toISOString() })
                     .where('id', '=', facilityId)
@@ -550,7 +550,7 @@ export const updateFacility = async (
 
             if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
                 finalHpIds = await processHealthcareProfessionalRelationshipChanges(
-                    trx,
+                    transaction,
                     facilityId,
                     fieldsToUpdate.healthcareProfessionalIds
                 )
@@ -561,7 +561,7 @@ export const updateFacility = async (
             const oldGqlFacility = mapKyselyFacilityToGraphQL(originalFacility, originalHpIds)
             const newGqlFacility = mapKyselyFacilityToGraphQL(updatedFacility, finalHpIds)
 
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
@@ -614,13 +614,13 @@ export const updateFacility = async (
  * @returns the final list of HP ids for that facility
  */
 async function processHealthcareProfessionalRelationshipChanges(
-    trx: any, // Kysely Transaction type
+    transaction: any, // Kysely Transaction type
     facilityId: string,
     changes: gqlTypes.Relationship[]
 ): Promise<string[]> {
     if (!changes || changes.length === 0) {
         // No changes, return current state
-        const currentRelations = await trx
+        const currentRelations = await transaction
             .selectFrom('hps_facilities')
             .select('hps_id')
             .where('facilities_id', '=', facilityId)
@@ -643,7 +643,7 @@ async function processHealthcareProfessionalRelationshipChanges(
 
     // Process inserts (if any)
     if (toCreate.length > 0) {
-        await trx
+        await transaction
             .insertInto('hps_facilities')
             .values(toCreate)
             .onConflict((oc: any) => oc
@@ -654,7 +654,7 @@ async function processHealthcareProfessionalRelationshipChanges(
 
     // Process deletes (if any)
     if (toDelete.length > 0) {
-        await trx
+        await transaction
             .deleteFrom('hps_facilities')
             .where('facilities_id', '=', facilityId)
             .where('hps_id', 'in', toDelete)
@@ -662,7 +662,7 @@ async function processHealthcareProfessionalRelationshipChanges(
     }
 
     // Return the final list of HPs for this facility
-    const finalRelations = await trx
+    const finalRelations = await transaction
         .selectFrom('hps_facilities')
         .select('hps_id')
         .where('facilities_id', '=', facilityId)
@@ -694,9 +694,9 @@ export async function deleteFacility(
         }
 
         // Execute deletion and audit log in a single atomic transaction
-        await db.transaction().execute(async trx => {
+        await db.transaction().execute(async transaction => {
             // Fetch the existing facility to verify it exists and for audit log
-            const existingFacility = await trx
+            const existingFacility = await transaction
                 .selectFrom('facilities')
                 .selectAll()
                 .where('id', '=', id)
@@ -709,7 +709,7 @@ export async function deleteFacility(
 
             // Fetch related HP IDs for the audit log
             // (Relations will be deleted automatically by ON DELETE CASCADE)
-            const relations = await trx
+            const relations = await transaction
                 .selectFrom('hps_facilities')
                 .select('hps_id')
                 .where('facilities_id', '=', id)
@@ -719,7 +719,7 @@ export async function deleteFacility(
 
             // Delete the facility
             // ON DELETE CASCADE will automatically delete rows in hps_facilities
-            await trx
+            await transaction
                 .deleteFrom('facilities')
                 .where('id', '=', id)
                 .execute()
@@ -728,7 +728,7 @@ export async function deleteFacility(
             // If this fails, the entire transaction (including the delete) is rolled back
             const oldGqlFacility = mapKyselyFacilityToGraphQL(existingFacility, hpIds)
 
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Delete,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,

@@ -329,9 +329,9 @@ export const createSubmission = async (
             }
         }
 
-        const gqlSubmission = await db.transaction().execute(async trx => {
+        const gqlSubmission = await db.transaction().execute(async transaction => {
             // Insert submission
-            const insertedSubmission = await trx
+            const insertedSubmission = await transaction
                 .insertInto('submissions')
                 .values({
                     status: 'pending',
@@ -353,7 +353,7 @@ export const createSubmission = async (
             // Map to GraphQL
             const plainGqlSubmission = mapKyselySubmissionToGraphQL(insertedSubmission)
             
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.Submission,
                 updatedBy,
@@ -405,9 +405,9 @@ export const updateSubmission = async (
             return await approveSubmission(submissionId, updatedBy)
         }
 
-        const gqlSubmission = await db.transaction().execute(async trx => {
+        const gqlSubmission = await db.transaction().execute(async transaction => {
             // Load the current submission state
-            const currentSubmission = await trx
+            const currentSubmission = await transaction
                 .selectFrom('submissions')
                 .selectAll()
                 .where('id', '=', submissionId)
@@ -492,7 +492,7 @@ export const updateSubmission = async (
                 patch.spokenLanguages = asJsonb<gqlTypes.Locale[]>(fieldsToUpdate.spokenLanguages ?? [])
             }
             // Update the submission
-            const updatedSubmission = await trx
+            const updatedSubmission = await transaction
                 .updateTable('submissions')
                 .set(patch)
                 .where('id', '=', submissionId)
@@ -504,7 +504,7 @@ export const updateSubmission = async (
             const newGqlSubmission = mapKyselySubmissionToGraphQL(updatedSubmission)
 
             // Create audit log entry
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.Submission,
                 updatedBy,
@@ -608,9 +608,9 @@ export const autoFillPlacesInformation = async (
             }
         }
 
-        const gqlSubmission = await db.transaction().execute(async trx => {
+        const gqlSubmission = await db.transaction().execute(async transaction => {
             // Fetch current submission
-            const currentSubmission = await trx
+            const currentSubmission = await transaction
                 .selectFrom('submissions')
                 .selectAll()
                 .where('id', '=', submissionId)
@@ -648,7 +648,7 @@ export const autoFillPlacesInformation = async (
             }
 
             // Update submission with autofill data
-            const updatedSubmission = await trx
+            const updatedSubmission = await transaction
                 .updateTable('submissions')
                 .set({
                     googleMapsUrl: places.extractedGoogleMapsURI ?? currentSubmission.googleMapsUrl,
@@ -667,7 +667,7 @@ export const autoFillPlacesInformation = async (
             const newGqlSubmission = mapKyselySubmissionToGraphQL(updatedSubmission)
 
             // Audit log
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.Submission,
                 updatedBy,
@@ -704,20 +704,20 @@ export const autoFillPlacesInformation = async (
  * WHY THIS FUNCTION EXISTS:
  * - The original tryCreateHealthcareProfessionalForSubmission uses Supabase
  * - It cannot be called inside a Kysely transaction (different connection pools)
- * - This version does inline INSERT using the same trx object
+ * - This version does inline INSERT using the same transaction object
  * 
  * TRANSACTION-SAFE DESIGN:
- * - Uses trx.insertInto() instead of Supabase client
+ * - Uses transaction.insertInto() instead of Supabase client
  * - Shares the same transaction as approveSubmission
  * - If HP creation fails, entire approval is rolled back atomically
- * @param trx - Kysely transaction object from parent function
+ * @param transaction - Kysely transaction object from parent function
  * @param current - Current submission row from DB
  * @param finalFacilityId - Facility ID to link the HP to
  * @param updatedBy - User performing the action (for audit)
  * @returns HP ID if created, undefined if skipped
  */
 async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
-    trx: Transaction<Database>,
+    transaction: Transaction<Database>,
     current: Selectable<SubmissionsTable>,
     finalFacilityId: string,
     updatedBy: string
@@ -790,7 +790,7 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
     }
 
     // Create HP inline in transaction (NO Supabase calls!)
-    const insertedHp = await trx
+    const insertedHp = await transaction
         .insertInto('hps')
         .values({
             names: asJsonb<gqlTypes.LocalizedName[]>(hpInput!.names),
@@ -806,7 +806,7 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
         .executeTakeFirstOrThrow()
 
     // Create HP-Facility relation
-    await trx
+    await transaction
         .insertInto('hps_facilities')
         .values({
             //eslint-disable-next-line
@@ -835,9 +835,9 @@ export const approveSubmission = async (
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
-        const gqlSubmission = await db.transaction().execute(async trx => {
+        const gqlSubmission = await db.transaction().execute(async transaction => {
             // Fetch current submission
-            const currentSubmission = await trx
+            const currentSubmission = await transaction
                 .selectFrom('submissions')
                 .selectAll()
                 .where('id', '=', submissionId)
@@ -871,8 +871,8 @@ export const approveSubmission = async (
                 }
 
                 // CRITICAL NESTED TRANSACTION
-                // I'm tryin inline inside trx
-                const insertedFacility = await trx
+                // I'm tryin inline inside transaction
+                const insertedFacility = await transaction
                     .insertInto('facilities')
                     .values({
                         nameEn: facilityInput.nameEn,
@@ -894,7 +894,7 @@ export const approveSubmission = async (
 
             if (finalFacilityId && !currentSubmission.hps_id) {
                 createdHpId = await tryCreateHealthcareProfessionalForSubmissionInTransaction(
-                    trx,
+                    transaction,
                     currentSubmission,
                     finalFacilityId,
                     updatedBy
@@ -902,7 +902,7 @@ export const approveSubmission = async (
             }
 
             // Update submission to be approved
-            const updated = await trx
+            const updated = await transaction
                 .updateTable('submissions')
                 .set({
                     status: 'approved',
@@ -919,7 +919,7 @@ export const approveSubmission = async (
             const newGqlSubmission = mapKyselySubmissionToGraphQL(updated)
 
             // Audit log
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.Submission,
                 updatedBy,
@@ -979,9 +979,9 @@ export async function deleteSubmission(
             }
         }
 
-        await db.transaction().execute(async trx => {
+        await db.transaction().execute(async transaction => {
             // Step 1: Fetch existing submission
-            const existing = await trx
+            const existing = await transaction
                 .selectFrom('submissions')
                 .selectAll()
                 .where('id', '=', id)
@@ -992,7 +992,7 @@ export async function deleteSubmission(
             }
 
             // Step 2: Delete submission
-            await trx
+            await transaction
                 .deleteFrom('submissions')
                 .where('id', '=', id)
                 .execute()
@@ -1000,7 +1000,7 @@ export async function deleteSubmission(
             // Step 3: Audit log
             const oldGqlSubmission = mapKyselySubmissionToGraphQL(existing)
 
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Delete,
                 objectType: gqlTypes.ObjectType.Submission,
                 updatedBy,

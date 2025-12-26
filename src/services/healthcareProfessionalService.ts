@@ -81,7 +81,7 @@ export function resolveFacilityIdFromRelationships(
     const creations = relations.filter(relation => relation.action === gqlTypes.RelationshipAction.Create)
     const deletions = relations.filter(relation => relation.action === gqlTypes.RelationshipAction.Delete)
 
-    if (creations.length > 1) { 
+    if (creations.length) { 
         return {
             newFacilityId: null,
             error: {
@@ -98,7 +98,7 @@ export function resolveFacilityIdFromRelationships(
             newFacilityId: creations[0].otherEntityId
         }
     }
-    if (deletions.length > 0) {
+    if (deletions.length) {
         return {
             newFacilityId: null
         }
@@ -117,7 +117,6 @@ export async function getHealthcareProfessionalById(
     id: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
-        // Validate the incoming id
         const validationResult = validateIdInput(id)
 
         if (validationResult.hasErrors) {
@@ -136,14 +135,14 @@ export async function getHealthcareProfessionalById(
         const supabase = getSupabaseClient()
 
         // Fetch the HP row by primary key; .single() requires exactly one row
-        const { data: hpRow, error: hpRowError } = await supabase
+        const { data: matchingHp, error: matchingHpError } = await supabase
             .from('hps')
             .select('*')
             .eq('id', id)
             .single()
 
         // Supabase returns PGRST116 when .single() finds no rows.
-        if (hpRowError?.code === 'PGRST116' || !hpRow) {
+        if (matchingHpError?.code === 'PGRST116' || !matchingHp) {
             return {
                 data: {} as gqlTypes.HealthcareProfessional,
                 hasErrors: true,
@@ -155,8 +154,8 @@ export async function getHealthcareProfessionalById(
             }
         }
 
-        if (hpRowError) {
-            throw hpRowError
+        if (matchingHpError) {
+            throw matchingHpError
         }
 
         // Load relations from junction table (facility links for this HP)
@@ -173,7 +172,7 @@ export async function getHealthcareProfessionalById(
         const facilityIds = (facilityLinkRows ?? []).map(row => row.facilities_id as string)
 
         // Cast DB row to internal schema and map to GraphQL shape including relations
-        const dbHp = hpRow as dbSchema.DbHealthcareProfessionalRow
+        const dbHp = matchingHp as dbSchema.DbHealthcareProfessionalRow
         const gqlHp = mapDbHpToGql(dbHp, facilityIds)
 
         return {
@@ -208,7 +207,6 @@ export async function searchProfessionals(
   filters: gqlTypes.HealthcareProfessionalSearchFilters = {}
 ): Promise<Result<gqlTypes.HealthcareProfessional[]>> {
     try {
-    // Validate incoming filters
         const validation = validateProfessionalsSearchInput(filters)
 
         if (validation.hasErrors) {
@@ -219,7 +217,7 @@ export async function searchProfessionals(
             return { data: [], hasErrors: false }
         }
 
-        if (Array.isArray(filters.ids) && filters.ids.length > 0) {
+        if (Array.isArray(filters.ids) && filters.ids.length) {
             const looksInvalid = filters.ids.some(id => !/^[0-9a-fA-F-]{36}$/.test(id))
 
             if (looksInvalid) {
@@ -237,7 +235,6 @@ export async function searchProfessionals(
 
         if (Array.isArray(filters.ids)) {
             if (filters.ids.length === 0) {
-                // user explicitly asked for "no ids" → return empty list right away
                 return { data: [], hasErrors: false }
             }
 
@@ -256,30 +253,26 @@ export async function searchProfessionals(
             hpSelect = hpSelect.order('createdDate', { ascending: false })
         }
 
-        /**
-         * Perform paged fetch after all filters are applied so the page is computed
-         * on the correctly filtered set — this matches test expectations.
-         */
-        const { data: hpRows, error: hpRowsError } = await hpSelect.range(
+        // Perform paged fetch after all filters are applied so the page is computed
+        const { data: matchingHps, error: matchingHpsError } = await hpSelect.range(
             offset,
             offset + limit - 1
         )
 
-        if (hpRowsError) {
-            throw hpRowsError
+        if (matchingHpsError) {
+            throw matchingHpsError
         }
 
-        /// If there’s no data on this page, return early
-        if (!hpRows?.length) {
+        if (!matchingHps?.length) {
             return { data: [], hasErrors: false }
         }
 
         // Extract IDs from this page to batch-load relations from the junction table
-        const hpIds = hpRows.map(row => row.id as string)
+        const hpIds = matchingHps.map(row => row.id as string)
 
-        if (hpIds.length === 0) {
+        if (!hpIds.length) {
             // extremely defensive; should not happen, but keeps the function safe
-            const list = (hpRows as dbSchema.DbHealthcareProfessionalRow[])
+            const list = (matchingHps as dbSchema.DbHealthcareProfessionalRow[])
                 .map(hp => mapDbHpToGql(hp, []))
 
             return { data: list, hasErrors: false }
@@ -308,7 +301,7 @@ export async function searchProfessionals(
 
         // Map DB rows to GraphQL shape, merging each HP row with its facilityIds
         const result: gqlTypes.HealthcareProfessional[] =
-            (hpRows as dbSchema.DbHealthcareProfessionalRow[])
+            (matchingHps as dbSchema.DbHealthcareProfessionalRow[])
                 .map(hp => {
                     const facilityIds = facilityIdsByHpId.get(hp.id) ?? []
 
@@ -406,7 +399,7 @@ export async function createHealthcareProfessional(
             : []
 
         // Enforce single facility rule multiple IDs are invalid input
-        if (requestedFacilityIds.length === 0) {
+        if (!requestedFacilityIds.length) {
             return {
                 data: {} as gqlTypes.HealthcareProfessional,
                 hasErrors: true,
@@ -431,9 +424,9 @@ export async function createHealthcareProfessional(
         }
 
         // Execute all operations in atomic transaction
-        const gqlHealthcareProfessional = await db.transaction().execute(async trx => {
+        const gqlHealthcareProfessional = await db.transaction().execute(async transaction => {
             // Insert HP into hps table
-            const insertedHp = await trx
+            const insertedHp = await transaction
                 .insertInto('hps')
                 .values({
                     names: asJsonb(input.names),
@@ -453,7 +446,7 @@ export async function createHealthcareProfessional(
             // We know there's exactly one facility ID (validated above)
             const facilityId = requestedFacilityIds[0]
 
-            await trx
+            await transaction
                 .insertInto('hps_facilities')
                 .values({
                     hps_id: insertedHp.id,
@@ -469,8 +462,8 @@ export async function createHealthcareProfessional(
             const plainGqlHp = mapKyselyHpToGraphQL(insertedHp, [facilityId])
 
             // Create audit log entry
-            // Uses the same transaction (trx) to ensure atomicity
-            await createAuditLog(trx, {
+            // Uses the same transaction (transaction) to ensure atomicity
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Create,
                 objectType: gqlTypes.ObjectType.HealthcareProfessional,
                 updatedBy,
@@ -530,9 +523,9 @@ export const updateHealthcareProfessional = async (
         }
 
         // Execute all operations in atomic transaction
-        const gqlHealthcareProfessional = await db.transaction().execute(async trx => {
+        const gqlHealthcareProfessional = await db.transaction().execute(async transaction => {
             // Fetch current HP state
-            const currentHp = await trx
+            const currentHp = await transaction
                 .selectFrom('hps')
                 .selectAll()
                 .where('id', '=', id)
@@ -543,7 +536,7 @@ export const updateHealthcareProfessional = async (
             }
 
             // Fetch current facility relations
-            const currentRelations = await trx
+            const currentRelations = await transaction
                 .selectFrom('hps_facilities')
                 .select('facilities_id')
                 .where('hps_id', '=', id)
@@ -555,12 +548,12 @@ export const updateHealthcareProfessional = async (
             const updatePatch = buildHpUpdatePatch(fieldsToUpdate)
 
             // Update scalar fields (always touch updatedDate)
-            const hasScalarChanges = Object.keys(updatePatch).length > 1 // More than just updatedDate
+            const hasChanges = Object.keys(updatePatch).length > 1 // More than just updatedDate
 
             let updatedHp = currentHp
 
-            if (hasScalarChanges) {
-                updatedHp = await trx
+            if (hasChanges) {
+                updatedHp = await transaction
                     .updateTable('hps')
                     .set(updatePatch)
                     .where('id', '=', id)
@@ -568,7 +561,7 @@ export const updateHealthcareProfessional = async (
                     .executeTakeFirstOrThrow()
             } else {
                 // Just touch updatedDate to track the change
-                updatedHp = await trx
+                updatedHp = await transaction
                     .updateTable('hps')
                     .set({ updatedDate: new Date().toISOString() })
                     .where('id', '=', id)
@@ -579,7 +572,7 @@ export const updateHealthcareProfessional = async (
             // Handle facility relationship changes (if provided)
             let finalFacilityIds = currentFacilityIds
 
-            if (fieldsToUpdate.facilityIds !== undefined) {
+            if (fieldsToUpdate.facilityIds) {
                 // Resolve new facility ID from relationship actions
                 const { newFacilityId, error } = resolveFacilityIdFromRelationships(fieldsToUpdate.facilityIds ?? null)
 
@@ -596,13 +589,13 @@ export const updateHealthcareProfessional = async (
                 }
 
                 // Delete all existing facility relations for this HP
-                await trx
+                await transaction
                     .deleteFrom('hps_facilities')
                     .where('hps_id', '=', id)
                     .execute()
 
                 // Insert new facility relation
-                await trx
+                await transaction
                     .insertInto('hps_facilities')
                     .values({
                         hps_id: id,
@@ -621,7 +614,7 @@ export const updateHealthcareProfessional = async (
             const newGqlHp = mapKyselyHpToGraphQL(updatedHp, finalFacilityIds)
 
             // Create audit log entry
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.HealthcareProfessional,
                 updatedBy,
@@ -728,9 +721,9 @@ export async function deleteHealthcareProfessional(
         }
 
         // Execute deletion in atomic transaction
-        await db.transaction().execute(async trx => {
+        await db.transaction().execute(async transaction => {
             // Fetch existing HP (for validation and audit log)
-            const existingHp = await trx
+            const existingHp = await transaction
                 .selectFrom('hps')
                 .selectAll()
                 .where('id', '=', id)
@@ -743,7 +736,7 @@ export async function deleteHealthcareProfessional(
             // Fetch related facility IDs (for audit log)
             // Note: These will be automatically deleted by CASCADE,
             // but we need them for the audit log's oldValue
-            const relations = await trx
+            const relations = await transaction
                 .selectFrom('hps_facilities')
                 .select('facilities_id')
                 .where('hps_id', '=', id)
@@ -753,7 +746,7 @@ export async function deleteHealthcareProfessional(
 
             // Delete the HP
             // CASCADE will automatically delete rows in hps_facilities
-            await trx
+            await transaction
                 .deleteFrom('hps')
                 .where('id', '=', id)
                 .execute()
@@ -762,7 +755,7 @@ export async function deleteHealthcareProfessional(
             // Map Kysely row to GraphQL for audit log
             const oldGqlHp = mapKyselyHpToGraphQL(existingHp, facilityIds)
 
-            await createAuditLog(trx, {
+            await createAuditLog(transaction, {
                 actionType: gqlTypes.ActionType.Delete,
                 objectType: gqlTypes.ObjectType.HealthcareProfessional,
                 updatedBy,
@@ -837,7 +830,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
         }
 
         // Execute all operations in atomic transaction
-        await db.transaction().execute(async trx => {
+        await db.transaction().execute(async transaction => {
             // Split relationships into CREATE vs DELETE
             const hpIdsToCreate: string[] = professionalRelationshipsToUpdate
                 .filter(r => r.action === gqlTypes.RelationshipAction.Create)
@@ -862,9 +855,9 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             const finalDeleteIds = Array.from(deleteSet)
 
             // Validation check if any HP would be left without facilities
-            if (finalDeleteIds.length > 0) {
+            if (finalDeleteIds.length) {
                 // Batch query: count facilities for all HPs being deleted
-                const facilityCounts = await trx
+                const facilityCounts = await transaction
                     .selectFrom('hps_facilities')
                     .select('hps_id')
                     .select(eb => eb.fn.count<number>('facilities_id').as('count'))
@@ -900,7 +893,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                 }))
 
                 // Batch insert with idempotency
-                await trx
+                await transaction
                     .insertInto('hps_facilities')
                     .values(relationsToCreate)
                     .onConflict(oc => oc
@@ -912,7 +905,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             // Execute DELETE operations (if any)
             if (finalDeleteIds.length) {
                 // Batch delete - single query for all HPs
-                await trx
+                await transaction
                     .deleteFrom('hps_facilities')
                     .where('facilities_id', '=', facilityId)
                     .where('hps_id', 'in', finalDeleteIds)

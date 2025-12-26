@@ -84,7 +84,7 @@ export async function initializeKyselyClient(): Promise<void> {
  * Get the Kysely database instance
  * Throws an error if not initialized
  */
-export function getKyselyClient(): Kysely<Database> {
+function getKyselyClient(): Kysely<Database> {
     if (!kyselyInstance) {
         throw new Error(
             'Kysely client not initialized. Call initializeKyselyClient() first.'
