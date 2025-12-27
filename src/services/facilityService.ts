@@ -235,7 +235,7 @@ export async function createFacility(
                 .executeTakeFirstOrThrow() // Throws if insert fails
 
             // Step 2: Create associations with healthcare professionals (if any provided)
-            if (hpIds.length > 0) {
+            if (hpIds.length) {
                 // Build junction table rows for the many-to-many relationship
                 const joinRows = hpIds.map(hpsId => ({
                     hps_id: hpsId,
@@ -332,7 +332,7 @@ export async function searchFacilities(
             // Fetch all Facility IDs associated with the given HP IDs from the join table.
             const idSet = await getFacilityIdsByHpIds(filters.healthcareProfessionalIds as string[])
 
-            if (idSet.size === 0) {
+            if (!idSet.size) {
                 return { data: [], hasErrors: false }
             }
             // Convert the Set to an Array for use in the main query `IN` later
@@ -368,7 +368,7 @@ export async function searchFacilities(
             throw paginationRowsError
         }
 
-        if (!paginationRows || paginationRows.length === 0) {
+        if (!paginationRows || !paginationRows.length) {
             return { data: [], hasErrors: false }
         }
 
@@ -454,7 +454,7 @@ export async function countFacilities(
         if (filters.healthcareProfessionalIds?.length) {
             const idSet = await getFacilityIdsByHpIds(filters.healthcareProfessionalIds as string[])
 
-            if (idSet.size === 0) {
+            if (!idSet.size) {
                 return { data: 0, hasErrors: false }
             }
             baseQuery = baseQuery.in('id', Array.from(idSet))
@@ -548,7 +548,7 @@ export const updateFacility = async (
             // Update relationships (if any provided)
             let finalHpIds = originalHpIds
 
-            if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length > 0) {
+            if (fieldsToUpdate.healthcareProfessionalIds && fieldsToUpdate.healthcareProfessionalIds.length) {
                 finalHpIds = await processHealthcareProfessionalRelationshipChanges(
                     transaction,
                     facilityId,
@@ -618,7 +618,7 @@ async function processHealthcareProfessionalRelationshipChanges(
     facilityId: string,
     changes: gqlTypes.Relationship[]
 ): Promise<string[]> {
-    if (!changes || changes.length === 0) {
+    if (!changes || !changes.length) {
         // No changes, return current state
         const currentRelations = await transaction
             .selectFrom('hps_facilities')
@@ -642,7 +642,7 @@ async function processHealthcareProfessionalRelationshipChanges(
         .map(c => c.otherEntityId)
 
     // Process inserts (if any)
-    if (toCreate.length > 0) {
+    if (toCreate.length) {
         await transaction
             .insertInto('hps_facilities')
             .values(toCreate)
@@ -653,7 +653,7 @@ async function processHealthcareProfessionalRelationshipChanges(
     }
 
     // Process deletes (if any)
-    if (toDelete.length > 0) {
+    if (toDelete.length) {
         await transaction
             .deleteFrom('hps_facilities')
             .where('facilities_id', '=', facilityId)
