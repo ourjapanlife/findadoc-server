@@ -234,11 +234,6 @@ export async function searchProfessionals(
         let hpSelect = applyHpFilters(supabase.from('hps').select('*'), filters)
 
         if (Array.isArray(filters.ids)) {
-            if (filters.ids.length === 0) {
-                return { data: [], hasErrors: false }
-            }
-
-            // only return the professionals whose id is in filters.ids
             hpSelect = hpSelect.in('id', filters.ids)
         }
 
@@ -865,25 +860,16 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                     .groupBy('hps_id')
                     .execute()
 
-                // Build lookup map: hpId → count
-                const countsMap = new Map<string, number>()
-
-                for (const row of facilityCounts) {
-                    countsMap.set(row.hps_id, Number(row.count))
-                }
-
                 // Check if any HP would be left without facilities (count <= 1)
-                const wouldBreak = finalDeleteIds.filter(hpId => {
-                    const count = countsMap.get(hpId) ?? 0
-
-                    return count <= 1 // Would have 0 facilities after deletion
-                })
+                const wouldBreak = facilityCounts
+                    .filter(row => Number(row.count) <= 1)
+                    .map(row => row.hps_id)
 
                 if (wouldBreak.length) {
                     throw new Error('HP_REQUIRES_FACILITY')
                 }
             }
-
+            
             // Execute CREATE operations (if any)
             if (finalCreateIds.length > 0) {
                 // Build rows for batch insert
