@@ -54,6 +54,7 @@ interface MigrationStats {
     healthcareProfessionals: number
     hpFacilityRelationships: number
     submissions: number
+    auditLogs: number
     duration: number
 }
 
@@ -627,6 +628,194 @@ async function migrateSubmissions(): Promise<number> {
     return submissions.length
 }
 
+async function migrateAuditLogs(): Promise<number> {
+    console.log('📦 Step 4: Migrating audit logs...')
+
+    const snapshot = await firestoreInstance.collection('auditLogs').get()
+
+    if (snapshot.empty) {
+        console.log('   ⚠️  No audit logs found in Firestore\n')
+        return 0
+    }
+
+    console.log(`   📊 Found ${snapshot.docs.length} audit logs to migrate`)
+
+    // Fetch ID mappings for all entity types (needed to remap IDs in audit values)
+    const { data: hps } = await supabaseClient
+        .from('hps')
+        .select('id, firestore_id')
+
+    const { data: facilities } = await supabaseClient
+        .from('facilities')
+        .select('id, firestore_id')
+
+    const { data: submissions } = await supabaseClient
+        .from('submissions')
+        .select('id, firestore_id')
+
+    const hpIdMap = createIdMap(hps || [])
+    const facilityIdMap = createIdMap(facilities || [])
+    const submissionIdMap = createIdMap(submissions || [])
+
+    // Transform audit log data
+    const auditLogs = snapshot.docs
+        .map(doc => {
+            const data = doc.data()
+
+            // Parse old/new values from JSON strings to objects
+            let oldValue = null
+            let newValue = null
+
+            try {
+                if (data.oldValue) {
+                    oldValue = typeof data.oldValue === 'string' 
+                        ? JSON.parse(data.oldValue) 
+                        : data.oldValue
+                }
+            } catch (e) {
+                console.log(`   ⚠️  Failed to parse oldValue for audit log ${doc.id}`)
+            }
+
+            try {
+                if (data.newValue) {
+                    newValue = typeof data.newValue === 'string' 
+                        ? JSON.parse(data.newValue) 
+                        : data.newValue
+                }
+            } catch (e) {
+                console.log(`   ⚠️  Failed to parse newValue for audit log ${doc.id}`)
+            }
+
+            // Map entity IDs from Firestore to Supabase UUIDs within the audit values
+            const mappedOldValue = oldValue ? mapEntityIds(
+                oldValue, 
+                data.objectType, 
+                hpIdMap, 
+                facilityIdMap, 
+                submissionIdMap
+            ) : null
+
+            const mappedNewValue = newValue ? mapEntityIds(
+                newValue, 
+                data.objectType, 
+                hpIdMap, 
+                facilityIdMap, 
+                submissionIdMap
+            ) : null
+
+            return {
+                action_type: data.actionType || 'CREATE',
+                object_type: data.objectType || 'Facility',
+                schema_version: data.schemaVersion || 'v1',
+                updated_by: data.updatedBy || 'system',
+                old_value: mappedOldValue,
+                new_value: mappedNewValue,
+                updated_date: convertTimestampToISO(data.updatedDate) || new Date().toISOString()
+            }
+        })
+
+    console.log(`   📊 ${auditLogs.length} audit logs ready to migrate`)
+
+    if (DRY_RUN) {
+        console.log(`   🔍 DRY RUN: Would insert ${auditLogs.length} audit logs`)
+        if (auditLogs.length > 0) {
+            console.log(`   📝 Sample: ${auditLogs[0].action_type} on ${auditLogs[0].object_type}`)
+        }
+    } else {
+        // Process in batches (audit logs can be numerous)
+        const BATCH_SIZE = 500
+        let totalInserted = 0
+
+        for (let i = 0; i < auditLogs.length; i += BATCH_SIZE) {
+            const batch = auditLogs.slice(i, i + BATCH_SIZE)
+            const batchNumber = Math.floor(i / BATCH_SIZE) + 1
+            const totalBatches = Math.ceil(auditLogs.length / BATCH_SIZE)
+
+            console.log(`   🔄 Processing batch ${batchNumber}/${totalBatches} (${batch.length} records)...`)
+
+            const { error } = await supabaseClient
+                .from('audit_logs')
+                .insert(batch) // NOTE: No upsert since audit_logs has no firestore_id constraint
+
+            if (error) {
+                console.error(`   ❌ Error migrating audit logs batch ${batchNumber}:`, error)
+                
+                // Log first few failed records for debugging
+                console.error('   📋 Sample failed record:', JSON.stringify(batch[0], null, 2))
+                throw error
+            }
+
+            totalInserted += batch.length
+            console.log(`      ✅ Inserted ${batch.length} audit logs`)
+        }
+
+        console.log(`   ✅ Successfully migrated ${totalInserted} audit logs`)
+    }
+
+    console.log()
+    return auditLogs.length
+}
+
+function mapEntityIds(
+    value: any,
+    objectType: string,
+    hpIdMap: Map<string, string>,
+    facilityIdMap: Map<string, string>,
+    submissionIdMap: Map<string, string>
+): any {
+    if (!value || typeof value !== 'object') {
+        return value
+    }
+
+    const mapped = { ...value }
+
+    // Map the main entity ID based on object type
+    if (mapped.id) {
+        switch (objectType) {
+            case 'HealthcareProfessional':
+                mapped.id = hpIdMap.get(mapped.id) || mapped.id
+                break
+            case 'Facility':
+                mapped.id = facilityIdMap.get(mapped.id) || mapped.id
+                break
+            case 'Submission':
+                mapped.id = submissionIdMap.get(mapped.id) || mapped.id
+                break
+        }
+    }
+
+    // Map facilityIds array (for Healthcare Professionals)
+    if (Array.isArray(mapped.facilityIds)) {
+        mapped.facilityIds = mapped.facilityIds
+            .map((fid: string) => facilityIdMap.get(fid))
+            .filter(Boolean)
+    }
+
+    // Map healthcareProfessionalIds array (for Facilities)
+    if (Array.isArray(mapped.healthcareProfessionalIds)) {
+        mapped.healthcareProfessionalIds = mapped.healthcareProfessionalIds
+            .map((hpid: string) => hpIdMap.get(hpid))
+            .filter(Boolean)
+    }
+
+    // Map nested facility reference in submissions
+    if (mapped.facility?.id) {
+        mapped.facility.id = facilityIdMap.get(mapped.facility.id) || mapped.facility.id
+    }
+
+    // Map nested healthcare professionals array in submissions
+    if (Array.isArray(mapped.healthcareProfessionals)) {
+        mapped.healthcareProfessionals = mapped.healthcareProfessionals.map((hp: any) => {
+            if (hp?.id) {
+                return { ...hp, id: hpIdMap.get(hp.id) || hp.id }
+            }
+            return hp
+        })
+    }
+
+    return mapped
+}
+
 // =============================================================================
 // REPORTING FUNCTIONS
 // =============================================================================
@@ -636,6 +825,7 @@ async function migrateSubmissions(): Promise<number> {
  * @param stats - Migration statistics
  */
 function displayMigrationSummary(stats: MigrationStats): void {
+
     console.log('🎉 ========================================')
     console.log('🎉 MIGRATION COMPLETED SUCCESSFULLY!')
     console.log('🎉 ========================================\n')
@@ -647,9 +837,11 @@ function displayMigrationSummary(stats: MigrationStats): void {
     console.log(`   • Healthcare Professionals: ${stats.healthcareProfessionals}`)
     console.log(`   • HP-Facility Links:        ${stats.hpFacilityRelationships}`)
     console.log(`   • Submissions:              ${stats.submissions}`)
-    console.log(`   • Total Records:            ${stats.facilities + stats.healthcareProfessionals + stats.submissions}`)
+    console.log(`   • Audit Logs:               ${stats.auditLogs}`)
+    console.log(`   • Total Records:            ${stats.facilities + stats.healthcareProfessionals + stats.submissions + stats.auditLogs}`)
     console.log(`   • Duration:                 ${stats.duration}s`)
     console.log()
+    
 
     if (DRY_RUN) {
         console.log('💡 This was a DRY RUN - no data was written.')
@@ -715,14 +907,10 @@ async function runMigration(): Promise<void> {
     const startTime = Date.now()
 
     try {
-        // Perform safety checks and get user confirmation if needed
         await performSafetyChecks()
-
-        // Initialize connections
         await initializeFirebase()
         initializeSupabase()
 
-        // Run migrations in order (maintaining referential integrity)
         console.log('📋 ========================================')
         console.log('📋 STARTING DATA MIGRATION')
         console.log('📋 ========================================\n')
@@ -730,16 +918,16 @@ async function runMigration(): Promise<void> {
         const facilitiesCount = await migrateFacilities()
         const { hps: hpsCount, relationships: relationshipsCount } = await migrateHealthcareProfessionals()
         const submissionsCount = await migrateSubmissions()
+        const auditLogsCount = await migrateAuditLogs() // ← ADD THIS
 
-        // Calculate duration
         const duration = ((Date.now() - startTime) / 1000).toFixed(2)
 
-        // Display summary
         const stats: MigrationStats = {
             facilities: facilitiesCount,
             healthcareProfessionals: hpsCount,
             hpFacilityRelationships: relationshipsCount,
             submissions: submissionsCount,
+            auditLogs: auditLogsCount, // ← ADD THIS
             duration: parseFloat(duration)
         }
 
