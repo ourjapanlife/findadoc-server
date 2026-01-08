@@ -6,11 +6,7 @@ import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
 import { mapKyselyFacilityToGraphQL } from '../services/mappersEntityService.js'
-
-// Capabilities for Supabase-like query builders
-export type HasIlike = {
-    ilike: (column: string, pattern: string) => unknown
-}
+import type { HasIlike} from '../../utils/dbUtils.js'
 
 // Builds a partial update patch for Facility rows.
 export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacilityInput>) {
@@ -47,18 +43,18 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
  * @param filters - The facility search filters from GraphQL input.
  * @returns The same query builder instance, modified with applied filters.
  */
-export function applyFacilityFilters<B extends HasIlike>(
-  facilitySelect: B,
+export function applyFacilityFilters<T extends HasIlike>(
+  facilitySelect: T,
   filters: gqlTypes.FacilitySearchFilters
-): B {
+): T {
     let query = facilitySelect
 
     // Text filters (case-insensitive contains)
     if (filters.nameEn) {
-        query = query.ilike('nameEn', `%${filters.nameEn}%`) as B
+        query = query.ilike('nameEn', `%${filters.nameEn}%`) as T
     }
     if (filters.nameJa) {
-        query = query.ilike('nameJa', `%${filters.nameJa}%`) as B
+        query = query.ilike('nameJa', `%${filters.nameJa}%`) as T
     }
 
     return query
@@ -565,8 +561,8 @@ export const updateFacility = async (
                 actionType: gqlTypes.ActionType.Update,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                oldValue: oldGqlFacility, // ✅ Plain object
-                newValue: newGqlFacility // ✅ Plain object
+                oldValue: oldGqlFacility,
+                newValue: newGqlFacility
             })
 
             // Return the updated facility and final HP IDs for mapping
@@ -614,7 +610,7 @@ export const updateFacility = async (
  * @returns the final list of HP ids for that facility
  */
 async function processHealthcareProfessionalRelationshipChanges(
-    transaction: any, // Kysely Transaction type
+    transaction: any,
     facilityId: string,
     changes: gqlTypes.Relationship[]
 ): Promise<string[]> {
@@ -732,7 +728,7 @@ export async function deleteFacility(
                 actionType: gqlTypes.ActionType.Delete,
                 objectType: gqlTypes.ObjectType.Facility,
                 updatedBy,
-                oldValue: oldGqlFacility // ✅ Plain object
+                oldValue: oldGqlFacility
             })
         })
 

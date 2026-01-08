@@ -11,12 +11,8 @@ import type { Database } from '../typeDefs/kyselyTypes.js'
 import type { SubmissionsTable } from '../typeDefs/kyselyTypes.js'
 import type { Selectable } from 'kysely'
 import { db } from '../kyselyClient.js'
-import { sql } from 'kysely'
 import { mapKyselySubmissionToGraphQL, mapDbEntityTogqlEntity } from '../services/mappersEntityService.js'
-
-// Helper function to properly serialize values as JSONB for PostgreSQL
-// This prevents double-encoding by explicitly stringifying and casting to ::jsonb
-const asJsonb = <T>(v: T) => sql<T>`${JSON.stringify(v)}::jsonb`
+import { asJsonb } from '../../utils/dbUtils.js'
 
 /**
  * Builds a minimal, empty address object.
@@ -102,22 +98,22 @@ function splitPersonName(full: string): { firstName: string; lastName: string; m
  * @returns Modified query builder with applied filters.
  */
 //eslint-disable-next-line
-function applySubmissionQueryFilters<B extends Record<string, any>>(
-  queryBuilder: B,
+function applySubmissionQueryFilters<T extends Record<string, any>>(
+  queryBuilder: T,
   filters: gqlTypes.SubmissionSearchFilters
-): B {
+): T {
     let query = queryBuilder
 
     // Apply case-insensitive partial match on googleMapsUrl
     if (filters.googleMapsUrl) {
-        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`) as B
+        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`) as T
     }
 
     if (filters.healthcareProfessionalName) {
         query = query.ilike(
             'healthcareProfessionalName',
             `%${filters.healthcareProfessionalName}%`
-        ) as B
+        ) as T
     }
 
     // Build array of requested status filters using constants
@@ -140,15 +136,15 @@ function applySubmissionQueryFilters<B extends Record<string, any>>(
 
     // Apply status filter if exactly one was requested
     if (requestedStatuses.length === 1) {
-        query = query.eq('status', requestedStatuses[0]) as B
+        query = query.eq('status', requestedStatuses[0]) as T
     }
 
     if (filters.createdDate) {
-        query = query.eq('createdDate', filters.createdDate) as B
+        query = query.eq('createdDate', filters.createdDate) as T
     }
 
     if (filters.updatedDate) {
-        query = query.eq('updatedDate', filters.updatedDate) as B
+        query = query.eq('updatedDate', filters.updatedDate) as T
     }
 
     return query

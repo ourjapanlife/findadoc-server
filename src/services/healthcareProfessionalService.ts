@@ -7,20 +7,9 @@ import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { db } from '../kyselyClient.js'
-import { sql } from 'kysely'
+import { asJsonb } from '../../utils/dbUtils.js'
+import type { HasContains } from '../../utils/dbUtils.js'
 import { mapDbHpToGql, mapKyselyHpToGraphQL} from '../services/mappersEntityService.js'
-
-// Helper function to properly serialize values as JSONB for PostgreSQL
-// This prevents double-encoding by explicitly stringifying and casting to ::jsonb
-const asJsonb = <T>(v: T) => sql<T>`${JSON.stringify(v)}::jsonb`
-
-export type HasContains = {
-    contains: (
-        column: string,
-        //eslint-disable-next-line
-        value: string | readonly any[] | Record<string, unknown>
-    ) => unknown
-}
 
 // Builds a partial update patch for Healthcare Professional rows.
 export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>) {
@@ -39,16 +28,16 @@ export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProf
 }
 
 // Applies JSONB array filters to an HP query builder (degrees, specialties, languages, insurance).
-export function applyHpFilters<B extends HasContains>(
-  builder: B,
+export function applyHpFilters<T extends HasContains>(
+  builder: T,
   filters: gqlTypes.HealthcareProfessionalSearchFilters
-): B {
+): T {
     let query = builder
 
-    if (filters.degrees?.length) { query = query.contains('degrees', filters.degrees as gqlTypes.Degree[]) as B }
-    if (filters.specialties?.length) { query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[]) as B }
-    if (filters.spokenLanguages?.length) { query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[]) as B }
-    if (filters.acceptedInsurance?.length) { query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as B }
+    if (filters.degrees?.length) { query = query.contains('degrees', filters.degrees as gqlTypes.Degree[]) as T }
+    if (filters.specialties?.length) { query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[]) as T }
+    if (filters.spokenLanguages?.length) { query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[]) as T }
+    if (filters.acceptedInsurance?.length) { query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as T }
     return query
 }
 
