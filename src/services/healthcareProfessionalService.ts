@@ -124,14 +124,14 @@ export async function getHealthcareProfessionalById(
         const supabase = getSupabaseClient()
 
         // Fetch the HP row by primary key; .single() requires exactly one row
-        const { data: matchingHp, error: matchingHpError } = await supabase
+        const { data: hpEntity, error: matchingHpError } = await supabase
             .from('hps')
             .select('*')
             .eq('id', id)
             .single()
 
         // Supabase returns PGRST116 when .single() finds no rows.
-        if (matchingHpError?.code === 'PGRST116' || !matchingHp) {
+        if (matchingHpError?.code === 'PGRST116' || !hpEntity) {
             return {
                 data: {} as gqlTypes.HealthcareProfessional,
                 hasErrors: true,
@@ -148,7 +148,7 @@ export async function getHealthcareProfessionalById(
         }
 
         // Load relations from junction table (facility links for this HP)
-        const { data: facilityLinkRows, error: facilityLinkRowsError } = await supabase
+        const { data: facilityLinks, error: facilityLinkRowsError } = await supabase
             .from('hps_facilities')
             .select('facilities_id')
             .eq('hps_id', id)
@@ -157,15 +157,15 @@ export async function getHealthcareProfessionalById(
             throw facilityLinkRowsError
         }
 
-        // Normalize facility IDs to a string array
-        const facilityIds = (facilityLinkRows ?? []).map(row => row.facilities_id as string)
+        // Extract facility IDs from associations
+        const facilityIds = (facilityLinks ?? []).map(link => link.facilities_id as string)
 
-        // Cast DB row to internal schema and map to GraphQL shape including relations
-        const dbHp = matchingHp as dbSchema.DbHealthcareProfessionalRow
-        const gqlHp = mapDbHpToGql(dbHp, facilityIds)
+        // Convert database entity to GraphQL shape
+        const dbHealthcareProfessional = hpEntity as dbSchema.DbHealthcareProfessionalRow
+        const gqlHealthcareProfessional = mapDbHpToGql(dbHealthcareProfessional, facilityIds)
 
         return {
-            data: gqlHp,
+            data: gqlHealthcareProfessional,
             hasErrors: false
         }
     } catch (error) {
@@ -824,28 +824,15 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                 .filter(r => r.action === gqlTypes.RelationshipAction.Delete)
                 .map(r => r.otherEntityId)
 
-            // Resolve conflicts, if HP appears in both CREATE and DELETE, it's a no-op
-            const createSet = new Set<string>(hpIdsToCreate)
-            const deleteSet = new Set<string>(hpIdsToDelete)
-
-            for (const hpId of Array.from(createSet)) {
-                if (deleteSet.has(hpId)) {
-                    createSet.delete(hpId)
-                    deleteSet.delete(hpId)
-                }
-            }
-
-            const finalCreateIds = Array.from(createSet)
-            const finalDeleteIds = Array.from(deleteSet)
-
             // Validation check if any HP would be left without facilities
-            if (finalDeleteIds.length) {
+            if (hpIdsToDelete.length) {
                 // Batch query: count facilities for all HPs being deleted
                 const facilityCounts = await transaction
                     .selectFrom('hps_facilities')
-                    .select('hps_id')
-                    .select(eb => eb.fn.count<number>('facilities_id').as('count'))
-                    .where('hps_id', 'in', finalDeleteIds)
+                    .select(['hps_id' , (expressionBuilder) => 
+                        expressionBuilder.fn.count<number>('facilities_id').as('count')
+                    ])
+                    .where('hps_id', 'in', hpIdsToDelete)
                     .groupBy('hps_id')
                     .execute()
 
@@ -860,9 +847,9 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
             
             // Execute CREATE operations (if any)
-            if (finalCreateIds.length > 0) {
+            if (hpIdsToCreate.length > 0) {
                 // Build rows for batch insert
-                const relationsToCreate = finalCreateIds.map(hpId => ({
+                const relationsToCreate = hpIdsToCreate.map(hpId => ({
                     hps_id: hpId,
                     facilities_id: facilityId
                 }))
@@ -878,12 +865,12 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
             }
 
             // Execute DELETE operations (if any)
-            if (finalDeleteIds.length) {
+            if (hpIdsToDelete.length) {
                 // Batch delete - single query for all HPs
                 await transaction
                     .deleteFrom('hps_facilities')
                     .where('facilities_id', '=', facilityId)
-                    .where('hps_id', 'in', finalDeleteIds)
+                    .where('hps_id', 'in', hpIdsToDelete)
                     .execute()
             }
 
