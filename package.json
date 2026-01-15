@@ -4,10 +4,11 @@
     "description": "Backend for Find a Doc, Japan",
     "main": "index.js",
     "scripts": {
-        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && npx supabase start && npx supabase db reset && yarn generate:seed && yarn dev:seeddb && concurrently --raw \"yarn dev:startlocaldb\" \"yarn dev:startserver\"",
+        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && npx supabase start && npx supabase db reset && yarn dev:seeddb && concurrently --raw \"yarn dev:startserver\"",
         "dev:startserver": "echo '💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon --exec 'node --inspect --loader ts-node/esm src/index.ts'",
         "dev:startlocaldb": "yarn supabase start -f",
         "test": "vitest",
+        "dev:seeddb": "echo '🌱 Seeding database...' && node --loader ts-node/esm utils/runSeed.ts",
         "test:dockerstart": "docker compose -f docker/docker-compose-test.yml up -d --build",
         "test:dockerstop": "docker compose -f docker/docker-compose-test.yml down",
         "prepare": "husky install",
@@ -27,7 +28,7 @@
         "migrate:local:dry": "echo '🔍 DRY RUN: LOCAL migration (no data written)...' && cross-env NODE_ENV=development DRY_RUN=true node --loader ts-node/esm src/migration.ts",
         "migrate:prod": "echo '⚠️  Running PRODUCTION migration...' && cross-env NODE_ENV=production node --loader ts-node/esm src/migration.ts",
         "migrate:prod:dry": "echo '🔍 DRY RUN: PRODUCTION migration (no data written)...' && cross-env NODE_ENV=production DRY_RUN=true node --loader ts-node/esm src/migration.ts",
-        "generate:db": "node --loader ts-node/esm utils/generateSqlSeed.ts && node --loader ts-node/esm utils/runSeed.ts && npx supabase gen types typescript --local > src/typeDefs/supabase-generated.ts"
+        "generate:db": "node --loader ts-node/esm utils/generateSqlSeed.ts && npx supabase gen types typescript --local > src/typeDefs/supabase-generated.ts"
     },
     "repository": {
         "type": "git",
