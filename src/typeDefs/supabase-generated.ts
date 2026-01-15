@@ -71,80 +71,80 @@ export type Database = {
         Row: {
           code: string | null
           contact: Json
-          createdDate: string
+          created_date: string
           firestore_id: string | null
           id: string
-          mapLatitude: number
-          mapLongitude: number
-          nameEn: string
-          nameJa: string
-          updatedDate: string
+          map_latitude: number
+          map_longitude: number
+          name_en: string
+          name_ja: string
+          updated_date: string
         }
         Insert: {
           code?: string | null
           contact: Json
-          createdDate: string
+          created_date: string
           firestore_id?: string | null
           id?: string
-          mapLatitude: number
-          mapLongitude: number
-          nameEn: string
-          nameJa: string
-          updatedDate: string
+          map_latitude: number
+          map_longitude: number
+          name_en: string
+          name_ja: string
+          updated_date: string
         }
         Update: {
           code?: string | null
           contact?: Json
-          createdDate?: string
+          created_date?: string
           firestore_id?: string | null
           id?: string
-          mapLatitude?: number
-          mapLongitude?: number
-          nameEn?: string
-          nameJa?: string
-          updatedDate?: string
+          map_latitude?: number
+          map_longitude?: number
+          name_en?: string
+          name_ja?: string
+          updated_date?: string
         }
         Relationships: []
       }
       hps: {
         Row: {
-          acceptedInsurance: Json
-          additionalInfoForPatients: string | null
-          createdDate: string
+          accepted_insurance: Json
+          additional_info_for_patients: string | null
+          created_date: string
           degrees: Json
           email: string | null
           firestore_id: string | null
           id: string
           names: Json
           specialties: Json
-          spokenLanguages: Json
-          updatedDate: string
+          spoken_languages: Json
+          updated_date: string
         }
         Insert: {
-          acceptedInsurance: Json
-          additionalInfoForPatients?: string | null
-          createdDate: string
+          accepted_insurance: Json
+          additional_info_for_patients?: string | null
+          created_date: string
           degrees: Json
           email?: string | null
           firestore_id?: string | null
           id?: string
           names: Json
           specialties: Json
-          spokenLanguages: Json
-          updatedDate: string
+          spoken_languages: Json
+          updated_date: string
         }
         Update: {
-          acceptedInsurance?: Json
-          additionalInfoForPatients?: string | null
-          createdDate?: string
+          accepted_insurance?: Json
+          additional_info_for_patients?: string | null
+          created_date?: string
           degrees?: Json
           email?: string | null
           firestore_id?: string | null
           id?: string
           names?: Json
           specialties?: Json
-          spokenLanguages?: Json
-          updatedDate?: string
+          spoken_languages?: Json
+          updated_date?: string
         }
         Relationships: []
       }
@@ -273,52 +273,52 @@ export type Database = {
       }
       submissions: {
         Row: {
-          autofillPlaceFromSubmissionUrl: boolean
-          createdDate: string
+          autofill_place_from_submission_url: boolean
+          created_date: string
           facilities_id: string | null
           facility_partial: Json | null
           firestore_id: string | null
-          googleMapsUrl: string | null
+          google_maps_url: string | null
+          healthcare_professional_name: string | null
           healthcare_professionals_partial: Json | null
-          healthcareProfessionalName: string | null
           hps_id: string | null
           id: string
           notes: string | null
-          spokenLanguages: Json | null
+          spoken_languages: Json | null
           status: Database["public"]["Enums"]["submission_status_enum"]
-          updatedDate: string
+          updated_date: string
         }
         Insert: {
-          autofillPlaceFromSubmissionUrl?: boolean
-          createdDate: string
+          autofill_place_from_submission_url?: boolean
+          created_date: string
           facilities_id?: string | null
           facility_partial?: Json | null
           firestore_id?: string | null
-          googleMapsUrl?: string | null
+          google_maps_url?: string | null
+          healthcare_professional_name?: string | null
           healthcare_professionals_partial?: Json | null
-          healthcareProfessionalName?: string | null
           hps_id?: string | null
           id?: string
           notes?: string | null
-          spokenLanguages?: Json | null
+          spoken_languages?: Json | null
           status?: Database["public"]["Enums"]["submission_status_enum"]
-          updatedDate: string
+          updated_date: string
         }
         Update: {
-          autofillPlaceFromSubmissionUrl?: boolean
-          createdDate?: string
+          autofill_place_from_submission_url?: boolean
+          created_date?: string
           facilities_id?: string | null
           facility_partial?: Json | null
           firestore_id?: string | null
-          googleMapsUrl?: string | null
+          google_maps_url?: string | null
+          healthcare_professional_name?: string | null
           healthcare_professionals_partial?: Json | null
-          healthcareProfessionalName?: string | null
           hps_id?: string | null
           id?: string
           notes?: string | null
-          spokenLanguages?: Json | null
+          spoken_languages?: Json | null
           status?: Database["public"]["Enums"]["submission_status_enum"]
-          updatedDate?: string
+          updated_date?: string
         }
         Relationships: [
           {

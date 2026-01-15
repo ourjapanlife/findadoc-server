@@ -13,13 +13,13 @@ export function mapDbHpToGql(
         id: hp.id,
         names: hp.names ?? [],
         degrees: hp.degrees ?? [],
-        spokenLanguages: hp.spokenLanguages ?? [],
+        spokenLanguages: hp.spoken_languages ?? [],
         specialties: hp.specialties ?? [],
-        acceptedInsurance: hp.acceptedInsurance ?? [],
+        acceptedInsurance: hp.accepted_insurance ?? [],
         facilityIds,
-        createdDate: hp.createdDate,
-        updatedDate: hp.updatedDate,
-        additionalInfoForPatients: hp.additionalInfoForPatients
+        createdDate: hp.created_date,
+        updatedDate: hp.updated_date,
+        additionalInfoForPatients: hp.additional_info_for_patients
     }
 }
 
@@ -50,13 +50,13 @@ export function mapKyselyHpToGraphQL(
         id: cleanHpRow.id,
         names: cleanHpRow.names ?? [],
         degrees: cleanHpRow.degrees ?? [],
-        spokenLanguages: cleanHpRow.spokenLanguages ?? [],
+        spokenLanguages: cleanHpRow.spoken_languages ?? [],
         specialties: cleanHpRow.specialties ?? [],
-        acceptedInsurance: cleanHpRow.acceptedInsurance ?? [],
+        acceptedInsurance: cleanHpRow.accepted_insurance ?? [],
         facilityIds,
-        createdDate: cleanHpRow.createdDate,
-        updatedDate: cleanHpRow.updatedDate,
-        additionalInfoForPatients: cleanHpRow.additionalInfoForPatients ?? null
+        createdDate: cleanHpRow.created_date,
+        updatedDate: cleanHpRow.updated_date,
+        additionalInfoForPatients: cleanHpRow.additional_info_for_patients ?? null
     }
 }
 
@@ -79,14 +79,14 @@ export function mapKyselyFacilityToGraphQL(
     
     return {
         id: cleanRow.id,
-        nameEn: cleanRow.nameEn,
-        nameJa: cleanRow.nameJa,
+        nameEn: cleanRow.name_en,
+        nameJa: cleanRow.name_ja,
         contact: cleanRow.contact,
-        mapLatitude: cleanRow.mapLatitude,
-        mapLongitude: cleanRow.mapLongitude,
+        mapLatitude: cleanRow.map_latitude,
+        mapLongitude: cleanRow.map_longitude,
         healthcareProfessionalIds,
-        createdDate: cleanRow.createdDate,
-        updatedDate: cleanRow.updatedDate
+        createdDate: cleanRow.created_date,
+        updatedDate: cleanRow.updated_date
     }
 }
 
@@ -148,10 +148,10 @@ export function mapKyselySubmissionToGraphQL(
 
     return {
         id: cleanSubmissionRow.id,
-        googleMapsUrl: cleanSubmissionRow.googleMapsUrl!,
-        healthcareProfessionalName: cleanSubmissionRow.healthcareProfessionalName!,
-        spokenLanguages: cleanSubmissionRow.spokenLanguages!,
-        autofillPlaceFromSubmissionUrl: cleanSubmissionRow.autofillPlaceFromSubmissionUrl,
+        googleMapsUrl: cleanSubmissionRow.google_maps_url!,
+        healthcareProfessionalName: cleanSubmissionRow.healthcare_professional_name!,
+        spokenLanguages: cleanSubmissionRow.spoken_languages!,
+        autofillPlaceFromSubmissionUrl: cleanSubmissionRow.autofill_place_from_submission_url,
         facility: cleanSubmissionRow.facility_partial ? {
             ...cleanSubmissionRow.facility_partial,
             healthcareProfessionalIds: cleanSubmissionRow.facility_partial.healthcareProfessionalIds ?? []
@@ -160,8 +160,8 @@ export function mapKyselySubmissionToGraphQL(
         isUnderReview: cleanSubmissionRow.status === 'under_review',
         isApproved: cleanSubmissionRow.status === 'approved',
         isRejected: cleanSubmissionRow.status === 'rejected',
-        createdDate: cleanSubmissionRow.createdDate,
-        updatedDate: cleanSubmissionRow.updatedDate,
+        createdDate: cleanSubmissionRow.created_date,
+        updatedDate: cleanSubmissionRow.updated_date,
         notes: cleanSubmissionRow.notes ?? undefined
     }
 }

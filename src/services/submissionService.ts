@@ -106,12 +106,12 @@ function applySubmissionQueryFilters<T extends Record<string, any>>(
 
     // Apply case-insensitive partial match on googleMapsUrl
     if (filters.googleMapsUrl) {
-        query = query.ilike('googleMapsUrl', `%${filters.googleMapsUrl}%`) as T
+        query = query.ilike('google_maps_url', `%${filters.googleMapsUrl}%`) as T
     }
 
     if (filters.healthcareProfessionalName) {
         query = query.ilike(
-            'healthcareProfessionalName',
+            'healthcare_professional_name',
             `%${filters.healthcareProfessionalName}%`
         ) as T
     }
@@ -140,11 +140,11 @@ function applySubmissionQueryFilters<T extends Record<string, any>>(
     }
 
     if (filters.createdDate) {
-        query = query.eq('createdDate', filters.createdDate) as T
+        query = query.eq('created_date', filters.createdDate) as T
     }
 
     if (filters.updatedDate) {
-        query = query.eq('updatedDate', filters.updatedDate) as T
+        query = query.eq('updated_date', filters.updatedDate) as T
     }
 
     return query
@@ -229,7 +229,7 @@ export async function searchSubmissions(
                 ascending: orderBy.orderDirection !== 'desc'
             })
         } else {
-            base = base.order('createdDate', { ascending: false })
+            base = base.order('created_date', { ascending: false })
         }
 
         // Apply pagination
@@ -331,17 +331,17 @@ export const createSubmission = async (
                 .insertInto('submissions')
                 .values({
                     status: 'pending',
-                    googleMapsUrl: submissionInput.googleMapsUrl ?? '',
-                    healthcareProfessionalName: submissionInput.healthcareProfessionalName ?? '',
-                    spokenLanguages: asJsonb<gqlTypes.Locale[]>(submissionInput.spokenLanguages ?? []),
-                    autofillPlaceFromSubmissionUrl: false,
+                    google_maps_url: submissionInput.googleMapsUrl ?? '',
+                    healthcare_professional_name: submissionInput.healthcareProfessionalName ?? '',
+                    spoken_languages: asJsonb<gqlTypes.Locale[]>(submissionInput.spokenLanguages ?? []),
+                    autofill_place_from_submission_url: false,
                     facility_partial: null,
                     healthcare_professionals_partial: null,
                     hps_id: null,
                     facilities_id: null,
                     notes: submissionInput.notes ?? null,
-                    createdDate: new Date().toISOString(),
-                    updatedDate: new Date().toISOString()
+                    created_date: new Date().toISOString(),
+                    updated_date: new Date().toISOString()
                 })
                 .returningAll()
                 .executeTakeFirstOrThrow()
@@ -419,7 +419,7 @@ export const updateSubmission = async (
             * If the DB already has autofillPlaceFromSubmissionUrl=true,
             * and the user requests autofill again, reject the update.
             */
-            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && currentSubmission.autofillPlaceFromSubmissionUrl) {
+            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && currentSubmission.autofill_place_from_submission_url) {
                 throw new Error('AUTOFILL_FAILURE')
             }
 
@@ -432,7 +432,7 @@ export const updateSubmission = async (
             // 
             // Solution: Throw a special error that the outer catch block will handle
             // by calling autoFillPlacesInformation AFTER the transaction is rolled back.
-            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !currentSubmission.autofillPlaceFromSubmissionUrl) {
+            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !currentSubmission.autofill_place_from_submission_url) {
                 throw new Error('REDIRECT_TO_AUTOFILL')
             }
 
@@ -469,11 +469,11 @@ export const updateSubmission = async (
             }
 
             if (fieldsToUpdate.googleMapsUrl !== undefined) {
-                patch.googleMapsUrl = fieldsToUpdate.googleMapsUrl
+                patch.google_maps_url = fieldsToUpdate.googleMapsUrl
             }
 
             if (fieldsToUpdate.healthcareProfessionalName !== undefined) {
-                patch.healthcareProfessionalName = fieldsToUpdate.healthcareProfessionalName
+                patch.healthcare_professional_name = fieldsToUpdate.healthcareProfessionalName
             }
 
             if (fieldsToUpdate.notes !== undefined) {
@@ -481,11 +481,11 @@ export const updateSubmission = async (
             }
 
             if (fieldsToUpdate.autofillPlaceFromSubmissionUrl !== undefined) {
-                patch.autofillPlaceFromSubmissionUrl = fieldsToUpdate.autofillPlaceFromSubmissionUrl
+                patch.autofill_place_from_submission_url = fieldsToUpdate.autofillPlaceFromSubmissionUrl
             }
 
             if (fieldsToUpdate.spokenLanguages !== undefined) {
-                patch.spokenLanguages = asJsonb<gqlTypes.Locale[]>(fieldsToUpdate.spokenLanguages ?? [])
+                patch.spoken_languages = asJsonb<gqlTypes.Locale[]>(fieldsToUpdate.spokenLanguages ?? [])
             }
             // Update the submission
             const updatedSubmission = await transaction
@@ -647,12 +647,12 @@ export const autoFillPlacesInformation = async (
             const updatedSubmission = await transaction
                 .updateTable('submissions')
                 .set({
-                    googleMapsUrl: places.extractedGoogleMapsURI ?? currentSubmission.googleMapsUrl,
+                    google_maps_url: places.extractedGoogleMapsURI ?? currentSubmission.google_maps_url,
                     //eslint-disable-next-line
                     facility_partial: asJsonb<gqlTypes.FacilitySubmission>(facilityPartial),
                     status: 'under_review',
-                    autofillPlaceFromSubmissionUrl: true,
-                    updatedDate: new Date().toISOString()
+                    autofill_place_from_submission_url: true,
+                    updated_date: new Date().toISOString()
                 })
                 .where('id', '=', submissionId)
                 .returningAll()
@@ -741,9 +741,9 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
                 additionalInfoForPatients: firstHp.additionalInfoForPatients ?? '',
                 facilityIds: [finalFacilityId]
             }
-        } else if (current.healthcareProfessionalName?.trim()) {
-            const parsed = splitPersonName(current.healthcareProfessionalName.trim())
-            const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
+        } else if (current.healthcare_professional_name?.trim()) {
+            const parsed = splitPersonName(current.healthcare_professional_name.trim())
+            const localeFromSubmission = (current.spoken_languages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
 
             hpInput = {
                 names: [{
@@ -754,16 +754,16 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
                 }],
                 degrees: [],
                 specialties: [],
-                spokenLanguages: sanitizeLocales(current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]),
+                spokenLanguages: sanitizeLocales(current.spoken_languages as (gqlTypes.Locale | null | undefined)[]),
                 acceptedInsurance: [],
                 additionalInfoForPatients: current.notes ?? null,
                 facilityIds: [finalFacilityId]
             }
         }
-    } else if (current.healthcareProfessionalName?.trim()) {
+    } else if (current.healthcare_professional_name?.trim()) {
         // Case B: Only healthcareProfessionalName
-        const parsed = splitPersonName(current.healthcareProfessionalName.trim())
-        const localeFromSubmission = (current.spokenLanguages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
+        const parsed = splitPersonName(current.healthcare_professional_name.trim())
+        const localeFromSubmission = (current.spoken_languages?.[0] as gqlTypes.Locale) ?? gqlTypes.Locale.EnUs
 
         hpInput = {
             names: [{
@@ -774,7 +774,7 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
             }],
             degrees: [],
             specialties: [],
-            spokenLanguages: sanitizeLocales(current.spokenLanguages as (gqlTypes.Locale | null | undefined)[]),
+            spokenLanguages: sanitizeLocales(current.spoken_languages as (gqlTypes.Locale | null | undefined)[]),
             acceptedInsurance: [],
             additionalInfoForPatients: current.notes ?? null,
             facilityIds: [finalFacilityId]
@@ -792,11 +792,11 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
             names: asJsonb<gqlTypes.LocalizedName[]>(hpInput!.names),
             degrees: asJsonb<gqlTypes.Degree[]>(hpInput!.degrees ?? []),
             specialties: asJsonb<gqlTypes.Specialty[]>(hpInput!.specialties ?? []),
-            spokenLanguages: asJsonb<gqlTypes.Locale[]>(hpInput!.spokenLanguages ?? []),
-            acceptedInsurance: asJsonb<gqlTypes.Insurance[]>(hpInput!.acceptedInsurance ?? []),
+            spoken_languages: asJsonb<gqlTypes.Locale[]>(hpInput!.spokenLanguages ?? []),
+            accepted_insurance: asJsonb<gqlTypes.Insurance[]>(hpInput!.acceptedInsurance ?? []),
             email: null,
-            createdDate: new Date().toISOString(),
-            updatedDate: new Date().toISOString()
+            created_date: new Date().toISOString(),
+            updated_date: new Date().toISOString()
         })
         .returningAll()
         .executeTakeFirstOrThrow()
@@ -859,7 +859,7 @@ export const approveSubmission = async (
                     facilityInput = {
                         nameEn: 'Unknown Facility',
                         nameJa: 'Unknown Facility',
-                        contact: createBlankContact(currentSubmission.googleMapsUrl ?? ''),
+                        contact: createBlankContact(currentSubmission.google_maps_url ?? ''),
                         mapLatitude: 0,
                         mapLongitude: 0,
                         healthcareProfessionalIds: []
@@ -871,13 +871,13 @@ export const approveSubmission = async (
                 const insertedFacility = await transaction
                     .insertInto('facilities')
                     .values({
-                        nameEn: facilityInput.nameEn,
-                        nameJa: facilityInput.nameJa,
+                        name_en: facilityInput.nameEn,
+                        name_ja: facilityInput.nameJa,
                         contact: asJsonb<gqlTypes.ContactInput>(facilityInput.contact),
-                        mapLatitude: facilityInput.mapLatitude ?? 0,
-                        mapLongitude: facilityInput.mapLongitude ?? 0,
-                        createdDate: new Date().toISOString(),
-                        updatedDate: new Date().toISOString()
+                        map_latitude: facilityInput.mapLatitude ?? 0,
+                        map_longitude: facilityInput.mapLongitude ?? 0,
+                        created_date: new Date().toISOString(),
+                        updated_date: new Date().toISOString()
                     })
                     .returningAll()
                     .executeTakeFirstOrThrow()
@@ -904,7 +904,7 @@ export const approveSubmission = async (
                     status: 'approved',
                     facilities_id: finalFacilityId,
                     hps_id: createdHpId ?? currentSubmission.hps_id,
-                    updatedDate: new Date().toISOString()
+                    updated_date: new Date().toISOString()
                 })
                 .where('id', '=', submissionId)
                 .returningAll()

@@ -97,7 +97,7 @@ export const generateSqlSeed = async () => {
             // Note: Using camelCase column names as defined in the SQL schema
             const statement = `
             INSERT INTO facilities (
-                id, "nameEn", "nameJa", "mapLatitude", "mapLongitude", contact, "createdDate", "updatedDate"
+                id, "name_en", "name_ja", "map_latitude", "map_longitude", contact, "created_date", "updated_date"
             ) VALUES (
                 ${toSqlValue(facilityId)}, 
                 ${toSqlValue(facility.nameEn)}, 
@@ -133,7 +133,7 @@ export const generateSqlSeed = async () => {
             // Insert healthcare professional with JSONB fields for arrays
             // Note: Using snake_case and camelCase as defined in SQL schema
             const statement = `INSERT INTO hps (
-                id, names, degrees, specialties, "spokenLanguages", "acceptedInsurance", "additionalInfoForPatients", "createdDate", "updatedDate"
+                id, names, degrees, specialties, "spoken_languages", "accepted_insurance", "additional_info_for_patients", "created_date", "updated_date"
             ) VALUES (
                 ${toSqlValue(hpId)}, 
                 ${toSqlValue(coreData.names)}, 
@@ -188,10 +188,10 @@ export const generateSqlSeed = async () => {
             // facility_partial and healthcare_professionals_partial store temporary data
             // hps_id and facilities_id are NULL until the submission is approved
             const submissionStatement = `INSERT INTO submissions (
-                id, "googleMapsUrl", "healthcareProfessionalName", "spokenLanguages", 
+                id, "google_maps_url", "healthcare_professional_name", "spoken_languages", 
                 facility_partial, healthcare_professionals_partial, 
-                status, hps_id, facilities_id, "autofillPlaceFromSubmissionUrl",
-                "createdDate", "updatedDate"
+                status, hps_id, facilities_id, "autofill_place_from_submission_url",
+                "created_date", "updated_date"
             ) VALUES (
                 ${toSqlValue(submissionId)}, 
                 ${toSqlValue(submissionData.googleMapsUrl)}, 

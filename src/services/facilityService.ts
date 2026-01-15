@@ -14,23 +14,23 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
 
     // Map only requested field
     if (fields.nameEn !== undefined) {
-        updatePatch.nameEn = fields.nameEn
+        updatePatch.name_en = fields.nameEn
     }
     if (fields.nameJa !== undefined) {
-        updatePatch.nameJa = fields.nameJa
+        updatePatch.name_ja = fields.nameJa
     }
     if (fields.contact !== undefined) {
         updatePatch.contact = fields.contact
     }
     if (fields.mapLatitude !== undefined) {
-        updatePatch.mapLatitude = fields.mapLatitude
+        updatePatch.map_latitude = fields.mapLatitude
     }
     if (fields.mapLongitude !== undefined) {
-        updatePatch.mapLongitude = fields.mapLongitude
+        updatePatch.map_longitude = fields.mapLongitude
     }
 
     // Business rule: always timestamp when the entity is updated
-    updatePatch.updatedDate = new Date().toISOString()
+    updatePatch.updated_date = new Date().toISOString()
 
     return updatePatch
 }
@@ -51,10 +51,10 @@ export function applyFacilityFilters<T extends HasIlike>(
 
     // Text filters (case-insensitive contains)
     if (filters.nameEn) {
-        query = query.ilike('nameEn', `%${filters.nameEn}%`) as T
+        query = query.ilike('name_en', `%${filters.nameEn}%`) as T
     }
     if (filters.nameJa) {
-        query = query.ilike('nameJa', `%${filters.nameJa}%`) as T
+        query = query.ilike('name_ja', `%${filters.nameJa}%`) as T
     }
 
     return query
@@ -126,14 +126,14 @@ export const getFacilityById = async (
 
         const gqlFacility: gqlTypes.Facility = {
             id: facilityRow.id as string,
-            nameEn: facilityRow.nameEn as string,
-            nameJa: facilityRow.nameJa as string,
+            nameEn: facilityRow.name_en as string,
+            nameJa: facilityRow.name_ja as string,
             contact: facilityRow.contact as gqlTypes.Contact,
-            mapLatitude: facilityRow.mapLatitude as number,
-            mapLongitude: facilityRow.mapLongitude as number,
+            mapLatitude: facilityRow.map_latitude as number,
+            mapLongitude: facilityRow.map_longitude as number,
             healthcareProfessionalIds,
-            createdDate: facilityRow.createdDate as string,
-            updatedDate: facilityRow.updatedDate as string
+            createdDate: facilityRow.created_date as string,
+            updatedDate: facilityRow.updated_date as string
         }
 
         return {
@@ -219,13 +219,13 @@ export async function createFacility(
             const insertedFacility = await transaction
                 .insertInto('facilities')
                 .values({
-                    nameEn: facilityInput.nameEn,
-                    nameJa: facilityInput.nameJa,
+                    name_en: facilityInput.nameEn,
+                    name_ja: facilityInput.nameJa,
                     contact: facilityInput.contact,
-                    mapLatitude: facilityInput.mapLatitude ?? 0,
-                    mapLongitude: facilityInput.mapLongitude ?? 0,
-                    createdDate: new Date().toISOString(),
-                    updatedDate: new Date().toISOString()
+                    map_latitude: facilityInput.mapLatitude ?? 0,
+                    map_longitude: facilityInput.mapLongitude ?? 0,
+                    created_date: new Date().toISOString(),
+                    updated_date: new Date().toISOString()
                 })
                 .returningAll()
                 .executeTakeFirstOrThrow() // Throws if insert fails
@@ -354,7 +354,7 @@ export async function searchFacilities(
         if (orderBy?.fieldToOrder) {
             baseQuery = baseQuery.order(orderBy.fieldToOrder, { ascending: orderBy.orderDirection !== 'desc' })
         } else {
-            baseQuery = baseQuery.order('nameEn', { ascending: true })
+            baseQuery = baseQuery.order('name_en', { ascending: true })
         }
 
         // Execute the main query, applying the offset and limit for the current page
@@ -395,14 +395,14 @@ export async function searchFacilities(
         // Map the paginated DB rows to the final GraphQL shape, injecting the associated HP IDs
         const list: gqlTypes.Facility[] = (paginationRows ?? []).map(row => ({
             id: row.id as string,
-            nameEn: row.nameEn as string,
-            nameJa: row.nameJa as string,
+            nameEn: row.name_en as string,
+            nameJa: row.name_ja as string,
             contact: row.contact as gqlTypes.Contact,
-            mapLatitude: row.mapLatitude as number,
-            mapLongitude: row.mapLongitude as number,
+            mapLatitude: row.map_latitude as number,
+            mapLongitude: row.map_longitude as number,
             healthcareProfessionalIds: hpIdsByFacility.get(row.id as string) ?? [],
-            createdDate: row.createdDate as string,
-            updatedDate: row.updatedDate as string
+            createdDate: row.created_date as string,
+            updatedDate: row.updated_date as string
         }))
 
         return { data: list, hasErrors: false }
@@ -535,7 +535,7 @@ export const updateFacility = async (
                 // No scalar fields to update, but touch updatedDate to track the change
                 updatedFacility = await transaction
                     .updateTable('facilities')
-                    .set({ updatedDate: new Date().toISOString() })
+                    .set({ updated_date: new Date().toISOString() })
                     .where('id', '=', facilityId)
                     .returningAll()
                     .executeTakeFirstOrThrow()

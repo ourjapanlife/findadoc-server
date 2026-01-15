@@ -17,13 +17,13 @@ export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProf
 
     if (fields.names !== null) { updatePatch.names = fields.names }
     if (fields.degrees !== null) { updatePatch.degrees = fields.degrees }
-    if (fields.spokenLanguages !== null) { updatePatch.spokenLanguages = fields.spokenLanguages }
+    if (fields.spokenLanguages !== null) { updatePatch.spoken_languages = fields.spokenLanguages }
     if (fields.specialties !== null) { updatePatch.specialties = fields.specialties }
-    if (fields.acceptedInsurance !== null) { updatePatch.acceptedInsurance = fields.acceptedInsurance }
+    if (fields.acceptedInsurance !== null) { updatePatch.accepted_insurance = fields.acceptedInsurance }
     if (fields.additionalInfoForPatients !== undefined) {
-        updatePatch.additionalInfoForPatients = fields.additionalInfoForPatients
+        updatePatch.additional_info_for_patients = fields.additionalInfoForPatients
     }
-    updatePatch.updatedDate = new Date().toISOString()
+    updatePatch.updated_date = new Date().toISOString()
     return updatePatch
 }
 
@@ -36,26 +36,26 @@ export function applyHpFilters<T extends HasContains>(
 
     if (filters.degrees?.length) { query = query.contains('degrees', filters.degrees as gqlTypes.Degree[]) as T }
     if (filters.specialties?.length) { query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[]) as T }
-    if (filters.spokenLanguages?.length) { query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[]) as T }
-    if (filters.acceptedInsurance?.length) { query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as T }
+    if (filters.spokenLanguages?.length) { query = query.contains('spoken_languages', filters.spokenLanguages as gqlTypes.Locale[]) as T }
+    if (filters.acceptedInsurance?.length) { query = query.contains('accepted_insurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as T }
     return query
 }
 
 // Maps GQL Create input → DB insert row; defaults arrays to [] to avoid `!`.
-export function mapCreateInputToHpInsertRow(
+/*export function mapCreateInputToHpInsertRow(
   input: gqlTypes.CreateHealthcareProfessionalInput
 ): dbSchema.HealthcareProfessionalInsertRow {
     return {
         names: input.names,
         degrees: input.degrees ?? [],
-        spokenLanguages: input.spokenLanguages ?? [],
+        spoken_languages: input.spokenLanguages ?? [],
         specialties: input.specialties ?? [],
         acceptedInsurance: input.acceptedInsurance ?? [],
         additionalInfoForPatients: input.additionalInfoForPatients ?? null,
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
     }
-}
+}*/
 
 // Derives the facilityId to associate from relationship edits (create/delete).
 export function resolveFacilityIdFromRelationships(
@@ -234,7 +234,7 @@ export async function searchProfessionals(
                 ascending: orderBy.orderDirection !== 'desc'
             })
         } else {
-            hpSelect = hpSelect.order('createdDate', { ascending: false })
+            hpSelect = hpSelect.order('created_date', { ascending: false })
         }
 
         // Perform paged fetch after all filters are applied so the page is computed
@@ -416,12 +416,12 @@ export async function createHealthcareProfessional(
                     names: asJsonb(input.names),
                     degrees: asJsonb(input.degrees ?? []),
                     specialties: asJsonb(input.specialties ?? []),
-                    spokenLanguages: asJsonb(input.spokenLanguages ?? []),
-                    acceptedInsurance: asJsonb(input.acceptedInsurance ?? []),
-                    additionalInfoForPatients: input.additionalInfoForPatients ?? null,
+                    spoken_languages: asJsonb(input.spokenLanguages ?? []),
+                    accepted_insurance: asJsonb(input.acceptedInsurance ?? []),
+                    additional_info_for_patients: input.additionalInfoForPatients ?? null,
                     email: null,
-                    createdDate: new Date().toISOString(),
-                    updatedDate: new Date().toISOString()
+                    created_date: new Date().toISOString(),
+                    updated_date: new Date().toISOString()
                 })
                 .returningAll()
                 .executeTakeFirstOrThrow()
@@ -547,7 +547,7 @@ export const updateHealthcareProfessional = async (
                 // Just touch updatedDate to track the change
                 updatedHp = await transaction
                     .updateTable('hps')
-                    .set({ updatedDate: new Date().toISOString() })
+                    .set({ updated_date: new Date().toISOString() })
                     .where('id', '=', id)
                     .returningAll()
                     .executeTakeFirstOrThrow()
