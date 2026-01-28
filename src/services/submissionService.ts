@@ -464,7 +464,7 @@ export const updateSubmission = async (
 
             // Build the patch
             const patch: Record<string, unknown> = {
-                updatedDate: new Date().toISOString(),
+                updated_date: new Date().toISOString(),
                 status: newStatus
             }
 

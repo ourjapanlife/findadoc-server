@@ -174,13 +174,13 @@ describe('Audit Log System', () => {
             // Verify submission still exists (rollback worked)
             const { data: afterRollback } = await supabase
                 .from('submissions')
-                .select('id, googleMapsUrl')
+                .select('id, google_maps_url')
                 .eq('id', submissionId)
                 .single()
 
             expect(afterRollback).not.toBeNull()
             expect(afterRollback?.id).toBe(originalData?.id)
-            expect(afterRollback?.googleMapsUrl).toBe(originalData?.googleMapsUrl)
+            expect(afterRollback?.google_maps_url).toBe(originalData?.google_maps_url)
 
             // Cleanup
             await supabase.from('submissions').delete().eq('id', submissionId)
