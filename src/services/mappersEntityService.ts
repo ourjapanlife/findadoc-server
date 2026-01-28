@@ -95,10 +95,10 @@ export function mapKyselyFacilityToGraphQL(
 export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Submission {
     return {
         id: row.id,
-        googleMapsUrl: row.googleMapsUrl,
-        healthcareProfessionalName: row.healthcareProfessionalName,
-        spokenLanguages: row.spokenLanguages as gqlTypes.Locale[],
-        autofillPlaceFromSubmissionUrl: row.autofillPlaceFromSubmissionUrl,
+        googleMapsUrl: row.google_maps_url,
+        healthcareProfessionalName: row.healthcare_professional_name,
+        spokenLanguages: row.spoken_languages as gqlTypes.Locale[],
+        autofillPlaceFromSubmissionUrl: row.autofill_place_from_submission_url,
         facility: row.facility_partial ? {
             ...row.facility_partial,
             healthcareProfessionalIds: row.facility_partial.healthcareProfessionalIds ?? [] // ← FIX!
@@ -107,8 +107,8 @@ export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Su
         isUnderReview: row.status === dbSchema.SUBMISSION_STATUS.UNDER_REVIEW,
         isApproved: row.status === dbSchema.SUBMISSION_STATUS.APPROVED,
         isRejected: row.status === dbSchema.SUBMISSION_STATUS.REJECTED,
-        createdDate: row.createdDate,
-        updatedDate: row.updatedDate,
+        createdDate: row.created_date,
+        updatedDate: row.updated_date,
         notes: row.notes ?? undefined
     }
 }
@@ -118,10 +118,10 @@ export function mapGqlEntityToDbEntity(
 ): dbSchema.SubmissionInsertRow {
     return {
         status: dbSchema.SUBMISSION_STATUS.PENDING,
-        googleMapsUrl: input.googleMapsUrl ?? '',
-        healthcareProfessionalName: input.healthcareProfessionalName ?? '',
-        spokenLanguages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
-        autofillPlaceFromSubmissionUrl: false,
+        google_maps_url: input.googleMapsUrl ?? '',
+        healthcare_professional_name: input.healthcareProfessionalName ?? '',
+        spoken_languages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
+        autofill_place_from_submission_url: false,
         
         //eslint-disable-next-line
         facility_partial: null,
@@ -134,8 +134,8 @@ export function mapGqlEntityToDbEntity(
         facilities_id: null,
         
         notes: input.notes ?? null,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
+        created_date: new Date().toISOString(),
+        updated_date: new Date().toISOString()
     }
 }
 
