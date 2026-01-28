@@ -487,6 +487,14 @@ export const updateSubmission = async (
             if (fieldsToUpdate.spokenLanguages !== undefined) {
                 patch.spoken_languages = asJsonb<gqlTypes.Locale[]>(fieldsToUpdate.spokenLanguages ?? [])
             }
+
+            if (fieldsToUpdate.healthcareProfessionals !== undefined) {
+                patch.healthcare_professionals_partial = asJsonb(fieldsToUpdate.healthcareProfessionals ?? [])
+            }
+
+            if (fieldsToUpdate.facility !== undefined) {
+                patch.facility_partial = asJsonb(fieldsToUpdate.facility ?? null)
+            }
             // Update the submission
             const updatedSubmission = await transaction
                 .updateTable('submissions')
