@@ -1,7 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
-import { validateSubmissionSearchFilters, validateCreateSubmissionInputs, validateIdInput, isValidHpInput } from '../validation/validateSubmissions.js'
+import { validateSubmissionSearchFilters, validateCreateSubmissionInputs, validateIdInput, isValidHpInput, validateUpdateSubmissionInput } from '../validation/validateSubmissions.js'
 import { logger } from '../logger.js'
 import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
 import { getSupabaseClient } from '../supabaseClient.js'
@@ -396,6 +396,16 @@ export const updateSubmission = async (
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
+
+        const validation = validateUpdateSubmissionInput(fieldsToUpdate)
+        if (validation.hasErrors) {
+            logger.warn(`Validation failed for updateSubmission: ${JSON.stringify(validation.errors)}`)
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: validation.errors
+            }
+        }
         // Redirect to approveSubmission if isApproved flag is set
         if (fieldsToUpdate.isApproved === true) {
             return await approveSubmission(submissionId, updatedBy)
