@@ -1,5 +1,5 @@
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # Find a Doc, Japan - Server
@@ -36,6 +36,7 @@ We love and welcome contributions to our front-end repository which can be found
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/matthewkurtti"><img src="https://avatars.githubusercontent.com/u/29577421?v=4?s=100" width="100px;" alt="Matthew Kurtti"/><br /><sub><b>Matthew Kurtti</b></sub></a><br /><a href="https://github.com/ourjapanlife/findadoc-server/commits?author=matthewkurtti" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jbcden"><img src="https://avatars.githubusercontent.com/u/1873996?v=4?s=100" width="100px;" alt="Jacob Chae"/><br /><sub><b>Jacob Chae</b></sub></a><br /><a href="https://github.com/ourjapanlife/findadoc-server/commits?author=jbcden" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
