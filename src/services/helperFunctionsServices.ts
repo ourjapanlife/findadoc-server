@@ -89,13 +89,13 @@ export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProf
 
     if (fields.names !== null) { updatePatch.names = fields.names }
     if (fields.degrees !== null) { updatePatch.degrees = fields.degrees }
-    if (fields.spokenLanguages !== null) { updatePatch.spokenLanguages = fields.spokenLanguages }
+    if (fields.spokenLanguages !== null) { updatePatch.spoken_languages = fields.spokenLanguages }
     if (fields.specialties !== null) { updatePatch.specialties = fields.specialties }
-    if (fields.acceptedInsurance !== null) { updatePatch.acceptedInsurance = fields.acceptedInsurance }
+    if (fields.acceptedInsurance !== null) { updatePatch.accepted_insurance = fields.acceptedInsurance }
     if (fields.additionalInfoForPatients !== undefined) {
-        updatePatch.additionalInfoForPatients = fields.additionalInfoForPatients
+        updatePatch.additional_info_for_patients = fields.additionalInfoForPatients
     }
-    updatePatch.updatedDate = new Date().toISOString()
+    updatePatch.updated_date = new Date().toISOString()
     return updatePatch
 }
 
@@ -120,12 +120,12 @@ export function mapCreateInputToHpInsertRow(
     return {
         names: input.names,
         degrees: input.degrees ?? [],
-        spokenLanguages: input.spokenLanguages ?? [],
+        spoken_languages: input.spokenLanguages ?? [],
         specialties: input.specialties ?? [],
-        acceptedInsurance: input.acceptedInsurance ?? [],
-        additionalInfoForPatients: input.additionalInfoForPatients ?? null,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
+        accepted_insurance: input.acceptedInsurance ?? [],
+        additional_info_for_patients: input.additionalInfoForPatients ?? null,
+        created_date: new Date().toISOString(),
+        updated_date: new Date().toISOString()
     }
 }
 
