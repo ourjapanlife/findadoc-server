@@ -318,7 +318,8 @@ export async function searchFacilities(
             return { data: [], hasErrors: true, errors: validationResult.errors }
         }
 
-        const limit = filters.limit ?? 20
+        const limit = filters.limit && filters.limit > 100 ? 100 : filters.limit ?? 20
+
         const offset = filters.offset ?? 0
 
         // If there is a filter on HPs, first get the facility IDs from the join table.
@@ -339,7 +340,7 @@ export async function searchFacilities(
 
         // Base query on facilities + scalar filters.
         let baseQuery = applyFacilityFilters(
-            supabase.from('facilities').select('*'),
+            supabase.from('facilities').select('*').limit(limit),
             filters
         )
 
