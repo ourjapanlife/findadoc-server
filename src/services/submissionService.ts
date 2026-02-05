@@ -396,8 +396,8 @@ export const updateSubmission = async (
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
-
         const validation = validateUpdateSubmissionInput(fieldsToUpdate)
+
         if (validation.hasErrors) {
             logger.warn(`Validation failed for updateSubmission: ${JSON.stringify(validation.errors)}`)
             return {
@@ -442,7 +442,8 @@ export const updateSubmission = async (
             // 
             // Solution: Throw a special error that the outer catch block will handle
             // by calling autoFillPlacesInformation AFTER the transaction is rolled back.
-            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && !currentSubmission.autofill_place_from_submission_url) {
+            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl 
+                && !currentSubmission.autofill_place_from_submission_url) {
                 throw new Error('REDIRECT_TO_AUTOFILL')
             }
 
@@ -733,8 +734,8 @@ export const autoFillPlacesInformation = async (
 async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
     transaction: Transaction<Database>,
     current: Selectable<SubmissionsTable>,
-    finalFacilityId: string,
-    updatedBy: string
+    finalFacilityId: string
+    // updatedBy: string
 ): Promise<string | undefined> {
     if (current.hps_id) {
         return undefined
@@ -910,8 +911,8 @@ export const approveSubmission = async (
                 createdHpId = await tryCreateHealthcareProfessionalForSubmissionInTransaction(
                     transaction,
                     currentSubmission,
-                    finalFacilityId,
-                    updatedBy
+                    finalFacilityId
+                    // updatedBy
                 )
             }
 

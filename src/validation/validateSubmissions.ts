@@ -1,7 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { hasScriptTags, isInvalidName } from '../../utils/stringUtils.js'
-import { validateContactInput, validateAddressInput } from './validateFacility.js'
+import { validateContactInput } from './validateFacility.js'
 import { validateNames, validateDegrees, validateSpecialties, validateInsurance, validateSpokenLanguages } from './validationHealthcareProfessional.js'
 
 export function validateIdInput(id: string): Result<unknown> {
@@ -393,6 +393,7 @@ export function validateUpdateSubmissionInput(
 
         if (input.facility.contact) {
             const contactValidation = validateContactInput(input.facility.contact)
+
             if (contactValidation.hasErrors) {
                 validationResults.hasErrors = true
                 validationResults.errors?.push(...(contactValidation.errors ?? []))
@@ -408,6 +409,7 @@ export function validateUpdateSubmissionInput(
                     hasErrors: false,
                     errors: []
                 }
+
                 validateNames(hp.names, namesValidation)
                 if (namesValidation.hasErrors) {
                     validationResults.hasErrors = true
@@ -426,6 +428,7 @@ export function validateUpdateSubmissionInput(
                     hasErrors: false,
                     errors: []
                 }
+
                 validateDegrees(hp.degrees, degreesValidation)
                 if (degreesValidation.hasErrors) {
                     validationResults.hasErrors = true
@@ -444,6 +447,7 @@ export function validateUpdateSubmissionInput(
                     hasErrors: false,
                     errors: []
                 }
+
                 validateSpecialties(hp.specialties, specialtiesValidation)
                 if (specialtiesValidation.hasErrors) {
                     validationResults.hasErrors = true
@@ -462,6 +466,7 @@ export function validateUpdateSubmissionInput(
                     hasErrors: false,
                     errors: []
                 }
+
                 validateInsurance(hp.acceptedInsurance, insuranceValidation)
                 if (insuranceValidation.hasErrors) {
                     validationResults.hasErrors = true
@@ -480,6 +485,7 @@ export function validateUpdateSubmissionInput(
                     hasErrors: false,
                     errors: []
                 }
+
                 validateSpokenLanguages(hp.spokenLanguages, languagesValidation)
                 if (languagesValidation.hasErrors) {
                     validationResults.hasErrors = true
@@ -503,7 +509,7 @@ export function validateUpdateSubmissionInput(
         })
     }
 
-    const statusFlags = [ input.isUnderReview, input.isApproved, input.isRejected].filter(Boolean)
+    const statusFlags = [input.isUnderReview, input.isApproved, input.isRejected].filter(Boolean)
 
     if (statusFlags.length > 1) {
         validationResults.hasErrors = true

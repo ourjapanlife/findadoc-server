@@ -146,7 +146,7 @@ export default [
             '@stylistic/arrow-spacing': 'error',
             '@stylistic/block-spacing': ['error', 'always'],
             'brace-style': ['error', '1tbs', { allowSingleLine: true }],
-            camelcase: ['error', { allow: ['639_3'] }],
+            camelcase: ['warn', { allow: ['639_3'] }],
             '@stylistic/comma-dangle': ['error', 'never'],
             '@stylistic/comma-spacing': [
                 'error',

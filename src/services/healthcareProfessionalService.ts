@@ -829,7 +829,7 @@ export async function updateHealthcareProfessionalsWithFacilityIdChanges(
                 // Batch query: count facilities for all HPs being deleted
                 const facilityCounts = await transaction
                     .selectFrom('hps_facilities')
-                    .select(['hps_id' , (expressionBuilder) => 
+                    .select(['hps_id', expressionBuilder => 
                         expressionBuilder.fn.count<number>('facilities_id').as('count')
                     ])
                     .where('hps_id', 'in', hpIdsToDelete)

@@ -610,6 +610,7 @@ export const updateFacility = async (
  * @returns the final list of HP ids for that facility
  */
 async function processHealthcareProfessionalRelationshipChanges(
+    //eslint-disable-next-line
     transaction: any,
     facilityId: string,
     changes: gqlTypes.Relationship[]
@@ -622,6 +623,7 @@ async function processHealthcareProfessionalRelationshipChanges(
             .where('facilities_id', '=', facilityId)
             .execute()
         
+        //eslint-disable-next-line
         return currentRelations.map((r: any) => r.hps_id)
     }
 
@@ -642,6 +644,7 @@ async function processHealthcareProfessionalRelationshipChanges(
         await transaction
             .insertInto('hps_facilities')
             .values(toCreate)
+            //eslint-disable-next-line
             .onConflict((oc: any) => oc
                 .columns(['hps_id', 'facilities_id'])
                 .doNothing())
@@ -664,6 +667,7 @@ async function processHealthcareProfessionalRelationshipChanges(
         .where('facilities_id', '=', facilityId)
         .execute()
 
+    //eslint-disable-next-line
     return finalRelations.map((r: any) => r.hps_id)
 }
 
