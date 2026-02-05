@@ -12,9 +12,7 @@
         "sourceMap": true,
         "resolveJsonModule": true,
         "esModuleInterop": true,
-        "skipLibCheck": true,
-        "noEmit": true,
-        "allowImportingTsExtensions": true
+        "skipLibCheck": true
     },
     "ts-node": {
         "esm": true,
