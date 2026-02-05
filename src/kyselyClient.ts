@@ -17,14 +17,7 @@ export async function initializeKyselyClient(): Promise<void> {
         return
     }
 
-    const databaseUrl = envVariables.databaseUrl()
-
-    if (!databaseUrl) {
-        throw new Error('DATABASE_URL environment variable is not set')
-    }
-
     logger.info('🔌 Initializing Kysely client...')
-    logger.debug(`Database URL: ${databaseUrl}`)
 
     /**
  * PostgreSQL Connection Pool
@@ -38,7 +31,12 @@ export async function initializeKyselyClient(): Promise<void> {
  * - connectionTimeoutMillis: Fail fast if can't acquire a connection within 2 seconds
  */
     pool = new Pool({
-        connectionString: databaseUrl,
+        host: envVariables.pgHost(),
+        port: 6543,
+        database: 'postgres',
+        user: envVariables.pgUser(),
+        password: envVariables.pgPassword(),
+        ssl: { rejectUnauthorized: false },
         max: 100,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000

@@ -23,7 +23,9 @@ const envVariables = {
     googleAPIKey: () => process.env.GOOGLE_API_KEY,
     supabaseUrl: () => process.env.SUPABASE_URL,
     supabaseServiceRoleKey: () => process.env.SUPABASE_SERVICE_ROLE_KEY,
-    databaseUrl: () => process.env.DATABASE_URL
+    pgPassword: () => process.env.PGPASSWORD,
+    pgUser: () => process.env.PGUSER,
+    pgHost: () => process.env.PGHOST,
 }
 
 console.log('🔌 Loaded env variables 🔌')
