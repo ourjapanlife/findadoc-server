@@ -2,41 +2,70 @@ name: Test
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
+      - develop
 
 env:
-  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  NODE_ENV: test
+  TEST_ENABLED: true
 
 jobs:
   tests:
     name: Running Tests
     timeout-minutes: 8
     runs-on: ubuntu-latest
+    
     strategy:
       matrix:
         node-version: [21.3.0]
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 21.3.0
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
 
-    - name: Yarn Install
-      run: yarn
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-    - name: Generate GQL types
-      run: yarn generate
+      - name: Verify Supabase CLI
+        run: supabase --version
 
-    - name: Start containers
-      run: yarn test:dockerstart
+      - name: Start Supabase
+        run: supabase start
 
-    - name: Run tests
-      run: yarn test
+      - name: Verify Supabase is running
+        run: |
+          timeout 30 bash -c 'until curl -s http://127.0.0.1:54321/rest/v1/ > /dev/null; do sleep 2; done'
+          echo "✅ Supabase is ready"
 
-    - name: Stop containers
-      if: always()
-      run: yarn test:dockerstop
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Generate GraphQL types
+        run: yarn generate
+
+      - name: Run tests
+        run: yarn test
+        env:
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          supabase status
+          docker ps -a
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop

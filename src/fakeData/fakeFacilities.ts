@@ -1,8 +1,14 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { faker, fakerJA } from '@faker-js/faker'
 
-export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: string[])
-    : gqlTypes.CreateFacilityInput {
+/**
+ * Generates random data for a CreateFacilityInput GraphQL object.
+ * This function focuses only on generating the core fields required for the 'facilities' table.
+ * The UUID ('id') and relationships (like 'hps_facilities') must be managed by the seeding script.
+ * * @returns {gqlTypes.CreateFacilityInput} The core facility data structure.
+ */
+export function generateRandomCreateFacilityInput()
+: gqlTypes.CreateFacilityInput {
     const fullEnglishName = faker.company.name()
     const email = faker.internet.email({ firstName: fullEnglishName })
     const fullJapaneseName = fakerJA.company.name()
@@ -51,7 +57,6 @@ export function generateRandomCreateFacilityInput(healthcareProfessionalIds?: st
         nameJa: fullJapaneseName,
         mapLatitude: faker.location.latitude({ min: selectedLocation.latMin, max: selectedLocation.latMax }),
         mapLongitude: faker.location.longitude({ min: selectedLocation.lngMin, max: selectedLocation.lngMax }),
-        healthcareProfessionalIds: healthcareProfessionalIds ?? [],
         contact: {
             googleMapsUrl: faker.internet.url(),
             email: email,

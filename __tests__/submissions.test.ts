@@ -3,7 +3,7 @@ import request from 'supertest'
 import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
 import { CreateSubmissionInput, Submission, SubmissionSearchFilters, UpdateSubmissionInput } from '../src/typeDefs/gqlTypes.js'
 import { Error, ErrorCode } from '../src/result.js'
-import { generateRandomCreateHealthcareProfessionalInputArray, generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
+import { generateRandomCreateHealthcareProfessionalInput, generateSpokenLanguages } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import { gqlApiUrl } from './testSetup.test.js'
 import { logger } from '../src/logger.js'
@@ -158,8 +158,10 @@ describe('approveSubmission', () => {
         const updatedSubmissionWithNewApprovalValues: UpdateSubmissionInput = {}
 
         updatedSubmissionWithNewApprovalValues.facility = generateRandomCreateFacilityInput()
-        updatedSubmissionWithNewApprovalValues.healthcareProfessionals
-        = generateRandomCreateHealthcareProfessionalInputArray()
+        updatedSubmissionWithNewApprovalValues.healthcareProfessionals = [
+            generateRandomCreateHealthcareProfessionalInput(),
+            generateRandomCreateHealthcareProfessionalInput()
+        ]
 
         // Mutation to update the Submission to get ready for approval
         const updateSubmissionRequestWithNewApprovalValues = {

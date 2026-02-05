@@ -1,13 +1,10 @@
 
 import request from 'supertest'
 import { expect, beforeAll, afterAll } from 'vitest'
-import fs from 'fs'
-import { initiatilizeFirebaseInstance } from '../src/firebaseDb.js'
 import { gqlMutation } from '../utils/gqlTool.js'
 import { CreateFacilityInput, Facility } from '../src/typeDefs/gqlTypes.js'
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
 import { createFacilityMutation } from './facilities.test.js'
-import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import { createApolloFastifyServer } from '../src/server.js'
 import { initializeLogger, logger } from '../src/logger.js'
 import { initializeSupabaseClient } from '../src/supabaseClient.js'
@@ -30,18 +27,9 @@ beforeAll(async () => {
 
     //this initializes a shared firebase instance and supabase instance for all the tests.
     initializeLogger()
-    await initiatilizeFirebaseInstance()
     await initializeSupabaseClient()
     serverUrl = await createApolloFastifyServer(testPort)
     gqlApiUrl = `${serverUrl}/`
-
-    //this sets up the firebase test environment
-    await initializeTestEnvironment({
-        projectId: process.env.FIRESTORE_PROJECT_ID,
-        firestore: {
-            rules: fs.readFileSync('./firestore.rules', 'utf8')
-        }
-    })
 
     //let's create a logged in user for the tests
     // const { testUserId } = await createTestUser()

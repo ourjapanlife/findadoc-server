@@ -1,3 +1,5 @@
+/*
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { envVariables } from '../utils/environmentVariables.js'
 import { logger } from './logger.js'
@@ -20,8 +22,6 @@ const testSupabaseIsInitialized = async () => {
     }
 }
 
-// This is to prevent race conditions where parallel calls/tests/etc 
-// try to initialize the supabase instance at the same time
 let alreadyStartedInitialization = false
 
 export const initializeSupabaseClient = async () => {
@@ -47,4 +47,79 @@ export const initializeSupabaseClient = async () => {
     await testSupabaseIsInitialized()
 
     logger.info('✅ Supabase client is initialized! ✅ \n')
+}
+*/
+
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { envVariables } from '../utils/environmentVariables.js'
+import { logger } from './logger.js'
+
+const url = envVariables.supabaseUrl()
+const serviceKey = envVariables.supabaseServiceRoleKey()
+
+const isTestEnv =
+    process.env.NODE_ENV === 'test' ||
+    typeof process.env.VITEST !== 'undefined' ||
+    typeof process.env.JEST_WORKER_ID !== 'undefined'
+
+export let supabaseClient: SupabaseClient | null = null
+
+const testSupabaseIsInitialized = async () => {
+    if (!supabaseClient) { return }
+
+    try {
+        const { error } = await supabaseClient.from('user').select('id').limit(1)
+
+        if (error) {
+            throw error
+        }
+    } catch (ex) {
+        const msg = typeof ex === 'object' ? JSON.stringify(ex) : String(ex)
+
+        logger.error(`❌ Supabase is not connecting... ❌ ${msg}`)
+
+        if (isTestEnv) {
+            logger.warn('🟡 Test env: Supabase not found')
+            return
+        }
+
+        throw new Error('❌ Supabase is not connecting... ❌')
+    }
+}
+
+let initializingPromise: Promise<void> | null = null
+
+export const initializeSupabaseClient = async () => {
+    if (supabaseClient) {
+        return
+    }
+
+    if (initializingPromise) {
+        await initializingPromise
+        return
+    }
+    initializingPromise = (async () => {
+        if (!url || !serviceKey) {
+            logger.error('❌ Missing supabase env variables, abandoning supabase client initialization ❌')
+
+            if (isTestEnv) {
+                return
+            }
+
+            throw new Error('Missing Supabase env vars')
+        }
+
+        supabaseClient = createClient(url, serviceKey)
+        await testSupabaseIsInitialized()
+        logger.info('✅ Supabase client is initialized! ✅ \n')
+    })()
+
+    await initializingPromise
+}
+
+export function getSupabaseClient(): SupabaseClient {
+    if (!supabaseClient) {
+        throw new Error('Supabase client not initialized. Did you call initializeSupabaseClient() in test setup?')
+    }
+    return supabaseClient
 }

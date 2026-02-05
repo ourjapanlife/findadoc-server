@@ -32,3 +32,5 @@ firebase-debug.log
 firebaseServiceAccountKey.json
 # build output
 dist
+
+*seed_data.sql
