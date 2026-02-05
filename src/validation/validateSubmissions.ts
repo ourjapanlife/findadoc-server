@@ -1,6 +1,8 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { hasScriptTags, isInvalidName } from '../../utils/stringUtils.js'
+import { validateContactInput } from './validateFacility.js'
+import { validateNames, validateDegrees, validateSpecialties, validateInsurance, validateSpokenLanguages } from './validationHealthcareProfessional.js'
 
 export function validateIdInput(id: string): Result<unknown> {
     const validationResults: Result<unknown> = {
@@ -318,4 +320,205 @@ export function isValidHpInput(hp: gqlTypes.CreateHealthcareProfessionalInput | 
     if (!first.lastName) { return false }
 
     return true
+}
+
+export function validateUpdateSubmissionInput(
+    input: Partial<gqlTypes.UpdateSubmissionInput>
+): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
+        hasErrors: false,
+        errors: []
+    }
+
+    if (input.healthcareProfessionalName !== undefined) {
+        validateSubmissionName(
+            { healthcareProfessionalName: input.healthcareProfessionalName } as gqlTypes.SubmissionSearchFilters,
+            validationResults
+        )
+    }
+
+    if (input.googleMapsUrl !== undefined) {
+        validateSubmissionGoogleMapsUrl(
+            { googleMapsUrl: input.googleMapsUrl } as gqlTypes.SubmissionSearchFilters,
+            validationResults
+        )
+    }
+
+    if (input.spokenLanguages !== undefined) {
+        validateSubmissionSpokenLanguage(
+            { spokenLanguages: input.spokenLanguages } as gqlTypes.SubmissionSearchFilters,
+            validationResults
+        )
+    }
+
+    if (input.notes !== undefined && input.notes !== null) {
+        if (input.notes.length > 4096) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'notes',
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (hasScriptTags(input.notes)) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'notes',
+                errorCode: ErrorCode.INVALID_INPUT,
+                httpStatus: 400
+            })
+        }
+    }
+
+    if (input.facility) {
+        if (input.facility.nameEn && input.facility.nameEn.length > 128) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'facility.nameEn',
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (input.facility.nameJa && input.facility.nameJa.length > 128) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'facility.nameJa',
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        }
+
+        if (input.facility.contact) {
+            const contactValidation = validateContactInput(input.facility.contact)
+
+            if (contactValidation.hasErrors) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push(...(contactValidation.errors ?? []))
+            }
+        }
+    }
+
+    if (input.healthcareProfessionals && input.healthcareProfessionals.length > 0) {
+        input.healthcareProfessionals.forEach((hp, index) => {
+            if (hp.names) {
+                const namesValidation: Result<unknown> = {
+                    data: undefined,
+                    hasErrors: false,
+                    errors: []
+                }
+
+                validateNames(hp.names, namesValidation)
+                if (namesValidation.hasErrors) {
+                    validationResults.hasErrors = true
+                    namesValidation.errors?.forEach(err => {
+                        validationResults.errors?.push({
+                            ...err,
+                            field: err.field.replace('names', `healthcareProfessionals[${index}].names`)
+                        })
+                    })
+                }
+            }
+
+            if (hp.degrees !== undefined) {
+                const degreesValidation: Result<unknown> = {
+                    data: undefined,
+                    hasErrors: false,
+                    errors: []
+                }
+
+                validateDegrees(hp.degrees, degreesValidation)
+                if (degreesValidation.hasErrors) {
+                    validationResults.hasErrors = true
+                    degreesValidation.errors?.forEach(err => {
+                        validationResults.errors?.push({
+                            ...err,
+                            field: `healthcareProfessionals[${index}].degrees`
+                        })
+                    })
+                }
+            }
+
+            if (hp.specialties !== undefined) {
+                const specialtiesValidation: Result<unknown> = {
+                    data: undefined,
+                    hasErrors: false,
+                    errors: []
+                }
+
+                validateSpecialties(hp.specialties, specialtiesValidation)
+                if (specialtiesValidation.hasErrors) {
+                    validationResults.hasErrors = true
+                    specialtiesValidation.errors?.forEach(err => {
+                        validationResults.errors?.push({
+                            ...err,
+                            field: `healthcareProfessionals[${index}].specialties`
+                        })
+                    })
+                }
+            }
+
+            if (hp.acceptedInsurance !== undefined) {
+                const insuranceValidation: Result<unknown> = {
+                    data: undefined,
+                    hasErrors: false,
+                    errors: []
+                }
+
+                validateInsurance(hp.acceptedInsurance, insuranceValidation)
+                if (insuranceValidation.hasErrors) {
+                    validationResults.hasErrors = true
+                    insuranceValidation.errors?.forEach(err => {
+                        validationResults.errors?.push({
+                            ...err,
+                            field: `healthcareProfessionals[${index}].acceptedInsurance`
+                        })
+                    })
+                }
+            }
+
+            if (hp.spokenLanguages !== undefined) {
+                const languagesValidation: Result<unknown> = {
+                    data: undefined,
+                    hasErrors: false,
+                    errors: []
+                }
+
+                validateSpokenLanguages(hp.spokenLanguages, languagesValidation)
+                if (languagesValidation.hasErrors) {
+                    validationResults.hasErrors = true
+                    languagesValidation.errors?.forEach(err => {
+                        validationResults.errors?.push({
+                            ...err,
+                            field: `healthcareProfessionals[${index}].spokenLanguages`
+                        })
+                    })
+                }
+            }
+
+            if (hp.additionalInfoForPatients && hp.additionalInfoForPatients.length > 2048) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: `healthcareProfessionals[${index}].additionalInfoForPatients`,
+                    errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                    httpStatus: 400
+                })
+            }
+        })
+    }
+
+    const statusFlags = [input.isUnderReview, input.isApproved, input.isRejected].filter(Boolean)
+
+    if (statusFlags.length > 1) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'status',
+            errorCode: ErrorCode.INVALID_INPUT,
+            httpStatus: 400
+        })
+    }
+
+    return validationResults
 }

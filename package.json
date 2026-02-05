@@ -4,10 +4,11 @@
     "description": "Backend for Find a Doc, Japan",
     "main": "index.js",
     "scripts": {
-        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && supabase start && supabase db reset && yarn generate:seed && yarn dev:seeddb && concurrently --raw \"yarn dev:startlocaldb\" \"yarn dev:startserver\"",
+        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && npx supabase start && npx supabase db reset && yarn dev:seeddb && concurrently --raw \"yarn dev:startserver\"",
         "dev:startserver": "echo '💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon --exec 'node --inspect --loader ts-node/esm src/index.ts'",
-        "dev:startlocaldb": "supabase start -f",
+        "dev:startlocaldb": "yarn supabase start -f",
         "test": "vitest",
+        "dev:seeddb": "echo '🌱 Seeding database...' && node --loader ts-node/esm utils/runSeed.ts",
         "test:dockerstart": "docker compose -f docker/docker-compose-test.yml up -d --build",
         "test:dockerstop": "docker compose -f docker/docker-compose-test.yml down",
         "prepare": "husky install",
@@ -20,15 +21,14 @@
         "prod:dockerstart": "echo '🐳 🐳 🐳✨ Running docker compose...' && docker compose -f docker/docker-compose-api.yml up -d --build --remove-orphans --force-recreate",
         "prod:dockerstop": "echo '🐳 🐳 🐳✨ Stopping docker compose...' && docker compose -f docker/docker-compose-api.yml down",
         "prod:logs": "docker logs findadoc-api -f",
-        "generate": "echo '➡ ➡ ➡ Generating types from graphql schema ➡ ➡ ➡' && graphql-codegen --config ./typesgeneratorconfig.ts",
+        "generate": "echo '➡ ➡ ➡ Generating types from graphql schema ➡ ➡ ➡' && graphql-codegen --config ./typesgeneratorconfig.ts && yarn run generate:db",
         "lint": "cross-env ESLINT_USE_FLAT_CONFIG=true eslint -c eslint.config.js .",
         "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint .",
         "migrate:local": "echo '🔄 Running LOCAL migration (dev database)...' && cross-env NODE_ENV=development node --loader ts-node/esm src/migration.ts",
         "migrate:local:dry": "echo '🔍 DRY RUN: LOCAL migration (no data written)...' && cross-env NODE_ENV=development DRY_RUN=true node --loader ts-node/esm src/migration.ts",
         "migrate:prod": "echo '⚠️  Running PRODUCTION migration...' && cross-env NODE_ENV=production node --loader ts-node/esm src/migration.ts",
         "migrate:prod:dry": "echo '🔍 DRY RUN: PRODUCTION migration (no data written)...' && cross-env NODE_ENV=production DRY_RUN=true node --loader ts-node/esm src/migration.ts",
-        "generate:seed": "node --loader ts-node/esm utils/generateSqlSeed.ts",
-        "dev:seeddb": "node --loader ts-node/esm utils/runSeed.ts"
+        "generate:db": "node --loader ts-node/esm utils/generateSqlSeed.ts && npx supabase gen types typescript --local > src/typeDefs/supabase-generated.ts"
     },
     "repository": {
         "type": "git",
@@ -75,9 +75,11 @@
         "firebase-tools": "^13.1.0",
         "globals": "^13.23.0",
         "husky": "^8.0.3",
+        "kysely-supabase": "^0.2.1",
         "pg": "^8.16.3",
         "puppeteer": "^22.12.1",
         "rimraf": "^6.0.1",
+        "supabase": "2.58.5",
         "typescript": "^5.7.3",
         "vite": "^6.0.7",
         "vitest": "^2.1.8"

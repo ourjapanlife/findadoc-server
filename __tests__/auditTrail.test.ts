@@ -3,8 +3,8 @@ import * as dbSchema from '../src/typeDefs/dbSchema.js'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import * as auditLogService from '../src/services/auditLogServiceSupabase.js'
 import { generateRandomCreateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
-import { mapGqlEntityToDbEntity } from '../src/services/submissionService-pre-migration.js'
-import { createSubmission, updateSubmission, deleteSubmission } from '../src/services/submissionService-pre-migration.js'
+import { mapGqlEntityToDbEntity } from '../src/services/mappersEntityService.js'
+import { createSubmission, updateSubmission, deleteSubmission } from '../src/services/submissionService.js'
 import { getSupabaseClient } from '../src/supabaseClient.js'
 
 describe('Audit Log System', () => {
@@ -69,7 +69,7 @@ describe('Audit Log System', () => {
 
         it('should rollback submission creation if audit log fails', async () => {
             // Mock using vi.spyOn
-            const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
+            const spy = vi.spyOn(auditLogService, 'createAuditLog')
                 .mockRejectedValue(new Error('Audit log failed'))
 
             const submissionInput = generateRandomCreateSubmissionInput()
@@ -116,7 +116,7 @@ describe('Audit Log System', () => {
                 .single()
 
             // NOW mock the audit log to fail
-            const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
+            const spy = vi.spyOn(auditLogService, 'createAuditLog')
                 .mockRejectedValue(new Error('Audit log failed'))
 
             // Try to update (should fail and rollback)
@@ -161,7 +161,7 @@ describe('Audit Log System', () => {
                 .single()
 
             // Mock audit log to fail
-            const spy = vi.spyOn(auditLogService, 'createAuditLogSQL')
+            const spy = vi.spyOn(auditLogService, 'createAuditLog')
                 .mockRejectedValue(new Error('Audit log failed'))
 
             // Try to delete (should fail and rollback)
@@ -174,13 +174,13 @@ describe('Audit Log System', () => {
             // Verify submission still exists (rollback worked)
             const { data: afterRollback } = await supabase
                 .from('submissions')
-                .select('id, googleMapsUrl')
+                .select('id, google_maps_url')
                 .eq('id', submissionId)
                 .single()
 
             expect(afterRollback).not.toBeNull()
             expect(afterRollback?.id).toBe(originalData?.id)
-            expect(afterRollback?.googleMapsUrl).toBe(originalData?.googleMapsUrl)
+            expect(afterRollback?.google_maps_url).toBe(originalData?.google_maps_url)
 
             // Cleanup
             await supabase.from('submissions').delete().eq('id', submissionId)

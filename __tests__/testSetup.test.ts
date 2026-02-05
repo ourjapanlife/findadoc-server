@@ -8,6 +8,7 @@ import { createFacilityMutation } from './facilities.test.js'
 import { createApolloFastifyServer } from '../src/server.js'
 import { initializeLogger, logger } from '../src/logger.js'
 import { initializeSupabaseClient } from '../src/supabaseClient.js'
+import { initializeKyselyClient } from '../src/kyselyClient.js'
 // import { createTestUser, deleteTestUser } from './auth.test.js'
 
 // These ids can be used in any of the tests so they don't have to recreate the same data. 
@@ -28,6 +29,7 @@ beforeAll(async () => {
     //this initializes a shared firebase instance and supabase instance for all the tests.
     initializeLogger()
     await initializeSupabaseClient()
+    await initializeKyselyClient()
     serverUrl = await createApolloFastifyServer(testPort)
     gqlApiUrl = `${serverUrl}/`
 

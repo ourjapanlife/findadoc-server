@@ -10,7 +10,9 @@ const gqlSchemaPath = './src/typeDefs/schema.graphql'
 export default [
     // GLOBAL configuration
     {
-        ignores: ['dist/*'],
+        ignores: ['dist/*',
+            'src/typeDefs/supabase-generated.ts'
+        ],
     },
     // TODO: get this linter working. For some reason, it's not picking up the schema file
     // GraphQL Linter for Operations and Fragments within code files
@@ -144,7 +146,7 @@ export default [
             '@stylistic/arrow-spacing': 'error',
             '@stylistic/block-spacing': ['error', 'always'],
             'brace-style': ['error', '1tbs', { allowSingleLine: true }],
-            camelcase: ['error', { allow: ['639_3'] }],
+            camelcase: ['warn', { allow: ['639_3'] }],
             '@stylistic/comma-dangle': ['error', 'never'],
             '@stylistic/comma-spacing': [
                 'error',
