@@ -20,13 +20,6 @@ const envVariables = {
     authAuth0URL: () => process.env.AUTH_AUTH0_URL as string,
     authGithubClientId: () => process.env.AUTH_GITHUB_CLIENT_ID as string,
     authGithubClientSecret: () => process.env.AUTH_GITHUB_CLIENT_SECRET as string,
-    getDbUrl: () =>
-        envVariables.isProduction()
-            ? process.env.FIREBASE_DATABASE_URL
-            : process.env.FIRESTORE_EMULATOR_HOST,
-    firebaseServiceAccount: () => process.env.FIRESTORE_SERVICE_ACCOUNT as string,
-    firebaseProjectId: () => process.env.FIRESTORE_PROJECT_ID,
-    firebaseDatabaseUrl: () => process.env.FIREBASE_DATABASE_URL,
     googleAPIKey: () => process.env.GOOGLE_API_KEY,
     supabaseUrl: () => process.env.SUPABASE_URL,
     supabaseServiceRoleKey: () => process.env.SUPABASE_SERVICE_ROLE_KEY

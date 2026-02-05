@@ -1,9 +1,0 @@
-version: "3.2"
-services:
-  firestore_emulator:
-    image: ridedott/firestore-emulator:1.14.4
-    environment:
-      - FIRESTORE_PROJECT_ID=find-a-doc-japan
-      - PORT=3004
-    ports:
-      - 3004:3004

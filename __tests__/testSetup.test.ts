@@ -26,7 +26,7 @@ beforeAll(async () => {
     process.env.TEST_ENABLED = 'true'
     const testPort = 0
 
-    //this initializes a shared firebase instance and supabase instance for all the tests.
+    //this initializes a shared supabase instance and supabase instance for all the tests.
     initializeLogger()
     await initializeSupabaseClient()
     await initializeKyselyClient()

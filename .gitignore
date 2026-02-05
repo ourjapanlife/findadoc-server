@@ -25,11 +25,6 @@ eslint-results.sarif
 # eslint results
 eslint-results.sarif
 
-# firebase
-ui-debug.log
-firestore-debug.log
-firebase-debug.log
-firebaseServiceAccountKey.json
 # build output
 dist
 
