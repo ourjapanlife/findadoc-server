@@ -99,6 +99,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "eyawata",
+      "name": "Eri",
+      "avatar_url": "https://avatars.githubusercontent.com/u/157731956?v=4",
+      "profile": "https://github.com/eyawata",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

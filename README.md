@@ -1,5 +1,5 @@
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-11-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # Find a Doc, Japan - Server
@@ -38,6 +38,7 @@ We love and welcome contributions to our front-end repository which can be found
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/matthewkurtti"><img src="https://avatars.githubusercontent.com/u/29577421?v=4?s=100" width="100px;" alt="Matthew Kurtti"/><br /><sub><b>Matthew Kurtti</b></sub></a><br /><a href="https://github.com/ourjapanlife/findadoc-server/commits?author=matthewkurtti" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jbcden"><img src="https://avatars.githubusercontent.com/u/1873996?v=4?s=100" width="100px;" alt="Jacob Chae"/><br /><sub><b>Jacob Chae</b></sub></a><br /><a href="https://github.com/ourjapanlife/findadoc-server/commits?author=jbcden" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ProgressChris88"><img src="https://avatars.githubusercontent.com/u/117893544?v=4?s=100" width="100px;" alt="Chris Bowman"/><br /><sub><b>Chris Bowman</b></sub></a><br /><a href="https://github.com/ourjapanlife/findadoc-server/commits?author=ProgressChris88" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/eyawata"><img src="https://avatars.githubusercontent.com/u/157731956?v=4?s=100" width="100px;" alt="Eri"/><br /><sub><b>Eri</b></sub></a><br /><a href="https://github.com/ourjapanlife/findadoc-server/commits?author=eyawata" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
