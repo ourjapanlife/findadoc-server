@@ -8,22 +8,22 @@
   ],
   "imageSize": 100,
   "commit": true,
-  "commitConvention": "gitmoji",
+  "commitConvention": "angular",
   "contributors": [
     {
-      "login": "ann-kilzer",
-      "name": "Ann Kilzer キルザー杏",
-      "avatar_url": "https://avatars.githubusercontent.com/u/4602369?v=4",
-      "profile": "http://www.annkilzer.net/",
+      "login": "Ghezz9",
+      "name": "Davide Ghezzo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/177678145?v=4",
+      "profile": "https://github.com/Ghezz9",
       "contributions": [
         "code"
       ]
     },
     {
-      "login": "theyokohamalife",
-      "name": "LaShawn Toyoda",
-      "avatar_url": "https://avatars.githubusercontent.com/u/31802656?v=4",
-      "profile": "https://github.com/theyokohamalife",
+      "login": "ann-kilzer",
+      "name": "Ann Kilzer キルザー杏",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4602369?v=4",
+      "profile": "http://www.annkilzer.net/",
       "contributions": [
         "code"
       ]
@@ -60,6 +60,60 @@
       "name": "Anissa Chadouli",
       "avatar_url": "https://avatars.githubusercontent.com/u/114712265?v=4",
       "profile": "https://github.com/Anissa3005",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "NabbeunNabi",
+      "name": "William Brammer",
+      "avatar_url": "https://avatars.githubusercontent.com/u/124335161?v=4",
+      "profile": "https://github.com/NabbeunNabi",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "matthewkurtti",
+      "name": "Matthew Kurtti",
+      "avatar_url": "https://avatars.githubusercontent.com/u/29577421?v=4",
+      "profile": "https://github.com/matthewkurtti",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jbcden",
+      "name": "Jacob Chae",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1873996?v=4",
+      "profile": "https://github.com/jbcden",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ProgressChris88",
+      "name": "Chris Bowman",
+      "avatar_url": "https://avatars.githubusercontent.com/u/117893544?v=4",
+      "profile": "https://github.com/ProgressChris88",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "eyawata",
+      "name": "Eri",
+      "avatar_url": "https://avatars.githubusercontent.com/u/157731956?v=4",
+      "profile": "https://github.com/eyawata",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ljbroersen",
+      "name": "Lisa Broersen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/62942462?v=4",
+      "profile": "https://ljbroersen.com/",
       "contributions": [
         "code"
       ]
