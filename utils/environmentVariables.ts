@@ -22,7 +22,8 @@ const envVariables = {
     authGithubClientSecret: () => process.env.AUTH_GITHUB_CLIENT_SECRET as string,
     googleAPIKey: () => process.env.GOOGLE_API_KEY,
     supabaseUrl: () => process.env.SUPABASE_URL,
-    supabaseServiceRoleKey: () => process.env.SUPABASE_SERVICE_ROLE_KEY
+    supabaseServiceRoleKey: () => process.env.SUPABASE_SERVICE_ROLE_KEY,
+    databaseUrl: () => process.env.DATABASE_URL
 }
 
 console.log('🔌 Loaded env variables 🔌')

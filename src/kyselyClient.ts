@@ -2,6 +2,7 @@ import { Kysely, PostgresDialect } from 'kysely'
 import { Pool } from 'pg'
 import type { Database } from './typeDefs/kyselyTypes.js'
 import { logger } from './logger.js'
+import { envVariables } from '../utils/environmentVariables.js'
 
 let pool: Pool | null = null
 let kyselyInstance: Kysely<Database> | null = null
@@ -16,7 +17,7 @@ export async function initializeKyselyClient(): Promise<void> {
         return
     }
 
-    const databaseUrl = process.env.DATABASE_URL
+    const databaseUrl = envVariables.databaseUrl()
 
     if (!databaseUrl) {
         throw new Error('DATABASE_URL environment variable is not set')
