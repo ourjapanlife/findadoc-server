@@ -26,6 +26,9 @@ const envVariables = {
     pgPassword: () => process.env.PGPASSWORD,
     pgUser: () => process.env.PGUSER,
     pgHost: () => process.env.PGHOST,
+    dbUrl: () => process.env.DB_URL || process.env.DATABASE_URL,
+    pgPort: () => process.env.PGPORT,
+    pgDatabase: () => process.env.DATABASE_URL
 }
 
 console.log('🔌 Loaded env variables 🔌')
