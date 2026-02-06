@@ -7,6 +7,8 @@ import { createAuditLog } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
 import { mapKyselyFacilityToGraphQL } from '../services/mappersEntityService.js'
 import type { HasIlike} from '../../utils/dbUtils.js'
+import type { Transaction } from 'kysely'
+import type { Database } from '../typeDefs/kyselyTypes.js'
 
 // Builds a partial update patch for Facility rows.
 export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacilityInput>) {
@@ -611,8 +613,7 @@ export const updateFacility = async (
  * @returns the final list of HP ids for that facility
  */
 async function processHealthcareProfessionalRelationshipChanges(
-    //eslint-disable-next-line
-    transaction: any,
+    transaction: Transaction<Database>,
     facilityId: string,
     changes: gqlTypes.Relationship[]
 ): Promise<string[]> {
