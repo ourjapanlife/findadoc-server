@@ -447,6 +447,23 @@ const resolvers = {
 
             return updateUserResult.data
         },
+        deleteUser: async (_parent: unknown, args: { id: string }, context: UserContext)
+        : Promise<gqlType.DeleteResult> => {
+            const isAuthorized = authorize(context.user, [Scope['delete:users']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 403 }
+                    }
+                })
+            }
+
+            const deleteUserResult = await userService.deleteUser(args.id)
+
+            return deleteUserResult.data
+        },
         createReservation: async (_parent: unknown, args: { input: gqlType.CreateReservationInput }, 
             context: UserContext)
         : Promise<gqlType.Reservation> => {
