@@ -32,11 +32,10 @@ export async function initializeKyselyClient(): Promise<void> {
  */
     pool = new Pool({
         host: envVariables.pgHost(),
-        port: 6543,
+        port: process.env.NODE_ENV === 'production' ? 6543 : 54322,
         database: 'postgres',
         user: envVariables.pgUser(),
         password: envVariables.pgPassword(),
-        ssl: { rejectUnauthorized: false },
         max: 100,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000
