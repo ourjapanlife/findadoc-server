@@ -521,6 +521,8 @@ type Mutation {
 
   updateUser(id: ID!, input: UpdateUserInput!): User!
 
+  deleteUser(id: ID!): DeleteResult!
+
   createReservation(input: CreateReservationInput!): Reservation!
 
   updateReservation(input: UpdateReservationInput!): Reservation!

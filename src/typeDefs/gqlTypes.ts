@@ -290,6 +290,7 @@ export type Mutation = {
   deleteFacility: DeleteResult;
   deleteHealthcareProfessional: DeleteResult;
   deleteSubmission: DeleteResult;
+  deleteUser: DeleteResult;
   moderationPanelUpdateSubmission: Submission;
   updateFacility: Facility;
   updateHealthcareProfessional: HealthcareProfessional;
@@ -335,6 +336,11 @@ export type MutationDeleteHealthcareProfessionalArgs = {
 
 
 export type MutationDeleteSubmissionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteUserArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -912,6 +918,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteFacility?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteFacilityArgs, 'id'>>;
   deleteHealthcareProfessional?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteHealthcareProfessionalArgs, 'id'>>;
   deleteSubmission?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteSubmissionArgs, 'id'>>;
+  deleteUser?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id'>>;
   moderationPanelUpdateSubmission?: Resolver<ResolversTypes['Submission'], ParentType, ContextType, RequireFields<MutationModerationPanelUpdateSubmissionArgs, 'input'>>;
   updateFacility?: Resolver<ResolversTypes['Facility'], ParentType, ContextType, RequireFields<MutationUpdateFacilityArgs, 'id' | 'input'>>;
   updateHealthcareProfessional?: Resolver<ResolversTypes['HealthcareProfessional'], ParentType, ContextType, RequireFields<MutationUpdateHealthcareProfessionalArgs, 'id' | 'input'>>;
