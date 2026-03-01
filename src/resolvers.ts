@@ -102,7 +102,8 @@ const resolvers = {
             const selectColumns = buildHpSelectString(requestedFields)
             const needsFacilityIds = hpNeedsFacilityIds(requestedFields)
             const matchingHealthcareProfessionalResult =
-                await healthcareProfessionalService.getHealthcareProfessionalById(args.id, selectColumns, needsFacilityIds)
+                await healthcareProfessionalService
+                    .getHealthcareProfessionalById(args.id, selectColumns, needsFacilityIds)
 
             convertErrorsToGqlErrors(matchingHealthcareProfessionalResult)
             return matchingHealthcareProfessionalResult.data
