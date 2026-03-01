@@ -1,527 +1,928 @@
-# The base types are what is stored in the database, returned from queries, and after mutations are executed
-# The input types are what is used to create and update the base types
-
+"""
+A medical facility (hospital, clinic, etc.) registered in the Find a Doc database.
+"""
 type Facility {
+  """Unique identifier for the facility."""
   id: ID!
+  """Name of the facility in English."""
   nameEn: String!
+  """Name of the facility in Japanese."""
   nameJa: String!
+  """Contact information for the facility."""
   contact: Contact!
+  """Latitude coordinate for map placement."""
   mapLatitude: Float!
+  """Longitude coordinate for map placement."""
   mapLongitude: Float!
+  """IDs of healthcare professionals associated with this facility."""
   healthcareProfessionalIds: [ID!]!
+  """ISO 8601 timestamp of when this facility was created."""
   createdDate: String!
+  """ISO 8601 timestamp of the last update to this facility."""
   updatedDate: String!
 }
 
+"""Input for creating a new facility."""
 input CreateFacilityInput {
+  """Name of the facility in English."""
   nameEn: String!
+  """Name of the facility in Japanese."""
   nameJa: String!
+  """Contact information for the facility."""
   contact: ContactInput!
+  """Latitude coordinate for map placement."""
   mapLatitude: Float!
+  """Longitude coordinate for map placement."""
   mapLongitude: Float!
+  """IDs of healthcare professionals to associate with this facility."""
   healthcareProfessionalIds: [ID!]
 }
 
+"""Input for autofilling a submission from a Google Maps URL during moderation."""
 input ModerationAutofillDatabaseSubmissionInput {
+  """ID of the submission to autofill."""
   id: String
+  """Google Maps URL to extract facility data from."""
   googleMapsUrl: String
 }
 
+"""Input for updating an existing facility. All fields are optional — only provided fields are updated."""
 input UpdateFacilityInput {
+  """Updated name of the facility in English."""
   nameEn: String
+  """Updated name of the facility in Japanese."""
   nameJa: String
+  """Updated contact information."""
   contact: ContactInput
+  """Updated latitude coordinate."""
   mapLatitude: Float
+  """Updated longitude coordinate."""
   mapLongitude: Float
+  """Healthcare professional relationships to add, update, or remove."""
   healthcareProfessionalIds: [Relationship!]
 }
 
-# You can search for facilities using any of combination these fields (AND operators)
+"""Search filters for querying facilities. All filters are combined with AND logic."""
 input FacilitySearchFilters {
+  """Filter by facility name in English (partial match)."""
   nameEn: String
+  """Filter by facility name in Japanese (partial match)."""
   nameJa: String
+  """Filter by contact information."""
   contact: ContactInput
+  """Filter by associated healthcare professional name."""
   healthcareProfessionalName: String
+  """Filter by associated healthcare professional IDs."""
   healthcareProfessionalIds: [String!]
+  """Filter by creation date (ISO 8601)."""
   createdDate: String
+  """Filter by last updated date (ISO 8601)."""
   updatedDate: String
+  """Ordering rules for the results."""
   orderBy: [OrderBy!]
+  """Maximum number of results to return."""
   limit: Int
+  """Number of results to skip for pagination."""
   offset: Int
 }
 
+"""A healthcare professional registered in the Find a Doc database."""
 type HealthcareProfessional {
+  """Unique identifier for the healthcare professional."""
   id: ID!
+  """Localized names of the healthcare professional (e.g. English and Japanese)."""
   names: [LocalizedName!]!
+  """Languages the healthcare professional speaks."""
   spokenLanguages: [Locale!]!
+  """Academic or professional degrees held."""
   degrees: [Degree!]!
+  """Medical specialties practiced."""
   specialties: [Specialty!]!
+  """Insurance types accepted by this professional."""
   acceptedInsurance: [Insurance!]!
+  """IDs of facilities where this professional practices."""
   facilityIds: [ID!]!
+  """ISO 8601 timestamp of when this record was created."""
   createdDate: String!
+  """ISO 8601 timestamp of the last update to this record."""
   updatedDate: String!
+  """Free-text notes or instructions for patients."""
   additionalInfoForPatients: String
 }
 
+"""Input for creating a new healthcare professional."""
 input CreateHealthcareProfessionalInput {
+  """Localized names (e.g. English and Japanese)."""
   names: [LocalizedNameInput!]!
+  """Languages the professional speaks."""
   spokenLanguages: [Locale!]
+  """Academic or professional degrees held."""
   degrees: [Degree!]
+  """Medical specialties practiced."""
   specialties: [Specialty!]
+  """Insurance types accepted."""
   acceptedInsurance: [Insurance!]
+  """IDs of facilities where this professional practices."""
   facilityIds: [ID!]!
+  """Free-text notes or instructions for patients."""
   additionalInfoForPatients: String
 }
 
+"""Input for updating an existing healthcare professional. All fields are optional — only provided fields are updated."""
 input UpdateHealthcareProfessionalInput {
+  """Updated localized names."""
   names: [LocalizedNameInput!]
+  """Updated spoken languages."""
   spokenLanguages: [Locale!]
+  """Updated degrees."""
   degrees: [Degree!]
+  """Updated specialties."""
   specialties: [Specialty!]
+  """Updated accepted insurance types."""
   acceptedInsurance: [Insurance!]
+  """Facility relationships to add, update, or remove."""
   facilityIds: [Relationship!]
+  """Updated free-text notes or instructions for patients."""
   additionalInfoForPatients: String
 }
 
-# You can search for healthcare professional using any of combination these fields (AND operators)
+"""Search filters for querying healthcare professionals. All filters are combined with AND logic."""
 input HealthcareProfessionalSearchFilters {
+  """Filter by specific healthcare professional IDs."""
   ids: [ID!]
+  """Filter by localized names."""
   names: [LocalizedNameInput!]
+  """Filter by spoken languages."""
   spokenLanguages: [Locale!]
+  """Filter by degrees."""
   degrees: [Degree!]
+  """Filter by specialties."""
   specialties: [Specialty!]
+  """Filter by accepted insurance types."""
   acceptedInsurance: [Insurance!]
+  """Filter by creation date (ISO 8601)."""
   createdDate: String
+  """Filter by last updated date (ISO 8601)."""
   updatedDate: String
+  """Ordering rules for the results."""
   orderBy: [OrderBy!]
+  """Maximum number of results to return."""
   limit: Int
+  """Number of results to skip for pagination."""
   offset: Int
 }
 
+"""A community-submitted suggestion for adding or updating a healthcare professional or facility."""
 type Submission {
+  """Unique identifier for the submission."""
   id: ID!
+  """Whether to autofill facility data from the Google Maps URL."""
   autofillPlaceFromSubmissionUrl: Boolean
+  """Google Maps URL for the facility associated with this submission."""
   googleMapsUrl: String!
+  """Name of the healthcare professional being submitted."""
   healthcareProfessionalName: String!
+  """Languages spoken by the submitted healthcare professional."""
   spokenLanguages: [Locale!]!
+  """Facility data included in this submission."""
   facility: FacilitySubmission
+  """Healthcare professional data included in this submission."""
   healthcareProfessionals: [HealthcareProfessionalSubmission!]
+  """Whether this submission is currently under review by a moderator."""
   isUnderReview: Boolean!
+  """Whether this submission has been approved by a moderator."""
   isApproved: Boolean!
+  """Whether this submission has been rejected by a moderator."""
   isRejected: Boolean!
+  """ISO 8601 timestamp of when this submission was created."""
   createdDate: String!
+  """ISO 8601 timestamp of the last update to this submission."""
   updatedDate: String!
+  """Optional notes from the submitter or moderator."""
   notes: String
 }
 
+"""Facility data embedded within a submission."""
 type FacilitySubmission {
+  """ID of an existing facility, if this submission updates one."""
   id: ID
+  """Submitted facility name in English."""
   nameEn: String
+  """Submitted facility name in Japanese."""
   nameJa: String
+  """Submitted contact information."""
   contact: Contact
+  """IDs of healthcare professionals associated with this facility."""
   healthcareProfessionalIds: [ID!]!
+  """Submitted latitude coordinate."""
   mapLatitude: Float
+  """Submitted longitude coordinate."""
   mapLongitude: Float
 }
 
+"""Healthcare professional data embedded within a submission."""
 type HealthcareProfessionalSubmission {
+  """ID of an existing healthcare professional, if this submission updates one."""
   id: ID
+  """Submitted localized names."""
   names: [LocalizedName!]!
+  """Submitted spoken languages."""
   spokenLanguages: [Locale!]!
+  """Submitted degrees."""
   degrees: [Degree!]
+  """Submitted specialties."""
   specialties: [Specialty!]
+  """Submitted accepted insurance types."""
   acceptedInsurance: [Insurance!]
+  """Submitted free-text notes for patients."""
   additionalInfoForPatients: String
+  """IDs of facilities where this professional practices."""
   facilityIds: [ID!]!
 }
 
-# For creating a submission. This has different fields than the Submission type
+"""Input for creating a new community submission."""
 input CreateSubmissionInput {
+  """Google Maps URL for the facility."""
   googleMapsUrl: String
+  """Whether to autofill facility data from the Google Maps URL."""
   autofillPlaceFromSubmissionUrl: Boolean
+  """Name of the healthcare professional being submitted."""
   healthcareProfessionalName: String
+  """Languages spoken by the healthcare professional."""
   spokenLanguages: [Locale!]
+  """Optional notes from the submitter."""
   notes: String
 }
 
-# For updating a submission. This has different fields than the Submission type
+"""Input for updating an existing submission. Used during the moderation review process."""
 input UpdateSubmissionInput {
+  """Updated Google Maps URL."""
   googleMapsUrl: String
+  """Updated healthcare professional name."""
   healthcareProfessionalName: String
+  """Updated spoken languages."""
   spokenLanguages: [Locale!]
+  """Facility data to associate with this submission."""
   facility: CreateFacilityInput
+  """Healthcare professional data to associate with this submission."""
   healthcareProfessionals: [CreateHealthcareProfessionalInput!]
+  """Set whether the submission is under review."""
   isUnderReview: Boolean
+  """Set whether the submission is approved."""
   isApproved: Boolean
+  """Set whether the submission is rejected."""
   isRejected: Boolean
+  """Whether to autofill facility data from the Google Maps URL."""
   autofillPlaceFromSubmissionUrl: Boolean
+  """Optional notes from the moderator."""
   notes: String
 }
 
-# You can search for submissions using any of combination these fields (AND operators)
+"""Search filters for querying submissions. All filters are combined with AND logic."""
 input SubmissionSearchFilters {
+  """Filter by Google Maps URL."""
   googleMapsUrl: String
+  """Filter by healthcare professional name."""
   healthcareProfessionalName: String
+  """Filter by spoken languages."""
   spokenLanguages: [Locale!]
+  """Filter to submissions under review."""
   isUnderReview: Boolean
+  """Filter to approved submissions."""
   isApproved: Boolean
+  """Filter to rejected submissions."""
   isRejected: Boolean
+  """Filter by creation date (ISO 8601)."""
   createdDate: String
+  """Filter by last updated date (ISO 8601)."""
   updatedDate: String
+  """Ordering rules for the results."""
   orderBy: [OrderBy!]
+  """Maximum number of results to return."""
   limit: Int
+  """Number of results to skip for pagination."""
   offset: Int
 }
 
+"""A reservation made by a user (e.g. for an appointment)."""
 type Reservation {
+  """Unique identifier for the reservation."""
   id: ID!
+  """ID of the user who made this reservation."""
   userId: ID!
+  """ISO 8601 timestamp of when this reservation was created."""
   createdDate: String!
+  """ISO 8601 timestamp of the last update to this reservation."""
   updatedDate: String!
+  """Current status of the reservation."""
   status: ReservationStatus!
 }
 
+"""Input for creating a new reservation."""
 input CreateReservationInput {
+  """ID of the user making the reservation."""
   userId: ID!
 }
 
+"""Input for updating an existing reservation."""
 input UpdateReservationInput {
+  """ID of the user who owns the reservation."""
   userId: ID!
+  """New status for the reservation."""
   status: ReservationStatus!
 }
 
+"""The current status of a reservation."""
 enum ReservationStatus {
+  """The reservation is confirmed and active."""
   BOOKED
+  """The reservation has been cancelled."""
   CANCELLED
+  """The reservation has been fulfilled."""
   COMPLETED
 }
 
+"""A registered user of the Find a Doc platform."""
 type User {
+  """Unique identifier for the user."""
   id: ID!
+  """ISO 8601 timestamp of when this user was created."""
   createdDate: String!
+  """ISO 8601 timestamp of the last update to this user."""
   updatedDate: String!
+  """Display name shown in the UI."""
   displayName: String
+  """URL of the user's profile picture."""
   profilePicUrl: String
 }
 
+"""Input for creating a new user."""
 input CreateUserInput {
+  """Display name shown in the UI."""
   displayName: String
+  """URL of the user's profile picture."""
   profilePicUrl: String
 }
 
+"""Input for updating an existing user."""
 input UpdateUserInput {
+  """Updated display name."""
   displayName: String
+  """Updated profile picture URL."""
   profilePicUrl: String
 }
 
+"""A record of a create, update, or delete action performed on an entity."""
 type AuditLog {
+  """Unique identifier for this audit log entry."""
   id: ID!
+  """The type of action that was performed (create, update, or delete)."""
   actionType: ActionType!
+  """The type of object that was affected."""
   objectType: ObjectType!
+  """The schema version used when this log entry was created."""
   schemaVersion: SchemaVersion!
+  """JSON representation of the object after the action (null for deletes)."""
   newValue: String
+  """JSON representation of the object before the action (null for creates)."""
   oldValue: String
+  """Identifier of the user or system that performed the action."""
   updatedBy: String!
+  """ISO 8601 timestamp of when the action was performed."""
   updatedDate: String!
 }
 
-# When we are storing the audit logs, we want to keep track of the actions used
+"""The type of action recorded in an audit log entry."""
 enum ActionType {
+  """A new entity was created."""
   CREATE
+  """An existing entity was modified."""
   UPDATE
+  """An entity was deleted."""
   DELETE
 }
 
+"""The type of entity affected by an audited action."""
 enum ObjectType {
+  """A facility entity."""
   Facility
+  """A healthcare professional entity."""
   HealthcareProfessional
+  """A submission entity."""
   Submission
 }
 
+"""The schema version used for audit log serialization."""
 enum SchemaVersion {
+  """Version 1 of the audit log schema."""
   V1
 }
 
-# This is used for id lists, but also has an action that lets the API understand if the id is being created, updated, or deleted
+"""Describes a relationship change for an ID in a list — whether to add, update, or remove it."""
 input Relationship {
+  """The action to perform on this relationship."""
   action: RelationshipAction!
+  """The ID of the related entity."""
   otherEntityId: ID!
 }
 
+"""The action to perform on a relationship between entities."""
 enum RelationshipAction {
+  """Add a new relationship."""
   CREATE
+  """Update an existing relationship."""
   UPDATE
+  """Remove the relationship."""
   DELETE
 }
 
+"""Language and region locale codes (BCP 47 style). Used to represent spoken languages."""
 enum Locale {
-  ak_GH # Akan (Ghana)
-  am_ET # Amharic (Ethiopia)
-  ar_AE # Arabic (United Arab Emirates)
-  bm_ML # Bambara (Mali)
-  bn_BD # Bengali (Bangladesh)
-  bs_BA # Bosnian (Bosnia and Herzegovina)
-  ca_ES # Catalan (Spain)
-  cs_CZ # Czech (Czech Republic)
-  chr_US # Cherokee (United States)
-  cy_GB # Welsh (United Kingdom)
-  da_DK # Danish (Denmark)
-  de_DE # German (Germany)
-  ee_GH # Ewe (Ghana)
-  el_GR # Greek (Greece)
-  en_US # English (United States)
-  es_ES # Spanish (Spain)
-  et_EE # Estonian (Estonia)
-  fa_AF # Persian (Afghanistan)
-  fi_FI # Finnish (Finland)
-  fr_FR # French (France)
-  guz_KE # Gusii (Kenya)
-  he_IL # Hebrew (Israel)
-  hi_IN # Hindi (India)
-  hr_HR # Croatian (Croatia)
-  hu_HU # Hungarian (Hungary)
-  hy_AM # Armenian (Armenia)
-  id_ID # Indonesian (Indonesia)
-  ig_NG # Igbo (Nigeria)
-  is_IS # Icelandic (Iceland)
-  it_IT # Italian (Italy)
-  ja_JP # Japanese (Japan)
-  kab_DZ # Kabyle (Algeria)
-  km_KH # Khmer (Cambodia)
-  kn_IN # Kannada (India)
-  ko_KR # Korean (South Korea)
-  lag_TZ # Langi (Tanzania)
-  lg_UG # Ganda (Uganda)
-  lv_LV # Latvian (Latvia)
-  mn_MN # Mongolian (Mongolia)
-  nb_NO # Norwegian Bokmål (Norway)
-  ne_NP # Nepali (Nepal)
-  nl_BE # Dutch (Belgium)
-  pl_PL # Polish (Poland)
-  pt_BR # Portuguese (Brazil)
-  ru_RU # Russian (Russia)
-  si_LK # Sinhala (Sri Lanka)
-  sq_AL # Albanian (Albania)
-  sr_Cyrl # Serbian (Cyrillic)
-  sw_KE # Swahili (Kenya)
-  th_TH # Thai (Thailand)
-  tl_PH # Tagalog (Philippines)
-  tr_TR # Turkish (Turkey)
-  vi_VN # Vietnamese (Vietnam)
-  zh_CN # Chinese (Simplified, China)
-  zh_HK # Chinese (Traditional, Hong Kong SAR China)
-  zh_TW # Chinese (Traditional, Taiwan)
-  und # Unspecified Language (Undefined)
+  """Akan (Ghana)"""
+  ak_GH
+  """Amharic (Ethiopia)"""
+  am_ET
+  """Arabic (United Arab Emirates)"""
+  ar_AE
+  """Bambara (Mali)"""
+  bm_ML
+  """Bengali (Bangladesh)"""
+  bn_BD
+  """Bosnian (Bosnia and Herzegovina)"""
+  bs_BA
+  """Catalan (Spain)"""
+  ca_ES
+  """Czech (Czech Republic)"""
+  cs_CZ
+  """Cherokee (United States)"""
+  chr_US
+  """Welsh (United Kingdom)"""
+  cy_GB
+  """Danish (Denmark)"""
+  da_DK
+  """German (Germany)"""
+  de_DE
+  """Ewe (Ghana)"""
+  ee_GH
+  """Greek (Greece)"""
+  el_GR
+  """English (United States)"""
+  en_US
+  """Spanish (Spain)"""
+  es_ES
+  """Estonian (Estonia)"""
+  et_EE
+  """Persian (Afghanistan)"""
+  fa_AF
+  """Finnish (Finland)"""
+  fi_FI
+  """French (France)"""
+  fr_FR
+  """Gusii (Kenya)"""
+  guz_KE
+  """Hebrew (Israel)"""
+  he_IL
+  """Hindi (India)"""
+  hi_IN
+  """Croatian (Croatia)"""
+  hr_HR
+  """Hungarian (Hungary)"""
+  hu_HU
+  """Armenian (Armenia)"""
+  hy_AM
+  """Indonesian (Indonesia)"""
+  id_ID
+  """Igbo (Nigeria)"""
+  ig_NG
+  """Icelandic (Iceland)"""
+  is_IS
+  """Italian (Italy)"""
+  it_IT
+  """Japanese (Japan)"""
+  ja_JP
+  """Kabyle (Algeria)"""
+  kab_DZ
+  """Khmer (Cambodia)"""
+  km_KH
+  """Kannada (India)"""
+  kn_IN
+  """Korean (South Korea)"""
+  ko_KR
+  """Langi (Tanzania)"""
+  lag_TZ
+  """Ganda (Uganda)"""
+  lg_UG
+  """Latvian (Latvia)"""
+  lv_LV
+  """Mongolian (Mongolia)"""
+  mn_MN
+  """Norwegian Bokmal (Norway)"""
+  nb_NO
+  """Nepali (Nepal)"""
+  ne_NP
+  """Dutch (Belgium)"""
+  nl_BE
+  """Polish (Poland)"""
+  pl_PL
+  """Portuguese (Brazil)"""
+  pt_BR
+  """Russian (Russia)"""
+  ru_RU
+  """Sinhala (Sri Lanka)"""
+  si_LK
+  """Albanian (Albania)"""
+  sq_AL
+  """Serbian (Cyrillic)"""
+  sr_Cyrl
+  """Swahili (Kenya)"""
+  sw_KE
+  """Thai (Thailand)"""
+  th_TH
+  """Tagalog (Philippines)"""
+  tl_PH
+  """Turkish (Turkey)"""
+  tr_TR
+  """Vietnamese (Vietnam)"""
+  vi_VN
+  """Chinese (Simplified, China)"""
+  zh_CN
+  """Chinese (Traditional, Hong Kong SAR China)"""
+  zh_HK
+  """Chinese (Traditional, Taiwan)"""
+  zh_TW
+  """Unspecified Language (Undefined)"""
+  und
 }
 
+"""A person's name localized to a specific language/locale."""
 type LocalizedName {
+  """First (given) name."""
   firstName: String!
+  """Middle name, if applicable."""
   middleName: String
+  """Last (family) name."""
   lastName: String!
-  locale: Locale!
-}
-input LocalizedNameInput {
-  firstName: String!
-  middleName: String
-  lastName: String!
+  """The locale this name is written in."""
   locale: Locale!
 }
 
+"""Input for providing a localized name."""
+input LocalizedNameInput {
+  """First (given) name."""
+  firstName: String!
+  """Middle name, if applicable."""
+  middleName: String
+  """Last (family) name."""
+  lastName: String!
+  """The locale this name is written in."""
+  locale: Locale!
+}
+
+"""Contact information for a facility."""
 type Contact {
+  """Google Maps URL for the facility location."""
   googleMapsUrl: String!
+  """Email address."""
   email: String
+  """Phone number."""
   phone: String!
+  """Website URL."""
   website: String
+  """Physical mailing address."""
   address: PhysicalAddress!
 }
+
+"""Input for providing contact information."""
 input ContactInput {
+  """Google Maps URL for the facility location."""
   googleMapsUrl: String!
+  """Email address."""
   email: String
+  """Phone number."""
   phone: String!
+  """Website URL."""
   website: String
+  """Physical mailing address."""
   address: PhysicalAddressInput!
 }
 
+"""A physical address with bilingual (English and Japanese) fields."""
 type PhysicalAddress {
+  """Postal / zip code."""
   postalCode: String!
+  """Prefecture name in English."""
   prefectureEn: String!
+  """City name in English."""
   cityEn: String!
+  """Primary address line in English."""
   addressLine1En: String!
+  """Secondary address line in English (e.g. building, floor)."""
   addressLine2En: String
+  """Prefecture name in Japanese."""
   prefectureJa: String!
+  """City name in Japanese."""
   cityJa: String!
+  """Primary address line in Japanese."""
   addressLine1Ja: String!
+  """Secondary address line in Japanese (e.g. building, floor)."""
   addressLine2Ja: String
 }
+
+"""Input for providing a physical address with bilingual fields."""
 input PhysicalAddressInput {
+  """Postal / zip code."""
   postalCode: String!
+  """Prefecture name in English."""
   prefectureEn: String!
+  """City name in English."""
   cityEn: String!
+  """Primary address line in English."""
   addressLine1En: String!
+  """Secondary address line in English (e.g. building, floor)."""
   addressLine2En: String!
+  """Prefecture name in Japanese."""
   prefectureJa: String!
+  """City name in Japanese."""
   cityJa: String!
+  """Primary address line in Japanese."""
   addressLine1Ja: String!
+  """Secondary address line in Japanese (e.g. building, floor)."""
   addressLine2Ja: String!
 }
 
+"""Medical specialties that a healthcare professional may practice."""
 enum Specialty {
+  """Allergy and Immunology"""
   ALLERGY_AND_IMMUNOLOGY
+  """Anesthesiology"""
   ANESTHESIOLOGY
+  """Cardiology"""
   CARDIOLOGY
+  """Cosmetic Surgery"""
   COSMETIC_SURGERY
+  """Dentistry"""
   DENTISTRY
+  """Dermatology"""
   DERMATOLOGY
+  """Diagnostic Radiology"""
   DIAGNOSTIC_RADIOLOGY
+  """Emergency Medicine"""
   EMERGENCY_MEDICINE
+  """Ear, Nose, and Throat (ENT)"""
   ENT_SPECIALIST
+  """Family Medicine"""
   FAMILY_MEDICINE
+  """General Medicine"""
   GENERAL_MEDICINE
+  """Infectious Diseases"""
   INFECTIOUS_DISEASES
+  """Internal Medicine"""
   INTERNAL_MEDICINE
+  """Medical Genetics"""
   MEDICAL_GENETICS
+  """Neurology"""
   NEUROLOGY
+  """Nuclear Medicine"""
   NUCLEAR_MEDICINE
+  """Obstetrics and Gynecology"""
   OBSTETRICS_AND_GYNECOLOGY
+  """Ophthalmology"""
   OPHTHALMOLOGY
+  """Optometry"""
   OPTOMETRY
+  """Orthodontics"""
   ORTHODONTICS
+  """Orthopedic Surgery"""
   ORTHOPEDIC_SURGERY
+  """Otolaryngology"""
   OTOLARYNGOLOGY
+  """Pathology"""
   PATHOLOGY
+  """Pediatrics"""
   PEDIATRICS
+  """Pharmacy"""
   PHARMACY
+  """Physiotherapy"""
   PHYSIOTHERAPY
+  """Physical Medicine and Rehabilitation"""
   PHYSICAL_MEDICINE_AND_REHABILITATION
+  """Plastic Surgery"""
   PLASTIC_SURGERY
+  """Preventive Medicine"""
   PREVENTIVE_MEDICINE
+  """Proctology"""
   PROCTOLOGY
+  """Psychiatry"""
   PSYCHIATRY
+  """Radiation Oncology"""
   RADIATION_ONCOLOGY
+  """Sports Medicine"""
   SPORTS_MEDICINE
+  """General Surgery"""
   SURGERY
+  """Traumatology"""
   TRAUMATOLOGY
+  """Urology"""
   UROLOGY
 }
 
-# ======== Categories for specialties =========
-
+"""Grouping categories for medical specialties, used for filtering in the UI."""
 enum SpecialtyCategory {
+  """Children's health and pediatric specialties."""
   CHILDRENS_HEALTH
+  """Cosmetic and plastic surgery specialties."""
   COSMETIC_AND_PLASTIC_SURGERY
+  """Dental specialties."""
   DENTAL
+  """Dermatology specialties."""
   DERMATOLOGY
+  """Ear, Nose, and Throat specialties."""
   ENT
+  """Eye and vision care specialties."""
   EYE_AND_VISION
+  """Mental health specialties."""
   MENTAL_HEALTH
+  """Men's health specialties."""
   MENS_HEALTH
+  """Physical therapy specialties."""
   PHYSICAL_THERAPY
+  """Primary care specialties."""
   PRIMARY_CARE
+  """Sports medicine and rehabilitation specialties."""
   SPORTS_AND_REHAB
+  """Women's health specialties."""
   WOMENS_HEALTH
 }
 
+"""Academic or professional degrees held by healthcare professionals."""
 enum Degree {
-  CNM # Certified Nurse Midwife
-  DC # Doctor of Chiropractic
-  DDS # Doctor of Dental Surgery
-  DMD # Doctor of Dental Medicine
-  DNP # Doctor of Nursing Practice
-  DO # Doctor of Osteopathic Medicine
-  DPM # Doctor of Podiatric Medicine
-  DPT # Doctor of Physical Therapy
-  DSc # Doctor of Science
-  DSW # Doctor of Social Work
-  DVM # Doctor of Veterinary Medicine
-  EdD # Doctor of Education
-  MD # Medical Doctor
-  MPH # Master of Public Health
-  NP # Nurse Practitioner
-  OD # Doctor of Optometry
-  PA # Physician Assistant
-  PhD # Doctor of Philosophy
-  PharmD # Doctor of Pharmacy
-  PsyD # Doctor of Psychology
+  """Certified Nurse Midwife"""
+  CNM
+  """Doctor of Chiropractic"""
+  DC
+  """Doctor of Dental Surgery"""
+  DDS
+  """Doctor of Dental Medicine"""
+  DMD
+  """Doctor of Nursing Practice"""
+  DNP
+  """Doctor of Osteopathic Medicine"""
+  DO
+  """Doctor of Podiatric Medicine"""
+  DPM
+  """Doctor of Physical Therapy"""
+  DPT
+  """Doctor of Science"""
+  DSc
+  """Doctor of Social Work"""
+  DSW
+  """Doctor of Veterinary Medicine"""
+  DVM
+  """Doctor of Education"""
+  EdD
+  """Medical Doctor"""
+  MD
+  """Master of Public Health"""
+  MPH
+  """Nurse Practitioner"""
+  NP
+  """Doctor of Optometry"""
+  OD
+  """Physician Assistant"""
+  PA
+  """Doctor of Philosophy"""
+  PhD
+  """Doctor of Pharmacy"""
+  PharmD
+  """Doctor of Psychology"""
+  PsyD
 }
 
+"""Insurance types that healthcare professionals may accept."""
 enum Insurance {
+  """Japanese national health insurance (kokumin kenko hoken / shakai hoken)."""
   JAPANESE_HEALTH_INSURANCE
+  """International or overseas health insurance plans."""
   INTERNATIONAL_HEALTH_INSURANCE
+  """Travel insurance with medical coverage."""
   TRAVEL_INSURANCE
+  """The provider does not accept any insurance."""
   INSURANCE_NOT_ACCEPTED
+  """For patients without insurance coverage."""
   UNINSURED
 }
 
+"""Specifies a field and direction to order query results by."""
 input OrderBy {
+  """The direction to sort (ascending or descending)."""
   orderDirection: OrderDirection!
+  """The name of the field to sort by (e.g. 'createdDate', 'nameEn')."""
   fieldToOrder: String!
 }
 
+"""Sort direction for ordering query results."""
 enum OrderDirection {
+  """Ascending order (A-Z, oldest first, lowest first)."""
   asc
+  """Descending order (Z-A, newest first, highest first)."""
   desc
 }
 
+"""Result returned from delete mutations indicating success or failure."""
 type DeleteResult {
+  """Whether the delete operation completed successfully."""
   isSuccessful: Boolean!
 }
 
-# ======== Queries =========
-
 type Query {
+  """Look up a single facility by its unique ID. Returns null if not found."""
   facility(id: ID!): Facility
+
+  """Search for facilities matching the given filters. Returns an empty list if no matches."""
   facilities(filters: FacilitySearchFilters!): [Facility!]!
+
+  """Get the total count of facilities matching the given filters. Useful for pagination."""
   facilitiesTotalCount(filters: FacilitySearchFilters!): Int!
+
+  """Look up a single healthcare professional by their unique ID. Returns null if not found."""
   healthcareProfessional(id: ID!): HealthcareProfessional
+
+  """Search for healthcare professionals matching the given filters. Returns an empty list if no matches."""
   healthcareProfessionals(
     filters: HealthcareProfessionalSearchFilters!
   ): [HealthcareProfessional!]!
+
+  """Get the total count of healthcare professionals matching the given filters. Useful for pagination."""
   healthcareProfessionalsTotalCount(
     filters: HealthcareProfessionalSearchFilters!
   ): Int!
+
+  """Look up a single submission by its unique ID. Returns null if not found."""
   submission(id: ID!): Submission
+
+  """Search for submissions matching the given filters. Returns an empty list if no matches."""
   submissions(filters: SubmissionSearchFilters!): [Submission!]!
+
+  """Get the total count of submissions matching the given filters. Useful for pagination."""
   submissionsTotalCount(filters: SubmissionSearchFilters!): Int!
+
+  """Look up a single audit log entry by its ID. Returns null if not found."""
   auditLog(id: ID): AuditLog
+
+  """Look up a single user by their unique ID. Returns null if not found."""
   user(id: ID!): User
+
+  """Look up a single reservation by its unique ID. Returns null if not found."""
   reservation(id: ID!): Reservation
 }
 
-#======== Mutations ========
-
 type Mutation {
+  """Create a new healthcare professional record."""
   createHealthcareProfessional(
     input: CreateHealthcareProfessionalInput!
   ): HealthcareProfessional!
 
+  """Update an existing healthcare professional by ID."""
   updateHealthcareProfessional(
     id: ID!
     input: UpdateHealthcareProfessionalInput!
   ): HealthcareProfessional!
 
+  """Delete a healthcare professional by ID."""
   deleteHealthcareProfessional(id: ID!): DeleteResult!
 
+  """Create a new facility record."""
   createFacility(input: CreateFacilityInput!): Facility!
 
+  """Update an existing facility by ID."""
   updateFacility(id: ID!, input: UpdateFacilityInput!): Facility!
 
+  """Delete a facility by ID."""
   deleteFacility(id: ID!): DeleteResult!
 
+  """Create a new community submission for a healthcare professional or facility."""
   createSubmission(input: CreateSubmissionInput!): Submission!
 
+  """Autofill a submission with data from a Google Maps URL during the moderation process."""
   moderationPanelUpdateSubmission(
     input: ModerationAutofillDatabaseSubmissionInput!
   ): Submission!
 
+  """Update an existing submission by ID."""
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission!
 
+  """Delete a submission by ID."""
   deleteSubmission(id: ID!): DeleteResult!
 
+  """Create a new user account."""
   createUser(input: CreateUserInput!): User!
 
+  """Update an existing user by ID."""
   updateUser(id: ID!, input: UpdateUserInput!): User!
 
+  """Create a new reservation."""
   createReservation(input: CreateReservationInput!): Reservation!
 
+  """Update an existing reservation."""
   updateReservation(input: UpdateReservationInput!): Reservation!
 }
