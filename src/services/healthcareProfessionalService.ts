@@ -34,28 +34,16 @@ export function applyHpFilters<T extends HasContains>(
 ): T {
     let query = builder
 
-    if (filters.degrees?.length) { query = query.contains('degrees', filters.degrees as gqlTypes.Degree[]) as T }
-    if (filters.specialties?.length) { query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[]) as T }
-    if (filters.spokenLanguages?.length) { query = query.contains('spoken_languages', filters.spokenLanguages as gqlTypes.Locale[]) as T }
-    if (filters.acceptedInsurance?.length) { query = query.contains('accepted_insurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as T }
+    // Values must be JSON-stringified because these are jsonb columns, not PostgreSQL arrays.
+    // Supabase's .contains() with a JS array generates PostgreSQL array literal format {val1,val2}
+    // which fails with "invalid input syntax for type json". Passing a JSON string generates
+    // the correct PostgREST cs.["val1","val2"] format for the jsonb @> operator.
+    if (filters.degrees?.length) { query = query.contains('degrees', JSON.stringify(filters.degrees)) as T }
+    if (filters.specialties?.length) { query = query.contains('specialties', JSON.stringify(filters.specialties)) as T }
+    if (filters.spokenLanguages?.length) { query = query.contains('spoken_languages', JSON.stringify(filters.spokenLanguages)) as T }
+    if (filters.acceptedInsurance?.length) { query = query.contains('accepted_insurance', JSON.stringify(filters.acceptedInsurance)) as T }
     return query
 }
-
-// Maps GQL Create input → DB insert row; defaults arrays to [] to avoid `!`.
-/*export function mapCreateInputToHpInsertRow(
-  input: gqlTypes.CreateHealthcareProfessionalInput
-): dbSchema.HealthcareProfessionalInsertRow {
-    return {
-        names: input.names,
-        degrees: input.degrees ?? [],
-        spoken_languages: input.spokenLanguages ?? [],
-        specialties: input.specialties ?? [],
-        acceptedInsurance: input.acceptedInsurance ?? [],
-        additionalInfoForPatients: input.additionalInfoForPatients ?? null,
-        createdDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString()
-    }
-}*/
 
 // Derives the facilityId to associate from relationship edits (create/delete).
 export function resolveFacilityIdFromRelationships(
@@ -244,6 +232,7 @@ export async function searchProfessionals(
         )
 
         if (matchingHpsError) {
+            logger.error(`searchProfessionals: main query failed: ${JSON.stringify(matchingHpsError)}`)
             throw matchingHpsError
         }
 
@@ -269,6 +258,7 @@ export async function searchProfessionals(
             .in('hps_id', hpIds)
 
         if (facilityRelationsForHPsError) {
+            logger.error(`searchProfessionals: junction table query failed: ${JSON.stringify(facilityRelationsForHPsError)}`)
             throw facilityRelationsForHPsError
         }
 
@@ -294,7 +284,7 @@ export async function searchProfessionals(
 
         return { data: result, hasErrors: false }
     } catch (err) {
-        logger.error(`ERROR: searchProfessionals ${JSON.stringify(filters)} -> ${err}`)
+        logger.error(`ERROR: searchProfessionals ${JSON.stringify(filters)} -> ${err instanceof Error ? err.message : JSON.stringify(err)}`)
         return {
             data: [],
             hasErrors: true,

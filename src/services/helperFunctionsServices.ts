@@ -106,10 +106,11 @@ export function applyHpFilters<B extends HasContains>(
 ): B {
     let query = builder
 
-    if (filters.degrees?.length) { query = query.contains('degrees', filters.degrees as gqlTypes.Degree[]) as B }
-    if (filters.specialties?.length) { query = query.contains('specialties', filters.specialties as gqlTypes.Specialty[]) as B }
-    if (filters.spokenLanguages?.length) { query = query.contains('spokenLanguages', filters.spokenLanguages as gqlTypes.Locale[]) as B }
-    if (filters.acceptedInsurance?.length) { query = query.contains('acceptedInsurance', filters.acceptedInsurance as gqlTypes.Insurance[]) as B }
+    // Values must be JSON-stringified because these are jsonb columns, not PostgreSQL arrays.
+    if (filters.degrees?.length) { query = query.contains('degrees', JSON.stringify(filters.degrees)) as B }
+    if (filters.specialties?.length) { query = query.contains('specialties', JSON.stringify(filters.specialties)) as B }
+    if (filters.spokenLanguages?.length) { query = query.contains('spokenLanguages', JSON.stringify(filters.spokenLanguages)) as B }
+    if (filters.acceptedInsurance?.length) { query = query.contains('acceptedInsurance', JSON.stringify(filters.acceptedInsurance)) as B }
     return query
 }
 
