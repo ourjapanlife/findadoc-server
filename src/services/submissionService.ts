@@ -13,6 +13,8 @@ import type { Selectable } from 'kysely'
 import { db } from '../kyselyClient.js'
 import { mapKyselySubmissionToGraphQL, mapDbEntityTogqlEntity } from '../services/mappersEntityService.js'
 import { asJsonb } from '../../utils/dbUtils.js'
+/** Row type used as Supabase select generic — matches SubmissionRow from dbSchema */
+type SubmissionRow = dbSchema.SubmissionRow
 
 /**
  * Builds a minimal, empty address object.
@@ -153,10 +155,12 @@ function applySubmissionQueryFilters<T extends Record<string, any>>(
 /**
  * Gets the Submission from the database that matches the id.
  * @param id The ID of the Submission row in the database.
+ * @param selectColumns Supabase select string. Defaults to '*' (all columns).
  * @returns A Submission object.
  */
 export const getSubmissionById = async (
-    id: string
+    id: string,
+    selectColumns = '*'
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
         const supabase = getSupabaseClient()
@@ -164,7 +168,7 @@ export const getSubmissionById = async (
         // Query the 'submissions' table using the ID and expect exactly one row because of .single()
         const { data: submissionRow, error: submissionRowError } = await supabase
             .from('submissions')
-            .select('*')
+            .select<string, SubmissionRow>(selectColumns)
             .eq('id', id)
             .single()
 
@@ -200,10 +204,12 @@ export const getSubmissionById = async (
  * Returns a paginated list of submissions.
  * This function is designed to serve the GraphQL query that returns only the array of submissions.
  * @param filters The search filters to apply.
+ * @param selectColumns Supabase select string. Defaults to '*' (all columns).
  * @returns An object containing data (an array of GraphQL Submissions)
  */
 export async function searchSubmissions(
-  filters: gqlTypes.SubmissionSearchFilters = {}
+  filters: gqlTypes.SubmissionSearchFilters = {},
+  selectColumns = '*'
 ): Promise<Result<gqlTypes.Submission[]>> {
     try {
         const validation = validateSubmissionSearchFilters(filters)
@@ -218,7 +224,7 @@ export async function searchSubmissions(
         const supabase = getSupabaseClient()
 
         let base = applySubmissionQueryFilters(
-            supabase.from('submissions').select('*'),
+            supabase.from('submissions').select<string, SubmissionRow>(selectColumns),
             filters
         )
 

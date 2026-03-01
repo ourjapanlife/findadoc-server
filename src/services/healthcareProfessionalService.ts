@@ -10,6 +10,8 @@ import { db } from '../kyselyClient.js'
 import { asJsonb } from '../../utils/dbUtils.js'
 import type { HasContains } from '../../utils/dbUtils.js'
 import { mapDbHpToGql, mapKyselyHpToGraphQL} from '../services/mappersEntityService.js'
+/** Row type used as Supabase select generic — matches DbHealthcareProfessionalRow from dbSchema */
+type HpRow = dbSchema.DbHealthcareProfessionalRow
 
 // Builds a partial update patch for Healthcare Professional rows.
 export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>) {
@@ -34,10 +36,6 @@ export function applyHpFilters<T extends HasContains>(
 ): T {
     let query = builder
 
-    // Values must be JSON-stringified because these are jsonb columns, not PostgreSQL arrays.
-    // Supabase's .contains() with a JS array generates PostgreSQL array literal format {val1,val2}
-    // which fails with "invalid input syntax for type json". Passing a JSON string generates
-    // the correct PostgREST cs.["val1","val2"] format for the jsonb @> operator.
     if (filters.degrees?.length) { query = query.contains('degrees', JSON.stringify(filters.degrees)) as T }
     if (filters.specialties?.length) { query = query.contains('specialties', JSON.stringify(filters.specialties)) as T }
     if (filters.spokenLanguages?.length) { query = query.contains('spoken_languages', JSON.stringify(filters.spokenLanguages)) as T }
@@ -88,10 +86,14 @@ export function resolveFacilityIdFromRelationships(
 /**
  * Gets the Healthcare Professional from the database that matches on the id.
  * @param id A string that matches the id of the Supabase for the professional.
+ * @param selectColumns Comma-separated DB columns to fetch (defaults to '*' for all columns).
+ * @param needsFacilityIds Whether to query the junction table for related facility IDs (defaults to true).
  * @returns A Healthcare Professional object.
  */
 export async function getHealthcareProfessionalById(
-    id: string
+    id: string,
+    selectColumns = '*',
+    needsFacilityIds = true
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
         const validationResult = validateIdInput(id)
@@ -114,7 +116,7 @@ export async function getHealthcareProfessionalById(
         // Fetch the HP row by primary key; .single() requires exactly one row
         const { data: hpEntity, error: matchingHpError } = await supabase
             .from('hps')
-            .select('*')
+            .select<string, HpRow>(selectColumns)
             .eq('id', id)
             .single()
 
@@ -135,18 +137,21 @@ export async function getHealthcareProfessionalById(
             throw matchingHpError
         }
 
-        // Load relations from junction table (facility links for this HP)
-        const { data: facilityLinks, error: facilityLinkRowsError } = await supabase
-            .from('hps_facilities')
-            .select('facilities_id')
-            .eq('hps_id', id)
+        // Load relations from junction table (facility links for this HP, skip if not requested)
+        let facilityIds: string[] = []
 
-        if (facilityLinkRowsError) {
-            throw facilityLinkRowsError
+        if (needsFacilityIds) {
+            const { data: facilityLinks, error: facilityLinkRowsError } = await supabase
+                .from('hps_facilities')
+                .select('facilities_id')
+                .eq('hps_id', id)
+
+            if (facilityLinkRowsError) {
+                throw facilityLinkRowsError
+            }
+
+            facilityIds = (facilityLinks ?? []).map(link => link.facilities_id as string)
         }
-
-        // Extract facility IDs from associations
-        const facilityIds = (facilityLinks ?? []).map(link => link.facilities_id as string)
 
         // Convert database entity to GraphQL shape
         const dbHealthcareProfessional = hpEntity as dbSchema.DbHealthcareProfessionalRow
@@ -178,10 +183,14 @@ export async function getHealthcareProfessionalById(
  * by performing a preliminary lookup to get a subset of HP IDs.
  * - It applies scalar filters, ordering, and pagination to the main hps table.
  * @param filters Optional search and pagination filters for HP.
+ * @param selectColumns Comma-separated DB columns to fetch (defaults to '*' for all columns).
+ * @param needsFacilityIds Whether to query the junction table for related facility IDs (defaults to true).
  * @returns A Promise that resolves to a Result object containing an array of HPs.
  */
 export async function searchProfessionals(
-  filters: gqlTypes.HealthcareProfessionalSearchFilters = {}
+  filters: gqlTypes.HealthcareProfessionalSearchFilters = {},
+  selectColumns = '*',
+  needsFacilityIds = true
 ): Promise<Result<gqlTypes.HealthcareProfessional[]>> {
     try {
         const validation = validateProfessionalsSearchInput(filters)
@@ -208,7 +217,7 @@ export async function searchProfessionals(
         const supabase = getSupabaseClient()
 
         // Start base query on hps table and apply JSONB filters via helper
-        let hpSelect = applyHpFilters(supabase.from('hps').select('*'), filters)
+        let hpSelect = applyHpFilters(supabase.from('hps').select<string, HpRow>(selectColumns), filters)
 
         if (Array.isArray(filters.ids)) {
             hpSelect = hpSelect.in('id', filters.ids)
@@ -252,25 +261,28 @@ export async function searchProfessionals(
         }
 
         // Load facilities relations for these HPs to avoid N+1 queries
-        const { data: facilityRelationsForHPs, error: facilityRelationsForHPsError} = await supabase
-            .from('hps_facilities')
-            .select('hps_id, facilities_id')
-            .in('hps_id', hpIds)
-
-        if (facilityRelationsForHPsError) {
-            logger.error(`searchProfessionals: junction table query failed: ${JSON.stringify(facilityRelationsForHPsError)}`)
-            throw facilityRelationsForHPsError
-        }
-
-        // Build a lookup map: hpId → [facilityId, ...]
+        // Skip if not requested by the client
         const facilityIdsByHpId = new Map<string, string[]>()
 
-        for (const relation of facilityRelationsForHPs ?? []) {
-            const hpId = relation.hps_id as string
-            const list = facilityIdsByHpId.get(hpId) ?? []
+        if (needsFacilityIds) {
+            const { data: facilityRelationsForHPs, error: facilityRelationsForHPsError} = await supabase
+                .from('hps_facilities')
+                .select('hps_id, facilities_id')
+                .in('hps_id', hpIds)
 
-            list.push(relation.facilities_id as string)
-            facilityIdsByHpId.set(hpId, list)
+            if (facilityRelationsForHPsError) {
+                logger.error(`searchProfessionals: junction table query failed: ${JSON.stringify(facilityRelationsForHPsError)}`)
+                throw facilityRelationsForHPsError
+            }
+
+            // Build a lookup map: hpId → [facilityId, ...]
+            for (const relation of facilityRelationsForHPs ?? []) {
+                const hpId = relation.hps_id as string
+                const list = facilityIdsByHpId.get(hpId) ?? []
+
+                list.push(relation.facilities_id as string)
+                facilityIdsByHpId.set(hpId, list)
+            }
         }
 
         // Map DB rows to GraphQL shape, merging each HP row with its facilityIds

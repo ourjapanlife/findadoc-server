@@ -3,20 +3,24 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
+import type { Database } from '../typeDefs/supabase-generated.js'
+
+type UserRow = Database['public']['Tables']['user']['Row']
 
 /**
  * Gets a user from the database that matches on the id.
  * @param id A string that matches the id of the User.
+ * @param selectColumns Supabase select string. Defaults to '*' (all columns).
  * @returns A User object.
  */
-export async function getUserById(id: string)
+export async function getUserById(id: string, selectColumns = '*')
     : Promise<Result<gqlTypes.User>> {
     try {
         const supabase = getSupabaseClient()
         const { data } = await supabase
             .from('user')
-            .select('*')
-            .eq('id', id) 
+            .select<string, UserRow>(selectColumns)
+            .eq('id', id)
 
         if (!data) {
             throw new Error(`No data found for user with id: ${id}`)
@@ -31,7 +35,7 @@ export async function getUserById(id: string)
         const selectedUser:gqlTypes.User = {
             createdDate: selectedUserData.created_date,
             id: selectedUserData.id,
-            updatedDate: selectedUserData.updated_date,
+            updatedDate: selectedUserData.updated_date ?? '',
             displayName: selectedUserData.display_name,
             profilePicUrl: selectedUserData.profile_pic_url
         }
