@@ -58,34 +58,20 @@ export function camelToSnake(str: string): string {
 }
 
 // --- GQL → DB column mappings ---
-// Standard fields use camelToSnake automatically. Only non-standard mappings
-// (where the DB column name doesn't match the camelToSnake conversion) are
-// listed as explicit overrides. Junction-table-only fields (healthcareProfessionalIds,
-// facilityIds) are excluded since they have no DB column.
+// By default, any requested GQL field is converted via camelToSnake and selected.
+// Only fields that need special handling are listed:
+//   - skip: GQL fields with no DB column (junction table fields, nested objects)
+//   - overrides: GQL fields where the DB column doesn't follow camelToSnake
 
-/** GQL fields on the facilities table (all follow camelToSnake convention) */
-const FACILITY_GQL_FIELDS = [
-    'id', 'nameEn', 'nameJa', 'contact', 'mapLatitude', 'mapLongitude',
-    'createdDate', 'updatedDate'
-] as const
-
-/** GQL fields on the hps table (all follow camelToSnake convention) */
-const HP_GQL_FIELDS = [
-    'id', 'names', 'additionalInfoForPatients', 'degrees', 'specialties',
-    'spokenLanguages', 'acceptedInsurance', 'email', 'createdDate', 'updatedDate'
-] as const
+/** GQL fields that don't map to a DB column (resolved via junction tables or nested resolvers) */
+const FACILITY_SKIP = new Set(['healthcareProfessionalIds'])
+const HP_SKIP = new Set(['facilityIds'])
 
 /** JSONB columns on hps that may be used in PostgREST .contains() filters.
  *  Always included in select to avoid PostgREST errors when filtering on non-selected columns. */
 const HP_FILTER_COLUMNS: readonly (keyof HpsTable)[] = [
     'degrees', 'specialties', 'spoken_languages', 'accepted_insurance'
 ]
-
-/** GQL fields on the submissions table that follow camelToSnake convention */
-const SUBMISSION_STANDARD_FIELDS = [
-    'id', 'createdDate', 'updatedDate', 'googleMapsUrl', 'healthcareProfessionalName',
-    'spokenLanguages', 'notes', 'autofillPlaceFromSubmissionUrl'
-] as const
 
 /** Submission fields where the DB column doesn't match camelToSnake.
  *  Type-checked against SubmissionsTable to catch schema changes at compile time. */
@@ -97,34 +83,31 @@ const SUBMISSION_OVERRIDES = {
     healthcareProfessionals: 'healthcare_professionals_partial'
 } as const satisfies Record<string, keyof SubmissionsTable>
 
-/** GQL fields on the user table (all follow camelToSnake convention) */
-const USER_GQL_FIELDS = [
-    'id', 'displayName', 'profilePicUrl', 'createdDate', 'updatedDate'
-] as const
-
 // --- Select string builders ---
 
 /**
- * Builds a select string from requested fields using camelToSnake conversion,
- * with optional explicit overrides for non-standard mappings.
+ * Builds a select string from requested GQL fields.
+ * By default, converts each field via camelToSnake.
+ * Fields in `skip` are ignored. Fields in `overrides` use the mapped DB column instead.
  */
 function buildSelectString(
     requestedFields: Set<string>,
-    standardFields: readonly string[],
-    overrides: Record<string, string> = {},
-    alwaysInclude: readonly string[] = ['id']
+    options: {
+        skip?: Set<string>,
+        overrides?: Record<string, string>,
+        alwaysInclude?: readonly string[]
+    } = {}
 ): string {
+    const { skip = new Set(), overrides = {}, alwaysInclude = ['id'] } = options
     const columns = new Set<string>(alwaysInclude)
 
-    for (const gqlField of standardFields) {
-        if (requestedFields.has(gqlField)) {
-            columns.add(camelToSnake(gqlField))
-        }
-    }
+    for (const gqlField of requestedFields) {
+        if (skip.has(gqlField)) continue
 
-    for (const [gqlField, dbColumn] of Object.entries(overrides)) {
-        if (requestedFields.has(gqlField)) {
-            columns.add(dbColumn)
+        if (gqlField in overrides) {
+            columns.add(overrides[gqlField])
+        } else {
+            columns.add(camelToSnake(gqlField))
         }
     }
 
@@ -136,7 +119,7 @@ function buildSelectString(
  * Always includes 'id'. Only includes columns the client actually requested.
  */
 export function buildFacilitySelectString(requestedFields: Set<string>): string {
-    return buildSelectString(requestedFields, FACILITY_GQL_FIELDS)
+    return buildSelectString(requestedFields, { skip: FACILITY_SKIP })
 }
 
 /**
@@ -144,7 +127,10 @@ export function buildFacilitySelectString(requestedFields: Set<string>): string 
  * Always includes 'id' and all filter-used JSONB columns to avoid PostgREST errors.
  */
 export function buildHpSelectString(requestedFields: Set<string>): string {
-    return buildSelectString(requestedFields, HP_GQL_FIELDS, {}, ['id', ...HP_FILTER_COLUMNS])
+    return buildSelectString(requestedFields, {
+        skip: HP_SKIP,
+        alwaysInclude: ['id', ...HP_FILTER_COLUMNS]
+    })
 }
 
 /**
@@ -152,7 +138,7 @@ export function buildHpSelectString(requestedFields: Set<string>): string {
  * Always includes 'id'. Non-standard mappings (status flags, partials) use explicit overrides.
  */
 export function buildSubmissionSelectString(requestedFields: Set<string>): string {
-    return buildSelectString(requestedFields, SUBMISSION_STANDARD_FIELDS, SUBMISSION_OVERRIDES)
+    return buildSelectString(requestedFields, { overrides: SUBMISSION_OVERRIDES })
 }
 
 /**
@@ -160,5 +146,5 @@ export function buildSubmissionSelectString(requestedFields: Set<string>): strin
  * Always includes 'id'.
  */
 export function buildUserSelectString(requestedFields: Set<string>): string {
-    return buildSelectString(requestedFields, USER_GQL_FIELDS)
+    return buildSelectString(requestedFields)
 }
