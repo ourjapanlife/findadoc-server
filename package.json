@@ -4,7 +4,7 @@
     "description": "Backend for Find a Doc, Japan",
     "main": "index.js",
     "scripts": {
-        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && yarn generate && npx supabase start && npx supabase db reset && yarn dev:seeddb && concurrently --raw \"yarn dev:startserver\"",
+        "dev": "echo '🧶 Installing yarn dependencies...🧶' && yarn && npx supabase start && npx supabase db reset && yarn generate && yarn dev:seeddb && concurrently --raw \"yarn dev:startserver\"",
         "dev:startserver": "echo '💻 💻 💻✨ Starting dev server...' && cross-env NODE_ENV=development nodemon --exec 'node --inspect --loader ts-node/esm src/index.ts'",
         "dev:startlocaldb": "yarn supabase start -f",
         "test": "vitest",
