@@ -9,6 +9,9 @@ import { mapKyselyFacilityToGraphQL } from '../services/mappersEntityService.js'
 import type { HasIlike} from '../../utils/dbUtils.js'
 import type { Transaction } from 'kysely'
 import type { Database } from '../typeDefs/kyselyTypes.js'
+import type { Database as SupabaseDb } from '../typeDefs/supabase-generated.js'
+
+type FacilityRow = SupabaseDb['public']['Tables']['facilities']['Row']
 
 // Builds a partial update patch for Facility rows.
 export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacilityInput>) {
@@ -65,10 +68,14 @@ export function applyFacilityFilters<T extends HasIlike>(
 /**
  * Gets the Facility from the database that matches on the id.
  * @param id A string that matches the id of the Supabase for the Facility.
+ * @param selectColumns Comma-separated DB columns to fetch (defaults to '*' for all columns).
+ * @param needsHpIds Whether to query the junction table for related HP IDs (defaults to true).
  * @returns A Facility object.
  */
 export const getFacilityById = async (
-    id: string
+    id: string,
+    selectColumns = '*',
+    needsHpIds = true
 ): Promise<Result<gqlTypes.Facility>> => {
     try {
         // Validate the incoming id
@@ -91,7 +98,7 @@ export const getFacilityById = async (
         // Fetch the facility row
         const { data: facilityRow, error: facilityRowError } = await supabase
             .from('facilities')
-            .select('*')
+            .select<string, FacilityRow>(selectColumns)
             .eq('id', id)
             .single()
 
@@ -112,19 +119,23 @@ export const getFacilityById = async (
             throw facilityRowError
         }
 
-        // Fetch related HP IDs from the join table
-        const { data: relatedRows, error: relatedRowsError } = await supabase
-            .from('hps_facilities')
-            .select('hps_id')
-            .eq('facilities_id', id)
+        // Fetch related HP IDs from the join table (skip if not requested)
+        let healthcareProfessionalIds: string[] = []
 
-        if (relatedRowsError) {
-            throw relatedRowsError
+        if (needsHpIds) {
+            const { data: relatedRows, error: relatedRowsError } = await supabase
+                .from('hps_facilities')
+                .select('hps_id')
+                .eq('facilities_id', id)
+
+            if (relatedRowsError) {
+                throw relatedRowsError
+            }
+
+            healthcareProfessionalIds = (relatedRows ?? []).map(
+                row => row.hps_id as string
+            )
         }
-
-        const healthcareProfessionalIds = (relatedRows ?? []).map(
-            row => row.hps_id as string
-        )
 
         const gqlFacility: gqlTypes.Facility = {
             id: facilityRow.id as string,
@@ -308,10 +319,14 @@ export async function createFacility(
  * by performing a preliminary lookup to get a subset of Facility IDs.
  * - It applies scalar filters, ordering, and pagination to the main facilities table.
  * @param filters Optional search and pagination filters for Facilities.
+ * @param selectColumns Comma-separated DB columns to fetch (defaults to '*' for all columns).
+ * @param needsHpIds Whether to query the junction table for related HP IDs (defaults to true).
  * @returns A Promise that resolves to a Result object containing an array of Facilities.
  */
 export async function searchFacilities(
-  filters: gqlTypes.FacilitySearchFilters = {}
+  filters: gqlTypes.FacilitySearchFilters = {},
+  selectColumns = '*',
+  needsHpIds = true
 ): Promise<Result<gqlTypes.Facility[]>> {
     try {
         const validationResult = validateFacilitiesSearchInput(filters)
@@ -342,7 +357,7 @@ export async function searchFacilities(
 
         // Base query on facilities + scalar filters.
         let baseQuery = applyFacilityFilters(
-            supabase.from('facilities').select('*').limit(limit),
+            supabase.from('facilities').select<string, FacilityRow>(selectColumns).limit(limit),
             filters
         )
 
@@ -375,24 +390,27 @@ export async function searchFacilities(
         const facilityIds = paginationRows.map(relatedRow => relatedRow.id as string)
 
         // Fetching ALL Healthcare Professional (HP) relationships for the facilities on the current page with a SINGLE query
-        const { data: hpRelationsForFacilities, error: hpRelationsForFacilitiesError } = await supabase
-            .from('hps_facilities')
-            .select('hps_id, facilities_id')
-            .in('facilities_id', facilityIds)
-
-        if (hpRelationsForFacilitiesError) { throw hpRelationsForFacilitiesError }
-
-        // Map for avoid N+1 issue, used like a lookup table because O(1)
+        // Skip if not requested by the client
         const hpIdsByFacility = new Map<string, string[]>()
 
-        for (const relationshipRow of hpRelationsForFacilities ?? []) {
-            const facilityId = relationshipRow.facilities_id as string
-            // All the Hps ID related to the Facility ID
-            const list = hpIdsByFacility.get(facilityId) ?? []
+        if (needsHpIds) {
+            const { data: hpRelationsForFacilities, error: hpRelationsForFacilitiesError } = await supabase
+                .from('hps_facilities')
+                .select('hps_id, facilities_id')
+                .in('facilities_id', facilityIds)
 
-            // Add the current HP ID to the list associated with the facility.
-            list.push(relationshipRow.hps_id as string)
-            hpIdsByFacility.set(facilityId, list)
+            if (hpRelationsForFacilitiesError) { throw hpRelationsForFacilitiesError }
+
+            // Map for avoid N+1 issue, used like a lookup table because O(1)
+            for (const relationshipRow of hpRelationsForFacilities ?? []) {
+                const facilityId = relationshipRow.facilities_id as string
+                // All the Hps ID related to the Facility ID
+                const list = hpIdsByFacility.get(facilityId) ?? []
+
+                // Add the current HP ID to the list associated with the facility.
+                list.push(relationshipRow.hps_id as string)
+                hpIdsByFacility.set(facilityId, list)
+            }
         }
 
         // Map the paginated DB rows to the final GraphQL shape, injecting the associated HP IDs

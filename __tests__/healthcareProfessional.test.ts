@@ -3,7 +3,7 @@ import { expect, describe, test } from 'vitest'
 import { Error, ErrorCode } from '../src/result.js'
 import { generateRandomCreateHealthcareProfessionalInput as generateCreateProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
-import { CreateHealthcareProfessionalInput, HealthcareProfessional } from '../src/typeDefs/gqlTypes.js'
+import { CreateHealthcareProfessionalInput, Degree, HealthcareProfessional, Specialty } from '../src/typeDefs/gqlTypes.js'
 import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
 import { logger } from '../src/logger.js'
 
@@ -383,6 +383,72 @@ describe('searchHealthcareProfessionals', () => {
 
         expect(foundProfessionals.length).toBeGreaterThanOrEqual(1)
     })
+
+    test('searches by specialties JSONB filter', async () => {
+        // Create a professional with a known specialty
+        const knownSpecialty = Specialty.Anesthesiology
+        const input = generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
+
+        input.specialties = [knownSpecialty]
+
+        const createResult = await request(gqlApiUrl).post('').send({
+            query: createHealthcareProfessionalMutation,
+            variables: { input }
+        } as gqlMutation<CreateHealthcareProfessionalInput>)
+
+        expect(createResult.body?.errors).toBeUndefined()
+        const created = createResult.body.data.createHealthcareProfessional as HealthcareProfessional
+
+        // Search by that specialty using the JSONB filter
+        const searchResult = await request(gqlApiUrl).post('').send({
+            query: searchHealthcareProfessionalsWithDetails,
+            variables: {
+                filters: { specialties: [knownSpecialty] }
+            }
+        } as gqlRequest)
+
+        expect(searchResult.body?.errors).toBeUndefined()
+        const found = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+
+        expect(found.length).toBeGreaterThanOrEqual(1)
+        expect(found.map(p => p.id)).toContain(created.id)
+        // Verify the found professionals actually have the requested specialty
+        found.forEach(p => {
+            expect(p.specialties).toContain(knownSpecialty)
+        })
+    })
+
+    test('searches by degrees JSONB filter', async () => {
+        const knownDegree = Degree.Md
+        const input = generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
+
+        input.degrees = [knownDegree]
+
+        const createResult = await request(gqlApiUrl).post('').send({
+            query: createHealthcareProfessionalMutation,
+            variables: { input }
+        } as gqlMutation<CreateHealthcareProfessionalInput>)
+
+        expect(createResult.body?.errors).toBeUndefined()
+        const created = createResult.body.data.createHealthcareProfessional as HealthcareProfessional
+
+        // Search by that degree using the JSONB filter
+        const searchResult = await request(gqlApiUrl).post('').send({
+            query: searchHealthcareProfessionalsWithDetails,
+            variables: {
+                filters: { degrees: [knownDegree] }
+            }
+        } as gqlRequest)
+
+        expect(searchResult.body?.errors).toBeUndefined()
+        const found = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+
+        expect(found.length).toBeGreaterThanOrEqual(1)
+        expect(found.map(p => p.id)).toContain(created.id)
+        found.forEach(p => {
+            expect(p.degrees).toContain(knownDegree)
+        })
+    })
 })
 
 export const createHealthcareProfessionalMutation = `mutation test_createHealthcareProfessional($input: CreateHealthcareProfessionalInput!) {
@@ -428,6 +494,17 @@ const searchHealthcareProfessionals = `query test_searchHealthcareProfessionals(
     healthcareProfessionals(filters: $filters) {
         id
         names { firstName lastName }
+    }
+}`
+
+const searchHealthcareProfessionalsWithDetails = `query test_searchHealthcareProfessionalsWithDetails($filters: HealthcareProfessionalSearchFilters!) {
+    healthcareProfessionals(filters: $filters) {
+        id
+        names { firstName lastName }
+        degrees
+        specialties
+        spokenLanguages
+        acceptedInsurance
     }
 }`
 
