@@ -78,6 +78,7 @@ export type Database = {
           map_longitude: number
           name_en: string
           name_ja: string
+          payment_options: Json | null
           updated_date: string
         }
         Insert: {
@@ -90,6 +91,7 @@ export type Database = {
           map_longitude: number
           name_en: string
           name_ja: string
+          payment_options?: Json | null
           updated_date: string
         }
         Update: {
@@ -102,6 +104,7 @@ export type Database = {
           map_longitude?: number
           name_en?: string
           name_ja?: string
+          payment_options?: Json | null
           updated_date?: string
         }
         Relationships: []

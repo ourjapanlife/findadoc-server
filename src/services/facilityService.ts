@@ -146,7 +146,8 @@ export const getFacilityById = async (
             mapLongitude: facilityRow.map_longitude as number,
             healthcareProfessionalIds,
             createdDate: facilityRow.created_date as string,
-            updatedDate: facilityRow.updated_date as string
+            updatedDate: facilityRow.updated_date as string,
+            paymentOptions: facilityRow.payment_options as gqlTypes.PaymentOption[]
         }
 
         return {

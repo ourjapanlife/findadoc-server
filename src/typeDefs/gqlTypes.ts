@@ -208,6 +208,8 @@ export type Facility = {
   nameEn: Scalars['String']['output'];
   /** Name of the facility in Japanese. */
   nameJa: Scalars['String']['output'];
+  /** The payment methods accepted by this facility. */
+  paymentOptions?: Maybe<Array<PaymentOption>>;
   /** ISO 8601 timestamp of the last update to this facility. */
   updatedDate: Scalars['String']['output'];
 };
@@ -623,6 +625,15 @@ export enum OrderDirection {
   /** Descending order (Z-A, newest first, highest first). */
   Desc = 'desc'
 }
+
+/** Represents a payment method accepted at a healthcare facility. */
+export type PaymentOption = {
+  __typename?: 'PaymentOption';
+  /** Specific brands or networks accepted (e.g., 'Visa', 'Mastercard', 'Suica', 'PayPay'). */
+  paymentBrands?: Maybe<Array<Scalars['String']['output']>>;
+  /** The general category of payment (e.g., 'Credit Card', 'Cash', 'Electronic Money'). */
+  paymentType: Scalars['String']['output'];
+};
 
 /** A physical address with bilingual (English and Japanese) fields. */
 export type PhysicalAddress = {
@@ -1157,6 +1168,7 @@ export type ResolversTypes = {
   ObjectType: ObjectType;
   OrderBy: OrderBy;
   OrderDirection: OrderDirection;
+  PaymentOption: ResolverTypeWrapper<PaymentOption>;
   PhysicalAddress: ResolverTypeWrapper<PhysicalAddress>;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: ResolverTypeWrapper<{}>;
@@ -1204,6 +1216,7 @@ export type ResolversParentTypes = {
   ModerationAutofillDatabaseSubmissionInput: ModerationAutofillDatabaseSubmissionInput;
   Mutation: {};
   OrderBy: OrderBy;
+  PaymentOption: PaymentOption;
   PhysicalAddress: PhysicalAddress;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: {};
@@ -1255,6 +1268,7 @@ export type FacilityResolvers<ContextType = any, ParentType extends ResolversPar
   mapLongitude?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   nameEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  paymentOptions?: Resolver<Maybe<Array<ResolversTypes['PaymentOption']>>, ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -1319,6 +1333,12 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateReservation?: Resolver<ResolversTypes['Reservation'], ParentType, ContextType, RequireFields<MutationUpdateReservationArgs, 'input'>>;
   updateSubmission?: Resolver<ResolversTypes['Submission'], ParentType, ContextType, RequireFields<MutationUpdateSubmissionArgs, 'id' | 'input'>>;
   updateUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateUserArgs, 'id' | 'input'>>;
+};
+
+export type PaymentOptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['PaymentOption'] = ResolversParentTypes['PaymentOption']> = {
+  paymentBrands?: Resolver<Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
+  paymentType?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type PhysicalAddressResolvers<ContextType = any, ParentType extends ResolversParentTypes['PhysicalAddress'] = ResolversParentTypes['PhysicalAddress']> = {
@@ -1394,6 +1414,7 @@ export type Resolvers<ContextType = any> = {
   HealthcareProfessionalSubmission?: HealthcareProfessionalSubmissionResolvers<ContextType>;
   LocalizedName?: LocalizedNameResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  PaymentOption?: PaymentOptionResolvers<ContextType>;
   PhysicalAddress?: PhysicalAddressResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Reservation?: ReservationResolvers<ContextType>;
