@@ -673,7 +673,7 @@ export const autoFillPlacesInformation = async (
                 .updateTable('submissions')
                 .set({
                     google_maps_url: places.extractedGoogleMapsURI ?? currentSubmission.google_maps_url,
-                    //eslint-disable-next-line
+                     
                     facility_partial: asJsonb<gqlTypes.FacilitySubmission>(facilityPartial),
                     status: 'under_review',
                     autofill_place_from_submission_url: true,
@@ -830,9 +830,9 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
     await transaction
         .insertInto('hps_facilities')
         .values({
-            //eslint-disable-next-line
+             
             hps_id: insertedHp.id,
-            //eslint-disable-next-line
+             
             facilities_id: finalFacilityId
         })
         .execute()

@@ -126,10 +126,9 @@ export default [
             complexity: ['error', { max: 40 }],
             'consistent-return': 'error',
             curly: 'error',
-            'dot-location': ['error', 'property'],
+            '@stylistic/dot-location': ['error', 'property'],
             'dot-notation': ['error', { allowPattern: '^[a-z]+(_[a-z]+)+$' }],
             'no-alert': 'error',
-            'no-multi-spaces': 'error',
             'no-redeclare': 'error',
             'no-unused-expressions': [
                 'error',
@@ -141,11 +140,12 @@ export default [
 
             // Stylistic Issues and Opinions
             'arrow-body-style': 'error',
+            '@stylistic/no-multi-spaces': 'error',
             '@stylistic/array-bracket-spacing': ['error', 'never'],
             '@stylistic/arrow-parens': ['error', 'as-needed'],
             '@stylistic/arrow-spacing': 'error',
             '@stylistic/block-spacing': ['error', 'always'],
-            'brace-style': ['error', '1tbs', { allowSingleLine: true }],
+            '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: true }],
             camelcase: ['warn', {properties: 'never'}],
             '@stylistic/comma-dangle': ['error', 'never'],
             '@stylistic/comma-spacing': [
@@ -189,8 +189,6 @@ export default [
                     ignoreRegExpLiterals: true,
                 },
             ],
-            // be friendly to laptops
-            'newline-after-var': 'error',
             'require-atomic-updates': 'warn',
             'no-constant-condition': 'error',
             'no-dupe-class-members': 'error',
@@ -211,7 +209,7 @@ export default [
             'prefer-spread': 'error',
             'prefer-template': 'error',
             '@stylistic/quote-props': ['error', 'as-needed'],
-            '@stylistic/quotes': ['error', 'single', 'avoid-escape'],
+            '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
             '@stylistic/semi': ['error', 'never'],
             '@stylistic/semi-spacing': 'error',
             '@stylistic/space-before-blocks': 'error',
