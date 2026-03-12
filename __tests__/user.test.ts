@@ -28,7 +28,7 @@ describe('createUser', () => {
         }
 
         const createdUser =
-                    createUserResult.body.data.createUser as User
+            createUserResult.body.data.createUser as User
         
         const getUserByIdRequest = {
             query: getUserByIdQuery,

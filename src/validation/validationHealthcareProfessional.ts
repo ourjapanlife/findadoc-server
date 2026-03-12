@@ -129,78 +129,86 @@ export function validateNames(
             })
         }
 
-        switch (nameObject.locale) {
-            case gqlTypes.Locale.EnUs: {
-                const containsJapaneseCharFirstName = hasJapaneseCharacters(nameObject.firstName)
-                const containsJapaneseCharLastName = hasJapaneseCharacters(nameObject.lastName)
-                const containsJapaneseCharMiddleName = nameObject.middleName
-                    ? hasJapaneseCharacters(nameObject.middleName)
-                    : false
+        validateNameLocaleCharacters(nameObject, index, validationResults)
+    })
+}
 
-                if (containsJapaneseCharFirstName) {
-                    validationResults.hasErrors = true
-                    validationResults.errors?.push({
-                        field: `names[${index}].firstName`,
-                        errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
-                        httpStatus: 400
-                    })
-                }
+function validateNameLocaleCharacters(
+    nameObject: gqlTypes.LocalizedNameInput,
+    index: number,
+    validationResults: Result<unknown>
+): void {
+    switch (nameObject.locale) {
+        case gqlTypes.Locale.EnUs: {
+            const containsJapaneseCharFirstName = hasJapaneseCharacters(nameObject.firstName)
+            const containsJapaneseCharLastName = hasJapaneseCharacters(nameObject.lastName)
+            const containsJapaneseCharMiddleName = nameObject.middleName
+                ? hasJapaneseCharacters(nameObject.middleName)
+                : false
 
-                if (containsJapaneseCharMiddleName) {
-                    validationResults.hasErrors = true
-                    validationResults.errors?.push({
-                        field: `names[${index}].middleName`,
-                        errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
-                        httpStatus: 400
-                    })
-                }
-
-                if (containsJapaneseCharLastName) {
-                    validationResults.hasErrors = true
-                    validationResults.errors?.push({
-                        field: `names[${index}].lastName`,
-                        errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
-                        httpStatus: 400
-                    })
-                }
-                break
+            if (containsJapaneseCharFirstName) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: `names[${index}].firstName`,
+                    errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
+                    httpStatus: 400
+                })
             }
-            case gqlTypes.Locale.JaJp: {
-                const containsLatinCharFirstName = hasLatinCharacters(nameObject.firstName)
-                const containsLatinCharLastName = hasLatinCharacters(nameObject.lastName)
-                const containsLatinCharMiddleName = nameObject.middleName
-                    ? hasLatinCharacters(nameObject.middleName)
-                    : false
 
-                if (containsLatinCharFirstName) {
-                    validationResults.hasErrors = true
-                    validationResults.errors?.push({
-                        field: `names[${index}].firstName`,
-                        errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
-                        httpStatus: 400
-                    })
-                }
+            if (containsJapaneseCharMiddleName) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: `names[${index}].middleName`,
+                    errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
+                    httpStatus: 400
+                })
+            }
 
-                if (containsLatinCharMiddleName) {
-                    validationResults.hasErrors = true
-                    validationResults.errors?.push({
-                        field: `names[${index}].middleName`,
-                        errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
-                        httpStatus: 400
-                    })
-                }
+            if (containsJapaneseCharLastName) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: `names[${index}].lastName`,
+                    errorCode: ErrorCode.CONTAINS_JAPANESE_CHARACTER,
+                    httpStatus: 400
+                })
+            }
+            break
+        }
+        case gqlTypes.Locale.JaJp: {
+            const containsLatinCharFirstName = hasLatinCharacters(nameObject.firstName)
+            const containsLatinCharLastName = hasLatinCharacters(nameObject.lastName)
+            const containsLatinCharMiddleName = nameObject.middleName
+                ? hasLatinCharacters(nameObject.middleName)
+                : false
 
-                if (containsLatinCharLastName) {
-                    validationResults.hasErrors = true
-                    validationResults.errors?.push({
-                        field: `names[${index}].lastName`,
-                        errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
-                        httpStatus: 400
-                    })
-                }
+            if (containsLatinCharFirstName) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: `names[${index}].firstName`,
+                    errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
+                    httpStatus: 400
+                })
+            }
+
+            if (containsLatinCharMiddleName) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: `names[${index}].middleName`,
+                    errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
+                    httpStatus: 400
+                })
+            }
+
+            if (containsLatinCharLastName) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: `names[${index}].lastName`,
+                    errorCode: ErrorCode.CONTAINS_LATIN_CHARACTER,
+                    httpStatus: 400
+                })
             }
         }
-    })
+    }
 }
 
 export function validateDegrees(
@@ -370,7 +378,7 @@ export function validateSpokenLanguages(
 }
 
 export function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcareProfessionalInput>)
-    : Result<unknown> {
+: Result<unknown> {
     const validationResults: Result<unknown> = {
         data: undefined,
         hasErrors: false,
@@ -410,7 +418,7 @@ export function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHe
 }
 
 export function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfessionalInput)
-    : Result<unknown> {
+: Result<unknown> {
     const validationResults: Result<unknown> = {
         data: undefined,
         hasErrors: false,

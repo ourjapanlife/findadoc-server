@@ -1,4 +1,4 @@
-/* eslint-disable camelcase */
+ 
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
@@ -14,7 +14,7 @@ type UserRow = Database['public']['Tables']['user']['Row']
  * @returns A User object.
  */
 export async function getUserById(id: string, selectColumns = '*')
-    : Promise<Result<gqlTypes.User>> {
+: Promise<Result<gqlTypes.User>> {
     try {
         const supabase = getSupabaseClient()
         const { data } = await supabase

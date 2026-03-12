@@ -61,7 +61,7 @@ describe('createFacility', () => {
         const createHealthcareProfessionalRequest = {
             query: createHealthcareProfessionalMutation,
             variables: {
-                // eslint-disable-next-line max-len
+                 
                 input: {
                     ...generateRandomCreateHealthcareProfessionalInput(),
                     facilityIds: sharedFacilityIds

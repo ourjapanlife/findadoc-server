@@ -29,7 +29,7 @@ describe('create reservation', () => {
         }
 
         const createdUser =
-                    createUserResult.body.data.createUser as User
+            createUserResult.body.data.createUser as User
 
         // create a reservation with createdUser
         const newRezInput:CreateReservationInput = {

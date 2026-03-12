@@ -122,15 +122,13 @@ export function mapGqlEntityToDbEntity(
         healthcare_professional_name: input.healthcareProfessionalName ?? '',
         spoken_languages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
         autofill_place_from_submission_url: false,
-        
-        //eslint-disable-next-line
+         
         facility_partial: null,
-        //eslint-disable-next-line
+         
         healthcare_professionals_partial: null,
-        
-        //eslint-disable-next-line
+         
         hps_id: null,
-        //eslint-disable-next-line
+         
         facilities_id: null,
         
         notes: input.notes ?? null,
