@@ -335,7 +335,11 @@ export async function searchFacilities(
             return { data: [], hasErrors: true, errors: validationResult.errors }
         }
 
-        const limit = filters.limit && filters.limit > 100 ? 100 : filters.limit ?? 20
+        const isLightweightQuery = selectColumns !== '*' && !needsHpIds
+        const maxLimit = isLightweightQuery ? 1000 : 100
+
+        const requestedLimit = filters.limit ?? 20
+        const limit = requestedLimit > maxLimit ? maxLimit : requestedLimit
 
         const offset = filters.offset ?? 0
 
