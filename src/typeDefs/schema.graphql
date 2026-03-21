@@ -20,6 +20,8 @@ type Facility {
   createdDate: String!
   """ISO 8601 timestamp of the last update to this facility."""
   updatedDate: String!
+  """The payment methods accepted by this facility."""
+  paymentOptions: [PaymentOption!]
 }
 
 """Input for creating a new facility."""
@@ -874,6 +876,17 @@ type Query {
 
   """Look up a single reservation by its unique ID. Returns null if not found."""
   reservation(id: ID!): Reservation
+}
+
+"""
+Represents a payment method accepted at a healthcare facility.
+"""
+type PaymentOption {
+  """The general category of payment (e.g., 'Credit Card', 'Cash', 'Electronic Money')."""
+  paymentType: String!
+  
+  """Specific brands or networks accepted (e.g., 'Visa', 'Mastercard', 'Suica', 'PayPay')."""
+  paymentBrands: [String!]
 }
 
 type Mutation {
