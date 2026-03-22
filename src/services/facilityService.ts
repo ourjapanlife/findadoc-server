@@ -4,7 +4,7 @@ import { ErrorCode, Result } from '../result.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
-import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
+import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/facilityValidation.js'
 import { mapKyselyFacilityToGraphQL } from '../services/mappersEntityService.js'
 import type { HasIlike} from '../../utils/dbUtils.js'
 import type { Transaction } from 'kysely'
@@ -17,15 +17,28 @@ type FacilityRow = SupabaseDb['public']['Tables']['facilities']['Row']
 export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacilityInput>) {
     const updatePatch: Record<string, unknown> = {}
 
-    // Map only requested field
+    // Map only requested fields, normalizing English strings to lowercase
     if (fields.nameEn !== undefined) {
-        updatePatch.name_en = fields.nameEn
+        updatePatch.name_en = fields.nameEn.toLowerCase()
     }
     if (fields.nameJa !== undefined) {
         updatePatch.name_ja = fields.nameJa
     }
     if (fields.contact !== undefined) {
-        updatePatch.contact = fields.contact
+        const address = fields.contact.address
+        updatePatch.contact = {
+            ...fields.contact,
+            googleMapsUrl: fields.contact.googleMapsUrl.toLowerCase(),
+            email: fields.contact.email?.toLowerCase(),
+            website: fields.contact.website?.toLowerCase(),
+            address: {
+                ...address,
+                addressLine1En: address.addressLine1En.toLowerCase(),
+                addressLine2En: address.addressLine2En.toLowerCase(),
+                cityEn: address.cityEn.toLowerCase(),
+                prefectureEn: address.prefectureEn.toLowerCase()
+            }
+        }
     }
     if (fields.mapLatitude !== undefined) {
         updatePatch.map_latitude = fields.mapLatitude
@@ -38,6 +51,32 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
     updatePatch.updated_date = new Date().toISOString()
 
     return updatePatch
+}
+
+/**
+ * Normalizes English string fields on a facility input to lowercase before saving.
+ * Japanese fields are left unchanged since they have no concept of case.
+ */
+export function normalizeFacilityInput(input: gqlTypes.CreateFacilityInput): gqlTypes.CreateFacilityInput {
+    const address = input.contact.address
+
+    return {
+        ...input,
+        nameEn: input.nameEn.toLowerCase(),
+        contact: {
+            ...input.contact,
+            googleMapsUrl: input.contact.googleMapsUrl.toLowerCase(),
+            email: input.contact.email?.toLowerCase(),
+            website: input.contact.website?.toLowerCase(),
+            address: {
+                ...address,
+                addressLine1En: address.addressLine1En.toLowerCase(),
+                addressLine2En: address.addressLine2En.toLowerCase(),
+                cityEn: address.cityEn.toLowerCase(),
+                prefectureEn: address.prefectureEn.toLowerCase()
+            }
+        }
+    }
 }
 
 /**
@@ -220,8 +259,11 @@ export async function createFacility(
             return validationResult as Result<gqlTypes.Facility>
         }
 
+        // Normalize English string fields to lowercase before persisting
+        const normalizedInput = normalizeFacilityInput(facilityInput)
+
         // Extract HP IDs for convenience
-        const hpIds = (facilityInput.healthcareProfessionalIds ?? []) as string[]
+        const hpIds = (normalizedInput.healthcareProfessionalIds ?? []) as string[]
 
         // Execute all database operations in a single atomic transaction.
         // The transaction returns the final plain GraphQL object (not the Kysely result).
@@ -232,11 +274,11 @@ export async function createFacility(
             const insertedFacility = await transaction
                 .insertInto('facilities')
                 .values({
-                    name_en: facilityInput.nameEn,
-                    name_ja: facilityInput.nameJa,
-                    contact: facilityInput.contact,
-                    map_latitude: facilityInput.mapLatitude ?? 0,
-                    map_longitude: facilityInput.mapLongitude ?? 0,
+                    name_en: normalizedInput.nameEn,
+                    name_ja: normalizedInput.nameJa,
+                    contact: normalizedInput.contact,
+                    map_latitude: normalizedInput.mapLatitude ?? 0,
+                    map_longitude: normalizedInput.mapLongitude ?? 0,
                     created_date: new Date().toISOString(),
                     updated_date: new Date().toISOString()
                 })

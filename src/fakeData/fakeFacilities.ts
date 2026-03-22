@@ -53,24 +53,24 @@ export function generateRandomCreateFacilityInput()
     const selectedLocation = faker.helpers.arrayElement(locations)
 
     return {
-        nameEn: fullEnglishName,
+        nameEn: fullEnglishName.toLowerCase(),
         nameJa: fullJapaneseName,
         mapLatitude: faker.location.latitude({ min: selectedLocation.latMin, max: selectedLocation.latMax }),
         mapLongitude: faker.location.longitude({ min: selectedLocation.lngMin, max: selectedLocation.lngMax }),
         contact: {
-            googleMapsUrl: faker.internet.url(),
-            email: email,
+            googleMapsUrl: faker.internet.url().toLowerCase(),
+            email: email.toLowerCase(),
             phone: faker.phone.number().replace(/-/g, ''),
-            website: faker.internet.url(),
+            website: faker.internet.url().toLowerCase(),
             address: {
-                addressLine1En: faker.location.streetAddress(),
-                addressLine2En: faker.location.secondaryAddress(),
+                addressLine1En: faker.location.streetAddress().toLowerCase(),
+                addressLine2En: faker.location.secondaryAddress().toLowerCase(),
                 addressLine1Ja: fakerJA.location.streetAddress(),
                 addressLine2Ja: fakerJA.location.secondaryAddress(),
-                cityEn: selectedLocation.cityEn,
+                cityEn: selectedLocation.cityEn.toLowerCase(),
                 cityJa: selectedLocation.cityJa,
                 postalCode: faker.helpers.fromRegExp(selectedLocation.postalCodePattern),
-                prefectureEn: selectedLocation.prefectureEn,
+                prefectureEn: selectedLocation.prefectureEn.toLowerCase(),
                 prefectureJa: selectedLocation.prefectureJa
             }
         }
