@@ -1,7 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { hasScriptTags, isInvalidName } from '../../utils/stringUtils.js'
-import { validateContactInput } from './validateFacility.js'
+import { validateContactInput } from './facilityValidation.js'
 import { validateNames, validateDegrees, validateSpecialties, validateInsurance, validateSpokenLanguages } from './validationHealthcareProfessional.js'
 
 export function validateIdInput(id: string): Result<unknown> {
