@@ -44,7 +44,7 @@ const resolvers = {
         },
         facilities: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters }, context: UserContext,
             info: GraphQLResolveInfo)
-        : Promise<gqlType.Facility[]> => {
+        : Promise<gqlType.FacilitiesSearchResult> => {
             const isAuthorized = authorize(context.user, [Scope['read:facilities']])
 
             if (!isAuthorized) {
@@ -56,13 +56,20 @@ const resolvers = {
                 })
             }
 
-            const requestedFields = getRequestedFields(info)
+            const requestedFields = getRequestedFields(info, 'facilities')
             const selectColumns = buildFacilitySelectString(requestedFields)
             const needsHpIds = facilityNeedsHpIds(requestedFields)
-            const queryResults = await facilityService.searchFacilities(args.filters, selectColumns, needsHpIds)
+            const [queryResults, countResults] = await Promise.all([
+                facilityService.searchFacilities(args.filters, selectColumns, needsHpIds),
+                facilityService.countFacilities(args.filters)
+            ])
 
             convertErrorsToGqlErrors(queryResults)
-            return queryResults.data as gqlType.Facility[]
+            convertErrorsToGqlErrors(countResults)
+            return {
+                facilities: queryResults.data as gqlType.Facility[],
+                resultsCount: countResults.data
+            }
         },
         facilitiesTotalCount: async (_parent: unknown, args: { filters: gqlType.FacilitySearchFilters },
             context: UserContext)
@@ -111,7 +118,7 @@ const resolvers = {
         healthcareProfessionals: async (_parent: unknown, args: {
             filters: gqlType.HealthcareProfessionalSearchFilters
         }, context: UserContext, info: GraphQLResolveInfo)
-        : Promise<gqlType.HealthcareProfessional[]> => {
+        : Promise<gqlType.HealthcareProfessionalsSearchResult> => {
             const isAuthorized = authorize(context.user, [Scope['read:healthcareprofessionals']])
 
             if (!isAuthorized) {
@@ -123,15 +130,20 @@ const resolvers = {
                 })
             }
 
-            const requestedFields = getRequestedFields(info)
+            const requestedFields = getRequestedFields(info, 'healthcareProfessionals')
             const selectColumns = buildHpSelectString(requestedFields)
             const needsFacilityIds = hpNeedsFacilityIds(requestedFields)
-            const queryResults =
-                await healthcareProfessionalService.searchProfessionals(args.filters, selectColumns, needsFacilityIds)
+            const [queryResults, countResults] = await Promise.all([
+                healthcareProfessionalService.searchProfessionals(args.filters, selectColumns, needsFacilityIds),
+                healthcareProfessionalService.countProfessionals(args.filters)
+            ])
 
             convertErrorsToGqlErrors(queryResults)
-
-            return queryResults.data
+            convertErrorsToGqlErrors(countResults)
+            return {
+                healthcareProfessionals: queryResults.data,
+                resultsCount: countResults.data
+            }
         },
 
         healthcareProfessionalsTotalCount: async (_parent: unknown, args: {
@@ -180,7 +192,7 @@ const resolvers = {
 
         submissions: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters }, context: UserContext,
             info: GraphQLResolveInfo)
-        : Promise<gqlType.Submission[]> => {
+        : Promise<gqlType.SubmissionsSearchResult> => {
             const isAuthorized = authorize(context.user, [Scope['read:submissions']])
 
             if (!isAuthorized) {
@@ -192,13 +204,19 @@ const resolvers = {
                 })
             }
 
-            const requestedFields = getRequestedFields(info)
+            const requestedFields = getRequestedFields(info, 'submissions')
             const selectColumns = buildSubmissionSelectString(requestedFields)
-            const matchingSubmissionsResult = await submissionService.searchSubmissions(args.filters, selectColumns)
+            const [matchingSubmissionsResult, countResults] = await Promise.all([
+                submissionService.searchSubmissions(args.filters, selectColumns),
+                submissionService.countSubmissions(args.filters)
+            ])
 
             convertErrorsToGqlErrors(matchingSubmissionsResult)
-
-            return matchingSubmissionsResult.data
+            convertErrorsToGqlErrors(countResults)
+            return {
+                submissions: matchingSubmissionsResult.data,
+                resultsCount: countResults.data
+            }
         },
 
         submissionsTotalCount: async (_parent: unknown, args: { filters: gqlType.SubmissionSearchFilters },

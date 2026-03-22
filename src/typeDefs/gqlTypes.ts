@@ -669,12 +669,39 @@ export type PhysicalAddressInput = {
   prefectureJa: Scalars['String']['input'];
 };
 
+/** Search result for facilities including pagination metadata. */
+export type FacilitiesSearchResult = {
+  __typename?: 'FacilitiesSearchResult';
+  /** The list of matching facilities for the current page. */
+  facilities: Array<Facility>;
+  /** The total number of facilities matching the search filters, regardless of pagination. */
+  resultsCount: Scalars['Int']['output'];
+};
+
+/** Search result for healthcare professionals including pagination metadata. */
+export type HealthcareProfessionalsSearchResult = {
+  __typename?: 'HealthcareProfessionalsSearchResult';
+  /** The list of matching healthcare professionals for the current page. */
+  healthcareProfessionals: Array<HealthcareProfessional>;
+  /** The total number of healthcare professionals matching the search filters, regardless of pagination. */
+  resultsCount: Scalars['Int']['output'];
+};
+
+/** Search result for submissions including pagination metadata. */
+export type SubmissionsSearchResult = {
+  __typename?: 'SubmissionsSearchResult';
+  /** The list of matching submissions for the current page. */
+  submissions: Array<Submission>;
+  /** The total number of submissions matching the search filters, regardless of pagination. */
+  resultsCount: Scalars['Int']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   /** Look up a single audit log entry by its ID. Returns null if not found. */
   auditLog?: Maybe<AuditLog>;
   /** Search for facilities matching the given filters. Returns an empty list if no matches. */
-  facilities: Array<Facility>;
+  facilities: FacilitiesSearchResult;
   /** Get the total count of facilities matching the given filters. Useful for pagination. */
   facilitiesTotalCount: Scalars['Int']['output'];
   /** Look up a single facility by its unique ID. Returns null if not found. */
@@ -682,7 +709,7 @@ export type Query = {
   /** Look up a single healthcare professional by their unique ID. Returns null if not found. */
   healthcareProfessional?: Maybe<HealthcareProfessional>;
   /** Search for healthcare professionals matching the given filters. Returns an empty list if no matches. */
-  healthcareProfessionals: Array<HealthcareProfessional>;
+  healthcareProfessionals: HealthcareProfessionalsSearchResult;
   /** Get the total count of healthcare professionals matching the given filters. Useful for pagination. */
   healthcareProfessionalsTotalCount: Scalars['Int']['output'];
   /** Look up a single reservation by its unique ID. Returns null if not found. */
@@ -690,7 +717,7 @@ export type Query = {
   /** Look up a single submission by its unique ID. Returns null if not found. */
   submission?: Maybe<Submission>;
   /** Search for submissions matching the given filters. Returns an empty list if no matches. */
-  submissions: Array<Submission>;
+  submissions: SubmissionsSearchResult;
   /** Get the total count of submissions matching the given filters. Useful for pagination. */
   submissionsTotalCount: Scalars['Int']['output'];
   /** Look up a single user by their unique ID. Returns null if not found. */
@@ -1140,10 +1167,12 @@ export type ResolversTypes = {
   Degree: Degree;
   DeleteResult: ResolverTypeWrapper<DeleteResult>;
   Facility: ResolverTypeWrapper<Facility>;
+  FacilitiesSearchResult: ResolverTypeWrapper<FacilitiesSearchResult>;
   FacilitySearchFilters: FacilitySearchFilters;
   FacilitySubmission: ResolverTypeWrapper<FacilitySubmission>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   HealthcareProfessional: ResolverTypeWrapper<HealthcareProfessional>;
+  HealthcareProfessionalsSearchResult: ResolverTypeWrapper<HealthcareProfessionalsSearchResult>;
   HealthcareProfessionalSearchFilters: HealthcareProfessionalSearchFilters;
   HealthcareProfessionalSubmission: ResolverTypeWrapper<HealthcareProfessionalSubmission>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
@@ -1169,6 +1198,7 @@ export type ResolversTypes = {
   SpecialtyCategory: SpecialtyCategory;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Submission: ResolverTypeWrapper<Submission>;
+  SubmissionsSearchResult: ResolverTypeWrapper<SubmissionsSearchResult>;
   SubmissionSearchFilters: SubmissionSearchFilters;
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
@@ -1191,10 +1221,12 @@ export type ResolversParentTypes = {
   CreateUserInput: CreateUserInput;
   DeleteResult: DeleteResult;
   Facility: Facility;
+  FacilitiesSearchResult: FacilitiesSearchResult;
   FacilitySearchFilters: FacilitySearchFilters;
   FacilitySubmission: FacilitySubmission;
   Float: Scalars['Float']['output'];
   HealthcareProfessional: HealthcareProfessional;
+  HealthcareProfessionalsSearchResult: HealthcareProfessionalsSearchResult;
   HealthcareProfessionalSearchFilters: HealthcareProfessionalSearchFilters;
   HealthcareProfessionalSubmission: HealthcareProfessionalSubmission;
   ID: Scalars['ID']['output'];
@@ -1211,6 +1243,7 @@ export type ResolversParentTypes = {
   Reservation: Reservation;
   String: Scalars['String']['output'];
   Submission: Submission;
+  SubmissionsSearchResult: SubmissionsSearchResult;
   SubmissionSearchFilters: SubmissionSearchFilters;
   UpdateFacilityInput: UpdateFacilityInput;
   UpdateHealthcareProfessionalInput: UpdateHealthcareProfessionalInput;
@@ -1243,6 +1276,12 @@ export type ContactResolvers<ContextType = any, ParentType extends ResolversPare
 
 export type DeleteResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['DeleteResult'] = ResolversParentTypes['DeleteResult']> = {
   isSuccessful?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type FacilitiesSearchResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['FacilitiesSearchResult'] = ResolversParentTypes['FacilitiesSearchResult']> = {
+  facilities?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType>;
+  resultsCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1281,6 +1320,12 @@ export type HealthcareProfessionalResolvers<ContextType = any, ParentType extend
   specialties?: Resolver<Array<ResolversTypes['Specialty']>, ParentType, ContextType>;
   spokenLanguages?: Resolver<Array<ResolversTypes['Locale']>, ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type HealthcareProfessionalsSearchResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['HealthcareProfessionalsSearchResult'] = ResolversParentTypes['HealthcareProfessionalsSearchResult']> = {
+  healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType>;
+  resultsCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1336,15 +1381,15 @@ export type PhysicalAddressResolvers<ContextType = any, ParentType extends Resol
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   auditLog?: Resolver<Maybe<ResolversTypes['AuditLog']>, ParentType, ContextType, Partial<QueryAuditLogArgs>>;
-  facilities?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
+  facilities?: Resolver<ResolversTypes['FacilitiesSearchResult'], ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
   facilitiesTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryFacilitiesTotalCountArgs, 'filters'>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
-  healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
+  healthcareProfessionals?: Resolver<ResolversTypes['HealthcareProfessionalsSearchResult'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
   healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;
   reservation?: Resolver<Maybe<ResolversTypes['Reservation']>, ParentType, ContextType, RequireFields<QueryReservationArgs, 'id'>>;
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;
-  submissions?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
+  submissions?: Resolver<ResolversTypes['SubmissionsSearchResult'], ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
   submissionsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QuerySubmissionsTotalCountArgs, 'filters'>>;
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<QueryUserArgs, 'id'>>;
 };
@@ -1375,6 +1420,12 @@ export type SubmissionResolvers<ContextType = any, ParentType extends ResolversP
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type SubmissionsSearchResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['SubmissionsSearchResult'] = ResolversParentTypes['SubmissionsSearchResult']> = {
+  submissions?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType>;
+  resultsCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {
   createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   displayName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1389,8 +1440,10 @@ export type Resolvers<ContextType = any> = {
   Contact?: ContactResolvers<ContextType>;
   DeleteResult?: DeleteResultResolvers<ContextType>;
   Facility?: FacilityResolvers<ContextType>;
+  FacilitiesSearchResult?: FacilitiesSearchResultResolvers<ContextType>;
   FacilitySubmission?: FacilitySubmissionResolvers<ContextType>;
   HealthcareProfessional?: HealthcareProfessionalResolvers<ContextType>;
+  HealthcareProfessionalsSearchResult?: HealthcareProfessionalsSearchResultResolvers<ContextType>;
   HealthcareProfessionalSubmission?: HealthcareProfessionalSubmissionResolvers<ContextType>;
   LocalizedName?: LocalizedNameResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
@@ -1398,6 +1451,7 @@ export type Resolvers<ContextType = any> = {
   Query?: QueryResolvers<ContextType>;
   Reservation?: ReservationResolvers<ContextType>;
   Submission?: SubmissionResolvers<ContextType>;
+  SubmissionsSearchResult?: SubmissionsSearchResultResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
 };
 

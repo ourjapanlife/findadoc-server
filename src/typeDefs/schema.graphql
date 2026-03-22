@@ -834,12 +834,36 @@ type DeleteResult {
   isSuccessful: Boolean!
 }
 
+"""Search result for facilities including pagination metadata."""
+type FacilitiesSearchResult {
+  """The list of matching facilities for the current page."""
+  facilities: [Facility!]!
+  """The total number of facilities matching the search filters, regardless of pagination."""
+  resultsCount: Int!
+}
+
+"""Search result for healthcare professionals including pagination metadata."""
+type HealthcareProfessionalsSearchResult {
+  """The list of matching healthcare professionals for the current page."""
+  healthcareProfessionals: [HealthcareProfessional!]!
+  """The total number of healthcare professionals matching the search filters, regardless of pagination."""
+  resultsCount: Int!
+}
+
+"""Search result for submissions including pagination metadata."""
+type SubmissionsSearchResult {
+  """The list of matching submissions for the current page."""
+  submissions: [Submission!]!
+  """The total number of submissions matching the search filters, regardless of pagination."""
+  resultsCount: Int!
+}
+
 type Query {
   """Look up a single facility by its unique ID. Returns null if not found."""
   facility(id: ID!): Facility
 
   """Search for facilities matching the given filters. Returns an empty list if no matches."""
-  facilities(filters: FacilitySearchFilters!): [Facility!]!
+  facilities(filters: FacilitySearchFilters!): FacilitiesSearchResult!
 
   """Get the total count of facilities matching the given filters. Useful for pagination."""
   facilitiesTotalCount(filters: FacilitySearchFilters!): Int!
@@ -850,7 +874,7 @@ type Query {
   """Search for healthcare professionals matching the given filters. Returns an empty list if no matches."""
   healthcareProfessionals(
     filters: HealthcareProfessionalSearchFilters!
-  ): [HealthcareProfessional!]!
+  ): HealthcareProfessionalsSearchResult!
 
   """Get the total count of healthcare professionals matching the given filters. Useful for pagination."""
   healthcareProfessionalsTotalCount(
@@ -861,7 +885,7 @@ type Query {
   submission(id: ID!): Submission
 
   """Search for submissions matching the given filters. Returns an empty list if no matches."""
-  submissions(filters: SubmissionSearchFilters!): [Submission!]!
+  submissions(filters: SubmissionSearchFilters!): SubmissionsSearchResult!
 
   """Get the total count of submissions matching the given filters. Useful for pagination."""
   submissionsTotalCount(filters: SubmissionSearchFilters!): Int!
