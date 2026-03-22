@@ -1,8 +1,22 @@
 services:
   api:
-    build: 
+    build:
       context: ../
       dockerfile: docker/api/Dockerfile
     ports:
       - 4000:4000
     container_name: findadoc-api
+
+  promtail:
+    image: grafana/promtail:3.4.1
+    container_name: findadoc-promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+    environment:
+      - LOGGER_GRAFANA_URL=${LOGGER_GRAFANA_URL}
+      - LOGGER_GRAFANA_USER_ID=${LOGGER_GRAFANA_USER_ID}
+      - LOGGER_GRAFANA_API_KEY=${LOGGER_GRAFANA_API_KEY}
+    depends_on:
+      - api
