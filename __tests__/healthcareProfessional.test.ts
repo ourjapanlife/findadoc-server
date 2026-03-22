@@ -297,7 +297,7 @@ describe('searchHealthcareProfessionals', () => {
             expect(queryErrors).toBeUndefined()
         }
 
-        const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+        const foundProfessionals = searchResult.body.data.healthcareProfessionals.healthcareProfessionals as HealthcareProfessional[]
 
         expect(foundProfessionals.length).toBe(2)
         expect(foundProfessionals.map(p => p.id)).toEqual(
@@ -315,7 +315,7 @@ describe('searchHealthcareProfessionals', () => {
         const searchResult = await request(gqlApiUrl).post('').send(searchRequest)
 
         expect(searchResult.body?.errors).toBeUndefined()
-        const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+        const foundProfessionals = searchResult.body.data.healthcareProfessionals.healthcareProfessionals as HealthcareProfessional[]
 
         expect(foundProfessionals.length).toBe(0)
     })
@@ -348,7 +348,7 @@ describe('searchHealthcareProfessionals', () => {
         const searchResult = await request(gqlApiUrl).post('').send(searchRequest)
 
         expect(searchResult.body?.errors).toBeUndefined()
-        const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+        const foundProfessionals = searchResult.body.data.healthcareProfessionals.healthcareProfessionals as HealthcareProfessional[]
 
         expect(foundProfessionals.length).toBeLessThanOrEqual(2)
     })
@@ -379,7 +379,7 @@ describe('searchHealthcareProfessionals', () => {
         const searchResult = await request(gqlApiUrl).post('').send(searchRequest)
 
         expect(searchResult.body?.errors).toBeUndefined()
-        const foundProfessionals = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+        const foundProfessionals = searchResult.body.data.healthcareProfessionals.healthcareProfessionals as HealthcareProfessional[]
 
         expect(foundProfessionals.length).toBeGreaterThanOrEqual(1)
     })
@@ -408,7 +408,7 @@ describe('searchHealthcareProfessionals', () => {
         } as gqlRequest)
 
         expect(searchResult.body?.errors).toBeUndefined()
-        const found = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+        const found = searchResult.body.data.healthcareProfessionals.healthcareProfessionals as HealthcareProfessional[]
 
         expect(found.length).toBeGreaterThanOrEqual(1)
         expect(found.map(p => p.id)).toContain(created.id)
@@ -441,7 +441,7 @@ describe('searchHealthcareProfessionals', () => {
         } as gqlRequest)
 
         expect(searchResult.body?.errors).toBeUndefined()
-        const found = searchResult.body.data.healthcareProfessionals as HealthcareProfessional[]
+        const found = searchResult.body.data.healthcareProfessionals.healthcareProfessionals as HealthcareProfessional[]
 
         expect(found.length).toBeGreaterThanOrEqual(1)
         expect(found.map(p => p.id)).toContain(created.id)
@@ -492,19 +492,25 @@ const getHealthcareProfessionalByIdQuery = `query test_getHealthcareProfessional
 
 const searchHealthcareProfessionals = `query test_searchHealthcareProfessionals($filters: HealthcareProfessionalSearchFilters!) {
     healthcareProfessionals(filters: $filters) {
-        id
-        names { firstName lastName }
+        healthcareProfessionals {
+            id
+            names { firstName lastName }
+        }
+        resultsCount
     }
 }`
 
 const searchHealthcareProfessionalsWithDetails = `query test_searchHealthcareProfessionalsWithDetails($filters: HealthcareProfessionalSearchFilters!) {
     healthcareProfessionals(filters: $filters) {
-        id
-        names { firstName lastName }
-        degrees
-        specialties
-        spokenLanguages
-        acceptedInsurance
+        healthcareProfessionals {
+            id
+            names { firstName lastName }
+            degrees
+            specialties
+            spokenLanguages
+            acceptedInsurance
+        }
+        resultsCount
     }
 }`
 

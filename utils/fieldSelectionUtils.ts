@@ -4,12 +4,26 @@ import type { HpsTable, SubmissionsTable } from '../src/typeDefs/kyselyTypes.js'
 /**
  * Parses GraphQLResolveInfo to extract the set of top-level fields
  * requested by the client. Handles FragmentSpread and InlineFragment.
+ * When subField is provided, extracts fields from within that named sub-field
+ * (e.g. for wrapper result types like FacilitiesSearchResult).
  */
-export function getRequestedFields(info: GraphQLResolveInfo): Set<string> {
+export function getRequestedFields(info: GraphQLResolveInfo, subField?: string): Set<string> {
     const fields = new Set<string>()
 
     for (const fieldNode of info.fieldNodes) {
-        if (fieldNode.selectionSet) {
+        if (!fieldNode.selectionSet) continue
+
+        if (subField) {
+            for (const selection of fieldNode.selectionSet.selections) {
+                if (
+                    selection.kind === 'Field' &&
+                    selection.name.value === subField &&
+                    selection.selectionSet
+                ) {
+                    collectFields(selection.selectionSet, info, fields)
+                }
+            }
+        } else {
             collectFields(fieldNode.selectionSet, info, fields)
         }
     }
