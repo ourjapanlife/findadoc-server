@@ -78,7 +78,7 @@ export function generateRandomCreateFacilityInput()
 }
 
 export function generateRandomCreateFacilityInputArray({ count }: { count: number } = { count: 30 })
-: gqlTypes.CreateFacilityInput[] {
+    : gqlTypes.CreateFacilityInput[] {
     return faker.helpers.multiple(generateRandomCreateFacilityInput, {
         count
     })

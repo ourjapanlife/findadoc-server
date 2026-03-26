@@ -12,10 +12,10 @@ export function generateRandomCreateHealthcareProfessionalData(
     // We keep facilityIds here to select the random associations, but we don't include them in the returned object
     { facilityIds }: { facilityIds: string[] } = { facilityIds: [] }
 )
-: {
-    coreData: Omit<gqlTypes.CreateHealthcareProfessionalInput, 'facilityIds'>,
-    selectedFacilityIds: string[]
-} {
+    : {
+        coreData: Omit<gqlTypes.CreateHealthcareProfessionalInput, 'facilityIds'>,
+        selectedFacilityIds: string[]
+    } {
     // Select random facility IDs for this HP (1 to 3 associations)
     const randomSelectedFacilityIds = faker.helpers.arrayElements(facilityIds, { min: 1, max: 3 })
 
@@ -61,10 +61,10 @@ export function generateRandomCreateHealthcareProfessionalInput(
  */
 export function generateRandomCreateHealthcareProfessionalInputArray({ count, facilityIdOptions }
 : { count: number, facilityIdOptions: string[] } = { count: 100, facilityIdOptions: [] })
-: Array<{
-    coreData: Omit<gqlTypes.CreateHealthcareProfessionalInput, 'facilityIds'>,
-    selectedFacilityIds: string[]
-}> {
+    : Array<{
+        coreData: Omit<gqlTypes.CreateHealthcareProfessionalInput, 'facilityIds'>,
+        selectedFacilityIds: string[]
+    }> {
     return faker.helpers.multiple(() =>
         generateRandomCreateHealthcareProfessionalData({ facilityIds: facilityIdOptions || [] }), {
         count: count

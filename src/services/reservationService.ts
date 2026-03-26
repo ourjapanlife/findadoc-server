@@ -12,7 +12,7 @@ const reservations: Array<gqlTypes.Reservation> = []
  * @returns A Reservation object.
  */
 export async function getReservationById(id: string)
-: Promise<Result<gqlTypes.Reservation>> {
+    : Promise<Result<gqlTypes.Reservation>> {
     try {
         const selectedReservation = reservations.find(r => r.id === id)
 

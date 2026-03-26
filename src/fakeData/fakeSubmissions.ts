@@ -27,7 +27,7 @@ export function generateRandomCreateSubmissionInputArray({ count = 5 } = {}): gq
 export function generateRandomUpdateSubmissionInput(
     { isApproved = false, isRejected = false, isUnderReview = false, autofillPlaceFromSubmissionUrl = false } = {}
 )
-: gqlTypes.UpdateSubmissionInput {
+    : gqlTypes.UpdateSubmissionInput {
     // Generate the HP data using the new function. Since this is just fake data,
     // we pass an empty array of facility IDs as the final associations will be discarded
     // by the GQL type anyway, but the function requires it.
