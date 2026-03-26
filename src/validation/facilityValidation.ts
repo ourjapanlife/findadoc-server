@@ -403,6 +403,27 @@ export function validateContactInput(contactInput: gqlTypes.ContactInput): Resul
  * - prefectureEn: required, non-empty after trim, max 128 chars
  * - prefectureJa: required, non-empty after trim, max 128 chars
  */
+function validateRequiredStringField(
+    value: string | undefined | null, field: string, maxLength: number, results: Result<unknown>
+): void {
+    if (!value || !value.trim()) {
+        results.hasErrors = true
+        results.errors?.push({ field, errorCode: ErrorCode.REQUIRED, httpStatus: 400 })
+    } else if (value.length > maxLength) {
+        results.hasErrors = true
+        results.errors?.push({ field, errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG, httpStatus: 400 })
+    }
+}
+
+function validateOptionalStringField(
+    value: string | undefined | null, field: string, maxLength: number, results: Result<unknown>
+): void {
+    if (value && value.length > maxLength) {
+        results.hasErrors = true
+        results.errors?.push({ field, errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG, httpStatus: 400 })
+    }
+}
+
 export function validateAddressInput(input: gqlTypes.PhysicalAddressInput): Result<unknown> {
     const validationResults: Result<unknown> = {
         data: undefined,
@@ -410,135 +431,15 @@ export function validateAddressInput(input: gqlTypes.PhysicalAddressInput): Resu
         errors: []
     }
 
-    if (!input.addressLine1En || !input.addressLine1En.trim()) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine1En',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    } else if (input.addressLine1En.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine1En',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.addressLine2En && input.addressLine2En.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine2En',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.addressLine1Ja || !input.addressLine1Ja.trim()) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine1Ja',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    } else if (input.addressLine1Ja.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine1Ja',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (input.addressLine2Ja && input.addressLine2Ja.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'addressLine2Ja',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.cityEn || !input.cityEn.trim()) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'cityEn',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    } else if (input.cityEn.length > 64) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'cityEn',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.cityJa || !input.cityJa.trim()) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'cityJa',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    } else if (input.cityJa.length > 64) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'cityJa',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.postalCode || !input.postalCode.trim()) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'postalCode',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    } else if (input.postalCode.length > 18) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'postalCode',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.prefectureEn || !input.prefectureEn.trim()) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'prefectureEn',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    } else if (input.prefectureEn.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'prefectureEn',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
-
-    if (!input.prefectureJa || !input.prefectureJa.trim()) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'prefectureJa',
-            errorCode: ErrorCode.REQUIRED,
-            httpStatus: 400
-        })
-    } else if (input.prefectureJa.length > 128) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'prefectureJa',
-            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-            httpStatus: 400
-        })
-    }
+    validateRequiredStringField(input.addressLine1En, 'addressLine1En', 128, validationResults)
+    validateOptionalStringField(input.addressLine2En, 'addressLine2En', 128, validationResults)
+    validateRequiredStringField(input.addressLine1Ja, 'addressLine1Ja', 128, validationResults)
+    validateOptionalStringField(input.addressLine2Ja, 'addressLine2Ja', 128, validationResults)
+    validateRequiredStringField(input.cityEn, 'cityEn', 64, validationResults)
+    validateRequiredStringField(input.cityJa, 'cityJa', 64, validationResults)
+    validateRequiredStringField(input.postalCode, 'postalCode', 18, validationResults)
+    validateRequiredStringField(input.prefectureEn, 'prefectureEn', 128, validationResults)
+    validateRequiredStringField(input.prefectureJa, 'prefectureJa', 128, validationResults)
 
     return validationResults
 }

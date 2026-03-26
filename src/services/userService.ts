@@ -13,8 +13,7 @@ type UserRow = Database['public']['Tables']['user']['Row']
  * @param selectColumns Supabase select string. Defaults to '*' (all columns).
  * @returns A User object.
  */
-export async function getUserById(id: string, selectColumns = '*')
-    : Promise<Result<gqlTypes.User>> {
+export async function getUserById(id: string, selectColumns = '*'): Promise<Result<gqlTypes.User>> {
     try {
         const supabase = getSupabaseClient()
         const { data } = await supabase

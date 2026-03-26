@@ -377,8 +377,9 @@ export function validateSpokenLanguages(
     }
 }
 
-export function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHealthcareProfessionalInput>)
-    : Result<unknown> {
+export function validateUpdateProfessionalInput(
+    input: Partial<gqlTypes.UpdateHealthcareProfessionalInput>
+): Result<unknown> {
     const validationResults: Result<unknown> = {
         data: undefined,
         hasErrors: false,
@@ -417,8 +418,9 @@ export function validateUpdateProfessionalInput(input: Partial<gqlTypes.UpdateHe
     return validationResults
 }
 
-export function validateCreateProfessionalInput(input: gqlTypes.CreateHealthcareProfessionalInput)
-    : Result<unknown> {
+export function validateCreateProfessionalInput(
+    input: gqlTypes.CreateHealthcareProfessionalInput
+): Result<unknown> {
     const validationResults: Result<unknown> = {
         data: undefined,
         hasErrors: false,
