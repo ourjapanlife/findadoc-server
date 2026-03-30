@@ -1,10 +1,10 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
-import { hasScriptTags, hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
+import { hasScriptTags, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
 
-// Used for v4 uuid
-const UUID_REGEX =
-    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+// v4 UUID: version nibble must be 4, variant bits must be 8, 9, a, or b
+const UUID_V4_REGEX =
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/
 
 /**
  * Validates the ID input for database queries, checking for length and special characters.
@@ -16,18 +16,16 @@ export function validateIdInput(id: string): Result<unknown> {
         errors: []
     }
 
-    if (UUID_REGEX.test(id)) {
+    if (UUID_V4_REGEX.test(id)) {
         return validationResults
     }
 
-    if (id && (hasSpecialCharacters(id) || id.length > 4096)) {
-        validationResults.hasErrors = true
-        validationResults.errors?.push({
-            field: 'id',
-            errorCode: ErrorCode.INVALID_ID,
-            httpStatus: 400
-        })
-    }
+    validationResults.hasErrors = true
+    validationResults.errors?.push({
+        field: 'id',
+        errorCode: ErrorCode.INVALID_ID,
+        httpStatus: 400
+    })
 
     return validationResults
 }
@@ -168,7 +166,14 @@ export function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput)
     }
 
     // mapLatitude must be in range [-90, 90]
-    if (input.mapLatitude < -90 || input.mapLatitude > 90) {
+    if (input.mapLatitude == null) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'mapLatitude',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    } else if (input.mapLatitude < -90 || input.mapLatitude > 90) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'mapLatitude',
@@ -178,7 +183,14 @@ export function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput)
     }
 
     // mapLongitude must be in range [-180, 180]
-    if (input.mapLongitude < -180 || input.mapLongitude > 180) {
+    if (input.mapLongitude == null) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'mapLongitude',
+            errorCode: ErrorCode.REQUIRED,
+            httpStatus: 400
+        })
+    } else if (input.mapLongitude < -180 || input.mapLongitude > 180) {
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'mapLongitude',
@@ -217,56 +229,58 @@ export function validateUpdateFacilityInput(input: Partial<gqlTypes.UpdateFacili
     }
 
     if (input.nameEn !== undefined) {
-        if (!input.nameEn.trim()) {
+        if (input.nameEn == null || !input.nameEn.trim()) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: 'nameEn',
                 errorCode: ErrorCode.REQUIRED,
                 httpStatus: 400
             })
-        }
-        if (input.nameEn.length > 128) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: 'nameEn',
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-        if (hasScriptTags(input.nameEn)) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: 'nameEn',
-                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
-                httpStatus: 400
-            })
+        } else {
+            if (input.nameEn.length > 128) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: 'nameEn',
+                    errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                    httpStatus: 400
+                })
+            }
+            if (hasScriptTags(input.nameEn)) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: 'nameEn',
+                    errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
+                    httpStatus: 400
+                })
+            }
         }
     }
 
     if (input.nameJa !== undefined) {
-        if (!input.nameJa.trim()) {
+        if (input.nameJa == null || !input.nameJa.trim()) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: 'nameJa',
                 errorCode: ErrorCode.REQUIRED,
                 httpStatus: 400
             })
-        }
-        if (input.nameJa.length > 128) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: 'nameJa',
-                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
-                httpStatus: 400
-            })
-        }
-        if (hasScriptTags(input.nameJa)) {
-            validationResults.hasErrors = true
-            validationResults.errors?.push({
-                field: 'nameJa',
-                errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
-                httpStatus: 400
-            })
+        } else {
+            if (input.nameJa.length > 128) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: 'nameJa',
+                    errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                    httpStatus: 400
+                })
+            }
+            if (hasScriptTags(input.nameJa)) {
+                validationResults.hasErrors = true
+                validationResults.errors?.push({
+                    field: 'nameJa',
+                    errorCode: ErrorCode.CONTAINS_INVALID_CHARACTER,
+                    httpStatus: 400
+                })
+            }
         }
     }
 
@@ -356,7 +370,14 @@ export function validateContactInput(contactInput: gqlTypes.ContactInput): Resul
 
     // email is optional, max 128 chars, must be valid format (compared case-insensitively)
     if (contactInput.email) {
-        if (!isValidEmail(contactInput.email.toLowerCase()) || contactInput.email.length > 128) {
+        if (contactInput.email.length > 128) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'email',
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        } else if (!isValidEmail(contactInput.email.toLowerCase())) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: 'email',
@@ -368,7 +389,14 @@ export function validateContactInput(contactInput: gqlTypes.ContactInput): Resul
 
     // website is optional, max 2048 chars, must be valid URL format (compared case-insensitively)
     if (contactInput.website) {
-        if (!isValidWebsite(contactInput.website.toLowerCase()) || contactInput.website.length > 2048) {
+        if (contactInput.website.length > 2048) {
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: 'website',
+                errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+                httpStatus: 400
+            })
+        } else if (!isValidWebsite(contactInput.website.toLowerCase())) {
             validationResults.hasErrors = true
             validationResults.errors?.push({
                 field: 'website',
