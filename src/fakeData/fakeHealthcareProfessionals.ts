@@ -11,8 +11,7 @@ import { logger } from '../logger.js'
 export function generateRandomCreateHealthcareProfessionalData(
     // We keep facilityIds here to select the random associations, but we don't include them in the returned object
     { facilityIds }: { facilityIds: string[] } = { facilityIds: [] }
-)
-: {
+): {
     coreData: Omit<gqlTypes.CreateHealthcareProfessionalInput, 'facilityIds'>,
     selectedFacilityIds: string[]
 } {
@@ -59,9 +58,10 @@ export function generateRandomCreateHealthcareProfessionalInput(
  * @param {string[]} options.facilityIdOptions - The list of available facility UUIDs.
  * @returns {Array<object>} An array of objects, each containing coreData and selectedFacilityIds.
  */
-export function generateRandomCreateHealthcareProfessionalInputArray({ count, facilityIdOptions }
-: { count: number, facilityIdOptions: string[] } = { count: 100, facilityIdOptions: [] })
-: Array<{
+export function generateRandomCreateHealthcareProfessionalInputArray(
+    { count, facilityIdOptions }
+    : { count: number, facilityIdOptions: string[] } = { count: 100, facilityIdOptions: [] }
+): Array<{
     coreData: Omit<gqlTypes.CreateHealthcareProfessionalInput, 'facilityIds'>,
     selectedFacilityIds: string[]
 }> {

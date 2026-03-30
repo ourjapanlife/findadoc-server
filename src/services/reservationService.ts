@@ -11,8 +11,7 @@ const reservations: Array<gqlTypes.Reservation> = []
  * @param id A string that matches the id of the Reservation.
  * @returns A Reservation object.
  */
-export async function getReservationById(id: string)
-: Promise<Result<gqlTypes.Reservation>> {
+export async function getReservationById(id: string): Promise<Result<gqlTypes.Reservation>> {
     try {
         const selectedReservation = reservations.find(r => r.id === id)
 
