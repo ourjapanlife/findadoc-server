@@ -910,7 +910,7 @@ type PaymentOption {
   paymentType: PaymentType!
   
   """Specific brands or networks accepted (e.g., 'Visa', 'Mastercard', 'Suica', 'PayPay')."""
-  paymentBrands: [String!]!
+  paymentBrands: [String!]
 }
 
 type Mutation {

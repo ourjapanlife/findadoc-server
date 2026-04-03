@@ -149,7 +149,7 @@ export const getFacilityById = async (
             healthcareProfessionalIds,
             createdDate: facilityRow.created_date as string,
             updatedDate: facilityRow.updated_date as string,
-            paymentOptions: facilityRow.payment_options as gqlTypes.PaymentOption[]
+            paymentOptions: (facilityRow.payment_options ?? []) as gqlTypes.PaymentOption[]
         }
 
         return {
@@ -430,7 +430,7 @@ export async function searchFacilities(
             mapLatitude: row.map_latitude as number,
             mapLongitude: row.map_longitude as number,
             healthcareProfessionalIds: hpIdsByFacility.get(row.id as string) ?? [],
-            paymentOptions: row.payment_options as gqlTypes.PaymentOption[],
+            paymentOptions: (row.payment_options ?? []) as gqlTypes.PaymentOption[],
             createdDate: row.created_date as string,
             updatedDate: row.updated_date as string
             

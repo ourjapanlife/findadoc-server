@@ -34,7 +34,7 @@ export interface FacilitiesTable {
     updated_date: string
     firestore_id: string | null
     payment_options: ColumnType<
-        gqlTypes.PaymentOption[],
+        gqlTypes.PaymentOption[] | null,
         string,
         string
     >

@@ -632,7 +632,7 @@ export enum OrderDirection {
 export type PaymentOption = {
   __typename?: 'PaymentOption';
   /** Specific brands or networks accepted (e.g., 'Visa', 'Mastercard', 'Suica', 'PayPay'). */
-  paymentBrands: Array<Scalars['String']['output']>;
+  paymentBrands?: Maybe<Array<Scalars['String']['output']>>;
   /** The general category of payment (e.g., 'Credit Card', 'Cash', 'Electronic Money'). */
   paymentType: PaymentType;
 };
@@ -1359,7 +1359,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type PaymentOptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['PaymentOption'] = ResolversParentTypes['PaymentOption']> = {
-  paymentBrands?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  paymentBrands?: Resolver<Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
   paymentType?: Resolver<ResolversTypes['PaymentType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
