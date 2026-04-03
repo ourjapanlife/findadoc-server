@@ -33,7 +33,9 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
     if (fields.mapLongitude !== undefined) {
         updatePatch.map_longitude = fields.mapLongitude
     }
-
+    if (fields.paymentOptions !== undefined) {
+        updatePatch.payment_options = JSON.stringify(fields.paymentOptions)
+    }
     // Business rule: always timestamp when the entity is updated
     updatePatch.updated_date = new Date().toISOString()
 
@@ -230,6 +232,7 @@ export async function createFacility(
         const gqlFacility = await db.transaction().execute(async transaction => {
             // Step 1: Insert facility into PostgreSQL
             // PostgreSQL generates UUID automatically via DEFAULT gen_random_uuid()
+            logger.info(`DEBUG payment_options input: ${JSON.stringify(facilityInput.paymentOptions)}`)
             const insertedFacility = await transaction
                 .insertInto('facilities')
                 .values({
@@ -238,6 +241,7 @@ export async function createFacility(
                     contact: facilityInput.contact,
                     map_latitude: facilityInput.mapLatitude ?? 0,
                     map_longitude: facilityInput.mapLongitude ?? 0,
+                    payment_options: facilityInput.paymentOptions ?? [],
                     created_date: new Date().toISOString(),
                     updated_date: new Date().toISOString()
                 })
@@ -428,7 +432,8 @@ export async function searchFacilities(
             mapLongitude: row.map_longitude as number,
             healthcareProfessionalIds: hpIdsByFacility.get(row.id as string) ?? [],
             createdDate: row.created_date as string,
-            updatedDate: row.updated_date as string
+            updatedDate: row.updated_date as string,
+            paymentOptions: row.payment_options as gqlTypes.PaymentOption[]
         }))
 
         return { data: list, hasErrors: false }

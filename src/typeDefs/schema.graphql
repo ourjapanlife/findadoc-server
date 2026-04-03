@@ -38,6 +38,8 @@ input CreateFacilityInput {
   mapLongitude: Float!
   """IDs of healthcare professionals to associate with this facility."""
   healthcareProfessionalIds: [ID!]
+  """Payment options for the facility, Type and Brand"""
+  paymentOptions: [PaymentOptionsInput!]
 }
 
 """Input for autofilling a submission from a Google Maps URL during moderation."""
@@ -62,6 +64,8 @@ input UpdateFacilityInput {
   mapLongitude: Float
   """Healthcare professional relationships to add, update, or remove."""
   healthcareProfessionalIds: [Relationship!]
+  """Payment options for the facility, Type and Brand"""
+  paymentOptions: [PaymentOptionsInput!]
 }
 
 """Search filters for querying facilities. All filters are combined with AND logic."""
@@ -879,14 +883,34 @@ type Query {
 }
 
 """
+Payment Options input for adding facility 
+"""
+input PaymentOptionsInput {
+    paymentType: PaymentType!
+    paymentBrands: [String!]
+}
+
+"""
+List of payment types for healthcare facilities
+"""
+ enum PaymentType{
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  ELECTRONIC_MONEY    
+  QR_CODE             
+  INSURANCE  
+  }
+
+"""
 Represents a payment method accepted at a healthcare facility.
 """
 type PaymentOption {
   """The general category of payment (e.g., 'Credit Card', 'Cash', 'Electronic Money')."""
-  paymentType: String!
+  paymentType: PaymentType!
   
   """Specific brands or networks accepted (e.g., 'Visa', 'Mastercard', 'Suica', 'PayPay')."""
-  paymentBrands: [String!]
+  paymentBrands: [String!]!
 }
 
 type Mutation {

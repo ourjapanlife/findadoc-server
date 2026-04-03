@@ -90,6 +90,8 @@ export type CreateFacilityInput = {
   nameEn: Scalars['String']['input'];
   /** Name of the facility in Japanese. */
   nameJa: Scalars['String']['input'];
+  /** Payment options for the facility, Type and Brand */
+  paymentOptions?: InputMaybe<Array<PaymentOptionsInput>>;
 };
 
 /** Input for creating a new healthcare professional. */
@@ -630,10 +632,26 @@ export enum OrderDirection {
 export type PaymentOption = {
   __typename?: 'PaymentOption';
   /** Specific brands or networks accepted (e.g., 'Visa', 'Mastercard', 'Suica', 'PayPay'). */
-  paymentBrands?: Maybe<Array<Scalars['String']['output']>>;
+  paymentBrands: Array<Scalars['String']['output']>;
   /** The general category of payment (e.g., 'Credit Card', 'Cash', 'Electronic Money'). */
-  paymentType: Scalars['String']['output'];
+  paymentType: PaymentType;
 };
+
+/** Payment Options input for adding facility  */
+export type PaymentOptionsInput = {
+  paymentBrands?: InputMaybe<Array<Scalars['String']['input']>>;
+  paymentType: PaymentType;
+};
+
+/** List of payment types for healthcare facilities */
+export enum PaymentType {
+  Cash = 'CASH',
+  CreditCard = 'CREDIT_CARD',
+  DebitCard = 'DEBIT_CARD',
+  ElectronicMoney = 'ELECTRONIC_MONEY',
+  Insurance = 'INSURANCE',
+  QrCode = 'QR_CODE'
+}
 
 /** A physical address with bilingual (English and Japanese) fields. */
 export type PhysicalAddress = {
@@ -992,6 +1010,8 @@ export type UpdateFacilityInput = {
   nameEn?: InputMaybe<Scalars['String']['input']>;
   /** Updated name of the facility in Japanese. */
   nameJa?: InputMaybe<Scalars['String']['input']>;
+  /** Payment options for the facility, Type and Brand */
+  paymentOptions?: InputMaybe<Array<PaymentOptionsInput>>;
 };
 
 /** Input for updating an existing healthcare professional. All fields are optional — only provided fields are updated. */
@@ -1169,6 +1189,8 @@ export type ResolversTypes = {
   OrderBy: OrderBy;
   OrderDirection: OrderDirection;
   PaymentOption: ResolverTypeWrapper<PaymentOption>;
+  PaymentOptionsInput: PaymentOptionsInput;
+  PaymentType: PaymentType;
   PhysicalAddress: ResolverTypeWrapper<PhysicalAddress>;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: ResolverTypeWrapper<{}>;
@@ -1217,6 +1239,7 @@ export type ResolversParentTypes = {
   Mutation: {};
   OrderBy: OrderBy;
   PaymentOption: PaymentOption;
+  PaymentOptionsInput: PaymentOptionsInput;
   PhysicalAddress: PhysicalAddress;
   PhysicalAddressInput: PhysicalAddressInput;
   Query: {};
@@ -1336,8 +1359,8 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type PaymentOptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['PaymentOption'] = ResolversParentTypes['PaymentOption']> = {
-  paymentBrands?: Resolver<Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
-  paymentType?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  paymentBrands?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  paymentType?: Resolver<ResolversTypes['PaymentType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

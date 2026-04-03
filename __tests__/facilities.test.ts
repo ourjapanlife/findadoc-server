@@ -159,6 +159,7 @@ describe('getFacilityById', () => {
         expect(searchedFacility.contact).toEqual(originalInputValues.contact)
         expect(searchedFacility.createdDate).toBeDefined()
         expect(searchedFacility.updatedDate).toBeDefined()
+        expect(searchedFacility.paymentOptions).toBeDefined()
     })
 })
 
@@ -361,6 +362,10 @@ export const createFacilityMutation = `mutation test_createFacility($input: Crea
         nameJa
         createdDate
         updatedDate
+        paymentOptions {
+            paymentType
+            paymentBrands
+        }
     }
 }`
 
@@ -391,6 +396,10 @@ const updateFacilityMutation = `mutation test_updateFacility($id: ID!, $input: U
         healthcareProfessionalIds
         createdDate
         updatedDate
+        paymentOptions {
+            paymentType
+            paymentBrands
+        }
     }
 }`
 
@@ -427,5 +436,9 @@ const getFacilityByIdQuery = `query test_getfacilityById($id: ID!) {
         healthcareProfessionalIds
         createdDate
         updatedDate
+        paymentOptions {
+            paymentType
+            paymentBrands
+        }
     }
 }`
