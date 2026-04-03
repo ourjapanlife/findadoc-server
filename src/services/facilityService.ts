@@ -232,7 +232,6 @@ export async function createFacility(
         const gqlFacility = await db.transaction().execute(async transaction => {
             // Step 1: Insert facility into PostgreSQL
             // PostgreSQL generates UUID automatically via DEFAULT gen_random_uuid()
-            logger.info(`DEBUG payment_options input: ${JSON.stringify(facilityInput.paymentOptions)}`)
             const insertedFacility = await transaction
                 .insertInto('facilities')
                 .values({
@@ -241,7 +240,7 @@ export async function createFacility(
                     contact: facilityInput.contact,
                     map_latitude: facilityInput.mapLatitude ?? 0,
                     map_longitude: facilityInput.mapLongitude ?? 0,
-                    payment_options: facilityInput.paymentOptions ?? [],
+                    payment_options: JSON.stringify(facilityInput.paymentOptions ?? []),
                     created_date: new Date().toISOString(),
                     updated_date: new Date().toISOString()
                 })
@@ -431,9 +430,10 @@ export async function searchFacilities(
             mapLatitude: row.map_latitude as number,
             mapLongitude: row.map_longitude as number,
             healthcareProfessionalIds: hpIdsByFacility.get(row.id as string) ?? [],
+            paymentOptions: row.payment_options as gqlTypes.PaymentOption[],
             createdDate: row.created_date as string,
-            updatedDate: row.updated_date as string,
-            paymentOptions: row.payment_options as gqlTypes.PaymentOption[]
+            updatedDate: row.updated_date as string
+            
         }))
 
         return { data: list, hasErrors: false }

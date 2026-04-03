@@ -35,8 +35,8 @@ export interface FacilitiesTable {
     firestore_id: string | null
     payment_options: ColumnType<
         gqlTypes.PaymentOption[],
-        gqlTypes.PaymentOptionsInput[],
-        gqlTypes.PaymentOptionsInput[]
+        string,
+        string
     >
 }
 
