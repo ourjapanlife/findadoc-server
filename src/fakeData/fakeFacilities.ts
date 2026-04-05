@@ -73,7 +73,24 @@ export function generateRandomCreateFacilityInput()
                 prefectureEn: selectedLocation.prefectureEn,
                 prefectureJa: selectedLocation.prefectureJa
             }
-        }
+        },
+        paymentOptions: faker.helpers.multiple(
+            () => ({
+                paymentType: faker.helpers.arrayElement([
+                    gqlTypes.PaymentType.Cash,
+                    gqlTypes.PaymentType.CreditCard,
+                    gqlTypes.PaymentType.DebitCard,
+                    gqlTypes.PaymentType.ElectronicMoney,
+                    gqlTypes.PaymentType.Insurance,
+                    gqlTypes.PaymentType.QrCode
+                ]),
+                paymentBrands: faker.helpers.multiple(
+                    () => faker.company.name(),
+                    { count: { min: 1, max: 3 } }
+                )
+            }),
+            { count: { min: 1, max: 3 } }
+        )
     }
 }
 
