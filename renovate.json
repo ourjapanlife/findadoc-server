@@ -14,7 +14,7 @@
         },
         {
             "matchPackagePatterns": ["node"],
-            "allowedVersions": "/18.*/"
+            "allowedVersions": "/22.*/"
         },
         {
             "matchDatasources": ["docker"],
