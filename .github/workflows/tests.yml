@@ -19,7 +19,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [21.3.0]
+        node-version: [22]
 
     steps:
       - name: Checkout code
