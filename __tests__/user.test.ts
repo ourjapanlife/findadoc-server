@@ -89,7 +89,7 @@ describe('updateUser', () => {
                 id: createdUser.id,
                 input: updateInput
             }
-        } as gqlMutation<{ id: string, input: UpdateUserInput }>
+        } as gqlRequest
 
         const updateUserResult = await request(gqlApiUrl).post('').send(updateUserMutationRequest)
 
