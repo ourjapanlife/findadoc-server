@@ -25,12 +25,23 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
             const allowedOrigins = [
                 envVariables.websiteURL(),
                 'http://localhost:3000',
+                'http://localhost:4242',
+                'http://127.0.0.1:4242',
                 'https://www.findadoc.jp'
-            ]
+            ].filter((o): o is string => Boolean(o))
+
+            const deployPreview = origin !== undefined
+                && /^https:\/\/deploy-preview-\d+--findadoc\.netlify\.app$/.test(origin)
+
+            const localDevBrowser =
+                envVariables.isLocal()
+                && origin !== undefined
+                && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
 
             const isAllowed =
-                allowedOrigins.includes(origin as string) ||
-      /^https:\/\/deploy-preview-\d+--findadoc\.netlify\.app$/.test(origin as string)
+                (origin !== undefined && allowedOrigins.includes(origin))
+                || deployPreview
+                || localDevBrowser
 
             cb(null, isAllowed)
         },
