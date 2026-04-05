@@ -1,9 +1,9 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
-        "config:base",
-        ":disableDependencyDashboard"
+        "config:base"
     ],
+    "dependencyDashboard": false,
     "labels": ["dependencies"],
     "schedule": ["after 10am every monday"],
     "stabilityDays": 14,
