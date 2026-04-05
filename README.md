@@ -13,9 +13,8 @@ Welcome to the back-end repository for Find a Doc, Japan! We're not currently lo
 We love and welcome contributions to our front-end repository which can be found [here](https://github.com/ourjapanlife/findadoc-web)!
 
 ### Documentation:
-- [📒 **Welcome to Find a Doc, Japan!**](https://documentation.findadoc.jp/development)
-- [🚅 **Quickstart the API**](https://documentation.findadoc.jp/development/start-coding/quickstart-the-frontend-and-backend)
-- [🚀 **Run the API**](https://documentation.findadoc.jp/development/start-coding/quickstart-the-frontend-and-backend/running-the-api-locally)
+- [📒 **Getting Started**](https://docs.findadoc.jp/getting-started/)
+- [💻 **Development**](https://docs.findadoc.jp/development/)
 
 ## Contributors
 

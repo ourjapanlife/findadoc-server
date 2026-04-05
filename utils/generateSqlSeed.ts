@@ -97,7 +97,7 @@ export const generateSqlSeed = async () => {
             // Note: Using camelCase column names as defined in the SQL schema
             const statement = `
             INSERT INTO facilities (
-                id, "name_en", "name_ja", "map_latitude", "map_longitude", contact, "created_date", "updated_date"
+                id, "name_en", "name_ja", "map_latitude", "map_longitude", contact, payment_options, "created_date", "updated_date"
             ) VALUES (
                 ${toSqlValue(facilityId)}, 
                 ${toSqlValue(facility.nameEn)}, 
@@ -105,6 +105,7 @@ export const generateSqlSeed = async () => {
                 ${toSqlValue(facility.mapLatitude)}, 
                 ${toSqlValue(facility.mapLongitude)}, 
                 ${toSqlValue(contactJson)},
+                ${toSqlValue(facility.paymentOptions)},
                 ${toSqlValue(new Date().toISOString())},
                 ${toSqlValue(new Date().toISOString())}
             );`

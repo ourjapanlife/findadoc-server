@@ -33,7 +33,9 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
     if (fields.mapLongitude !== undefined) {
         updatePatch.map_longitude = fields.mapLongitude
     }
-
+    if (fields.paymentOptions !== undefined) {
+        updatePatch.payment_options = JSON.stringify(fields.paymentOptions)
+    }
     // Business rule: always timestamp when the entity is updated
     updatePatch.updated_date = new Date().toISOString()
 
@@ -146,7 +148,8 @@ export const getFacilityById = async (
             mapLongitude: facilityRow.map_longitude as number,
             healthcareProfessionalIds,
             createdDate: facilityRow.created_date as string,
-            updatedDate: facilityRow.updated_date as string
+            updatedDate: facilityRow.updated_date as string,
+            paymentOptions: (facilityRow.payment_options ?? []) as gqlTypes.PaymentOption[]
         }
 
         return {
@@ -237,6 +240,7 @@ export async function createFacility(
                     contact: facilityInput.contact,
                     map_latitude: facilityInput.mapLatitude ?? 0,
                     map_longitude: facilityInput.mapLongitude ?? 0,
+                    payment_options: JSON.stringify(facilityInput.paymentOptions ?? []),
                     created_date: new Date().toISOString(),
                     updated_date: new Date().toISOString()
                 })
@@ -335,7 +339,11 @@ export async function searchFacilities(
             return { data: [], hasErrors: true, errors: validationResult.errors }
         }
 
-        const limit = filters.limit && filters.limit > 100 ? 100 : filters.limit ?? 20
+        const isLightweightQuery = selectColumns !== '*' && !needsHpIds
+        const maxLimit = isLightweightQuery ? 1000 : 100
+
+        const requestedLimit = filters.limit ?? 20
+        const limit = requestedLimit > maxLimit ? maxLimit : requestedLimit
 
         const offset = filters.offset ?? 0
 
@@ -422,8 +430,10 @@ export async function searchFacilities(
             mapLatitude: row.map_latitude as number,
             mapLongitude: row.map_longitude as number,
             healthcareProfessionalIds: hpIdsByFacility.get(row.id as string) ?? [],
+            paymentOptions: (row.payment_options ?? []) as gqlTypes.PaymentOption[],
             createdDate: row.created_date as string,
             updatedDate: row.updated_date as string
+            
         }))
 
         return { data: list, hasErrors: false }
