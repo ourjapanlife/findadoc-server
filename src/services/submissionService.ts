@@ -902,7 +902,8 @@ export const approveSubmission = async (
                         map_latitude: facilityInput.mapLatitude ?? 0,
                         map_longitude: facilityInput.mapLongitude ?? 0,
                         created_date: new Date().toISOString(),
-                        updated_date: new Date().toISOString()
+                        updated_date: new Date().toISOString(),
+                        payment_options: JSON.stringify(facilityInput.paymentOptions ?? [])
                     })
                     .returningAll()
                     .executeTakeFirstOrThrow()
