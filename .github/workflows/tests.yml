@@ -53,6 +53,9 @@ jobs:
       - name: Generate GraphQL types
         run: yarn generate
 
+      - name: Type check
+        run: npx tsc --noEmit
+
       - name: Run tests
         run: yarn test
         env:
