@@ -28,7 +28,20 @@ const envVariables = {
     pgHost: () => process.env.PGHOST,
     dbUrl: () => process.env.DB_URL || process.env.DATABASE_URL,
     pgPort: () => process.env.PGPORT,
-    pgDatabase: () => process.env.DATABASE_URL
+    pgDatabase: () => process.env.DATABASE_URL,
+    sentryDsn: () => process.env.SENTRY_DSN,
+    sentryEnvironment: () =>
+        process.env.SENTRY_ENVIRONMENT
+        ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
+    sentryTracesSampleRate: () => {
+        const raw = process.env.SENTRY_TRACES_SAMPLE_RATE
+        const parsed = raw ? Number(raw) : NaN
+
+        if (!Number.isFinite(parsed)) {
+            return process.env.NODE_ENV === 'production' ? 0.1 : 1.0
+        }
+        return parsed
+    }
 }
 
 console.log('🔌 Loaded env variables 🔌')

@@ -1,4 +1,5 @@
 
+import * as Sentry from '@sentry/node'
 import Fastify from 'fastify'
 import { fastifyApolloDrainPlugin, fastifyApolloHandler } from '@as-integrations/fastify'
 import corsPlugin from '@fastify/cors'
@@ -18,6 +19,9 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
 
     //fastify is our http server (a modern, faster alternative to express)
     const fastify = await Fastify()
+
+    //capture unhandled errors thrown inside fastify routes / hooks in Sentry
+    Sentry.setupFastifyErrorHandler(fastify)
 
     //cors is a middleware that allows us to make requests from the a different url (findadoc.jp) to our server (api.findadoc.jp)
     await fastify.register(corsPlugin, {
@@ -84,6 +88,26 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
 
                     if (!isApolloIntrospectionQuery) {
                         logger.info(`Apollo Request received:\n Query: ' + ${requestContext.request.query} \nVariables: ${JSON.stringify(requestContext.request.variables)}`, { type: 'graphqlquery' })
+                    }
+
+                    return {
+                        async didEncounterErrors(ctx) {
+                            //skip user-input validation errors (already surfaced via GraphQL response)
+                            for (const err of ctx.errors) {
+                                if (err.extensions?.code === 'BAD_USER_INPUT'
+                                    || err.extensions?.code === 'UNAUTHORIZED') {
+                                    continue
+                                }
+                                Sentry.captureException(err, {
+                                    tags: { source: 'graphql' },
+                                    extra: {
+                                        operationName: ctx.request.operationName,
+                                        query: ctx.request.query,
+                                        variables: ctx.request.variables
+                                    }
+                                })
+                            }
+                        }
                     }
                 }
             }

@@ -88,6 +88,7 @@
         "@fastify/cors": "^11.0.1",
         "@fastify/jwt": "^9.1.0",
         "@fastify/rate-limit": "^10.2.2",
+        "@sentry/node": "^10.53.1",
         "@supabase/supabase-js": "^2.75.0",
         "@types/googlemaps": "^3.43.3",
         "cross-env": "^7.0.3",
