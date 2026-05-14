@@ -840,7 +840,20 @@ type DeleteResult {
   isSuccessful: Boolean!
 }
 
+"""Auth roles and scopes for the GraphQL caller, as evaluated by the API (JWT + role mapping + production rules)."""
+type CurrentUserAccess {
+  """Application roles from the token (e.g. Admin, Moderator)."""
+  roles: [String!]!
+  """Space-delimited OAuth scopes from the access token `scope` claim."""
+  jwtScopes: [String!]!
+  """Effective scopes used for API authorization (merged and filtered)."""
+  effectiveScopes: [String!]!
+}
+
 type Query {
+  """Roles and effective API scopes for the authenticated user (always allowed when a user context exists)."""
+  currentUserAccess: CurrentUserAccess!
+
   """Look up a single facility by its unique ID. Returns null if not found."""
   facility(id: ID!): Facility
 

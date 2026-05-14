@@ -1,5 +1,5 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql'
-import { authorize, UserContext, Scope } from './auth.js'
+import { authorize, UserContext, Scope, getEffectiveScopes } from './auth.js'
 import * as facilityService from './services/facilityService.js'
 import * as healthcareProfessionalService from './services/healthcareProfessionalService.js'
 import * as gqlType from './typeDefs/gqlTypes.js'
@@ -20,6 +20,16 @@ import {
 
 const resolvers = {
     Query: {
+        currentUserAccess: (_parent: unknown, _args: unknown, context: UserContext): gqlType.CurrentUserAccess => {
+            const user = context.user
+            const jwtScopes = user.scope?.split(/\s+/).filter(Boolean) ?? []
+            const roles = (user.roles ?? []).map(r => String(r))
+            return {
+                roles,
+                jwtScopes,
+                effectiveScopes: getEffectiveScopes(user)
+            }
+        },
         facility: async (_parent: gqlType.Facility, args: { id: string; }, context: UserContext,
             info: GraphQLResolveInfo)
         : Promise<gqlType.Facility> => {

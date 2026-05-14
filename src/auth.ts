@@ -81,13 +81,37 @@ const roleScopes: Record<Role, Scope[]> = {
     ]
 }
 
-interface User {
+export interface User {
     sub: string
     name: string
     email: string
     roles: Role[]
     scope: string
     [key: string]: unknown // Allow additional properties
+}
+
+/**
+ * Effective API scopes for this user: JWT `scope` claim plus scopes implied by roles,
+ * with production non-admin/moderator stripping applied (same rules as {@link authorize}).
+ */
+export function getEffectiveScopes(user: User | null | undefined): Scope[] {
+    if (!user) {
+        return []
+    }
+
+    const currentUserScopes = (user.scope?.split(/\s+/).filter(Boolean) ?? []) as Scope[]
+    const currentUserRoles = (user.roles as Role[]) || []
+
+    const currentUserScopesFromRoles = currentUserRoles.flatMap(role => roleScopes[role] ?? [])
+    let merged = [...currentUserScopes, ...currentUserScopesFromRoles]
+
+    if (envVariables.isProduction() &&
+        !currentUserRoles.includes(Role.Admin) &&
+        !currentUserRoles.includes(Role.Moderator)) {
+        merged = merged.filter(scope => scope.startsWith('read:') || scope === Scope['create:submissions'])
+    }
+
+    return [...new Set(merged)]
 }
 
 export interface UserContext {
@@ -112,22 +136,9 @@ export function authorize(user: User, requiredScopes: Scope[]): boolean {
             logger.warn('Auth: User is not defined')
             return false
         }
-        
-        // This will fail if we change auth0 roles and forget to update our mapping.
-        const currentUserScopes = user.scope?.split(' ') as unknown as Scope[] || []
-        const currentUserRoles = user.roles as unknown as Role[] || []
-        
-        const currentUserScopesFromRoles = currentUserRoles.flatMap(role => roleScopes[role] as Scope[])
-        // We want to combine the user's explicit scopes with the scopes derived from their roles.
-        let allUserScopes = [...currentUserScopes, ...currentUserScopesFromRoles]
-        
-        // In production, restrict permissions unless user is Admin or Moderator
-        if (envVariables.isProduction() &&
-        !currentUserRoles.includes(Role.Admin) &&
-        !currentUserRoles.includes(Role.Moderator)) {
-            // It removes any write or delete permissions from the user's scopes
-            allUserScopes = allUserScopes.filter(scope => scope.startsWith('read:') || scope === 'create:submissions')
-        }
+
+        const allUserScopes = getEffectiveScopes(user)
+        const currentUserRoles = (user.roles as Role[]) || []
 
         const hasRequiredScopes = requiredScopes.every((scope: Scope) => allUserScopes.includes(scope))
 
