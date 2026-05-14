@@ -1,4 +1,6 @@
-// We want the logger to be started before anything else
+// Sentry instrumentation must be imported first, before any other module,
+// so it can patch node built-ins (http, etc.) before they're loaded.
+import './instrument.js'
 import { initializeLogger } from './logger.js'
 import { createApolloFastifyServer } from './server.js'
 import { initializeSupabaseClient } from './supabaseClient.js'
