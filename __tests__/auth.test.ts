@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { authorize, buildUserContext, Role, Scope } from '../src/auth'
+import { authorize, buildUserContext, getEffectiveScopes, Role, Scope } from '../src/auth'
 import { envVariables } from '../utils/environmentVariables'
 import { FastifyRequest } from 'fastify'
 
@@ -211,6 +211,52 @@ describe('authorize()', () => {
         }
 
         expect(authorize(findadocAdmin, [Scope['delete:facilities']])).toBe(true)
+    })
+})
+
+describe('getEffectiveScopes()', () => {
+    it('returns empty array for null/undefined user', () => {
+        expect(getEffectiveScopes(null)).toEqual([])
+        expect(getEffectiveScopes(undefined)).toEqual([])
+    })
+
+    it('deduplicates scopes present in both JWT and role-derived lists', () => {
+        vi.spyOn(envVariables, 'isProduction').mockReturnValue(false)
+        const user = {
+            sub: 'u1',
+            name: 'U',
+            email: 'u@u.com',
+            roles: [Role.User],
+            scope: `${Scope['read:facilities']} ${Scope['read:profile']}`
+        }
+        const scopes = getEffectiveScopes(user)
+        expect(scopes.filter(s => s === Scope['read:facilities']).length).toBe(1)
+    })
+
+    it('strips write/delete scopes in production for non-admin non-moderator', () => {
+        vi.spyOn(envVariables, 'isProduction').mockReturnValue(true)
+        const devUser = {
+            sub: 'dev1',
+            name: 'Dev',
+            email: 'd@d.com',
+            roles: [Role.Dev],
+            scope: ''
+        }
+        const scopes = getEffectiveScopes(devUser)
+        expect(scopes.includes(Scope['write:facilities'])).toBe(false)
+        expect(scopes.includes(Scope['read:facilities'])).toBe(true)
+    })
+
+    it('does not strip write scopes in production for Moderator', () => {
+        vi.spyOn(envVariables, 'isProduction').mockReturnValue(true)
+        const mod = {
+            sub: 'm1',
+            name: 'Mod',
+            email: 'm@m.com',
+            roles: [Role.Moderator],
+            scope: ''
+        }
+        expect(getEffectiveScopes(mod).includes(Scope['write:facilities'])).toBe(true)
     })
 })
 
