@@ -57,6 +57,79 @@ describe('createHealthcareProfessional', () => {
     })
 })
 
+describe('updateHealthcareProfessional', () => {
+    test('updates JSONB array fields (names, degrees, specialties, spokenLanguages, acceptedInsurance)', async () => {
+        // -- Create a professional to update --
+        const createRequest = {
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
+            }
+        } as gqlMutation<CreateHealthcareProfessionalInput>
+
+        const createResult = await request(gqlApiUrl).post('').send(createRequest)
+
+        const createErrors = createResult.body?.errors
+
+        if (createErrors) {
+            logger.error(JSON.stringify(createErrors))
+            expect(JSON.stringify(createErrors)).toBeUndefined()
+        }
+
+        const createdProfessional = createResult.body.data.createHealthcareProfessional as HealthcareProfessional
+
+        // -- Build an update payload with brand-new JSONB array values --
+        // These fields previously failed because the patch was not wrapped with asJsonb().
+        const updatedValues = generateCreateProfessionalInput({ facilityIds: sharedFacilityIds })
+
+        const updateRequest = {
+            query: updateHealthcareProfessionalMutation,
+            variables: {
+                id: createdProfessional.id,
+                input: {
+                    names: updatedValues.names,
+                    degrees: updatedValues.degrees,
+                    specialties: updatedValues.specialties,
+                    spokenLanguages: updatedValues.spokenLanguages,
+                    acceptedInsurance: updatedValues.acceptedInsurance
+                }
+            }
+        } as gqlRequest
+
+        const updateResult = await request(gqlApiUrl).post('').send(updateRequest)
+
+        // -- The mutation must succeed (previously errored with INTERNAL_SERVER_ERROR) --
+        const updateErrors = updateResult.body?.errors
+
+        if (updateErrors) {
+            logger.error(JSON.stringify(updateErrors))
+            expect(JSON.stringify(updateErrors)).toBeUndefined()
+        }
+
+        const updatedProfessional = updateResult.body.data.updateHealthcareProfessional as HealthcareProfessional
+
+        // -- Re-fetch and confirm the JSONB arrays were actually persisted --
+        const getByIdRequest = {
+            query: getHealthcareProfessionalByIdQuery,
+            variables: { id: createdProfessional.id }
+        } as gqlRequest
+
+        const getResult = await request(gqlApiUrl).post('').send(getByIdRequest)
+
+        expect(getResult.body?.errors).toBeUndefined()
+
+        const persistedProfessional = getResult.body.data.healthcareProfessional as HealthcareProfessional
+
+        expect(updatedProfessional.id).toBe(createdProfessional.id)
+        expect(persistedProfessional.names[0].firstName).toEqual(updatedValues.names[0].firstName)
+        expect(persistedProfessional.names[0].lastName).toEqual(updatedValues.names[0].lastName)
+        expect(persistedProfessional.degrees).toEqual(updatedValues.degrees)
+        expect(persistedProfessional.specialties).toEqual(updatedValues.specialties)
+        expect(persistedProfessional.spokenLanguages).toEqual(updatedValues.spokenLanguages)
+        expect(persistedProfessional.acceptedInsurance).toEqual(updatedValues.acceptedInsurance)
+    })
+})
+
 describe('deleteHealthcareProfessional', () => {
     test('deletes a new healthcare professional', async () => {
         // -- Create a new professional that we plan to delete --
@@ -453,6 +526,26 @@ describe('searchHealthcareProfessionals', () => {
 
 export const createHealthcareProfessionalMutation = `mutation test_createHealthcareProfessional($input: CreateHealthcareProfessionalInput!) {
     createHealthcareProfessional(input: $input) {
+        id
+        names {
+            lastName
+            firstName
+            middleName
+            locale
+        }
+        degrees
+        specialties
+        facilityIds
+        spokenLanguages
+        acceptedInsurance
+        createdDate
+        updatedDate
+        additionalInfoForPatients
+    }
+}`
+
+const updateHealthcareProfessionalMutation = `mutation test_updateHealthcareProfessional($id: ID!, $input: UpdateHealthcareProfessionalInput!) {
+    updateHealthcareProfessional(id: $id, input: $input) {
         id
         names {
             lastName

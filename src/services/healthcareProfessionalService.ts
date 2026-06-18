@@ -15,13 +15,15 @@ type HpRow = dbSchema.DbHealthcareProfessionalRow
 
 // Builds a partial update patch for Healthcare Professional rows.
 export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>) {
-    const updatePatch: Partial<dbSchema.DbHealthcareProfessionalRow> = {}
+    const updatePatch: Record<string, unknown> = {}
 
-    if (fields.names !== null) { updatePatch.names = fields.names }
-    if (fields.degrees !== null) { updatePatch.degrees = fields.degrees }
-    if (fields.spokenLanguages !== null) { updatePatch.spoken_languages = fields.spokenLanguages }
-    if (fields.specialties !== null) { updatePatch.specialties = fields.specialties }
-    if (fields.acceptedInsurance !== null) { updatePatch.accepted_insurance = fields.acceptedInsurance }
+    // JSONB columns must be wrapped with asJsonb(): the pg driver serializes raw JS
+    // arrays as PostgreSQL array literals ({...}) which jsonb columns reject.
+    if (fields.names !== undefined) { updatePatch.names = asJsonb(fields.names) }
+    if (fields.degrees !== undefined) { updatePatch.degrees = asJsonb(fields.degrees) }
+    if (fields.spokenLanguages !== undefined) { updatePatch.spoken_languages = asJsonb(fields.spokenLanguages) }
+    if (fields.specialties !== undefined) { updatePatch.specialties = asJsonb(fields.specialties) }
+    if (fields.acceptedInsurance !== undefined) { updatePatch.accepted_insurance = asJsonb(fields.acceptedInsurance) }
     if (fields.additionalInfoForPatients !== undefined) {
         updatePatch.additional_info_for_patients = fields.additionalInfoForPatients
     }
