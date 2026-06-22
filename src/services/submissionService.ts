@@ -16,6 +16,110 @@ import { asJsonb } from '../../utils/dbUtils.js'
 /** Row type used as Supabase select generic — matches SubmissionRow from dbSchema */
 type SubmissionRow = dbSchema.SubmissionRow
 
+type SubmissionStatusFlag = keyof Pick<
+    gqlTypes.SubmissionSearchFilters,
+    'isUnderReview' | 'isApproved' | 'isRejected'
+>
+
+type SubmissionStatusFlags = Partial<Pick<gqlTypes.SubmissionSearchFilters, SubmissionStatusFlag>>
+
+/**
+ * Maps GraphQL status flags to DB status values.
+ * Shared by search filters and submission updates.
+ */
+const SUBMISSION_STATUS_FILTERS: ReadonlyArray<
+    readonly [SubmissionStatusFlag, dbSchema.SubmissionStatusValue]
+> = [
+    ['isUnderReview', dbSchema.SUBMISSION_STATUS.UNDER_REVIEW],
+    ['isApproved', dbSchema.SUBMISSION_STATUS.APPROVED],
+    ['isRejected', dbSchema.SUBMISSION_STATUS.REJECTED]
+]
+
+/** Partial-match filters applied with ilike on the submissions table. */
+const SUBMISSION_ILIKE_QUERY_FILTERS = [
+    { flag: 'googleMapsUrl' as const, column: 'google_maps_url' },
+    { flag: 'healthcareProfessionalName' as const, column: 'healthcare_professional_name' }
+] as const
+
+/** Exact-match filters applied with eq on the submissions table. */
+const SUBMISSION_EQ_QUERY_FILTERS = [
+    { flag: 'createdDate' as const, column: 'created_date' },
+    { flag: 'updatedDate' as const, column: 'updated_date' }
+] as const
+
+/** Scalar fields copied directly onto a submission update patch. */
+const SUBMISSION_SCALAR_UPDATE_FIELDS = [
+    ['googleMapsUrl', 'google_maps_url'],
+    ['healthcareProfessionalName', 'healthcare_professional_name'],
+    ['notes', 'notes'],
+    ['autofillPlaceFromSubmissionUrl', 'autofill_place_from_submission_url']
+] as const satisfies ReadonlyArray<
+    readonly [keyof gqlTypes.UpdateSubmissionInput, string]
+>
+
+/**
+ * Resolves at most one DB status from GraphQL boolean status flags.
+ * Single-pass: O(n) with no intermediate arrays.
+ */
+function resolveSubmissionStatusFilter(
+    flags: SubmissionStatusFlags,
+    onConflict?: () => never
+): dbSchema.SubmissionStatusValue | undefined {
+    let resolved: dbSchema.SubmissionStatusValue | undefined
+
+    for (const [flag, status] of SUBMISSION_STATUS_FILTERS) {
+        if (!flags[flag]) {
+            continue
+        }
+
+        if (resolved) {
+            if (onConflict) {
+                onConflict()
+            }
+
+            throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
+        }
+
+        resolved = status
+    }
+
+    return resolved
+}
+
+function buildSubmissionUpdatePatch(
+    currentStatus: dbSchema.SubmissionStatusValue,
+    fieldsToUpdate: Partial<gqlTypes.UpdateSubmissionInput>
+): Record<string, unknown> {
+    const patch: Record<string, unknown> = {
+        updated_date: new Date().toISOString(),
+        status: resolveSubmissionStatusFilter(fieldsToUpdate, () => {
+            throw new Error('INVALID_INPUT')
+        }) ?? currentStatus
+    }
+
+    for (const [inputField, column] of SUBMISSION_SCALAR_UPDATE_FIELDS) {
+        const value = fieldsToUpdate[inputField]
+
+        if (value !== undefined) {
+            patch[column] = value
+        }
+    }
+
+    if (fieldsToUpdate.spokenLanguages !== undefined) {
+        patch.spoken_languages = asJsonb<gqlTypes.Locale[]>(fieldsToUpdate.spokenLanguages ?? [])
+    }
+
+    if (fieldsToUpdate.healthcareProfessionals !== undefined) {
+        patch.healthcare_professionals_partial = asJsonb(fieldsToUpdate.healthcareProfessionals ?? [])
+    }
+
+    if (fieldsToUpdate.facility !== undefined) {
+        patch.facility_partial = asJsonb(fieldsToUpdate.facility ?? null)
+    }
+
+    return patch
+}
+
 /**
  * Builds a minimal, empty address object.
  * Used when a submission does not contain address details,
@@ -87,17 +191,12 @@ function splitPersonName(full: string): { firstName: string; lastName: string; m
         firstName: parts[0],
         lastName: parts[parts.length - 1],
         middleName: parts.slice(1, -1).join(' ')
-    }    
+    }
 }
 
 /**
  * Applies filtering logic to a Supabase query builder for the `submissions` table.
- * It handles text search, status flag logic, and date equality filters.
- *
- * @template B Query builder type
- * @param queryBuilder The base Supabase query builder instance.
- * @param filters Filters provided via GraphQL submission search input.
- * @returns Modified query builder with applied filters.
+ * Filter definitions live in SUBMISSION_*_QUERY_FILTERS and SUBMISSION_STATUS_FILTERS.
  */
 //eslint-disable-next-line
 function applySubmissionQueryFilters<T extends Record<string, any>>(
@@ -106,47 +205,26 @@ function applySubmissionQueryFilters<T extends Record<string, any>>(
 ): T {
     let query = queryBuilder
 
-    // Apply case-insensitive partial match on googleMapsUrl
-    if (filters.googleMapsUrl) {
-        query = query.ilike('google_maps_url', `%${filters.googleMapsUrl}%`) as T
+    for (const { flag, column } of SUBMISSION_ILIKE_QUERY_FILTERS) {
+        const value = filters[flag]
+
+        if (value) {
+            query = query.ilike(column, `%${value}%`) as T
+        }
     }
 
-    if (filters.healthcareProfessionalName) {
-        query = query.ilike(
-            'healthcare_professional_name',
-            `%${filters.healthcareProfessionalName}%`
-        ) as T
+    const status = resolveSubmissionStatusFilter(filters)
+
+    if (status) {
+        query = query.eq('status', status) as T
     }
 
-    // Build array of requested status filters using constants
-    const requestedStatuses: dbSchema.SubmissionStatusValue[] = []
+    for (const { flag, column } of SUBMISSION_EQ_QUERY_FILTERS) {
+        const value = filters[flag]
 
-    if (filters.isUnderReview) {
-        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.UNDER_REVIEW)
-    }
-    if (filters.isApproved) {
-        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.APPROVED)
-    }
-    if (filters.isRejected) {
-        requestedStatuses.push(dbSchema.SUBMISSION_STATUS.REJECTED)
-    }
-
-    // Validate: conflicting status filters
-    if (requestedStatuses.length > 1) {
-        throw Object.assign(new Error('Conflicting status filters'), { httpStatus: 400 })
-    }
-
-    // Apply status filter if exactly one was requested
-    if (requestedStatuses.length === 1) {
-        query = query.eq('status', requestedStatuses[0]) as T
-    }
-
-    if (filters.createdDate) {
-        query = query.eq('created_date', filters.createdDate) as T
-    }
-
-    if (filters.updatedDate) {
-        query = query.eq('updated_date', filters.updatedDate) as T
+        if (value) {
+            query = query.eq(column, value) as T
+        }
     }
 
     return query
@@ -270,11 +348,7 @@ export async function searchSubmissions(
 
 /**
  * Gets the total count of submissions matching the given filters.
- * This function is specifically for retrieving only the total count, separate from the paginated data.
- * It also preserves your existing return object structure for error handling.
- *
- * @param filters An object that contains parameters to filter on.
- * @returns An object containing data (the total count), hasErrors flag, and optional errors array.
+ * Reuses applySubmissionQueryFilters so count and search stay in sync.
  */
 export async function countSubmissions(
   filters: gqlTypes.SubmissionSearchFilters = {}
@@ -336,7 +410,7 @@ export const createSubmission = async (
             const insertedSubmission = await transaction
                 .insertInto('submissions')
                 .values({
-                    status: 'pending',
+                    status: dbSchema.SUBMISSION_STATUS.PENDING,
                     google_maps_url: submissionInput.googleMapsUrl ?? '',
                     healthcare_professional_name: submissionInput.healthcareProfessionalName ?? '',
                     spoken_languages: asJsonb<gqlTypes.Locale[]>(submissionInput.spokenLanguages ?? []),
@@ -453,66 +527,9 @@ export const updateSubmission = async (
                 throw new Error('REDIRECT_TO_AUTOFILL')
             }
 
-            // Map boolean flags to status value
-            let newStatus = currentSubmission.status
+            // Map boolean flags to status via SUBMISSION_STATUS_FILTERS
+            const patch = buildSubmissionUpdatePatch(currentSubmission.status, fieldsToUpdate)
 
-            // Build array of requested status changes
-            const requestedStatuses: ('under_review' | 'approved' | 'rejected')[] = []
-            
-            if (fieldsToUpdate.isUnderReview) {
-                requestedStatuses.push('under_review')
-            }
-            if (fieldsToUpdate.isApproved) {
-                requestedStatuses.push('approved')
-            }
-            if (fieldsToUpdate.isRejected) {
-                requestedStatuses.push('rejected')
-            }
-
-            // Validate: only one status can be set at a time
-            if (requestedStatuses.length > 1) {
-                throw new Error('INVALID_INPUT')
-            }
-
-            // Apply the new status if one was requested
-            if (requestedStatuses.length === 1) {
-                newStatus = requestedStatuses[0]
-            }
-
-            // Build the patch
-            const patch: Record<string, unknown> = {
-                updated_date: new Date().toISOString(),
-                status: newStatus
-            }
-
-            if (fieldsToUpdate.googleMapsUrl !== undefined) {
-                patch.google_maps_url = fieldsToUpdate.googleMapsUrl
-            }
-
-            if (fieldsToUpdate.healthcareProfessionalName !== undefined) {
-                patch.healthcare_professional_name = fieldsToUpdate.healthcareProfessionalName
-            }
-
-            if (fieldsToUpdate.notes !== undefined) {
-                patch.notes = fieldsToUpdate.notes
-            }
-
-            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl !== undefined) {
-                patch.autofill_place_from_submission_url = fieldsToUpdate.autofillPlaceFromSubmissionUrl
-            }
-
-            if (fieldsToUpdate.spokenLanguages !== undefined) {
-                patch.spoken_languages = asJsonb<gqlTypes.Locale[]>(fieldsToUpdate.spokenLanguages ?? [])
-            }
-
-            if (fieldsToUpdate.healthcareProfessionals !== undefined) {
-                patch.healthcare_professionals_partial = asJsonb(fieldsToUpdate.healthcareProfessionals ?? [])
-            }
-
-            if (fieldsToUpdate.facility !== undefined) {
-                patch.facility_partial = asJsonb(fieldsToUpdate.facility ?? null)
-            }
-            // Update the submission
             const updatedSubmission = await transaction
                 .updateTable('submissions')
                 .set(patch)
@@ -675,7 +692,7 @@ export const autoFillPlacesInformation = async (
                     google_maps_url: places.extractedGoogleMapsURI ?? currentSubmission.google_maps_url,
                      
                     facility_partial: asJsonb<gqlTypes.FacilitySubmission>(facilityPartial),
-                    status: 'under_review',
+                    status: dbSchema.SUBMISSION_STATUS.UNDER_REVIEW,
                     autofill_place_from_submission_url: true,
                     updated_date: new Date().toISOString()
                 })
@@ -868,7 +885,7 @@ export const approveSubmission = async (
                 throw new Error(`Submission not found: ${submissionId}`)
             }
 
-            if (currentSubmission.status === 'approved') {
+            if (currentSubmission.status === dbSchema.SUBMISSION_STATUS.APPROVED) {
                 throw new Error('SUBMISSION_ALREADY_APPROVED')
             }
 
@@ -927,7 +944,7 @@ export const approveSubmission = async (
             const updated = await transaction
                 .updateTable('submissions')
                 .set({
-                    status: 'approved',
+                    status: dbSchema.SUBMISSION_STATUS.APPROVED,
                     facilities_id: finalFacilityId,
                     hps_id: createdHpId ?? currentSubmission.hps_id,
                     updated_date: new Date().toISOString()

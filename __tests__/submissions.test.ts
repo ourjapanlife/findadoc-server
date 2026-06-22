@@ -1,4 +1,5 @@
 import { expect, describe, test } from 'vitest'
+import { faker } from '@faker-js/faker'
 import request from 'supertest'
 import { generateRandomCreateSubmissionInput, generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
 import { CreateSubmissionInput, Submission, SubmissionSearchFilters, UpdateSubmissionInput } from '../src/typeDefs/gqlTypes.js'
@@ -465,6 +466,208 @@ describe('searchSubmissions', () => {
         // we should find both submissions
         expect(foundFirstSubmission).toBeTruthy()
         expect(foundSecondSubmission).toBeTruthy()
+    })
+})
+
+describe('submission status filters and counts', () => {
+    const submissionsTotalCountQuery = /* GraphQL */ `query test_submissionsTotalCount($filters: SubmissionSearchFilters!) {
+        submissionsTotalCount(filters: $filters)
+    }`
+
+    async function createSubmissionForTest(
+        input: CreateSubmissionInput = generateRandomCreateSubmissionInput()
+    ): Promise<Submission> {
+        const createSubmissionRequest = {
+            query: createSubmissionMutation,
+            variables: { input }
+        } satisfies gqlRequest
+
+        const result = await request(gqlApiUrl).post('').send(createSubmissionRequest)
+
+        expect(result.body.errors).toBeUndefined()
+
+        return result.body.data.createSubmission as Submission
+    }
+
+    async function updateSubmissionForTest(id: string, input: UpdateSubmissionInput) {
+        const updateSubmissionRequest = {
+            query: updateSubmissionMutation,
+            variables: { id, input }
+        } satisfies gqlRequest
+
+        return request(gqlApiUrl).post('').send(updateSubmissionRequest)
+    }
+
+    async function searchSubmissionsWithFilters(filters: SubmissionSearchFilters): Promise<Submission[]> {
+        const searchSubmissionsRequest = {
+            query: searchSubmissionsQuery,
+            variables: { filters }
+        } satisfies gqlRequest
+
+        const searchResult = await request(gqlApiUrl).post('').send(searchSubmissionsRequest)
+
+        expect(searchResult.body.errors).toBeUndefined()
+
+        return searchResult.body.data.submissions as Submission[]
+    }
+
+    async function countSubmissionsWithFilters(filters: SubmissionSearchFilters): Promise<number> {
+        const countRequest = {
+            query: submissionsTotalCountQuery,
+            variables: { filters }
+        } satisfies gqlRequest
+
+        const countResult = await request(gqlApiUrl).post('').send(countRequest)
+
+        expect(countResult.body.errors).toBeUndefined()
+
+        return countResult.body.data.submissionsTotalCount as number
+    }
+
+    test('filters submissions by isUnderReview and matches total count', async () => {
+        const input = generateRandomCreateSubmissionInput()
+        const createdSubmission = await createSubmissionForTest(input)
+
+        const updateResult = await updateSubmissionForTest(createdSubmission.id, { isUnderReview: true })
+
+        expect(updateResult.body.errors).toBeUndefined()
+
+        const filters = {
+            isUnderReview: true,
+            googleMapsUrl: input.googleMapsUrl
+        } satisfies SubmissionSearchFilters
+
+        const matchingSubmissions = await searchSubmissionsWithFilters(filters)
+
+        expect(matchingSubmissions).toHaveLength(1)
+        expect(matchingSubmissions[0].id).toBe(createdSubmission.id)
+        expect(matchingSubmissions[0].isUnderReview).toBe(true)
+        expect(matchingSubmissions[0].isApproved).toBe(false)
+        expect(matchingSubmissions[0].isRejected).toBe(false)
+
+        expect(await countSubmissionsWithFilters(filters)).toBe(1)
+    })
+
+    test('filters submissions by isRejected and matches total count', async () => {
+        const input = generateRandomCreateSubmissionInput()
+        const createdSubmission = await createSubmissionForTest(input)
+
+        const updateResult = await updateSubmissionForTest(createdSubmission.id, { isRejected: true })
+
+        expect(updateResult.body.errors).toBeUndefined()
+
+        const filters = {
+            isRejected: true,
+            googleMapsUrl: input.googleMapsUrl
+        } satisfies SubmissionSearchFilters
+
+        const matchingSubmissions = await searchSubmissionsWithFilters(filters)
+
+        expect(matchingSubmissions).toHaveLength(1)
+        expect(matchingSubmissions[0].id).toBe(createdSubmission.id)
+        expect(matchingSubmissions[0].isRejected).toBe(true)
+
+        expect(await countSubmissionsWithFilters(filters)).toBe(1)
+    })
+
+    test('filters submissions by isApproved and matches total count', async () => {
+        const input = generateRandomCreateSubmissionInput()
+        const createdSubmission = await createSubmissionForTest(input)
+
+        const updateResult = await updateSubmissionForTest(createdSubmission.id, {
+            facility: generateRandomCreateFacilityInput(),
+            healthcareProfessionals: [generateRandomCreateHealthcareProfessionalInput()],
+            isUnderReview: true
+        })
+
+        expect(updateResult.body.errors).toBeUndefined()
+
+        const approveResult = await updateSubmissionForTest(createdSubmission.id, { isApproved: true })
+
+        expect(approveResult.body.errors).toBeUndefined()
+
+        const filters = {
+            isApproved: true,
+            googleMapsUrl: input.googleMapsUrl
+        } satisfies SubmissionSearchFilters
+
+        const matchingSubmissions = await searchSubmissionsWithFilters(filters)
+
+        expect(matchingSubmissions).toHaveLength(1)
+        expect(matchingSubmissions[0].id).toBe(createdSubmission.id)
+        expect(matchingSubmissions[0].isApproved).toBe(true)
+
+        expect(await countSubmissionsWithFilters(filters)).toBe(1)
+    })
+
+    test('excludes pending submissions from isUnderReview filter', async () => {
+        const input = generateRandomCreateSubmissionInput()
+        const createdSubmission = await createSubmissionForTest(input)
+
+        const filters = {
+            isUnderReview: true,
+            googleMapsUrl: input.googleMapsUrl
+        } satisfies SubmissionSearchFilters
+
+        const matchingSubmissions = await searchSubmissionsWithFilters(filters)
+
+        expect(matchingSubmissions.find(submission => submission.id === createdSubmission.id)).toBeUndefined()
+        expect(await countSubmissionsWithFilters(filters)).toBe(0)
+    })
+
+    test('uses ilike for partial, case-insensitive healthcareProfessionalName search', async () => {
+        const uniqueToken = faker.string.alpha({ length: 12, casing: 'mixed' })
+        const input = {
+            ...generateRandomCreateSubmissionInput(),
+            healthcareProfessionalName: `Dr ${uniqueToken} Example`
+        } satisfies CreateSubmissionInput
+
+        const createdSubmission = await createSubmissionForTest(input)
+
+        const matchingSubmissions = await searchSubmissionsWithFilters({
+            healthcareProfessionalName: uniqueToken.toLowerCase()
+        })
+
+        const matchedSubmission = matchingSubmissions.find(submission => submission.id === createdSubmission.id)
+
+        expect(matchedSubmission).toBeDefined()
+        expect(matchedSubmission?.healthcareProfessionalName).toContain(uniqueToken)
+    })
+
+    test('returns an error when search uses conflicting status filters', async () => {
+        const searchSubmissionsRequest = {
+            query: searchSubmissionsQuery,
+            variables: {
+                filters: {
+                    isUnderReview: true,
+                    isApproved: true
+                } satisfies SubmissionSearchFilters
+            }
+        } satisfies gqlRequest
+
+        const searchResult = await request(gqlApiUrl).post('').send(searchSubmissionsRequest)
+
+        expect(searchResult.body.errors).toBeDefined()
+        expect(searchResult.body.errors.length).toBeGreaterThanOrEqual(1)
+    })
+
+    test('returns an error when update uses conflicting status flags', async () => {
+        const createdSubmission = await createSubmissionForTest()
+
+        const updateResult = await updateSubmissionForTest(createdSubmission.id, {
+            isUnderReview: true,
+            isRejected: true
+        })
+
+        expect(updateResult.body.errors).toBeDefined()
+
+        const submissionErrors = updateResult.body.errors[0].extensions.errors as Error[]
+
+        expect(submissionErrors).toBeDefined()
+        expect(submissionErrors.length).toBe(1)
+        expect(submissionErrors[0].field).toBe('status')
+        expect(submissionErrors[0].errorCode).toBe(ErrorCode.INVALID_INPUT)
+        expect(submissionErrors[0].httpStatus).toBe(400)
     })
 })
 
