@@ -16,6 +16,7 @@ We love and welcome contributions to our front-end repository which can be found
 - [📒 **Getting Started**](https://docs.findadoc.jp/getting-started/)
 - [💻 **Development**](https://docs.findadoc.jp/development/)
 - [City vocabulary](docs/city-rules.md)
+- [Places storage](docs/places-storage.md)
 - [Agent notes](AGENTS.md)
 
 ## Contributors

@@ -14,4 +14,9 @@ Alias map: #1006. City table: #1009. Backfill: #1011.
 
 ## Places
 
-Do not extend `utils/submissionDataFromGoogleMaps.ts`. A later `place_id` flow replaces it. Store `place_id` only. Do not persist a Places display name, formatted address, phone, website, hours, photos, or reviews as directory data.
+`docs/places-storage.md` is the storage rule. Follow it. Do not open a Places write path that contradicts it.
+
+- Store `place_id`. Refresh it if it is older than 12 months.
+- Places latitude and longitude last at most 30 days, then delete or refresh.
+- Do not store a Places display name, formatted address, phone, website, hours, photos, or reviews as directory data.
+- Do not extend `utils/submissionDataFromGoogleMaps.ts`. Removing it is #1008. The picker is #1012. The facility resolver is #1013.
