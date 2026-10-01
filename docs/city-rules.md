@@ -1,6 +1,6 @@
 # City rules
 
-Frozen for [#1005](https://github.com/ourjapanlife/findadoc-server/issues/1005). The alias map is [#1006](https://github.com/ourjapanlife/findadoc-server/issues/1006). The city table is [#1009](https://github.com/ourjapanlife/findadoc-server/issues/1009). The backfill is [#1011](https://github.com/ourjapanlife/findadoc-server/issues/1011).
+Frozen for [#1005](https://github.com/ourjapanlife/findadoc-server/issues/1005). The alias lookup is [#1006](https://github.com/ourjapanlife/findadoc-server/issues/1006) (`src/vocabulary/cityMap.ts`). It is not applied to API responses. The city table is [#1009](https://github.com/ourjapanlife/findadoc-server/issues/1009). The backfill is [#1011](https://github.com/ourjapanlife/findadoc-server/issues/1011).
 
 Checked against the live facilities API on 1 Oct 2026: 465 facilities, 214 `cityEn` values, 34 `prefectureEn` values. Same counts as the 18 Sep 2026 snapshot in the approved data-cleaning plan.
 
