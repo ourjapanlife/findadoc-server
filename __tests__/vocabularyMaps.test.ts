@@ -11,6 +11,16 @@ function city(prefectureEn: string, cityEn: string, cityJa: string) {
     return resolveSearchCity({ prefectureEn, cityEn, cityJa })
 }
 
+function mappedCity(prefectureEn: string, cityEn: string, cityJa: string) {
+    const outcome = city(prefectureEn, cityEn, cityJa)
+
+    if (outcome.status !== 'mapped') {
+        throw new Error(`expected a mapped city, got ${outcome.reason}`)
+    }
+
+    return outcome.value
+}
+
 describe('resolveSearchCity', () => {
     it('folds Tokyo ward spellings onto one ward, including a fullwidth space', () => {
         expect(city('Tokyo', 'Minato City', '港区')).toEqual({
@@ -29,24 +39,24 @@ describe('resolveSearchCity', () => {
     })
 
     it('rolls Fukuoka wards up to the city and keeps Kitakyushu separate', () => {
-        expect(city('Fukuoka', 'East Ward', '東区').value).toMatchObject({ nameEn: 'Fukuoka' })
-        expect(city('Fukuoka', 'Higashi Ward', '東区').value).toMatchObject({ nameEn: 'Fukuoka' })
-        expect(city('Fukuoka', 'Chuo Ward', '中央区').value).toMatchObject({ nameEn: 'Fukuoka' })
-        expect(city('Fukuoka', 'Watanabedori 2-4-28', '中央区').value).toMatchObject({ nameEn: 'Fukuoka' })
-        expect(city('', 'Hakata Ward', '博多区').value).toMatchObject({
+        expect(mappedCity('Fukuoka', 'East Ward', '東区')).toMatchObject({ nameEn: 'Fukuoka' })
+        expect(mappedCity('Fukuoka', 'Higashi Ward', '東区')).toMatchObject({ nameEn: 'Fukuoka' })
+        expect(mappedCity('Fukuoka', 'Chuo Ward', '中央区')).toMatchObject({ nameEn: 'Fukuoka' })
+        expect(mappedCity('Fukuoka', 'Watanabedori 2-4-28', '中央区')).toMatchObject({ nameEn: 'Fukuoka' })
+        expect(mappedCity('', 'Hakata Ward', '博多区')).toMatchObject({
             prefectureEn: 'Fukuoka',
             nameEn: 'Fukuoka'
         })
-        expect(city('Fukuoka', 'Kitakyushu, Kokuraminami Ward', '北九州市小倉南区').value)
+        expect(mappedCity('Fukuoka', 'Kitakyushu, Kokuraminami Ward', '北九州市小倉南区'))
             .toMatchObject({ nameEn: 'Kitakyushu' })
-        expect(city('Fukuoka', 'Yahatanishi Ward', '八幡西区').value).toMatchObject({ nameEn: 'Kitakyushu' })
+        expect(mappedCity('Fukuoka', 'Yahatanishi Ward', '八幡西区')).toMatchObject({ nameEn: 'Kitakyushu' })
     })
 
     it('does not merge Chuo across prefectures', () => {
-        expect(city('Tokyo', 'Chuo City', '中央区').value).toMatchObject({ prefectureEn: 'Tokyo', nameEn: 'Chuo' })
-        expect(city('Fukuoka', 'Chuo Ward', '中央区').value).toMatchObject({ nameEn: 'Fukuoka' })
-        expect(city('Osaka', 'Chuo Ward', '中央区').value).toMatchObject({ nameEn: 'Osaka', nameJa: '大阪市' })
-        expect(city('Yamanashi', 'Chuo', '中央市').value).toEqual({
+        expect(mappedCity('Tokyo', 'Chuo City', '中央区')).toMatchObject({ prefectureEn: 'Tokyo', nameEn: 'Chuo' })
+        expect(mappedCity('Fukuoka', 'Chuo Ward', '中央区')).toMatchObject({ nameEn: 'Fukuoka' })
+        expect(mappedCity('Osaka', 'Chuo Ward', '中央区')).toMatchObject({ nameEn: 'Osaka', nameJa: '大阪市' })
+        expect(mappedCity('Yamanashi', 'Chuo', '中央市')).toEqual({
             prefectureEn: 'Yamanashi',
             nameEn: 'Chuo',
             nameJa: '中央市'
@@ -56,23 +66,23 @@ describe('resolveSearchCity', () => {
     it('leaves a bare Osaka ward unresolved when Sakai has the same ward', () => {
         expect(city('Osaka', 'North Ward', '北区')).toEqual({ status: 'needs_review', reason: 'ambiguous_ward' })
         expect(city('Osaka', 'West Ward', '西区')).toEqual({ status: 'needs_review', reason: 'ambiguous_ward' })
-        expect(city('Osaka', 'Sakai North Ward', '堺市北区').value).toMatchObject({ nameEn: 'Sakai' })
-        expect(city('Osaka', 'Sakai, West Ward', '堺市西区').value).toMatchObject({ nameEn: 'Sakai' })
+        expect(mappedCity('Osaka', 'Sakai North Ward', '堺市北区')).toMatchObject({ nameEn: 'Sakai' })
+        expect(mappedCity('Osaka', 'Sakai, West Ward', '堺市西区')).toMatchObject({ nameEn: 'Sakai' })
     })
 
     it('rolls other designated-city wards up to the parent city', () => {
-        expect(city('Hokkaido', 'Sapporo, East Ward', '札幌市東区').value).toMatchObject({ nameEn: 'Sapporo' })
-        expect(city('Hokkaido', 'Sapporo, Nishi Ward', '札幌市西区').value).toMatchObject({ nameEn: 'Sapporo' })
-        expect(city('Hokkaido', 'Sapporo, West Ward', '札幌市西区').value).toMatchObject({ nameEn: 'Sapporo' })
-        expect(city('Kumamoto', 'Kita Ward', '北区').value).toMatchObject({ nameEn: 'Kumamoto' })
-        expect(city('Niigata', 'West Ward', '西区').value).toMatchObject({ nameEn: 'Niigata' })
-        expect(city('Miyagi', 'Sendai, Aoba Ward', '仙台市青葉区').value).toMatchObject({ nameEn: 'Sendai' })
-        expect(city('Saitama', 'Urawa Ward', '浦和区').value).toMatchObject({ nameEn: 'Saitama', nameJa: 'さいたま市' })
+        expect(mappedCity('Hokkaido', 'Sapporo, East Ward', '札幌市東区')).toMatchObject({ nameEn: 'Sapporo' })
+        expect(mappedCity('Hokkaido', 'Sapporo, Nishi Ward', '札幌市西区')).toMatchObject({ nameEn: 'Sapporo' })
+        expect(mappedCity('Hokkaido', 'Sapporo, West Ward', '札幌市西区')).toMatchObject({ nameEn: 'Sapporo' })
+        expect(mappedCity('Kumamoto', 'Kita Ward', '北区')).toMatchObject({ nameEn: 'Kumamoto' })
+        expect(mappedCity('Niigata', 'West Ward', '西区')).toMatchObject({ nameEn: 'Niigata' })
+        expect(mappedCity('Miyagi', 'Sendai, Aoba Ward', '仙台市青葉区')).toMatchObject({ nameEn: 'Sendai' })
+        expect(mappedCity('Saitama', 'Urawa Ward', '浦和区')).toMatchObject({ nameEn: 'Saitama', nameJa: 'さいたま市' })
     })
 
     it('keeps a municipality that shares its prefecture name', () => {
-        expect(city('Tokushima', 'Tokushima', '徳島市').value).toMatchObject({ nameEn: 'Tokushima', nameJa: '徳島市' })
-        expect(city('Okinawa', 'Okinawa', '沖縄市').value).toMatchObject({ nameEn: 'Okinawa', nameJa: '沖縄市' })
+        expect(mappedCity('Tokushima', 'Tokushima', '徳島市')).toMatchObject({ nameEn: 'Tokushima', nameJa: '徳島市' })
+        expect(mappedCity('Okinawa', 'Okinawa', '沖縄市')).toMatchObject({ nameEn: 'Okinawa', nameJa: '沖縄市' })
         expect(city('Mie', 'Mie', '三重郡')).toEqual({ status: 'needs_review', reason: 'district_only' })
     })
 
@@ -83,22 +93,22 @@ describe('resolveSearchCity', () => {
             status: 'needs_review',
             reason: 'language_disagreement'
         })
-        expect(city('Akita', 'Akita', '秋田市').value).toMatchObject({ nameEn: 'Akita', nameJa: '秋田市' })
+        expect(mappedCity('Akita', 'Akita', '秋田市')).toMatchObject({ nameEn: 'Akita', nameJa: '秋田市' })
     })
 
     it('maps the reviewed town and typo rows and leaves a bare district', () => {
-        expect(city('Fukui', 'Tsurgua', '敦賀市').value).toMatchObject({ nameEn: 'Tsuruga', nameJa: '敦賀市' })
-        expect(city('Osaka', 'Minoh', '府箕面市').value).toMatchObject({ nameEn: 'Minoh', nameJa: '箕面市' })
-        expect(city('Osaka', 'Ikeda', '池田').value).toMatchObject({ nameEn: 'Ikeda', nameJa: '池田市' })
-        expect(city('Miyagi', 'Miyagi District, Rifu', '宮城郡利府町').value).toMatchObject({
+        expect(mappedCity('Fukui', 'Tsurgua', '敦賀市')).toMatchObject({ nameEn: 'Tsuruga', nameJa: '敦賀市' })
+        expect(mappedCity('Osaka', 'Minoh', '府箕面市')).toMatchObject({ nameEn: 'Minoh', nameJa: '箕面市' })
+        expect(mappedCity('Osaka', 'Ikeda', '池田')).toMatchObject({ nameEn: 'Ikeda', nameJa: '池田市' })
+        expect(mappedCity('Miyagi', 'Miyagi District, Rifu', '宮城郡利府町')).toMatchObject({
             nameEn: 'Rifu',
             nameJa: '利府町'
         })
-        expect(city('Hokkaido', 'Esashi, Hiyama District', '桧山郡江差町').value).toMatchObject({
+        expect(mappedCity('Hokkaido', 'Esashi, Hiyama District', '桧山郡江差町')).toMatchObject({
             nameEn: 'Esashi',
             nameJa: '江差町'
         })
-        expect(city('Hokkaido', 'Kutchan, Abuta District North 4', '虻田郡倶知安町北4').value).toMatchObject({
+        expect(mappedCity('Hokkaido', 'Kutchan, Abuta District North 4', '虻田郡倶知安町北4')).toMatchObject({
             nameEn: 'Kutchan',
             nameJa: '倶知安町'
         })
