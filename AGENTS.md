@@ -10,7 +10,7 @@
 - Prefecture keys come from `utils/japanesePrefectures.ts`.
 - A district (郡), a street, or an English/Japanese pair that names two different places stays unresolved. Do not guess. Osaka and Sakai both have Kita and Nishi, so a bare North Ward is not Osaka.
 
-Alias map: #1006. City table: #1009. Backfill: #1011.
+Alias lookup lives in `src/vocabulary/`. It is not imported by resolvers or services, so API responses stay on the stored strings until #1011. City table: #1009. Backfill: #1011.
 
 ## Places
 
