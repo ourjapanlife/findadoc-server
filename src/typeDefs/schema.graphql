@@ -80,6 +80,21 @@ input FacilitySearchFilters {
   healthcareProfessionalName: String
   """Filter by associated healthcare professional IDs."""
   healthcareProfessionalIds: [String!]
+  """
+  Filter by prefecture. Accepts an English prefecture key (e.g. "Okinawa", case-insensitive)
+  or the Japanese name (e.g. "沖縄県"). Unknown prefectures are rejected.
+  """
+  prefecture: String
+  """
+  Only return facilities with at least one healthcare professional who speaks all of these languages.
+  Combined with specialties, the same professional must match both.
+  """
+  spokenLanguages: [Locale!]
+  """
+  Only return facilities with at least one healthcare professional who practices all of these specialties.
+  Combined with spokenLanguages, the same professional must match both.
+  """
+  specialties: [Specialty!]
   """Filter by creation date (ISO 8601)."""
   createdDate: String
   """Filter by last updated date (ISO 8601)."""

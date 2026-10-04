@@ -6,7 +6,8 @@ import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
 import { mapKyselyFacilityToGraphQL } from '../services/mappersEntityService.js'
-import type { HasIlike} from '../../utils/dbUtils.js'
+import type { HasContains, HasIlike, HasOr } from '../../utils/dbUtils.js'
+import { prefectureTranslations, resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
 import type { Transaction } from 'kysely'
 import type { Database } from '../typeDefs/kyselyTypes.js'
 import type { Database as SupabaseDb } from '../typeDefs/supabase-generated.js'
@@ -50,7 +51,7 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
  * @param filters - The facility search filters from GraphQL input.
  * @returns The same query builder instance, modified with applied filters.
  */
-export function applyFacilityFilters<T extends HasIlike>(
+export function applyFacilityFilters<T extends HasIlike & HasOr & HasContains>(
   facilitySelect: T,
   filters: gqlTypes.FacilitySearchFilters
 ): T {
@@ -64,7 +65,49 @@ export function applyFacilityFilters<T extends HasIlike>(
         query = query.ilike('name_ja', `%${filters.nameJa}%`) as T
     }
 
+    // Prefecture: match the canonical key on the English side (any casing) or the Japanese name.
+    // Validation has already rejected unknown prefectures.
+    const prefectureKey = filters.prefecture ? resolvePrefectureKey(filters.prefecture) : undefined
+
+    if (prefectureKey) {
+        query = query.or([
+            `contact->address->>prefectureEn.ilike.${prefectureKey}`,
+            `contact->address->>prefectureJa.eq.${prefectureTranslations[prefectureKey]}`
+        ].join(',')) as T
+    }
+
+    // HP filters run against the inner-joined hps embed added by buildFacilitySelect,
+    // so a single professional has to satisfy every language and specialty requested.
+    if (filters.spokenLanguages?.length) {
+        query = query.contains('hps_facilities.hps.spoken_languages', JSON.stringify(filters.spokenLanguages)) as T
+    }
+    if (filters.specialties?.length) {
+        query = query.contains('hps_facilities.hps.specialties', JSON.stringify(filters.specialties)) as T
+    }
+
     return query
+}
+
+/**
+ * Whether the filters need facilities joined to their healthcare professionals.
+ */
+function hasHpAttributeFilters(filters: gqlTypes.FacilitySearchFilters): boolean {
+    return !!(filters.spokenLanguages?.length || filters.specialties?.length)
+}
+
+/**
+ * Builds the select string for a facilities query. When filtering on HP attributes, adds an
+ * inner-joined embed so PostgREST drops facilities without a matching professional.
+ *
+ * @param selectColumns - Comma-separated DB columns to fetch.
+ * @param filters - The facility search filters from GraphQL input.
+ */
+export function buildFacilitySelect(selectColumns: string, filters: gqlTypes.FacilitySearchFilters): string {
+    if (!hasHpAttributeFilters(filters)) {
+        return selectColumns
+    }
+
+    return `${selectColumns}, hps_facilities!inner(hps!inner(id))`
 }
 
 /**
@@ -365,7 +408,7 @@ export async function searchFacilities(
 
         // Base query on facilities + scalar filters.
         let baseQuery = applyFacilityFilters(
-            supabase.from('facilities').select<string, FacilityRow>(selectColumns).limit(limit),
+            supabase.from('facilities').select<string, FacilityRow>(buildFacilitySelect(selectColumns, filters)).limit(limit),
             filters
         )
 
@@ -473,7 +516,7 @@ export async function countFacilities(
 
         // Base query on facilities + scalar filters
         let baseQuery = applyFacilityFilters(
-            supabase.from('facilities').select('*', { count: 'exact', head: true }),
+            supabase.from('facilities').select(buildFacilitySelect('*', filters), { count: 'exact', head: true }),
             filters
         )
 

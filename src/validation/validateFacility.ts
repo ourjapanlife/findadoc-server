@@ -1,6 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
+import { resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
 
 // Used for v4 uuid
 const UUID_REGEX =
@@ -56,6 +57,15 @@ export function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySear
         validationResults.errors?.push({
             field: 'nameJa',
             errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (searchInput.prefecture && !resolvePrefectureKey(searchInput.prefecture)) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'prefecture',
+            errorCode: ErrorCode.INVALID_INPUT,
             httpStatus: 400
         })
     }
