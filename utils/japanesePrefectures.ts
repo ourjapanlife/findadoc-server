@@ -59,3 +59,16 @@ export const randomPrefecture = (): { en: string; ja: string } => {
         ja: prefectureTranslations[randomKey]!
     }
 }
+
+/**
+ * Resolves a prefecture given as an English key (case-insensitive) or its Japanese name
+ * to the canonical English key, e.g. 'okinawa' or '沖縄県' -> 'Okinawa'.
+ * Returns undefined when the input is not a known prefecture.
+ */
+export const resolvePrefectureKey = (input: string): string | undefined => {
+    const trimmed = input.trim()
+    const lowered = trimmed.toLowerCase()
+
+    return Object.keys(prefectureTranslations).find(key =>
+        key.toLowerCase() === lowered || prefectureTranslations[key] === trimmed)
+}

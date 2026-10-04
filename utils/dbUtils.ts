@@ -34,3 +34,10 @@ export type HasContains = {
         value: string | readonly any[] | Record<string, unknown>
     ) => unknown
 }
+
+/**
+ * Type constraint for Supabase query builders that support PostgREST OR filters.
+ */
+export type HasOr = {
+    or: (filters: string) => unknown
+}

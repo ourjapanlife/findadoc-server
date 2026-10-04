@@ -247,6 +247,21 @@ export type FacilitySearchFilters = {
   offset?: InputMaybe<Scalars['Int']['input']>;
   /** Ordering rules for the results. */
   orderBy?: InputMaybe<Array<OrderBy>>;
+  /**
+   * Filter by prefecture. Accepts an English prefecture key (e.g. "Okinawa", case-insensitive)
+   * or the Japanese name (e.g. "沖縄県"). Unknown prefectures are rejected.
+   */
+  prefecture?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * Only return facilities with at least one healthcare professional who practices all of these specialties.
+   * Combined with spokenLanguages, the same professional must match both.
+   */
+  specialties?: InputMaybe<Array<Specialty>>;
+  /**
+   * Only return facilities with at least one healthcare professional who speaks all of these languages.
+   * Combined with specialties, the same professional must match both.
+   */
+  spokenLanguages?: InputMaybe<Array<Locale>>;
   /** Filter by last updated date (ISO 8601). */
   updatedDate?: InputMaybe<Scalars['String']['input']>;
 };
