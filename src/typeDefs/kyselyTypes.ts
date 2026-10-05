@@ -38,6 +38,48 @@ export interface FacilitiesTable {
         string,
         string
     >
+    city_id: string | null
+    google_place_id: string | null
+    source: string | null
+    verification_status: string
+}
+
+export interface PrefecturesTable {
+    id: Generated<string>
+    name_en: string
+    name_ja: string
+    slug: string
+}
+
+export interface CitiesTable {
+    id: Generated<string>
+    prefecture_id: string
+    slug: string
+    name_en: string
+    name_ja: string
+    lg_code: string
+    google_place_id: string | null
+}
+
+/**
+ * Named society or collaboration. A new affiliation is a row, not an enum value.
+ */
+export interface AffiliationsTable {
+    id: Generated<string>
+    name_en: string
+    name_ja: string | null
+    website: string | null
+    logo_url: string | null
+}
+
+/**
+ * One membership attaches an affiliation to exactly one facility or one healthcare professional.
+ */
+export interface AffiliationMembershipsTable {
+    id: Generated<string>
+    affiliation_id: string
+    facilities_id: string | null
+    hps_id: string | null
 }
 
 /**
@@ -105,6 +147,10 @@ export interface AuditLogsTable {
  */
 export interface Database {
     facilities: FacilitiesTable
+    prefectures: PrefecturesTable
+    cities: CitiesTable
+    affiliations: AffiliationsTable
+    affiliation_memberships: AffiliationMembershipsTable
     hps: HpsTable
     hps_facilities: HpsFacilitiesTable
     submissions: SubmissionsTable

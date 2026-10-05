@@ -86,7 +86,23 @@ export function mapKyselyFacilityToGraphQL(
         mapLongitude: cleanRow.map_longitude,
         healthcareProfessionalIds,
         createdDate: cleanRow.created_date,
-        updatedDate: cleanRow.updated_date
+        updatedDate: cleanRow.updated_date,
+        ...facilityLocationFields(cleanRow)
+    }
+}
+
+export function facilityLocationFields(row: {
+    city_id?: string | null
+    google_place_id?: string | null
+    source?: string | null
+    verification_status?: string | null
+}): Pick<gqlTypes.Facility, 'cityId' | 'googlePlaceId' | 'source' | 'verificationStatus'> {
+    return {
+        cityId: row.city_id ?? null,
+        googlePlaceId: row.google_place_id ?? null,
+        source: (row.source ?? null) as gqlTypes.FacilitySource | null,
+        verificationStatus: (row.verification_status
+            ?? gqlTypes.FacilityVerificationStatus.UnverifiedLocation) as gqlTypes.FacilityVerificationStatus
     }
 }
 

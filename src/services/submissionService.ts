@@ -741,7 +741,11 @@ export const approveSubmission = async (
                         map_longitude: facilityInput.mapLongitude ?? 0,
                         created_date: new Date().toISOString(),
                         updated_date: new Date().toISOString(),
-                        payment_options: JSON.stringify(facilityInput.paymentOptions ?? [])
+                        payment_options: JSON.stringify(facilityInput.paymentOptions ?? []),
+                        city_id: null,
+                        google_place_id: null,
+                        source: null,
+                        verification_status: 'UNVERIFIED_LOCATION'
                     })
                     .returningAll()
                     .executeTakeFirstOrThrow()

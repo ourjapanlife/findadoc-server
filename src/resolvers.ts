@@ -6,6 +6,7 @@ import * as gqlType from './typeDefs/gqlTypes.js'
 import * as submissionService from './services/submissionService.js'
 import * as userService from './services/userService.js'
 import * as reservationService from './services/reservationService.js'
+import * as cityService from './services/cityService.js'
 import { Result } from './result.js'
 import { logger } from './logger.js'
 import {
@@ -265,6 +266,64 @@ const resolvers = {
             const matchingReservationResult = await reservationService.getReservationById(args.id)
 
             return matchingReservationResult.data
+        },
+        prefectures: async (_parent: unknown, _args: unknown, context: UserContext)
+        : Promise<gqlType.Prefecture[]> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const result = await cityService.listPrefectures()
+
+            convertErrorsToGqlErrors(result)
+            return result.data
+        },
+        cities: async (_parent: unknown, args: { prefecture?: string | null }, context: UserContext)
+        : Promise<gqlType.City[]> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const result = await cityService.listCities(args.prefecture)
+
+            convertErrorsToGqlErrors(result)
+            return result.data
+        },
+        cityFacilities: async (
+            _parent: unknown,
+            args: { prefecture: string, citySlug: string },
+            context: UserContext
+        ): Promise<gqlType.Facility[]> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const result = await facilityService.listPublishedCityFacilities(args.prefecture, args.citySlug)
+
+            convertErrorsToGqlErrors(result)
+            return result.data
+        }
+    },
+
+    Facility: {
+        city: (parent: gqlType.Facility): Promise<gqlType.City | null> => {
+            if (!parent.cityId) {
+                return Promise.resolve(null)
+            }
+
+            return cityService.getCityById(parent.cityId)
         }
     },
 
