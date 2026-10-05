@@ -5,9 +5,12 @@ import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
-import { mapKyselyFacilityToGraphQL } from '../services/mappersEntityService.js'
+import { mapKyselyFacilityToGraphQL, facilityLocationFields } from '../services/mappersEntityService.js'
 import type { HasContains, HasIlike, HasOr } from '../../utils/dbUtils.js'
 import { prefectureTranslations, resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
+import { resolveFacilityPublication } from './facilityPublication.js'
+import { cityExists, findCityBySlug } from './cityService.js'
+import { FacilitySource } from '../typeDefs/gqlTypes.js'
 import type { Transaction } from 'kysely'
 import type { Database } from '../typeDefs/kyselyTypes.js'
 import type { Database as SupabaseDb } from '../typeDefs/supabase-generated.js'
@@ -36,6 +39,18 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
     }
     if (fields.paymentOptions !== undefined) {
         updatePatch.payment_options = JSON.stringify(fields.paymentOptions)
+    }
+    if (fields.googlePlaceId !== undefined) {
+        updatePatch.google_place_id = fields.googlePlaceId?.trim() ? fields.googlePlaceId.trim() : null
+    }
+    if (fields.source !== undefined) {
+        updatePatch.source = fields.source
+    }
+    if (fields.cityId !== undefined) {
+        updatePatch.city_id = fields.cityId
+    }
+    if (fields.verificationStatus !== undefined) {
+        updatePatch.verification_status = fields.verificationStatus
     }
     // Business rule: always timestamp when the entity is updated
     updatePatch.updated_date = new Date().toISOString()
@@ -192,7 +207,8 @@ export const getFacilityById = async (
             healthcareProfessionalIds,
             createdDate: facilityRow.created_date as string,
             updatedDate: facilityRow.updated_date as string,
-            paymentOptions: (facilityRow.payment_options ?? []) as gqlTypes.PaymentOption[]
+            paymentOptions: (facilityRow.payment_options ?? []) as gqlTypes.PaymentOption[],
+            ...facilityLocationFields(facilityRow)
         }
 
         return {
@@ -266,6 +282,31 @@ export async function createFacility(
             return validationResult as Result<gqlTypes.Facility>
         }
 
+        const publication = resolveFacilityPublication({
+            cityId: facilityInput.cityId,
+            verificationStatus: facilityInput.verificationStatus
+        })
+
+        if (publication.hasErrors) {
+            return {
+                data: {} as gqlTypes.Facility,
+                hasErrors: true,
+                errors: publication.errors
+            }
+        }
+
+        if (publication.data.cityId && !(await cityExists(publication.data.cityId))) {
+            return {
+                data: {} as gqlTypes.Facility,
+                hasErrors: true,
+                errors: [{
+                    field: 'cityId',
+                    errorCode: ErrorCode.INVALID_INPUT,
+                    httpStatus: 400
+                }]
+            }
+        }
+
         // Extract HP IDs for convenience
         const hpIds = (facilityInput.healthcareProfessionalIds ?? []) as string[]
 
@@ -284,6 +325,10 @@ export async function createFacility(
                     map_latitude: facilityInput.mapLatitude ?? 0,
                     map_longitude: facilityInput.mapLongitude ?? 0,
                     payment_options: JSON.stringify(facilityInput.paymentOptions ?? []),
+                    city_id: publication.data.cityId,
+                    google_place_id: facilityInput.googlePlaceId?.trim() ? facilityInput.googlePlaceId.trim() : null,
+                    source: facilityInput.source ?? FacilitySource.Manual,
+                    verification_status: publication.data.verificationStatus,
                     created_date: new Date().toISOString(),
                     updated_date: new Date().toISOString()
                 })
@@ -475,8 +520,8 @@ export async function searchFacilities(
             healthcareProfessionalIds: hpIdsByFacility.get(row.id as string) ?? [],
             paymentOptions: (row.payment_options ?? []) as gqlTypes.PaymentOption[],
             createdDate: row.created_date as string,
-            updatedDate: row.updated_date as string
-            
+            updatedDate: row.updated_date as string,
+            ...facilityLocationFields(row)
         }))
 
         return { data: list, hasErrors: false }
@@ -568,6 +613,52 @@ export const updateFacility = async (
             return validationResult as Result<gqlTypes.Facility>
         }
 
+        let publicationPatch: { city_id: string | null, verification_status: string } | undefined
+
+        if (fieldsToUpdate.cityId !== undefined || fieldsToUpdate.verificationStatus !== undefined) {
+            const current = await db.selectFrom('facilities')
+                .select(['city_id', 'verification_status'])
+                .where('id', '=', facilityId)
+                .executeTakeFirst()
+
+            if (!current) {
+                return {
+                    data: {} as gqlTypes.Facility,
+                    hasErrors: true,
+                    errors: [{ field: 'id', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
+                }
+            }
+
+            const requestedStatus = fieldsToUpdate.verificationStatus !== undefined
+                ? fieldsToUpdate.verificationStatus
+                : (fieldsToUpdate.cityId ? null : current.verification_status as gqlTypes.FacilityVerificationStatus)
+            const publication = resolveFacilityPublication({
+                cityId: fieldsToUpdate.cityId !== undefined ? fieldsToUpdate.cityId : current.city_id,
+                verificationStatus: requestedStatus
+            })
+
+            if (publication.hasErrors) {
+                return {
+                    data: {} as gqlTypes.Facility,
+                    hasErrors: true,
+                    errors: publication.errors
+                }
+            }
+
+            if (publication.data.cityId && !(await cityExists(publication.data.cityId))) {
+                return {
+                    data: {} as gqlTypes.Facility,
+                    hasErrors: true,
+                    errors: [{ field: 'cityId', errorCode: ErrorCode.INVALID_INPUT, httpStatus: 400 }]
+                }
+            }
+
+            publicationPatch = {
+                city_id: publication.data.cityId,
+                verification_status: publication.data.verificationStatus
+            }
+        }
+
         // Execute all database operations in a single atomic transaction
         const result = await db.transaction().execute(async transaction => {
             // Step 1: Fetch the current facility state (for audit log and validation)
@@ -591,7 +682,10 @@ export const updateFacility = async (
             const originalHpIds = originalRelations.map(r => r.hps_id)
 
             // Update scalar fields on facilities table (if any provided)
-            const updatePayload = buildFacilityUpdatePatch(fieldsToUpdate)
+            const updatePayload = {
+                ...buildFacilityUpdatePatch(fieldsToUpdate),
+                ...publicationPatch
+            }
             
             let updatedFacility = originalFacility
 
@@ -843,6 +937,88 @@ export async function deleteFacility(
             errors: [{
                 field: 'deleteFacility',
                 errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+/**
+ * Facilities published under one city. Rows with no city stay out of this list.
+ */
+export async function listPublishedCityFacilities(
+    prefecture: string,
+    citySlug: string
+): Promise<Result<gqlTypes.Facility[]>> {
+    try {
+        const cityResult = await findCityBySlug(prefecture, citySlug)
+
+        if (cityResult.hasErrors) {
+            return { data: [], hasErrors: true, errors: cityResult.errors }
+        }
+
+        if (!cityResult.data) {
+            return { data: [], hasErrors: false }
+        }
+
+        const supabase = getSupabaseClient()
+        const { data, error } = await supabase
+            .from('facilities')
+            .select('*')
+            .eq('city_id', cityResult.data.id)
+            .neq('verification_status', gqlTypes.FacilityVerificationStatus.UnverifiedLocation)
+
+        if (error) {
+            throw error
+        }
+
+        const rows = data ?? []
+        const facilityIds = rows.map(row => row.id)
+        const hpIdsByFacility = new Map<string, string[]>()
+
+        if (facilityIds.length) {
+            const { data: relations, error: relationsError } = await supabase
+                .from('hps_facilities')
+                .select('hps_id, facilities_id')
+                .in('facilities_id', facilityIds)
+
+            if (relationsError) {
+                throw relationsError
+            }
+
+            for (const relationship of relations ?? []) {
+                const facilityId = relationship.facilities_id as string
+                const list = hpIdsByFacility.get(facilityId) ?? []
+
+                list.push(relationship.hps_id as string)
+                hpIdsByFacility.set(facilityId, list)
+            }
+        }
+
+        return {
+            data: rows.map(row => ({
+                id: row.id,
+                nameEn: row.name_en,
+                nameJa: row.name_ja,
+                contact: row.contact as gqlTypes.Contact,
+                mapLatitude: row.map_latitude,
+                mapLongitude: row.map_longitude,
+                healthcareProfessionalIds: hpIdsByFacility.get(row.id) ?? [],
+                paymentOptions: (row.payment_options ?? []) as gqlTypes.PaymentOption[],
+                createdDate: row.created_date,
+                updatedDate: row.updated_date,
+                ...facilityLocationFields(row)
+            })),
+            hasErrors: false
+        }
+    } catch (error) {
+        logger.error(`ERROR: listPublishedCityFacilities ${error}`)
+        return {
+            data: [],
+            hasErrors: true,
+            errors: [{
+                field: 'cityFacilities',
+                errorCode: ErrorCode.SERVER_ERROR,
                 httpStatus: 500
             }]
         }

@@ -38,6 +38,26 @@ export interface FacilitiesTable {
         string,
         string
     >
+    city_id: string | null
+    google_place_id: string | null
+    source: string | null
+    verification_status: string
+}
+
+export interface PrefecturesTable {
+    id: Generated<string>
+    name_en: string
+    name_ja: string
+    slug: string
+}
+
+export interface CitiesTable {
+    id: Generated<string>
+    prefecture_id: string
+    slug: string
+    name_en: string
+    name_ja: string
+    google_place_id: string | null
 }
 
 /**
@@ -105,6 +125,8 @@ export interface AuditLogsTable {
  */
 export interface Database {
     facilities: FacilitiesTable
+    prefectures: PrefecturesTable
+    cities: CitiesTable
     hps: HpsTable
     hps_facilities: HpsFacilitiesTable
     submissions: SubmissionsTable

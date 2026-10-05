@@ -153,6 +153,61 @@ const COMPASS_TO_WARD: Record<string, string> = {
     chuo: '中央区'
 }
 
+/**
+ * Search cities named in docs/city-rules.md that are not a Tokyo ward or a designated-city parent.
+ * English names follow that document. Japanese keeps 市, 町, or 村.
+ */
+const NAMED_SEARCH_CITIES: CanonicalCity[] = [
+    { prefectureEn: 'Hokkaido', nameEn: 'Hakodate', nameJa: '函館市' },
+    { prefectureEn: 'Hokkaido', nameEn: 'Esashi', nameJa: '江差町' },
+    { prefectureEn: 'Miyagi', nameEn: 'Rifu', nameJa: '利府町' },
+    { prefectureEn: 'Akita', nameEn: 'Akita', nameJa: '秋田市' },
+    { prefectureEn: 'Yamagata', nameEn: 'Yamagata', nameJa: '山形市' },
+    { prefectureEn: 'Fukui', nameEn: 'Fukui', nameJa: '福井市' },
+    { prefectureEn: 'Yamanashi', nameEn: 'Chuo', nameJa: '中央市' },
+    { prefectureEn: 'Toyama', nameEn: 'Toyama', nameJa: '富山市' },
+    { prefectureEn: 'Osaka', nameEn: 'Minoh', nameJa: '箕面市' },
+    { prefectureEn: 'Tokushima', nameEn: 'Tokushima', nameJa: '徳島市' },
+    { prefectureEn: 'Kochi', nameEn: 'Kochi', nameJa: '高知市' },
+    { prefectureEn: 'Yamaguchi', nameEn: 'Yamaguchi', nameJa: '山口市' },
+    { prefectureEn: 'Nagasaki', nameEn: 'Nagasaki', nameJa: '長崎市' },
+    { prefectureEn: 'Oita', nameEn: 'Oita', nameJa: '大分市' },
+    { prefectureEn: 'Kagoshima', nameEn: 'Kagoshima', nameJa: '鹿児島市' },
+    { prefectureEn: 'Okinawa', nameEn: 'Okinawa', nameJa: '沖縄市' }
+]
+
+/** Slug for a frozen English city name. Suffixes are already gone. */
+export function citySlug(nameEn: string): string {
+    return nameEn.trim().toLowerCase().replace(/\s+/g, '-')
+}
+
+/**
+ * Cities this server owns. Tokyo wards, designated-city parents, explicit alias
+ * targets, and the municipalities named in the frozen rules. Not every municipality in Japan.
+ */
+export function vocabularyCities(): CanonicalCity[] {
+    const seen = new Set<string>()
+    const cities: CanonicalCity[] = []
+
+    for (const city of [
+        ...TOKYO_WARDS,
+        ...PARENT_CITIES.map(entry => entry.city),
+        ...EXPLICIT_ALIASES.map(entry => entry.city),
+        ...NAMED_SEARCH_CITIES
+    ]) {
+        const key = `${city.prefectureEn}|${citySlug(city.nameEn)}`
+
+        if (seen.has(key)) {
+            continue
+        }
+
+        seen.add(key)
+        cities.push(city)
+    }
+
+    return cities
+}
+
 export const TOKYO_WARDS: CanonicalCity[] = [
     { prefectureEn: 'Tokyo', nameEn: 'Chiyoda', nameJa: '千代田区' },
     { prefectureEn: 'Tokyo', nameEn: 'Chuo', nameJa: '中央区' },

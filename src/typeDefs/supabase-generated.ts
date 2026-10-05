@@ -69,43 +69,55 @@ export type Database = {
       }
       facilities: {
         Row: {
+          city_id: string | null
           code: string | null
           contact: Json
           created_date: string
           firestore_id: string | null
+          google_place_id: string | null
           id: string
           map_latitude: number
           map_longitude: number
           name_en: string
           name_ja: string
           payment_options: Json | null
+          source: string | null
           updated_date: string
+          verification_status: string
         }
         Insert: {
+          city_id?: string | null
           code?: string | null
           contact: Json
           created_date: string
           firestore_id?: string | null
+          google_place_id?: string | null
           id?: string
           map_latitude: number
           map_longitude: number
           name_en: string
           name_ja: string
           payment_options?: Json | null
+          source?: string | null
           updated_date: string
+          verification_status?: string
         }
         Update: {
+          city_id?: string | null
           code?: string | null
           contact?: Json
           created_date?: string
           firestore_id?: string | null
+          google_place_id?: string | null
           id?: string
           map_latitude?: number
           map_longitude?: number
           name_en?: string
           name_ja?: string
           payment_options?: Json | null
+          source?: string | null
           updated_date?: string
+          verification_status?: string
         }
         Relationships: []
       }

@@ -1,9 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { resolveSearchCity } from '../src/vocabulary/cityMap.js'
+import { citySlug, resolveSearchCity, vocabularyCities } from '../src/vocabulary/cityMap.js'
 import { mapLanguage, PUBLISHED_LOCALES } from '../src/vocabulary/languageMap.js'
 import { mapPaymentBrand } from '../src/vocabulary/paymentBrandMap.js'
+import { prefectureTranslations } from '../utils/japanesePrefectures.js'
 
 const root = path.resolve(import.meta.dirname, '..')
 
@@ -186,6 +187,24 @@ describe('vocabulary maps stay off the API', () => {
 
         for (const locale of PUBLISHED_LOCALES) {
             expect(schema).toContain(locale)
+        }
+    })
+})
+
+describe('vocabularyCities', () => {
+    it('keeps one slug per prefecture and does not merge Chuo', () => {
+        const cities = vocabularyCities()
+        const keys = cities.map(searchCity => `${searchCity.prefectureEn}|${citySlug(searchCity.nameEn)}`)
+
+        expect(new Set(keys).size).toBe(keys.length)
+        expect(cities).toContainEqual({ prefectureEn: 'Tokyo', nameEn: 'Chuo', nameJa: '中央区' })
+        expect(cities).toContainEqual({ prefectureEn: 'Yamanashi', nameEn: 'Chuo', nameJa: '中央市' })
+        expect(cities.find(searchCity => searchCity.prefectureEn === 'Osaka' && searchCity.nameEn === 'Chuo')).toBeUndefined()
+        expect(cities).toContainEqual({ prefectureEn: 'Osaka', nameEn: 'Osaka', nameJa: '大阪市' })
+
+        for (const searchCity of cities) {
+            expect(prefectureTranslations[searchCity.prefectureEn]).toBeTruthy()
+            expect(searchCity.nameEn).not.toMatch(/city|ward|district/i)
         }
     })
 })
