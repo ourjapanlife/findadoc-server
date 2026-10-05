@@ -1,6 +1,37 @@
 import { ErrorCode, Result } from '../result.js'
 import { FacilityVerificationStatus } from '../typeDefs/gqlTypes.js'
 
+const CITY_RECORD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** True when the value can be compared to cities.id without a database cast error. */
+export function isCityRecordId(cityId: string): boolean {
+    return CITY_RECORD_ID.test(cityId)
+}
+
+/**
+ * Status to store when an update omits verificationStatus.
+ * Resending the same city keeps the current status. A different city, including a
+ * blank value, lets resolveFacilityPublication choose the status.
+ */
+export function verificationStatusForUpdate(
+    currentCityId: string | null,
+    currentStatus: FacilityVerificationStatus,
+    cityId: string | null | undefined,
+    verificationStatus: FacilityVerificationStatus | null | undefined
+): FacilityVerificationStatus | null {
+    if (verificationStatus !== undefined) {
+        return verificationStatus ?? null
+    }
+
+    if (cityId === undefined) {
+        return currentStatus
+    }
+
+    const nextCityId = cityId?.trim() ? cityId.trim() : null
+
+    return nextCityId === currentCityId ? currentStatus : null
+}
+
 export type FacilityPublication = {
     cityId: string | null
     verificationStatus: FacilityVerificationStatus

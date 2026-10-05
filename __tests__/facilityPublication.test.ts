@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { FacilityVerificationStatus } from '../src/typeDefs/gqlTypes.js'
-import { resolveFacilityPublication } from '../src/services/facilityPublication.js'
+import {
+    isCityRecordId,
+    resolveFacilityPublication,
+    verificationStatusForUpdate
+} from '../src/services/facilityPublication.js'
+
+const CITY = '11111111-1111-4111-8111-111111111111'
+const OTHER_CITY = '22222222-2222-4222-8222-222222222222'
 
 describe('resolveFacilityPublication', () => {
     it('leaves a facility with no city unresolved', () => {
@@ -27,6 +34,36 @@ describe('resolveFacilityPublication', () => {
             data: { cityId: 'city-1', verificationStatus: FacilityVerificationStatus.Confirmed },
             hasErrors: false
         })
+    })
+
+    it('keeps the current status when the same city is sent again', () => {
+        expect(verificationStatusForUpdate(
+            CITY,
+            FacilityVerificationStatus.Confirmed,
+            `  ${CITY}  `,
+            undefined
+        )).toBe(FacilityVerificationStatus.Confirmed)
+    })
+
+    it('drops the current status when the city changes or is cleared', () => {
+        expect(verificationStatusForUpdate(
+            CITY,
+            FacilityVerificationStatus.Confirmed,
+            OTHER_CITY,
+            undefined
+        )).toBeNull()
+        expect(verificationStatusForUpdate(
+            CITY,
+            FacilityVerificationStatus.Confirmed,
+            '   ',
+            undefined
+        )).toBeNull()
+    })
+
+    it('accepts only a city id that can be stored in the uuid column', () => {
+        expect(isCityRecordId(CITY)).toBe(true)
+        expect(isCityRecordId('city-1')).toBe(false)
+        expect(isCityRecordId(`${CITY};drop`)).toBe(false)
     })
 
     it('does not mark a chosen city as unresolved', () => {

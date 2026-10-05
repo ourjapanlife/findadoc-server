@@ -8,7 +8,7 @@ import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchI
 import { mapKyselyFacilityToGraphQL, facilityLocationFields } from '../services/mappersEntityService.js'
 import type { HasContains, HasIlike, HasOr } from '../../utils/dbUtils.js'
 import { prefectureTranslations, resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
-import { resolveFacilityPublication } from './facilityPublication.js'
+import { isCityRecordId, resolveFacilityPublication, verificationStatusForUpdate } from './facilityPublication.js'
 import { cityExists, findCityBySlug } from './cityService.js'
 import { FacilitySource } from '../typeDefs/gqlTypes.js'
 import type { Transaction } from 'kysely'
@@ -16,6 +16,18 @@ import type { Database } from '../typeDefs/kyselyTypes.js'
 import type { Database as SupabaseDb } from '../typeDefs/supabase-generated.js'
 
 type FacilityRow = SupabaseDb['public']['Tables']['facilities']['Row']
+
+function invalidCityId(): Result<gqlTypes.Facility> {
+    return {
+        data: {} as gqlTypes.Facility,
+        hasErrors: true,
+        errors: [{
+            field: 'cityId',
+            errorCode: ErrorCode.INVALID_INPUT,
+            httpStatus: 400
+        }]
+    }
+}
 
 // Builds a partial update patch for Facility rows.
 export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacilityInput>) {
@@ -295,16 +307,12 @@ export async function createFacility(
             }
         }
 
+        if (publication.data.cityId && !isCityRecordId(publication.data.cityId)) {
+            return invalidCityId()
+        }
+
         if (publication.data.cityId && !(await cityExists(publication.data.cityId))) {
-            return {
-                data: {} as gqlTypes.Facility,
-                hasErrors: true,
-                errors: [{
-                    field: 'cityId',
-                    errorCode: ErrorCode.INVALID_INPUT,
-                    httpStatus: 400
-                }]
-            }
+            return invalidCityId()
         }
 
         // Extract HP IDs for convenience
@@ -629,9 +637,12 @@ export const updateFacility = async (
                 }
             }
 
-            const requestedStatus = fieldsToUpdate.verificationStatus !== undefined
-                ? fieldsToUpdate.verificationStatus
-                : (fieldsToUpdate.cityId ? null : current.verification_status as gqlTypes.FacilityVerificationStatus)
+            const requestedStatus = verificationStatusForUpdate(
+                current.city_id,
+                current.verification_status as gqlTypes.FacilityVerificationStatus,
+                fieldsToUpdate.cityId,
+                fieldsToUpdate.verificationStatus
+            )
             const publication = resolveFacilityPublication({
                 cityId: fieldsToUpdate.cityId !== undefined ? fieldsToUpdate.cityId : current.city_id,
                 verificationStatus: requestedStatus
@@ -645,12 +656,12 @@ export const updateFacility = async (
                 }
             }
 
+            if (publication.data.cityId && !isCityRecordId(publication.data.cityId)) {
+                return invalidCityId()
+            }
+
             if (publication.data.cityId && !(await cityExists(publication.data.cityId))) {
-                return {
-                    data: {} as gqlTypes.Facility,
-                    hasErrors: true,
-                    errors: [{ field: 'cityId', errorCode: ErrorCode.INVALID_INPUT, httpStatus: 400 }]
-                }
+                return invalidCityId()
             }
 
             publicationPatch = {
