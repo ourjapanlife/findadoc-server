@@ -43,6 +43,12 @@ describe('resolveFacilityPublication', () => {
             `  ${CITY}  `,
             undefined
         )).toBe(FacilityVerificationStatus.Confirmed)
+        expect(verificationStatusForUpdate(
+            CITY,
+            FacilityVerificationStatus.Confirmed,
+            CITY.toUpperCase(),
+            undefined
+        )).toBe(FacilityVerificationStatus.Confirmed)
     })
 
     it('drops the current status when the city changes or is cleared', () => {

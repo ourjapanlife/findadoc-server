@@ -29,7 +29,19 @@ export function verificationStatusForUpdate(
 
     const nextCityId = cityId?.trim() ? cityId.trim() : null
 
-    return nextCityId === currentCityId ? currentStatus : null
+    return sameCityRecord(nextCityId, currentCityId) ? currentStatus : null
+}
+
+function sameCityRecord(left: string | null, right: string | null): boolean {
+    if (left === right) {
+        return true
+    }
+
+    if (!left || !right || !isCityRecordId(left) || !isCityRecordId(right)) {
+        return false
+    }
+
+    return left.toLowerCase() === right.toLowerCase()
 }
 
 export type FacilityPublication = {

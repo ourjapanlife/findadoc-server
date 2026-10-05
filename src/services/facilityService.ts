@@ -29,6 +29,12 @@ function invalidCityId(): Result<gqlTypes.Facility> {
     }
 }
 
+class FacilityUpdateRejected extends Error {
+    constructor(readonly result: Result<gqlTypes.Facility>) {
+        super('Facility update rejected')
+    }
+}
+
 // Builds a partial update patch for Facility rows.
 export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacilityInput>) {
     const updatePatch: Record<string, unknown> = {}
@@ -621,66 +627,54 @@ export const updateFacility = async (
             return validationResult as Result<gqlTypes.Facility>
         }
 
-        let publicationPatch: { city_id: string | null, verification_status: string } | undefined
-
-        if (fieldsToUpdate.cityId !== undefined || fieldsToUpdate.verificationStatus !== undefined) {
-            const current = await db.selectFrom('facilities')
-                .select(['city_id', 'verification_status'])
-                .where('id', '=', facilityId)
-                .executeTakeFirst()
-
-            if (!current) {
-                return {
-                    data: {} as gqlTypes.Facility,
-                    hasErrors: true,
-                    errors: [{ field: 'id', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
-                }
-            }
-
-            const requestedStatus = verificationStatusForUpdate(
-                current.city_id,
-                current.verification_status as gqlTypes.FacilityVerificationStatus,
-                fieldsToUpdate.cityId,
-                fieldsToUpdate.verificationStatus
-            )
-            const publication = resolveFacilityPublication({
-                cityId: fieldsToUpdate.cityId !== undefined ? fieldsToUpdate.cityId : current.city_id,
-                verificationStatus: requestedStatus
-            })
-
-            if (publication.hasErrors) {
-                return {
-                    data: {} as gqlTypes.Facility,
-                    hasErrors: true,
-                    errors: publication.errors
-                }
-            }
-
-            if (publication.data.cityId && !isCityRecordId(publication.data.cityId)) {
-                return invalidCityId()
-            }
-
-            if (publication.data.cityId && !(await cityExists(publication.data.cityId))) {
-                return invalidCityId()
-            }
-
-            publicationPatch = {
-                city_id: publication.data.cityId,
-                verification_status: publication.data.verificationStatus
-            }
-        }
-
         // Execute all database operations in a single atomic transaction
         const result = await db.transaction().execute(async transaction => {
-            // Step 1: Fetch the current facility state (for audit log and validation)
+            // Lock the row first. The city decision has to use this state, not an earlier read.
             const originalFacility = await transaction
                 .selectFrom('facilities')
                 .selectAll()
                 .where('id', '=', facilityId)
+                .forUpdate()
                 .executeTakeFirst()
 
             if (!originalFacility) {
                 throw new Error(`Could not find facility with id ${facilityId} to update.`)
+            }
+
+            let publicationPatch: { city_id: string | null, verification_status: string } | undefined
+
+            if (fieldsToUpdate.cityId !== undefined || fieldsToUpdate.verificationStatus !== undefined) {
+                const requestedStatus = verificationStatusForUpdate(
+                    originalFacility.city_id,
+                    originalFacility.verification_status as gqlTypes.FacilityVerificationStatus,
+                    fieldsToUpdate.cityId,
+                    fieldsToUpdate.verificationStatus
+                )
+                const publication = resolveFacilityPublication({
+                    cityId: fieldsToUpdate.cityId !== undefined
+                        ? fieldsToUpdate.cityId
+                        : originalFacility.city_id,
+                    verificationStatus: requestedStatus
+                })
+
+                if (publication.hasErrors) {
+                    throw new FacilityUpdateRejected({
+                        data: {} as gqlTypes.Facility,
+                        hasErrors: true,
+                        errors: publication.errors
+                    })
+                }
+
+                const nextCityId = publication.data.cityId
+
+                if (nextCityId && (!isCityRecordId(nextCityId) || !(await cityExists(nextCityId)))) {
+                    throw new FacilityUpdateRejected(invalidCityId())
+                }
+
+                publicationPatch = {
+                    city_id: publication.data.cityId,
+                    verification_status: publication.data.verificationStatus
+                }
             }
 
             // Fetch original HP relations
@@ -753,6 +747,10 @@ export const updateFacility = async (
 
         return { data: gqlFacility, hasErrors: false }
     } catch (error) {
+        if (error instanceof FacilityUpdateRejected) {
+            return error.result
+        }
+
         // If we reach here, the transaction was automatically rolled back
         // The facility remains in its original state
         const errorMessage = (error as Error).message
