@@ -10,7 +10,7 @@
 - Prefecture keys come from `utils/japanesePrefectures.ts`.
 - A district (郡), a street, or an English/Japanese pair that names two different places stays unresolved. Do not guess. Osaka and Sakai both have Kita and Nishi, so a bare North Ward is not Osaka.
 
-Alias lookup lives in `src/vocabulary/`. It is not imported by resolvers or services, so stored `cityEn` and `cityJa` stay as they are until #1011. The city table is #1009. Backfill: #1011.
+Alias lookup lives in `src/vocabulary/`. It is not imported by resolvers or services, so stored `cityEn` and `cityJa` stay as they are until #1011. The city table is #1009: every current municipality from the Address Base Registry, shaped by the rules above. Designated-city wards are not rows. Tokyo's 23 wards are. Refresh with `utils/buildMunicipalityVocabulary.py` and match on `lg_code`. The alias map only returns a row that already exists. Backfill: #1011.
 
 ## Places
 

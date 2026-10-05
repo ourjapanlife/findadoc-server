@@ -53,6 +53,8 @@ export type City = {
   /** Optional Google place id. Display fields are not stored here. */
   googlePlaceId?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  /** Six-digit national local-government code. A register refresh matches on this. */
+  localGovernmentCode: Scalars['String']['output'];
   /** English name with no City or Ward suffix. */
   nameEn: Scalars['String']['output'];
   /** Japanese name, keeping 区, 市, 町, or 村. */
@@ -769,7 +771,7 @@ export type Query = {
   __typename?: 'Query';
   /** Look up a single audit log entry by its ID. Returns null if not found. */
   auditLog?: Maybe<AuditLog>;
-  /** Cities this server owns. Pass a prefecture key or Japanese name to filter. */
+  /** Every current municipality. Pass a prefecture key or Japanese name to filter. */
   cities: Array<City>;
   /** Facilities published under one city. Unresolved locations are excluded. */
   cityFacilities: Array<Facility>;
@@ -1367,6 +1369,7 @@ export type AuditLogResolvers<ContextType = any, ParentType extends ResolversPar
 export type CityResolvers<ContextType = any, ParentType extends ResolversParentTypes['City'] = ResolversParentTypes['City']> = {
   googlePlaceId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  localGovernmentCode?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   nameEn?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   prefecture?: Resolver<ResolversTypes['Prefecture'], ParentType, ContextType>;

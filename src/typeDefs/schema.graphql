@@ -924,7 +924,7 @@ type Query {
   """Prefectures this server owns. One row per prefecture in the frozen key list."""
   prefectures: [Prefecture!]!
 
-  """Cities this server owns. Pass a prefecture key or Japanese name to filter."""
+  """Every current municipality. Pass a prefecture key or Japanese name to filter."""
   cities(prefecture: String): [City!]!
 
   """Facilities published under one city. Unresolved locations are excluded."""
@@ -952,6 +952,8 @@ type City {
   nameEn: String!
   """Japanese name, keeping 区, 市, 町, or 村."""
   nameJa: String!
+  """Six-digit national local-government code. A register refresh matches on this."""
+  localGovernmentCode: String!
   """Optional Google place id. Display fields are not stored here."""
   googlePlaceId: String
 }

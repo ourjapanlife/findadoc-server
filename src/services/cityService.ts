@@ -9,6 +9,7 @@ type CityRow = {
     slug: string
     name_en: string
     name_ja: string
+    lg_code: string
     google_place_id: string | null
     prefecture_id: string
     prefecture_slug: string
@@ -29,6 +30,7 @@ function mapCity(row: CityRow): City {
         slug: row.slug,
         nameEn: row.name_en,
         nameJa: row.name_ja,
+        localGovernmentCode: row.lg_code,
         googlePlaceId: row.google_place_id,
         prefecture
     }
@@ -42,6 +44,7 @@ function cityQuery() {
             'cities.slug as slug',
             'cities.name_en as name_en',
             'cities.name_ja as name_ja',
+            'cities.lg_code as lg_code',
             'cities.google_place_id as google_place_id',
             'prefectures.id as prefecture_id',
             'prefectures.slug as prefecture_slug',

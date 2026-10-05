@@ -1,6 +1,6 @@
 # City rules
 
-Frozen for [#1005](https://github.com/ourjapanlife/findadoc-server/issues/1005). The alias lookup is [#1006](https://github.com/ourjapanlife/findadoc-server/issues/1006) (`src/vocabulary/cityMap.ts`). Stored `cityEn` and `cityJa` stay as they are until the backfill in [#1011](https://github.com/ourjapanlife/findadoc-server/issues/1011). The city table seeded from this vocabulary is [#1009](https://github.com/ourjapanlife/findadoc-server/issues/1009).
+Frozen for [#1005](https://github.com/ourjapanlife/findadoc-server/issues/1005). The alias lookup is [#1006](https://github.com/ourjapanlife/findadoc-server/issues/1006) (`src/vocabulary/cityMap.ts`). Stored `cityEn` and `cityJa` stay as they are until the backfill in [#1011](https://github.com/ourjapanlife/findadoc-server/issues/1011). The city table in [#1009](https://github.com/ourjapanlife/findadoc-server/issues/1009) is every current municipality from the Digital Agency Address Base Registry (`mt_city_all.csv`, file dated 2024-03-12), shaped by the rules below. Regenerate it with `utils/buildMunicipalityVocabulary.py`. Match a later file by `lg_code`, the 全国地方公共団体コード. The alias map does not insert cities. Google does not either.
 
 Checked against the live facilities API on 1 Oct 2026: 465 facilities, 214 `cityEn` values, 34 `prefectureEn` values. Same counts as the 18 Sep 2026 snapshot in the approved data-cleaning plan.
 
@@ -46,6 +46,10 @@ When the Japanese value names the parent city (`堺市北区`, `札幌市東区`
 When the value is only a ward (`中央区`, `East Ward`) and exactly one municipality in that prefecture contains it, use that municipality. When two do, leave the row unresolved. Osaka city and Sakai both have Kita-ku and Nishi-ku, so a bare `North Ward` / 北区 or `West Ward` / 西区 in Osaka prefecture waits for a person. Do not guess Osaka.
 
 When English and Japanese name different places, leave the row unresolved. Do not pick a winner. Live cases: Daisen and Niida stored with 秋田市, Ashiya stored with 兵庫県, Niigata `Konan Ward` stored with 港南区 (Yokohama's Konan-ku, not Niigata's 江南区).
+
+## Same reading inside one prefecture
+
+Two municipalities in one prefecture can share a reading, such as 釧路市 and 釧路町. The slug stays unique. The plain English name goes to the 市, otherwise the Tokyo 区, otherwise a name already published in this document, otherwise the 町, otherwise the smallest national code. The other row keeps that reading and adds the district when the district is a different word, so 府中町 is Fuchu Aki. When the district is the same word, or there is no district, the national code is appended, so 釧路町 is Kushiro 016616 and 枝幸町 is Esashi 015148. 江差町 stays Esashi. Japanese `nameJa` stays the official name. Do not invent a second spelling by hand. The generator applies this on the next register file.
 
 ## Tokyo wards
 

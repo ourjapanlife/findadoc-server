@@ -57,6 +57,7 @@ export interface CitiesTable {
     slug: string
     name_en: string
     name_ja: string
+    lg_code: string
     google_place_id: string | null
 }
 
