@@ -120,7 +120,7 @@ export type CreateReservationInput = {
 
 /** Input for creating a new community submission. */
 export type CreateSubmissionInput = {
-  /** Whether to autofill facility data from the Google Maps URL. */
+  /** Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused. */
   autofillPlaceFromSubmissionUrl?: InputMaybe<Scalars['Boolean']['input']>;
   /** Google Maps URL for the facility. */
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
@@ -514,14 +514,6 @@ export type LocalizedNameInput = {
   middleName?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** Input for autofilling a submission from a Google Maps URL during moderation. */
-export type ModerationAutofillDatabaseSubmissionInput = {
-  /** Google Maps URL to extract facility data from. */
-  googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
-  /** ID of the submission to autofill. */
-  id?: InputMaybe<Scalars['String']['input']>;
-};
-
 export type Mutation = {
   __typename?: 'Mutation';
   /** Create a new facility record. */
@@ -540,8 +532,6 @@ export type Mutation = {
   deleteHealthcareProfessional: DeleteResult;
   /** Delete a submission by ID. */
   deleteSubmission: DeleteResult;
-  /** Autofill a submission with data from a Google Maps URL during the moderation process. */
-  moderationPanelUpdateSubmission: Submission;
   /** Update an existing facility by ID. */
   updateFacility: Facility;
   /** Update an existing healthcare professional by ID. */
@@ -592,11 +582,6 @@ export type MutationDeleteHealthcareProfessionalArgs = {
 
 export type MutationDeleteSubmissionArgs = {
   id: Scalars['ID']['input'];
-};
-
-
-export type MutationModerationPanelUpdateSubmissionArgs = {
-  input: ModerationAutofillDatabaseSubmissionInput;
 };
 
 
@@ -970,7 +955,7 @@ export enum SpecialtyCategory {
 /** A community-submitted suggestion for adding or updating a healthcare professional or facility. */
 export type Submission = {
   __typename?: 'Submission';
-  /** Whether to autofill facility data from the Google Maps URL. */
+  /** Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused. */
   autofillPlaceFromSubmissionUrl?: Maybe<Scalars['Boolean']['output']>;
   /** ISO 8601 timestamp of when this submission was created. */
   createdDate: Scalars['String']['output'];
@@ -1070,7 +1055,7 @@ export type UpdateReservationInput = {
 
 /** Input for updating an existing submission. Used during the moderation review process. */
 export type UpdateSubmissionInput = {
-  /** Whether to autofill facility data from the Google Maps URL. */
+  /** Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused. */
   autofillPlaceFromSubmissionUrl?: InputMaybe<Scalars['Boolean']['input']>;
   /** Facility data to associate with this submission. */
   facility?: InputMaybe<CreateFacilityInput>;
@@ -1212,7 +1197,6 @@ export type ResolversTypes = {
   Locale: Locale;
   LocalizedName: ResolverTypeWrapper<LocalizedName>;
   LocalizedNameInput: LocalizedNameInput;
-  ModerationAutofillDatabaseSubmissionInput: ModerationAutofillDatabaseSubmissionInput;
   Mutation: ResolverTypeWrapper<{}>;
   ObjectType: ObjectType;
   OrderBy: OrderBy;
@@ -1265,7 +1249,6 @@ export type ResolversParentTypes = {
   Int: Scalars['Int']['output'];
   LocalizedName: LocalizedName;
   LocalizedNameInput: LocalizedNameInput;
-  ModerationAutofillDatabaseSubmissionInput: ModerationAutofillDatabaseSubmissionInput;
   Mutation: {};
   OrderBy: OrderBy;
   PaymentOption: PaymentOption;
@@ -1387,7 +1370,6 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteFacility?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteFacilityArgs, 'id'>>;
   deleteHealthcareProfessional?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteHealthcareProfessionalArgs, 'id'>>;
   deleteSubmission?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteSubmissionArgs, 'id'>>;
-  moderationPanelUpdateSubmission?: Resolver<ResolversTypes['Submission'], ParentType, ContextType, RequireFields<MutationModerationPanelUpdateSubmissionArgs, 'input'>>;
   updateFacility?: Resolver<ResolversTypes['Facility'], ParentType, ContextType, RequireFields<MutationUpdateFacilityArgs, 'id' | 'input'>>;
   updateHealthcareProfessional?: Resolver<ResolversTypes['HealthcareProfessional'], ParentType, ContextType, RequireFields<MutationUpdateHealthcareProfessionalArgs, 'id' | 'input'>>;
   updateReservation?: Resolver<ResolversTypes['Reservation'], ParentType, ContextType, RequireFields<MutationUpdateReservationArgs, 'input'>>;

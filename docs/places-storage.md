@@ -24,6 +24,6 @@ When a screen shows live Places content, attribute it the way the [Places polici
 
 Places API (New) calls send a [field mask](https://developers.google.com/maps/documentation/places/web-service/choose-fields) for the fields that screen needs. Do not send a wildcard. The API key stays on the server.
 
-## Do not extend the current enrichment path
+## Enrichment path
 
-`utils/submissionDataFromGoogleMaps.ts` copies a Places name, phone, website, and address into submission JSON. Do not add callers. Removing that path is [#1008](https://github.com/ourjapanlife/findadoc-server/issues/1008).
+[#1008](https://github.com/ourjapanlife/findadoc-server/issues/1008) removed the Maps URL enrichment path. Nothing in the server copies a Places name, phone, website, or address into a submission. `updateSubmission` refuses `autofillPlaceFromSubmissionUrl`. The replacement is the facility `place_id` resolver ([#1013](https://github.com/ourjapanlife/findadoc-server/issues/1013)).

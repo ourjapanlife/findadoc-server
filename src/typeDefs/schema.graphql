@@ -42,14 +42,6 @@ input CreateFacilityInput {
   paymentOptions: [PaymentOptionsInput!]
 }
 
-"""Input for autofilling a submission from a Google Maps URL during moderation."""
-input ModerationAutofillDatabaseSubmissionInput {
-  """ID of the submission to autofill."""
-  id: String
-  """Google Maps URL to extract facility data from."""
-  googleMapsUrl: String
-}
-
 """Input for updating an existing facility. All fields are optional — only provided fields are updated."""
 input UpdateFacilityInput {
   """Updated name of the facility in English."""
@@ -197,7 +189,7 @@ input HealthcareProfessionalSearchFilters {
 type Submission {
   """Unique identifier for the submission."""
   id: ID!
-  """Whether to autofill facility data from the Google Maps URL."""
+  """Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused."""
   autofillPlaceFromSubmissionUrl: Boolean
   """Google Maps URL for the facility associated with this submission."""
   googleMapsUrl: String!
@@ -265,7 +257,7 @@ type HealthcareProfessionalSubmission {
 input CreateSubmissionInput {
   """Google Maps URL for the facility."""
   googleMapsUrl: String
-  """Whether to autofill facility data from the Google Maps URL."""
+  """Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused."""
   autofillPlaceFromSubmissionUrl: Boolean
   """Name of the healthcare professional being submitted."""
   healthcareProfessionalName: String
@@ -293,7 +285,7 @@ input UpdateSubmissionInput {
   isApproved: Boolean
   """Set whether the submission is rejected."""
   isRejected: Boolean
-  """Whether to autofill facility data from the Google Maps URL."""
+  """Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused."""
   autofillPlaceFromSubmissionUrl: Boolean
   """Optional notes from the moderator."""
   notes: String
@@ -967,11 +959,6 @@ type Mutation {
 
   """Create a new community submission for a healthcare professional or facility."""
   createSubmission(input: CreateSubmissionInput!): Submission!
-
-  """Autofill a submission with data from a Google Maps URL during the moderation process."""
-  moderationPanelUpdateSubmission(
-    input: ModerationAutofillDatabaseSubmissionInput!
-  ): Submission!
 
   """Update an existing submission by ID."""
   updateSubmission(id: ID!, input: UpdateSubmissionInput!): Submission!

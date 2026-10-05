@@ -3,7 +3,6 @@ import * as dbSchema from '../typeDefs/dbSchema.js'
 import { ErrorCode, Result } from '../result.js'
 import { validateSubmissionSearchFilters, validateCreateSubmissionInputs, validateIdInput, isValidHpInput, validateUpdateSubmissionInput } from '../validation/validateSubmissions.js'
 import { logger } from '../logger.js'
-import { getFacilityDetailsForSubmission } from '../../utils/submissionDataFromGoogleMaps.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import type { Transaction } from 'kysely'
@@ -457,16 +456,13 @@ export const createSubmission = async (
 
 /**
  * Updates a submission record in the database.
- * 
- * IMPORTANT REDIRECT LOGIC:
- * - If isApproved=true → redirects to approveSubmission()
- * - If autofillPlaceFromSubmissionUrl=true → redirects to autoFillPlacesInformation()
- * 
- * These redirects happen BEFORE starting the transaction to avoid nested
- * transaction complexity and external API calls (Google Places) inside transactions.
- * 
+ *
+ * If isApproved=true, this redirects to approveSubmission() before the transaction.
+ * autofillPlaceFromSubmissionUrl is refused. That flag used to copy a Places
+ * payload into facility_partial. The place_id resolver replaces that path.
+ *
  * TRANSACTION BEHAVIOR:
- * - Throws special error codes (NOT_FOUND, AUTOFILL_FAILURE, etc.) to signal specific failures
+ * - Throws NOT_FOUND or INVALID_INPUT to signal specific failures
  * - These are caught in the outer catch block and converted to proper Result objects
  * - This pattern avoids multiple return statements inside the transaction
  */
@@ -486,6 +482,22 @@ export const updateSubmission = async (
                 errors: validation.errors
             }
         }
+
+        // The Maps URL enrichment path is gone. Refuse the flag so a client
+        // cannot persist a Places name, phone, website, or address.
+        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl) {
+            logger.warn(`Refusing Places autofill for submission ${submissionId}`)
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: [{
+                    field: 'autofillPlaceFromSubmissionUrl',
+                    errorCode: ErrorCode.AUTOFILL_FAILURE,
+                    httpStatus: 400
+                }]
+            }
+        }
+
         // Redirect to approveSubmission if isApproved flag is set
         if (fieldsToUpdate.isApproved === true) {
             return await approveSubmission(submissionId, updatedBy)
@@ -501,30 +513,6 @@ export const updateSubmission = async (
 
             if (!currentSubmission) {
                 throw new Error('NOT_FOUND')
-            }
-
-            /*
-            * AUTOFILL VALIDATION
-            * A submission can autofill itself only once.
-            * If the DB already has autofillPlaceFromSubmissionUrl=true,
-            * and the user requests autofill again, reject the update.
-            */
-            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl && currentSubmission.autofill_place_from_submission_url) {
-                throw new Error('AUTOFILL_FAILURE')
-            }
-
-            // If the user is requesting autofill and this submission has NOT used autofill yet,
-            // we need to redirect to autoFillPlacesInformation.
-            // 
-            // CRITICAL: We cannot call autoFillPlacesInformation directly here because:
-            // - It makes external API calls (Google Places) which should not be in transactions
-            // - It would create nested transactions (autoFillPlacesInformation starts its own transaction)
-            // 
-            // Solution: Throw a special error that the outer catch block will handle
-            // by calling autoFillPlacesInformation AFTER the transaction is rolled back.
-            if (fieldsToUpdate.autofillPlaceFromSubmissionUrl 
-                && !currentSubmission.autofill_place_from_submission_url) {
-                throw new Error('REDIRECT_TO_AUTOFILL')
             }
 
             // Map boolean flags to status via SUBMISSION_STATUS_FILTERS
@@ -566,28 +554,6 @@ export const updateSubmission = async (
             }
         }
 
-        // Handle AUTOFILL_FAILURE error
-        if (errorMessage === 'AUTOFILL_FAILURE') {
-            return {
-                data: {} as gqlTypes.Submission,
-                hasErrors: true,
-                errors: [{
-                    field: 'autofillPlaceFromSubmissionUrl',
-                    errorCode: ErrorCode.AUTOFILL_FAILURE,
-                    httpStatus: 400
-                }]
-            }
-        }
-
-        // Handle REDIRECT_TO_AUTOFILL special case
-        if (errorMessage === 'REDIRECT_TO_AUTOFILL') {
-            return await autoFillPlacesInformation(
-                submissionId,
-                fieldsToUpdate.googleMapsUrl,
-                updatedBy
-            )
-        }
-
         // Handle INVALID_INPUT error (multiple status flags)
         if (errorMessage === 'INVALID_INPUT') {
             return {
@@ -607,132 +573,6 @@ export const updateSubmission = async (
             data: {} as gqlTypes.Submission,
             hasErrors: true,
             errors: [{ field: 'updateSubmission', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
-        }
-    }
-}
-
-/**
- * Performs automatic enrichment of a Submission using Google Maps / Places data.
- * CRITICAL DESIGN PATTERN:
- * - External API call happens OUTSIDE the transaction (getFacilityDetailsForSubmission)
- * - Only after successful API response, we start the Kysely transaction
- * - This prevents:
- *    - Long-running transactions (bad for DB performance)
- *    - Transaction timeout during slow API calls
- *    - Unnecessary transaction rollback if API fails
- */
-export const autoFillPlacesInformation = async (
-    submissionId: string,
-    googleMapsUrl: gqlTypes.InputMaybe<string> | undefined,
-    updatedBy: string
-): Promise<Result<gqlTypes.Submission>> => {
-    try {
-        if (!googleMapsUrl) {
-            return {
-                data: {} as gqlTypes.Submission,
-                hasErrors: true,
-                errors: [{ field: 'googleMapsUrl', errorCode: ErrorCode.AUTOFILL_FAILURE, httpStatus: 400 }]
-            }
-        }
-
-        // Fetch Google Places data (outside transaction - external API call)
-        const places = await getFacilityDetailsForSubmission(googleMapsUrl as string)
-
-        if (!places) {
-            return {
-                data: {} as gqlTypes.Submission,
-                hasErrors: true,
-                errors: [{ field: 'googleMapsUrl', errorCode: ErrorCode.AUTOFILL_FAILURE, httpStatus: 400 }]
-            }
-        }
-
-        const gqlSubmission = await db.transaction().execute(async transaction => {
-            // Fetch current submission
-            const currentSubmission = await transaction
-                .selectFrom('submissions')
-                .selectAll()
-                .where('id', '=', submissionId)
-                .executeTakeFirst()
-
-            if (!currentSubmission) {
-                throw new Error(`Submission not found: ${submissionId}`)
-            }
-
-            // Build facility partial
-            const facilityPartial: gqlTypes.FacilitySubmission = {
-                id: undefined,
-                nameEn: places.extractedNameEn,
-                nameJa: places.extractedNameJa ?? places.extractedNameEn,
-                contact: {
-                    phone: places.extractedPhoneNumber,
-                    email: undefined,
-                    website: places.extractedWebsite,
-                    googleMapsUrl: places.extractedGoogleMapsURI,
-                    address: {
-                        addressLine1En: places.extractedAddressLine1En,
-                        addressLine2En: undefined,
-                        cityEn: places.extractedCityEn ?? '',
-                        prefectureEn: places.extractPrefectureEnFromInformation,
-                        postalCode: places.extractedPostalCodeFromInformation,
-                        addressLine1Ja: places.extractedAddressLine1Ja ?? '',
-                        addressLine2Ja: undefined,
-                        cityJa: places.extractedCityJa ?? '',
-                        prefectureJa: places.extractedPrefectureJa ?? ''
-                    }
-                },
-                mapLatitude: places.extractedMapLatitude,
-                mapLongitude: places.extractedMapLongitude,
-                healthcareProfessionalIds: []
-            }
-
-            // Update submission with autofill data
-            const updatedSubmission = await transaction
-                .updateTable('submissions')
-                .set({
-                    google_maps_url: places.extractedGoogleMapsURI ?? currentSubmission.google_maps_url,
-                     
-                    facility_partial: asJsonb<gqlTypes.FacilitySubmission>(facilityPartial),
-                    status: dbSchema.SUBMISSION_STATUS.UNDER_REVIEW,
-                    autofill_place_from_submission_url: true,
-                    updated_date: new Date().toISOString()
-                })
-                .where('id', '=', submissionId)
-                .returningAll()
-                .executeTakeFirstOrThrow()
-
-            // Map to GraphQL
-            const oldGqlSubmission = mapKyselySubmissionToGraphQL(currentSubmission)
-            const newGqlSubmission = mapKyselySubmissionToGraphQL(updatedSubmission)
-
-            // Audit log
-            await createAuditLog(transaction, {
-                actionType: gqlTypes.ActionType.Update,
-                objectType: gqlTypes.ObjectType.Submission,
-                updatedBy,
-                oldValue: oldGqlSubmission,
-                newValue: newGqlSubmission
-            })
-
-            return newGqlSubmission
-        })
-
-        return { data: gqlSubmission, hasErrors: false }
-    } catch (error) {
-        const errorMessage = (error as Error).message
-
-        if (errorMessage.includes('Submission not found')) {
-            return {
-                data: {} as gqlTypes.Submission,
-                hasErrors: true,
-                errors: [{ field: 'submissionId', errorCode: ErrorCode.NOT_FOUND, httpStatus: 404 }]
-            }
-        }
-
-        logger.error(`Error updating submission ${submissionId} (autofill): ${error}`)
-        return {
-            data: {} as gqlTypes.Submission,
-            hasErrors: true,
-            errors: [{ field: 'autofillPlaceFromSubmissionUrl', errorCode: ErrorCode.SERVER_ERROR, httpStatus: 500 }]
         }
     }
 }
