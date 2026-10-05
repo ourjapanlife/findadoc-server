@@ -98,7 +98,6 @@ export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Su
         googleMapsUrl: row.google_maps_url,
         healthcareProfessionalName: row.healthcare_professional_name,
         spokenLanguages: row.spoken_languages as gqlTypes.Locale[],
-        autofillPlaceFromSubmissionUrl: row.autofill_place_from_submission_url,
         facility: row.facility_partial ? {
             ...row.facility_partial,
             healthcareProfessionalIds: row.facility_partial.healthcareProfessionalIds ?? [] // ← FIX!
@@ -121,8 +120,6 @@ export function mapGqlEntityToDbEntity(
         google_maps_url: input.googleMapsUrl ?? '',
         healthcare_professional_name: input.healthcareProfessionalName ?? '',
         spoken_languages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
-        autofill_place_from_submission_url: false,
-         
         facility_partial: null,
          
         healthcare_professionals_partial: null,
@@ -149,7 +146,6 @@ export function mapKyselySubmissionToGraphQL(
         googleMapsUrl: cleanSubmissionRow.google_maps_url!,
         healthcareProfessionalName: cleanSubmissionRow.healthcare_professional_name!,
         spokenLanguages: cleanSubmissionRow.spoken_languages!,
-        autofillPlaceFromSubmissionUrl: cleanSubmissionRow.autofill_place_from_submission_url,
         facility: cleanSubmissionRow.facility_partial ? {
             ...cleanSubmissionRow.facility_partial,
             healthcareProfessionalIds: cleanSubmissionRow.facility_partial.healthcareProfessionalIds ?? []

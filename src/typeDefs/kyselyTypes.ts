@@ -79,7 +79,6 @@ export interface SubmissionsTable {
     healthcare_professional_name: string | null
     spoken_languages: ColumnType<gqlTypes.Locale[] | null, gqlTypes.Locale[] | null, gqlTypes.Locale[] | null>
     notes: string | null
-    autofill_place_from_submission_url: boolean
     facility_partial: ColumnType<gqlTypes.FacilitySubmission | null, gqlTypes.FacilitySubmission 
         | null, gqlTypes.FacilitySubmission | null>
     healthcare_professionals_partial: ColumnType<gqlTypes.HealthcareProfessionalSubmission[]

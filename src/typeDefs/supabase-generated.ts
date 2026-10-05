@@ -276,7 +276,6 @@ export type Database = {
       }
       submissions: {
         Row: {
-          autofill_place_from_submission_url: boolean
           created_date: string
           facilities_id: string | null
           facility_partial: Json | null
@@ -292,7 +291,6 @@ export type Database = {
           updated_date: string
         }
         Insert: {
-          autofill_place_from_submission_url?: boolean
           created_date: string
           facilities_id?: string | null
           facility_partial?: Json | null
@@ -308,7 +306,6 @@ export type Database = {
           updated_date: string
         }
         Update: {
-          autofill_place_from_submission_url?: boolean
           created_date?: string
           facilities_id?: string | null
           facility_partial?: Json | null

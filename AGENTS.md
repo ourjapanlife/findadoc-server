@@ -19,4 +19,4 @@ Alias lookup lives in `src/vocabulary/`. It is not imported by resolvers or serv
 - Store `place_id`. Refresh it if it is older than 12 months.
 - Places latitude and longitude last at most 30 days, then delete or refresh.
 - Do not store a Places display name, formatted address, phone, website, hours, photos, or reviews as directory data.
-- Do not extend `utils/submissionDataFromGoogleMaps.ts`. Removing it is #1008. The picker is #1012. The facility resolver is #1013.
+- The Maps URL enrichment path is gone (#1008). Do not copy a Places payload into a submission. The picker is #1012. The facility resolver is #1013.

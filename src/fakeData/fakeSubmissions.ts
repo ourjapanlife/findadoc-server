@@ -6,7 +6,6 @@ import { removeDuplicates } from '../../utils/arrayUtils.js'
 
 export function generateRandomCreateSubmissionInput(): gqlTypes.CreateSubmissionInput {
     return {
-        autofillPlaceFromSubmissionUrl: false,
         googleMapsUrl: faker.internet.url(),
         healthcareProfessionalName: faker.person.fullName(),
         spokenLanguages: removeDuplicates(generateSpokenLanguages({ count: 2 }))
@@ -25,7 +24,7 @@ export function generateRandomCreateSubmissionInputArray({ count = 5 } = {}): gq
  * as required by the GQL type definition for the Submission object.
  */
 export function generateRandomUpdateSubmissionInput(
-    { isApproved = false, isRejected = false, isUnderReview = false, autofillPlaceFromSubmissionUrl = false } = {}
+    { isApproved = false, isRejected = false, isUnderReview = false } = {}
 )
 : gqlTypes.UpdateSubmissionInput {
     // Generate the HP data using the new function. Since this is just fake data,
@@ -49,7 +48,6 @@ export function generateRandomUpdateSubmissionInput(
 
     return {
         googleMapsUrl: faker.internet.url(),
-        autofillPlaceFromSubmissionUrl: autofillPlaceFromSubmissionUrl,
         healthcareProfessionalName: faker.person.fullName(),
         spokenLanguages: generateSpokenLanguages({ count: 2 }),
         facility: generateRandomCreateFacilityInput(),
