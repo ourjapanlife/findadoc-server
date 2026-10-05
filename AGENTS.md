@@ -12,6 +12,12 @@
 
 Alias lookup lives in `src/vocabulary/`. It is not imported by resolvers or services, so stored `cityEn` and `cityJa` stay as they are until #1011. The city table is #1009: every current municipality from the Address Base Registry, shaped by the rules above. Designated-city wards are not rows. Tokyo's 23 wards are. Refresh with `utils/buildMunicipalityVocabulary.py` and match on `lg_code`. The alias map only returns a row that already exists. Backfill: #1011.
 
+## Affiliations
+
+A society or collaboration is a row in `affiliations`, not a Postgres enum (#1029). The first row is the Intercultural Psychiatric Society of Japan. Japanese name, website, and logo stay empty until that society sends them.
+
+`affiliation_memberships` attaches that row to one facility or one healthcare professional. Do not attach the existing directory in this change. Bulk CSV import and the profile-card mark are later tickets.
+
 ## Places
 
 `docs/places-storage.md` is the storage rule. Follow it. Do not open a Places write path that contradicts it.
