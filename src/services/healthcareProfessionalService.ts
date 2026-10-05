@@ -8,7 +8,7 @@ import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { db } from '../kyselyClient.js'
 import { asJsonb } from '../../utils/dbUtils.js'
-import type { HasContains } from '../../utils/dbUtils.js'
+import type { HasContains, HasIn } from '../../utils/dbUtils.js'
 import { mapDbHpToGql, mapKyselyHpToGraphQL} from '../services/mappersEntityService.js'
 /** Row type used as Supabase select generic — matches DbHealthcareProfessionalRow from dbSchema */
 type HpRow = dbSchema.DbHealthcareProfessionalRow
@@ -31,8 +31,8 @@ export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProf
     return updatePatch
 }
 
-// Applies JSONB array filters to an HP query builder (degrees, specialties, languages, insurance).
-export function applyHpFilters<T extends HasContains>(
+// Applies JSONB array filters (degrees, specialties, languages, insurance) and the facility filter to an HP query builder.
+export function applyHpFilters<T extends HasContains & HasIn>(
   builder: T,
   filters: gqlTypes.HealthcareProfessionalSearchFilters
 ): T {
@@ -42,7 +42,25 @@ export function applyHpFilters<T extends HasContains>(
     if (filters.specialties?.length) { query = query.contains('specialties', JSON.stringify(filters.specialties)) as T }
     if (filters.spokenLanguages?.length) { query = query.contains('spoken_languages', JSON.stringify(filters.spokenLanguages)) as T }
     if (filters.acceptedInsurance?.length) { query = query.contains('accepted_insurance', JSON.stringify(filters.acceptedInsurance)) as T }
+    // Runs against the inner-joined hps_facilities embed added by buildHpSelect.
+    if (filters.facilityIds?.length) { query = query.in('hps_facilities.facilities_id', filters.facilityIds) as T }
     return query
+}
+
+/**
+ * Builds the select string for an hps query. When filtering by facility, adds an inner-joined
+ * hps_facilities embed so PostgREST drops professionals without a link to one of those facilities.
+ * The embed only filters; facilityIds on the result are still loaded from the junction table.
+ *
+ * @param selectColumns - Comma-separated DB columns to fetch.
+ * @param filters - The HP search filters from GraphQL input.
+ */
+export function buildHpSelect(selectColumns: string, filters: gqlTypes.HealthcareProfessionalSearchFilters): string {
+    if (!filters.facilityIds?.length) {
+        return selectColumns
+    }
+
+    return `${selectColumns}, hps_facilities!inner(facilities_id)`
 }
 
 // Derives the facilityId to associate from relationship edits (create/delete).
@@ -180,9 +198,7 @@ export async function getHealthcareProfessionalById(
 
 /**
  * Searches for a paginated list of HealthcareProfessionals based on various criteria.
- * This function handles multi-step filtering:
- * - It optionally applies a filter based on associated Facility
- * by performing a preliminary lookup to get a subset of HP IDs.
+ * - Facility filtering uses an inner-joined hps_facilities embed, so it stays in the main query.
  * - It applies scalar filters, ordering, and pagination to the main hps table.
  * @param filters Optional search and pagination filters for HP.
  * @param selectColumns Comma-separated DB columns to fetch (defaults to '*' for all columns).
@@ -219,7 +235,10 @@ export async function searchProfessionals(
         const supabase = getSupabaseClient()
 
         // Start base query on hps table and apply JSONB filters via helper
-        let hpSelect = applyHpFilters(supabase.from('hps').select<string, HpRow>(selectColumns), filters)
+        let hpSelect = applyHpFilters(
+            supabase.from('hps').select<string, HpRow>(buildHpSelect(selectColumns, filters)),
+            filters
+        )
 
         if (Array.isArray(filters.ids)) {
             hpSelect = hpSelect.in('id', filters.ids)
@@ -333,7 +352,7 @@ export async function countProfessionals(
         // Build a COUNT(*) query with the same JSONB-based filters used in the search endpoint.
         // The 'head: true' flag means no rows are actually returned, only metadata.
         const countQuery = applyHpFilters(
-            supabase.from('hps').select('*', { count: 'exact', head: true }),
+            supabase.from('hps').select<string, HpRow>(buildHpSelect('*', filters), { count: 'exact', head: true }),
             filters
         )
 

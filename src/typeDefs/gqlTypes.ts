@@ -318,6 +318,8 @@ export type HealthcareProfessionalSearchFilters = {
   createdDate?: InputMaybe<Scalars['String']['input']>;
   /** Filter by degrees. */
   degrees?: InputMaybe<Array<Degree>>;
+  /** Filter to professionals linked to at least one of these facility IDs. */
+  facilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by specific healthcare professional IDs. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Maximum number of results to return. */

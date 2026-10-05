@@ -41,3 +41,10 @@ export type HasContains = {
 export type HasOr = {
     or: (filters: string) => unknown
 }
+
+/**
+ * Type constraint for Supabase query builders that support PostgREST IN filters.
+ */
+export type HasIn = {
+    in: (column: string, values: readonly unknown[]) => unknown
+}

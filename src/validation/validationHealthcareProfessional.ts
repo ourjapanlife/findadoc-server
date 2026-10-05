@@ -1,6 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { isInvalidName, hasJapaneseCharacters, hasLatinCharacters } from '../../utils/stringUtils.js'
 import { ErrorCode, Result } from '../result.js'
+import { UUID_REGEX } from './validateFacility.js'
 
 export function validateNames(
     names: gqlTypes.LocalizedNameInput[] | undefined | null,
@@ -262,6 +263,26 @@ export function validateProfessionalsSearchInput(
         validationResults.errors?.push({
             field: 'spokenLanguages',
             errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    // Facility IDs go into the PostgREST URL and are compared to a uuid column,
+    // so cap the list and reject anything that is not a UUID instead of letting Postgres fail.
+    if (searchInput.facilityIds && searchInput.facilityIds.length > 100) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'facilityIds',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (searchInput.facilityIds?.some(id => !UUID_REGEX.test(id))) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'facilityIds',
+            errorCode: ErrorCode.INVALID_ID,
             httpStatus: 400
         })
     }

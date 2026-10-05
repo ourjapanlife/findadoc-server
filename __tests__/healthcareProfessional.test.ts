@@ -1,9 +1,11 @@
 import request from 'supertest'
-import { expect, describe, test } from 'vitest'
+import { expect, describe, test, beforeAll } from 'vitest'
 import { Error, ErrorCode } from '../src/result.js'
 import { generateRandomCreateHealthcareProfessionalInput as generateCreateProfessionalInput } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
-import { CreateHealthcareProfessionalInput, Degree, HealthcareProfessional, Specialty } from '../src/typeDefs/gqlTypes.js'
+import { CreateFacilityInput, CreateHealthcareProfessionalInput, Degree, Facility, HealthcareProfessional, Specialty } from '../src/typeDefs/gqlTypes.js'
+import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
+import { createFacilityMutation } from './facilities.test.js'
 import { gqlApiUrl, sharedFacilityIds } from './testSetup.test.js'
 import { logger } from '../src/logger.js'
 
@@ -522,6 +524,108 @@ describe('searchHealthcareProfessionals', () => {
             expect(p.degrees).toContain(knownDegree)
         })
     })
+
+    describe('facilityIds filter', () => {
+        let facilityA: Facility
+        let facilityB: Facility
+        let facilityC: Facility
+        let professionalAtA: HealthcareProfessional
+        let professionalAtB: HealthcareProfessional
+        let professionalAtBWithSpecialty: HealthcareProfessional
+
+        const createFacility = async () => {
+            const result = await request(gqlApiUrl).post('').send({
+                query: createFacilityMutation,
+                variables: { input: generateRandomCreateFacilityInput() }
+            } as gqlMutation<CreateFacilityInput>)
+
+            expect(result.body?.errors).toBeUndefined()
+            return result.body.data.createFacility as Facility
+        }
+
+        const createProfessional = async (facilityId: string, specialties: Specialty[]) => {
+            const input = generateCreateProfessionalInput({ facilityIds: [facilityId] })
+
+            input.specialties = specialties
+
+            const result = await request(gqlApiUrl).post('').send({
+                query: createHealthcareProfessionalMutation,
+                variables: { input }
+            } as gqlMutation<CreateHealthcareProfessionalInput>)
+
+            expect(result.body?.errors).toBeUndefined()
+            return result.body.data.createHealthcareProfessional as HealthcareProfessional
+        }
+
+        const search = async (filters: Record<string, unknown>) => {
+            const result = await request(gqlApiUrl).post('').send({
+                query: searchHealthcareProfessionalsWithCount,
+                variables: { filters }
+            } as gqlRequest)
+
+            return result.body
+        }
+
+        beforeAll(async () => {
+            facilityA = await createFacility()
+            facilityB = await createFacility()
+            facilityC = await createFacility()
+
+            professionalAtA = await createProfessional(facilityA.id, [Specialty.Dermatology])
+            professionalAtB = await createProfessional(facilityB.id, [Specialty.Dermatology])
+            professionalAtBWithSpecialty = await createProfessional(facilityB.id, [Specialty.Pediatrics])
+        })
+
+        test('returns only professionals linked to the facility', async () => {
+            const body = await search({ facilityIds: [facilityB.id] })
+
+            expect(body.errors).toBeUndefined()
+            const found = body.data.healthcareProfessionals as HealthcareProfessional[]
+
+            expect(found.map(p => p.id).sort()).toEqual([professionalAtB.id, professionalAtBWithSpecialty.id].sort())
+            // facilityIds on the result still comes from the junction table, not the filter.
+            found.forEach(p => expect(p.facilityIds).toEqual([facilityB.id]))
+            expect(body.data.healthcareProfessionalsTotalCount).toBe(2)
+        })
+
+        test('matches professionals at any of several facilities', async () => {
+            const body = await search({ facilityIds: [facilityA.id, facilityB.id] })
+
+            expect(body.errors).toBeUndefined()
+            const found = body.data.healthcareProfessionals as HealthcareProfessional[]
+
+            expect(found.map(p => p.id).sort()).toEqual(
+                [professionalAtA.id, professionalAtB.id, professionalAtBWithSpecialty.id].sort()
+            )
+            expect(body.data.healthcareProfessionalsTotalCount).toBe(3)
+        })
+
+        test('combines with other filters', async () => {
+            const body = await search({ facilityIds: [facilityB.id], specialties: [Specialty.Pediatrics] })
+
+            expect(body.errors).toBeUndefined()
+            const found = body.data.healthcareProfessionals as HealthcareProfessional[]
+
+            expect(found.map(p => p.id)).toEqual([professionalAtBWithSpecialty.id])
+            expect(body.data.healthcareProfessionalsTotalCount).toBe(1)
+        })
+
+        test('returns nothing for a facility with no professionals', async () => {
+            const body = await search({ facilityIds: [facilityC.id] })
+
+            expect(body.errors).toBeUndefined()
+            expect(body.data.healthcareProfessionals).toEqual([])
+            expect(body.data.healthcareProfessionalsTotalCount).toBe(0)
+        })
+
+        test('rejects a facility id that is not a UUID', async () => {
+            const body = await search({ facilityIds: ['not-a-uuid'] })
+            const errors = body.errors[0].extensions.errors as Error[]
+
+            expect(errors[0].field).toBe('facilityIds')
+            expect(errors[0].errorCode).toBe(ErrorCode.INVALID_ID)
+        })
+    })
 })
 
 export const createHealthcareProfessionalMutation = `mutation test_createHealthcareProfessional($input: CreateHealthcareProfessionalInput!) {
@@ -599,6 +703,14 @@ const searchHealthcareProfessionalsWithDetails = `query test_searchHealthcarePro
         spokenLanguages
         acceptedInsurance
     }
+}`
+
+const searchHealthcareProfessionalsWithCount = `query test_searchHealthcareProfessionalsWithCount($filters: HealthcareProfessionalSearchFilters!) {
+    healthcareProfessionals(filters: $filters) {
+        id
+        facilityIds
+    }
+    healthcareProfessionalsTotalCount(filters: $filters)
 }`
 
 const deleteProfessionalMutation = `mutation test_deleteHealthcareProfessional($id: ID!) {
