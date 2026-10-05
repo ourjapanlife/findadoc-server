@@ -189,8 +189,6 @@ input HealthcareProfessionalSearchFilters {
 type Submission {
   """Unique identifier for the submission."""
   id: ID!
-  """Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused."""
-  autofillPlaceFromSubmissionUrl: Boolean
   """Google Maps URL for the facility associated with this submission."""
   googleMapsUrl: String!
   """Name of the healthcare professional being submitted."""
@@ -257,8 +255,6 @@ type HealthcareProfessionalSubmission {
 input CreateSubmissionInput {
   """Google Maps URL for the facility."""
   googleMapsUrl: String
-  """Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused."""
-  autofillPlaceFromSubmissionUrl: Boolean
   """Name of the healthcare professional being submitted."""
   healthcareProfessionalName: String
   """Languages spoken by the healthcare professional."""
@@ -285,8 +281,6 @@ input UpdateSubmissionInput {
   isApproved: Boolean
   """Set whether the submission is rejected."""
   isRejected: Boolean
-  """Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused."""
-  autofillPlaceFromSubmissionUrl: Boolean
   """Optional notes from the moderator."""
   notes: String
 }

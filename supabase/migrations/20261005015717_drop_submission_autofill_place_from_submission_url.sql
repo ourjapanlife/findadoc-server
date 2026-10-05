@@ -1,0 +1,2 @@
+ALTER TABLE submissions
+DROP COLUMN autofill_place_from_submission_url;

@@ -26,4 +26,4 @@ Places API (New) calls send a [field mask](https://developers.google.com/maps/do
 
 ## Enrichment path
 
-[#1008](https://github.com/ourjapanlife/findadoc-server/issues/1008) removed the Maps URL enrichment path. Nothing in the server copies a Places name, phone, website, or address into a submission. `updateSubmission` refuses `autofillPlaceFromSubmissionUrl`. The replacement is the facility `place_id` resolver ([#1013](https://github.com/ourjapanlife/findadoc-server/issues/1013)).
+[#1008](https://github.com/ourjapanlife/findadoc-server/issues/1008) removed the Maps URL enrichment path, including `autofill_place_from_submission_url`. Nothing in the server copies a Places name, phone, website, or address into a submission. The replacement is the facility `place_id` resolver ([#1013](https://github.com/ourjapanlife/findadoc-server/issues/1013)).

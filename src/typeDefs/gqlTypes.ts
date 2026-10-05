@@ -120,8 +120,6 @@ export type CreateReservationInput = {
 
 /** Input for creating a new community submission. */
 export type CreateSubmissionInput = {
-  /** Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused. */
-  autofillPlaceFromSubmissionUrl?: InputMaybe<Scalars['Boolean']['input']>;
   /** Google Maps URL for the facility. */
   googleMapsUrl?: InputMaybe<Scalars['String']['input']>;
   /** Name of the healthcare professional being submitted. */
@@ -955,8 +953,6 @@ export enum SpecialtyCategory {
 /** A community-submitted suggestion for adding or updating a healthcare professional or facility. */
 export type Submission = {
   __typename?: 'Submission';
-  /** Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused. */
-  autofillPlaceFromSubmissionUrl?: Maybe<Scalars['Boolean']['output']>;
   /** ISO 8601 timestamp of when this submission was created. */
   createdDate: Scalars['String']['output'];
   /** Facility data included in this submission. */
@@ -1055,8 +1051,6 @@ export type UpdateReservationInput = {
 
 /** Input for updating an existing submission. Used during the moderation review process. */
 export type UpdateSubmissionInput = {
-  /** Retired flag from the removed Maps URL enrichment path. Updates that set it true are refused. */
-  autofillPlaceFromSubmissionUrl?: InputMaybe<Scalars['Boolean']['input']>;
   /** Facility data to associate with this submission. */
   facility?: InputMaybe<CreateFacilityInput>;
   /** Updated Google Maps URL. */
@@ -1422,7 +1416,6 @@ export type ReservationResolvers<ContextType = any, ParentType extends Resolvers
 };
 
 export type SubmissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Submission'] = ResolversParentTypes['Submission']> = {
-  autofillPlaceFromSubmissionUrl?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   createdDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   facility?: Resolver<Maybe<ResolversTypes['FacilitySubmission']>, ParentType, ContextType>;
   googleMapsUrl?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

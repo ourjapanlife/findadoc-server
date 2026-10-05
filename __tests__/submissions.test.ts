@@ -109,51 +109,6 @@ describe('updateSubmission', () => {
         expect(updatedSubmission.isUnderReview).toBe(originalInputValues.isUnderReview)
         expect(updatedSubmission.isRejected).toBe(originalInputValues.isRejected)
     })
-
-    test('refuses Places autofill and leaves the submission unchanged', async () => {
-        const createSubmissionRequest = {
-            query: createSubmissionMutation,
-            variables: {
-                input: generateRandomCreateSubmissionInput()
-            }
-        } satisfies gqlRequest
-
-        const newSubmissionResult = await request(gqlApiUrl).post('').send(createSubmissionRequest)
-
-        expect(newSubmissionResult.body.errors).toBeUndefined()
-
-        const newSubmission = newSubmissionResult.body.data.createSubmission as Submission
-        const beforeRequest = {
-            query: submissionFacilityQuery,
-            variables: { id: newSubmission.id }
-        } satisfies gqlRequest
-        const beforeResult = await request(gqlApiUrl).post('').send(beforeRequest)
-
-        expect(beforeResult.body.errors).toBeUndefined()
-
-        const before = beforeResult.body.data.submission as Submission
-
-        const autofillRequest = {
-            query: updateSubmissionMutation,
-            variables: {
-                id: newSubmission.id,
-                input: {
-                    autofillPlaceFromSubmissionUrl: true,
-                    googleMapsUrl: 'https://maps.google.com/maps?q=clinic'
-                }
-            }
-        } satisfies gqlRequest
-        const autofillResult = await request(gqlApiUrl).post('').send(autofillRequest)
-        const autofillErrors = JSON.stringify(autofillResult.body.errors)
-
-        expect(autofillResult.body.data?.updateSubmission ?? null).toBeNull()
-        expect(autofillErrors).toContain('FAILURE_TO_AUTOFILL_SUBMISSION')
-
-        const afterResult = await request(gqlApiUrl).post('').send(beforeRequest)
-
-        expect(afterResult.body.errors).toBeUndefined()
-        expect(afterResult.body.data.submission).toEqual(before)
-    })
 })
 
 describe('approveSubmission', () => {
@@ -850,32 +805,6 @@ async function checkSearchResults(searchSubmissionsRequest: gqlRequest, original
     expect(firstSubmission.isUnderReview).toBe(false)
     expect(firstSubmission.spokenLanguages).toStrictEqual(originalInputValues.spokenLanguages)
 }
-
-const submissionFacilityQuery = `query test_submissionFacility($id: ID!) {
-    submission(id: $id) {
-      id
-      googleMapsUrl
-      healthcareProfessionalName
-      autofillPlaceFromSubmissionUrl
-      facility {
-        nameEn
-        nameJa
-        mapLatitude
-        mapLongitude
-        contact {
-          phone
-          website
-          address {
-            cityEn
-            cityJa
-            addressLine1En
-          }
-        }
-      }
-      isUnderReview
-      notes
-    }
-}`
 
 const getSubmissionByIdQuery = `query test_getSubmissionById($id: ID!) {
     submission(id: $id) {

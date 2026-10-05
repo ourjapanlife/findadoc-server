@@ -50,8 +50,7 @@ const SUBMISSION_EQ_QUERY_FILTERS = [
 const SUBMISSION_SCALAR_UPDATE_FIELDS = [
     ['googleMapsUrl', 'google_maps_url'],
     ['healthcareProfessionalName', 'healthcare_professional_name'],
-    ['notes', 'notes'],
-    ['autofillPlaceFromSubmissionUrl', 'autofill_place_from_submission_url']
+    ['notes', 'notes']
 ] as const satisfies ReadonlyArray<
     readonly [keyof gqlTypes.UpdateSubmissionInput, string]
 >
@@ -413,7 +412,6 @@ export const createSubmission = async (
                     google_maps_url: submissionInput.googleMapsUrl ?? '',
                     healthcare_professional_name: submissionInput.healthcareProfessionalName ?? '',
                     spoken_languages: asJsonb<gqlTypes.Locale[]>(submissionInput.spokenLanguages ?? []),
-                    autofill_place_from_submission_url: false,
                     facility_partial: null,
                     healthcare_professionals_partial: null,
                     hps_id: null,
@@ -458,8 +456,6 @@ export const createSubmission = async (
  * Updates a submission record in the database.
  *
  * If isApproved=true, this redirects to approveSubmission() before the transaction.
- * autofillPlaceFromSubmissionUrl is refused. That flag used to copy a Places
- * payload into facility_partial. The place_id resolver replaces that path.
  *
  * TRANSACTION BEHAVIOR:
  * - Throws NOT_FOUND or INVALID_INPUT to signal specific failures
@@ -480,21 +476,6 @@ export const updateSubmission = async (
                 data: {} as gqlTypes.Submission,
                 hasErrors: true,
                 errors: validation.errors
-            }
-        }
-
-        // The Maps URL enrichment path is gone. Refuse the flag so a client
-        // cannot persist a Places name, phone, website, or address.
-        if (fieldsToUpdate.autofillPlaceFromSubmissionUrl) {
-            logger.warn(`Refusing Places autofill for submission ${submissionId}`)
-            return {
-                data: {} as gqlTypes.Submission,
-                hasErrors: true,
-                errors: [{
-                    field: 'autofillPlaceFromSubmissionUrl',
-                    errorCode: ErrorCode.AUTOFILL_FAILURE,
-                    httpStatus: 400
-                }]
             }
         }
 
