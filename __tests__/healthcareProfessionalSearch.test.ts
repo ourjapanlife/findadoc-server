@@ -5,7 +5,13 @@ import { generateRandomCreateHealthcareProfessionalInput as generateCreateProfes
 import { generateRandomCreateFacilityInput } from '../src/fakeData/fakeFacilities.js'
 import { gqlMutation, gqlRequest } from '../utils/gqlTool.js'
 import {
-    CreateFacilityInput, CreateHealthcareProfessionalInput, Facility, HealthcareProfessional, Specialty
+    CreateFacilityInput,
+    CreateHealthcareProfessionalInput,
+    Facility,
+    HealthcareProfessional,
+    RelationshipAction,
+    Specialty,
+    UpdateFacilityInput
 } from '../src/typeDefs/gqlTypes.js'
 import { gqlApiUrl } from './testSetup.test.js'
 import { createFacilityMutation } from './facilities.test.js'
@@ -17,9 +23,11 @@ describe('searchHealthcareProfessionals: facilityIds filter', () => {
     let facilityA: Facility
     let facilityB: Facility
     let facilityC: Facility
+    let facilityD: Facility
     let professionalAtA: HealthcareProfessional
     let professionalAtB: HealthcareProfessional
     let professionalAtBWithSpecialty: HealthcareProfessional
+    let professionalAtAAndD: HealthcareProfessional
 
     const createFacility = async () => {
         const result = await request(gqlApiUrl).post('').send({
@@ -62,6 +70,23 @@ describe('searchHealthcareProfessionals: facilityIds filter', () => {
         professionalAtA = await createProfessional(facilityA.id, [Specialty.Dermatology])
         professionalAtB = await createProfessional(facilityB.id, [Specialty.Dermatology])
         professionalAtBWithSpecialty = await createProfessional(facilityB.id, [Specialty.Pediatrics])
+
+        // Creating a professional links exactly one facility, so link the second one from the facility side.
+        facilityD = await createFacility()
+        professionalAtAAndD = await createProfessional(facilityD.id, [Specialty.Dermatology])
+        const linkResult = await request(gqlApiUrl).post('').send({
+            query: updateFacilityMutation,
+            variables: {
+                id: facilityA.id,
+                input: {
+                    healthcareProfessionalIds: [
+                        { action: RelationshipAction.Create, otherEntityId: professionalAtAAndD.id }
+                    ]
+                }
+            }
+        } as gqlMutation<UpdateFacilityInput>)
+
+        expect(linkResult.body?.errors).toBeUndefined()
     })
 
     test('returns only professionals linked to the facility', async () => {
@@ -83,9 +108,32 @@ describe('searchHealthcareProfessionals: facilityIds filter', () => {
         const found = body.data.healthcareProfessionals as HealthcareProfessional[]
 
         expect(found.map(p => p.id).sort()).toEqual(
-            [professionalAtA.id, professionalAtB.id, professionalAtBWithSpecialty.id].sort()
+            [professionalAtA.id, professionalAtB.id, professionalAtBWithSpecialty.id, professionalAtAAndD.id].sort()
         )
-        expect(body.data.healthcareProfessionalsTotalCount).toBe(3)
+        expect(body.data.healthcareProfessionalsTotalCount).toBe(4)
+    })
+
+    test('returns a professional linked to several listed facilities once', async () => {
+        const body = await search({ facilityIds: [facilityA.id, facilityD.id] })
+
+        expect(body.errors).toBeUndefined()
+        const found = body.data.healthcareProfessionals as HealthcareProfessional[]
+
+        // The inner join must not repeat the row or inflate the count.
+        expect(found.map(p => p.id).sort()).toEqual([professionalAtA.id, professionalAtAAndD.id].sort())
+        expect(body.data.healthcareProfessionalsTotalCount).toBe(2)
+        const multiFacilityProfessional = found.find(p => p.id === professionalAtAAndD.id)
+
+        expect(multiFacilityProfessional?.facilityIds.slice().sort()).toEqual([facilityA.id, facilityD.id].sort())
+    })
+
+    test('treats an empty facilityIds list as no filter', async () => {
+        const body = await search({ facilityIds: [], ids: [professionalAtA.id, professionalAtB.id] })
+
+        expect(body.errors).toBeUndefined()
+        const found = body.data.healthcareProfessionals as HealthcareProfessional[]
+
+        expect(found.map(p => p.id).sort()).toEqual([professionalAtA.id, professionalAtB.id].sort())
     })
 
     test('combines with other filters', async () => {
@@ -121,4 +169,10 @@ const searchHealthcareProfessionalsWithCount = `query test_searchHealthcareProfe
         facilityIds
     }
     healthcareProfessionalsTotalCount(filters: $filters)
+}`
+
+const updateFacilityMutation = `mutation test_linkFacilityProfessional($id: ID!, $input: UpdateFacilityInput!) {
+    updateFacility(id: $id, input: $input) {
+        id
+    }
 }`
