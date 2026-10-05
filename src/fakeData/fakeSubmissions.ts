@@ -49,7 +49,7 @@ export function generateRandomUpdateSubmissionInput(
     return {
         googleMapsUrl: faker.internet.url(),
         healthcareProfessionalName: faker.person.fullName(),
-        spokenLanguages: generateSpokenLanguages({ count: 2 }),
+        spokenLanguages: removeDuplicates(generateSpokenLanguages({ count: 2 })),
         facility: generateRandomCreateFacilityInput(),
         healthcareProfessionals: healthcareProfessionals,
         isApproved: isApproved,
