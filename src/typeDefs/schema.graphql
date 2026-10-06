@@ -199,6 +199,8 @@ input HealthcareProfessionalSearchFilters {
   specialties: [Specialty!]
   """Filter by accepted insurance types."""
   acceptedInsurance: [Insurance!]
+  """Filter to professionals linked to at least one of these facility IDs."""
+  facilityIds: [ID!]
   """Filter by creation date (ISO 8601)."""
   createdDate: String
   """Filter by last updated date (ISO 8601)."""

@@ -4,7 +4,7 @@ import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite 
 import { resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
 
 // Used for v4 uuid
-const UUID_REGEX =
+export const UUID_REGEX =
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
 
 /**
