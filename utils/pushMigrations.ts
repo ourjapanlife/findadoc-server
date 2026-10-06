@@ -1,33 +1,24 @@
 import { spawnSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { envVariables } from './environmentVariables.js'
 
-function connectionString(): string {
-    const explicit = envVariables.dbUrl() ?? ''
-    if (explicit.startsWith('postgresql://') || explicit.startsWith('postgres://')) {
-        return explicit
-    }
-
-    const user = envVariables.pgUser()
-    const password = envVariables.pgPassword()
-    const host = envVariables.pgHost()
-    if (!user || !password || !host) {
-        return ''
-    }
-
-    // The API uses the transaction pooler on 6543. Migrations need a session connection.
-    return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:5432/postgres`
-}
-
-const dbUrl = connectionString()
-if (!dbUrl) {
-    console.error('Set DB_URL to a postgres URL, or PGHOST, PGUSER, and PGPASSWORD, before deploying so new migrations can be applied.')
+if (!existsSync('supabase/.temp/project-ref')) {
+    console.error('Link this repo to the hosted project once with `npx supabase login` and `npx supabase link`, then deploy again.')
     process.exit(1)
 }
 
+const password = envVariables.pgPassword()
+const env = { ...process.env }
+if (password) {
+    env.SUPABASE_DB_PASSWORD = password
+}
+
+// https://supabase.com/docs/guides/deployment/database-migrations
+// Applies migration files that are not already in supabase_migrations.schema_migrations.
 const result = spawnSync(
     'npx',
-    ['supabase', 'db', 'push', '--db-url', dbUrl, '--linked=false', '--yes'],
-    { stdio: 'inherit', shell: process.platform === 'win32' }
+    ['supabase', 'db', 'push', '--yes'],
+    { stdio: 'inherit', shell: process.platform === 'win32', env }
 )
 
 if (result.error) {
