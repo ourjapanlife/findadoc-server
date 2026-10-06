@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { prefectureTranslations } from '../../utils/japanesePrefectures.js'
 import { mapped, needsReview, type MapOutcome } from './types.js'
 
@@ -10,6 +13,11 @@ export type CanonicalCity = {
     prefectureEn: string
     nameEn: string
     nameJa: string
+}
+
+/** One row of the official municipality list. `lgCode` is 全国地方公共団体コード. */
+export type OfficialMunicipality = CanonicalCity & {
+    lgCode: string
 }
 
 export type CitySource = {
@@ -151,6 +159,42 @@ const COMPASS_TO_WARD: Record<string, string> = {
     south: '南区',
     minami: '南区',
     chuo: '中央区'
+}
+
+/** Slug for a frozen English city name. Suffixes are already gone. */
+export function citySlug(nameEn: string): string {
+    return nameEn.trim().toLowerCase().replace(/\s+/g, '-')
+}
+
+const OFFICIAL_MUNICIPALITIES: OfficialMunicipality[] = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'municipalities.json'), 'utf8')
+)
+
+const OFFICIAL_BY_JA = new Map(
+    OFFICIAL_MUNICIPALITIES.map(city => [`${city.prefectureEn}|${city.nameJa}`, city])
+)
+
+/**
+ * Every search city this server owns. Built from the Address Base Registry by
+ * utils/buildMunicipalityVocabulary.py and shaped by docs/city-rules.md.
+ * Designated-city wards are not in this list. Tokyo's 23 wards are.
+ */
+export function vocabularyCities(): OfficialMunicipality[] {
+    return OFFICIAL_MUNICIPALITIES
+}
+
+function officialMatch(prefectureEn: string, nameEn: string, nameJa: string): CanonicalCity | undefined {
+    const official = OFFICIAL_BY_JA.get(`${prefectureEn}|${nameJa}`)
+
+    if (!official || citySlug(nameEn) !== citySlug(official.nameEn)) {
+        return undefined
+    }
+
+    return {
+        prefectureEn: official.prefectureEn,
+        nameEn: official.nameEn,
+        nameJa: official.nameJa
+    }
 }
 
 export const TOKYO_WARDS: CanonicalCity[] = [
@@ -320,7 +364,7 @@ function townFromDistrict(prefectureEn: string, cityEn: string, cityJa: string):
         return undefined
     }
 
-    return { prefectureEn, nameEn: parts[0].replace(/\s+city$/i, ''), nameJa: townJa }
+    return officialMatch(prefectureEn, parts[0].replace(/\s+city$/i, ''), townJa)
 }
 
 function selfMap(prefectureEn: string, cityEn: string, cityJa: string): CanonicalCity | undefined {
@@ -345,7 +389,7 @@ function selfMap(prefectureEn: string, cityEn: string, cityJa: string): Canonica
         return undefined
     }
 
-    return { prefectureEn, nameEn, nameJa: ja }
+    return officialMatch(prefectureEn, nameEn, ja)
 }
 
 function explicitAlias(prefectureEn: string, cityEn: string, cityJa: string): CanonicalCity | undefined {

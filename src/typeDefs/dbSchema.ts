@@ -54,7 +54,6 @@ export interface SubmissionRow {
     google_maps_url: string
     healthcare_professional_name: string
     spoken_languages: gqlType.Locale[]
-    autofill_place_from_submission_url: boolean
     // Used for approvesubmission with partial data
     facility_partial: gqlType.FacilitySubmission | null
     healthcare_professionals_partial: gqlType.HealthcareProfessionalSubmission[] | null

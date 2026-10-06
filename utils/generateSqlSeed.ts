@@ -191,7 +191,7 @@ export const generateSqlSeed = async () => {
             const submissionStatement = `INSERT INTO submissions (
                 id, "google_maps_url", "healthcare_professional_name", "spoken_languages", 
                 facility_partial, healthcare_professionals_partial, 
-                status, hps_id, facilities_id, "autofill_place_from_submission_url",
+                status, hps_id, facilities_id,
                 "created_date", "updated_date"
             ) VALUES (
                 ${toSqlValue(submissionId)}, 
@@ -203,7 +203,6 @@ export const generateSqlSeed = async () => {
                 ${toSqlValue(statusString)},
                 ${toSqlValue(null)},
                 ${toSqlValue(null)},
-                ${toSqlValue(false)},
                 ${toSqlValue(new Date().toISOString())},
                 ${toSqlValue(new Date().toISOString())}
             );`

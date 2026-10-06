@@ -64,7 +64,7 @@ export function camelToSnake(str: string): string {
 //   - overrides: GQL fields where the DB column doesn't follow camelToSnake
 
 /** GQL fields that don't map to a DB column (resolved via junction tables or nested resolvers) */
-const FACILITY_SKIP = new Set(['healthcareProfessionalIds'])
+const FACILITY_SKIP = new Set(['healthcareProfessionalIds', 'city'])
 const HP_SKIP = new Set(['facilityIds'])
 
 /** JSONB columns on hps that may be used in PostgREST .contains() filters.
@@ -119,7 +119,13 @@ function buildSelectString(
  * Always includes 'id'. Only includes columns the client actually requested.
  */
 export function buildFacilitySelectString(requestedFields: Set<string>): string {
-    return buildSelectString(requestedFields, { skip: FACILITY_SKIP })
+    const select = buildSelectString(requestedFields, { skip: FACILITY_SKIP })
+
+    if (requestedFields.has('city') && !select.split(',').includes('city_id')) {
+        return `${select},city_id`
+    }
+
+    return select
 }
 
 /**

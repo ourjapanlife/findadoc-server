@@ -10,7 +10,13 @@
 - Prefecture keys come from `utils/japanesePrefectures.ts`.
 - A district (郡), a street, or an English/Japanese pair that names two different places stays unresolved. Do not guess. Osaka and Sakai both have Kita and Nishi, so a bare North Ward is not Osaka.
 
-Alias lookup lives in `src/vocabulary/`. It is not imported by resolvers or services, so API responses stay on the stored strings until #1011. City table: #1009. Backfill: #1011.
+Alias lookup lives in `src/vocabulary/`. It is not imported by resolvers or services, so stored `cityEn` and `cityJa` stay as they are until #1011. The city table is #1009: every current municipality from the Address Base Registry, shaped by the rules above. Designated-city wards are not rows. Tokyo's 23 wards are. Refresh with `utils/buildMunicipalityVocabulary.py` and match on `lg_code`. The alias map only returns a row that already exists. Backfill: #1011.
+
+## Affiliations
+
+A society or collaboration is a row in `affiliations`, not a Postgres enum (#1029). The first row is the Intercultural Psychiatric Society of Japan. Japanese name, website, and logo stay empty until that society sends them.
+
+`affiliation_memberships` attaches that row to one facility or one healthcare professional. Do not attach the existing directory in this change. Bulk CSV import and the profile-card mark are later tickets.
 
 ## Places
 
@@ -19,4 +25,4 @@ Alias lookup lives in `src/vocabulary/`. It is not imported by resolvers or serv
 - Store `place_id`. Refresh it if it is older than 12 months.
 - Places latitude and longitude last at most 30 days, then delete or refresh.
 - Do not store a Places display name, formatted address, phone, website, hours, photos, or reviews as directory data.
-- Do not extend `utils/submissionDataFromGoogleMaps.ts`. Removing it is #1008. The picker is #1012. The facility resolver is #1013.
+- The Maps URL enrichment path is gone (#1008). Do not copy a Places payload into a submission. The picker is #1012. The facility resolver is #1013.

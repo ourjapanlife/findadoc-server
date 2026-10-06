@@ -86,7 +86,23 @@ export function mapKyselyFacilityToGraphQL(
         mapLongitude: cleanRow.map_longitude,
         healthcareProfessionalIds,
         createdDate: cleanRow.created_date,
-        updatedDate: cleanRow.updated_date
+        updatedDate: cleanRow.updated_date,
+        ...facilityLocationFields(cleanRow)
+    }
+}
+
+export function facilityLocationFields(row: {
+    city_id?: string | null
+    google_place_id?: string | null
+    source?: string | null
+    verification_status?: string | null
+}): Pick<gqlTypes.Facility, 'cityId' | 'googlePlaceId' | 'source' | 'verificationStatus'> {
+    return {
+        cityId: row.city_id ?? null,
+        googlePlaceId: row.google_place_id ?? null,
+        source: (row.source ?? null) as gqlTypes.FacilitySource | null,
+        verificationStatus: (row.verification_status
+            ?? gqlTypes.FacilityVerificationStatus.UnverifiedLocation) as gqlTypes.FacilityVerificationStatus
     }
 }
 
@@ -98,7 +114,6 @@ export function mapDbEntityTogqlEntity(row: dbSchema.SubmissionRow): gqlTypes.Su
         googleMapsUrl: row.google_maps_url,
         healthcareProfessionalName: row.healthcare_professional_name,
         spokenLanguages: row.spoken_languages as gqlTypes.Locale[],
-        autofillPlaceFromSubmissionUrl: row.autofill_place_from_submission_url,
         facility: row.facility_partial ? {
             ...row.facility_partial,
             healthcareProfessionalIds: row.facility_partial.healthcareProfessionalIds ?? [] // ← FIX!
@@ -121,8 +136,6 @@ export function mapGqlEntityToDbEntity(
         google_maps_url: input.googleMapsUrl ?? '',
         healthcare_professional_name: input.healthcareProfessionalName ?? '',
         spoken_languages: (input.spokenLanguages ?? []) as gqlTypes.Locale[],
-        autofill_place_from_submission_url: false,
-         
         facility_partial: null,
          
         healthcare_professionals_partial: null,
@@ -149,7 +162,6 @@ export function mapKyselySubmissionToGraphQL(
         googleMapsUrl: cleanSubmissionRow.google_maps_url!,
         healthcareProfessionalName: cleanSubmissionRow.healthcare_professional_name!,
         spokenLanguages: cleanSubmissionRow.spoken_languages!,
-        autofillPlaceFromSubmissionUrl: cleanSubmissionRow.autofill_place_from_submission_url,
         facility: cleanSubmissionRow.facility_partial ? {
             ...cleanSubmissionRow.facility_partial,
             healthcareProfessionalIds: cleanSubmissionRow.facility_partial.healthcareProfessionalIds ?? []

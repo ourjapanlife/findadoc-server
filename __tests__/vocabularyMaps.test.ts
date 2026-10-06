@@ -1,9 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { resolveSearchCity } from '../src/vocabulary/cityMap.js'
+import { citySlug, resolveSearchCity, vocabularyCities } from '../src/vocabulary/cityMap.js'
 import { mapLanguage, PUBLISHED_LOCALES } from '../src/vocabulary/languageMap.js'
 import { mapPaymentBrand } from '../src/vocabulary/paymentBrandMap.js'
+import { prefectureTranslations } from '../utils/japanesePrefectures.js'
 
 const root = path.resolve(import.meta.dirname, '..')
 
@@ -96,6 +97,11 @@ describe('resolveSearchCity', () => {
         expect(mappedCity('Akita', 'Akita', '秋田市')).toMatchObject({ nameEn: 'Akita', nameJa: '秋田市' })
     })
 
+    it('refuses a municipality that is not in the official list', () => {
+        expect(city('Hokkaido', 'Foo', 'フー市')).toEqual({ status: 'needs_review', reason: 'unmapped' })
+        expect(city('Hokkaido', 'Esashi', '枝幸町')).toEqual({ status: 'needs_review', reason: 'unmapped' })
+    })
+
     it('maps the reviewed town and typo rows and leaves a bare district', () => {
         expect(mappedCity('Fukui', 'Tsurgua', '敦賀市')).toMatchObject({ nameEn: 'Tsuruga', nameJa: '敦賀市' })
         expect(mappedCity('Osaka', 'Minoh', '府箕面市')).toMatchObject({ nameEn: 'Minoh', nameJa: '箕面市' })
@@ -186,6 +192,33 @@ describe('vocabulary maps stay off the API', () => {
 
         for (const locale of PUBLISHED_LOCALES) {
             expect(schema).toContain(locale)
+        }
+    })
+})
+
+describe('vocabularyCities', () => {
+    it('is the official municipality list, with one slug per prefecture', () => {
+        const cities = vocabularyCities()
+        const keys = cities.map(searchCity => `${searchCity.prefectureEn}|${citySlug(searchCity.nameEn)}`)
+        const wards = cities.filter(searchCity => searchCity.nameJa.endsWith('区'))
+
+        expect(cities).toHaveLength(1747)
+        expect(new Set(keys).size).toBe(keys.length)
+        expect(new Set(cities.map(searchCity => searchCity.lgCode)).size).toBe(cities.length)
+        expect(wards).toHaveLength(23)
+        expect(new Set(wards.map(searchCity => searchCity.prefectureEn))).toEqual(new Set(['Tokyo']))
+        expect(cities).toContainEqual({ lgCode: '131024', prefectureEn: 'Tokyo', nameEn: 'Chuo', nameJa: '中央区' })
+        expect(cities).toContainEqual({ lgCode: '192147', prefectureEn: 'Yamanashi', nameEn: 'Chuo', nameJa: '中央市' })
+        expect(cities).toContainEqual({ lgCode: '271004', prefectureEn: 'Osaka', nameEn: 'Osaka', nameJa: '大阪市' })
+        expect(cities).toContainEqual({ lgCode: '011002', prefectureEn: 'Hokkaido', nameEn: 'Sapporo', nameJa: '札幌市' })
+        expect(cities).toContainEqual({ lgCode: '013617', prefectureEn: 'Hokkaido', nameEn: 'Esashi', nameJa: '江差町' })
+        expect(cities.find(searchCity => searchCity.prefectureEn === 'Osaka' && searchCity.nameEn === 'Chuo')).toBeUndefined()
+        expect(cities.find(searchCity => searchCity.nameJa === '札幌市中央区')).toBeUndefined()
+
+        for (const searchCity of cities) {
+            expect(prefectureTranslations[searchCity.prefectureEn]).toBeTruthy()
+            expect(searchCity.lgCode).toMatch(/^\d{6}$/)
+            expect(searchCity.nameEn).not.toMatch(/city|ward|district/i)
         }
     })
 })
