@@ -21,6 +21,8 @@ type FacilityRow = {
     prefecture_en: string | null
     city_en: string | null
     city_ja: string | null
+    address_line_1_en: string | null
+    address_line_1_ja: string | null
 }
 
 const write = process.argv.includes('--write')
@@ -70,7 +72,9 @@ async function main() {
                    city_id,
                    contact #>> '{address,prefectureEn}' as prefecture_en,
                    contact #>> '{address,cityEn}' as city_en,
-                   contact #>> '{address,cityJa}' as city_ja
+                   contact #>> '{address,cityJa}' as city_ja,
+                   contact #>> '{address,addressLine1En}' as address_line_1_en,
+                   contact #>> '{address,addressLine1Ja}' as address_line_1_ja
             from facilities
         `)
         const weighted: WeightedFacilityCity[] = facilities.rows.map(row => ({
@@ -79,7 +83,9 @@ async function main() {
             cityId: row.city_id,
             prefectureEn: row.prefecture_en ?? '',
             cityEn: row.city_en ?? '',
-            cityJa: row.city_ja ?? ''
+            cityJa: row.city_ja ?? '',
+            addressLine1En: row.address_line_1_en ?? '',
+            addressLine1Ja: row.address_line_1_ja ?? ''
         }))
         const report = reportFacilityCities(weighted, cities)
 
@@ -114,7 +120,9 @@ async function main() {
                     cityId: row.city_id,
                     prefectureEn: row.prefecture_en ?? '',
                     cityEn: row.city_en ?? '',
-                    cityJa: row.city_ja ?? ''
+                    cityJa: row.city_ja ?? '',
+                    addressLine1En: row.address_line_1_en ?? '',
+                    addressLine1Ja: row.address_line_1_ja ?? ''
                 }, cities)
 
                 if (plan.action !== 'assign') {

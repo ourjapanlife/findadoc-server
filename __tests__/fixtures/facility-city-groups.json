@@ -1,235 +1,1488 @@
 [
-  {"prefectureEn":"Tokyo","cityEn":"Minato City","cityJa":"港区","n":20},
-  {"prefectureEn":"Tokyo","cityEn":"Shibuya","cityJa":"渋谷区","n":14},
-  {"prefectureEn":"Tokyo","cityEn":"Meguro","cityJa":"目黒区","n":11},
-  {"prefectureEn":"Fukuoka","cityEn":"Chuo Ward","cityJa":"中央区","n":11},
-  {"prefectureEn":"Tokyo","cityEn":"Chuo City","cityJa":"中央区","n":9},
-  {"prefectureEn":"Tokyo","cityEn":"Shinjuku","cityJa":"新宿区","n":9},
-  {"prefectureEn":"Tokyo","cityEn":"Setagaya","cityJa":"世田谷区","n":9},
-  {"prefectureEn":"Kagoshima","cityEn":"Kagoshima","cityJa":"鹿児島市","n":8},
-  {"prefectureEn":"Mie","cityEn":"Matsusaka","cityJa":"松阪市","n":8},
-  {"prefectureEn":"Tokushima","cityEn":"Tokushima","cityJa":"徳島市","n":8},
-  {"prefectureEn":"Akita","cityEn":"Akita","cityJa":"秋田市","n":6},
-  {"prefectureEn":"Fukuoka","cityEn":"Kurume","cityJa":"久留米市","n":6},
-  {"prefectureEn":"Mie","cityEn":"Tsu","cityJa":"津市","n":6},
-  {"prefectureEn":"Tokyo","cityEn":"Nakano","cityJa":"中野区","n":6},
-  {"prefectureEn":"Tokyo","cityEn":"Suginami","cityJa":"杉並区","n":5},
-  {"prefectureEn":"Ishikawa","cityEn":"Kanazawa","cityJa":"金沢市","n":5},
-  {"prefectureEn":"Fukuoka","cityEn":"Sawara Ward","cityJa":"早良区","n":5},
-  {"prefectureEn":"Mie","cityEn":"Yokkaichi","cityJa":"四日市市","n":5},
-  {"prefectureEn":"Toyama","cityEn":"Toyama","cityJa":"富山市","n":4},
-  {"prefectureEn":"Tokyo","cityEn":"Chiyoda City","cityJa":"千代田区","n":4},
-  {"prefectureEn":"Hyogo","cityEn":"Kobe","cityJa":"神戸市","n":4},
-  {"prefectureEn":"Hokkaido","cityEn":"Asahikawa","cityJa":"旭川市","n":4},
-  {"prefectureEn":"Yamagata","cityEn":"Yamagata","cityJa":"山形市","n":4},
-  {"prefectureEn":"Hokkaido","cityEn":"Hakodate","cityJa":"函館市","n":4},
-  {"prefectureEn":"Osaka","cityEn":"Chuo Ward","cityJa":"中央区","n":4},
-  {"prefectureEn":"Fukui","cityEn":"Fukui","cityJa":"福井市","n":4},
-  {"prefectureEn":"Fukuoka","cityEn":"Hakata Ward","cityJa":"博多区","n":4},
-  {"prefectureEn":"Miyagi","cityEn":"Sendai, Aoba Ward","cityJa":"仙台市青葉区","n":4},
-  {"prefectureEn":"Yamanashi","cityEn":"Fuefuki","cityJa":"笛吹市","n":3},
-  {"prefectureEn":"Hyogo","cityEn":"Amagasaki","cityJa":"尼崎市","n":3},
-  {"prefectureEn":"Yamaguchi","cityEn":"Shimonoseki","cityJa":"下関市","n":3},
-  {"prefectureEn":"Yamanashi","cityEn":"Kofu","cityJa":"甲府市","n":3},
-  {"prefectureEn":"Kanagawa","cityEn":"Yokohama","cityJa":"横浜市","n":3},
-  {"prefectureEn":"Osaka","cityEn":"North Ward","cityJa":"北区","n":3},
-  {"prefectureEn":"Fukuoka","cityEn":"Higashi Ward","cityJa":"東区","n":3},
-  {"prefectureEn":"Okinawa","cityEn":"Naha","cityJa":"那覇市","n":3},
-  {"prefectureEn":"Osaka","cityEn":"Suita","cityJa":"吹田市","n":3},
-  {"prefectureEn":"Tokyo","cityEn":"Taito City","cityJa":"台東区","n":3},
-  {"prefectureEn":"Tokushima","cityEn":"Naruto","cityJa":"鳴門市","n":3},
-  {"prefectureEn":"Mie","cityEn":"Kuwana","cityJa":"桑名市","n":3},
-  {"prefectureEn":"Yamaguchi","cityEn":"Iwakuni","cityJa":"岩国市","n":3},
-  {"prefectureEn":"Fukuoka","cityEn":"East Ward","cityJa":"東区","n":3},
-  {"prefectureEn":"Fukui","cityEn":"Sakai","cityJa":"坂井市","n":3},
-  {"prefectureEn":"Tochigi","cityEn":"Moka","cityJa":"真岡市","n":3},
-  {"prefectureEn":"Fukushima","cityEn":"Koriyama","cityJa":"郡山市","n":3},
-  {"prefectureEn":"Fukuoka","cityEn":"Kasuya District","cityJa":"糟屋郡","n":3},
-  {"prefectureEn":"Fukui","cityEn":"Tsuruga","cityJa":"敦賀市","n":2},
-  {"prefectureEn":"Ishikawa","cityEn":"Nanao","cityJa":"七尾市","n":2},
-  {"prefectureEn":"Yamaguchi","cityEn":"Yamaguchi","cityJa":"山口市","n":2},
-  {"prefectureEn":"Mie","cityEn":"Nabari","cityJa":"名張市","n":2},
-  {"prefectureEn":"Okinawa","cityEn":"Okinawa","cityJa":"沖縄市","n":2},
-  {"prefectureEn":"Osaka","cityEn":"Yodogawa Ward","cityJa":"淀川区","n":2},
-  {"prefectureEn":"Fukuoka","cityEn":"East Ward","cityJa":"福岡市東区","n":2},
-  {"prefectureEn":"Fukuoka","cityEn":"Iizuka","cityJa":"飯塚市","n":2},
-  {"prefectureEn":"Niigata","cityEn":"Chuo Ward","cityJa":"中央区","n":2},
-  {"prefectureEn":"Osaka","cityEn":"Naniwa Ward","cityJa":"浪速区","n":2},
-  {"prefectureEn":"Mie","cityEn":"Ise","cityJa":"伊勢市","n":2},
-  {"prefectureEn":"Kochi","cityEn":"Kochi","cityJa":"高知市","n":2},
-  {"prefectureEn":"Osaka","cityEn":"West Ward","cityJa":"西区","n":2},
-  {"prefectureEn":"Fukuoka","cityEn":"Omuta","cityJa":"大牟田市","n":2},
-  {"prefectureEn":"Kumamoto","cityEn":"Chuo Ward","cityJa":"中央区","n":2},
-  {"prefectureEn":"Osaka","cityEn":"Hirakata","cityJa":"枚方市","n":2},
-  {"prefectureEn":"Fukuoka","cityEn":"Kokurakita Ward","cityJa":"北九州市小倉北区","n":2},
-  {"prefectureEn":"Yamanashi","cityEn":"Hokuto","cityJa":"北杜市","n":2},
-  {"prefectureEn":"Tochigi","cityEn":"Nikko","cityJa":"日光","n":2},
-  {"prefectureEn":"Toyama","cityEn":"Nakaniikawa District","cityJa":"中新川郡","n":2},
-  {"prefectureEn":"Hokkaido","cityEn":"Kushiro","cityJa":"釧路市","n":2},
-  {"prefectureEn":"Toyama","cityEn":"Takaoka","cityJa":"高岡市","n":2},
-  {"prefectureEn":"Fukuoka","cityEn":"Kitakyushu, Kokuraminami Ward","cityJa":"北九州市小倉南区","n":2},
-  {"prefectureEn":"Tochigi","cityEn":"Nasushiobara","cityJa":"那須塩原市","n":2},
-  {"prefectureEn":"Fukuoka","cityEn":"West Ward","cityJa":"西区","n":2},
-  {"prefectureEn":"Fukuoka","cityEn":"South Ward","cityJa":"南区","n":2},
-  {"prefectureEn":"Osaka","cityEn":"Tennoji Ward","cityJa":"天王寺区","n":2},
-  {"prefectureEn":"Mie","cityEn":"Suzuka","cityJa":"鈴鹿市","n":2},
-  {"prefectureEn":"Hokkaido","cityEn":"Sapporo, Chuo Ward","cityJa":"札幌市中央区","n":2},
-  {"prefectureEn":"Osaka","cityEn":"Sakai, West Ward","cityJa":"堺市西区","n":2},
-  {"prefectureEn":"Osaka","cityEn":"Neyagawa","cityJa":"寝屋川市","n":2},
-  {"prefectureEn":"Ehime","cityEn":"Matsuyama","cityJa":"松山市","n":2},
-  {"prefectureEn":"Kumamoto","cityEn":"Minami Ward","cityJa":"南区","n":2},
-  {"prefectureEn":"Hokkaido","cityEn":"Sapporo, Toyohira Ward","cityJa":"札幌市豊平区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"West Ward","cityJa":"福岡市西区","n":1},
-  {"prefectureEn":"Miyagi","cityEn":"Osaki, Matsuyamasengoku","cityJa":"大崎市松山千石字","n":1},
-  {"prefectureEn":"Saga","cityEn":"Kasemachi","cityJa":"嘉瀬町","n":1},
-  {"prefectureEn":"Ehime","cityEn":"Niihama","cityJa":"新居浜市","n":1},
-  {"prefectureEn":"Mie","cityEn":"Inabe","cityJa":"いなべ市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Tsurumi Ward","cityJa":"鶴見区","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Ikeda","cityJa":"池田","n":1},
-  {"prefectureEn":"Ishikawa","cityEn":"Suzu","cityJa":"珠洲市","n":1},
-  {"prefectureEn":"Iwate","cityEn":"Morioka","cityJa":"盛岡市","n":1},
-  {"prefectureEn":"Tokyo","cityEn":"Bunkyo City","cityJa":"文京区","n":1},
-  {"prefectureEn":"Iwate","cityEn":"Miyako","cityJa":"宮古市","n":1},
-  {"prefectureEn":"Aomori","cityEn":"Hirosaki","cityJa":"弘前市","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Chuo Ward","cityJa":"福岡市中央区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Kitakyushu, Wakamatsu Ward","cityJa":"北九州市若松区","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Sakai North Ward","cityJa":"堺市北区","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Esashi, Hiyama District","cityJa":"桧山郡江差町","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Osakasayama","cityJa":"大阪狭山市","n":1},
-  {"prefectureEn":"Fukushima","cityEn":"Sukagawa","cityJa":"須賀川市","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Obihiro","cityJa":"帯広市","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Sapporo, North Ward","cityJa":"札幌市北区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Watanabedori 2-4-28","cityJa":"中央区","n":1},
-  {"prefectureEn":"Kumamoto","cityEn":"Kita Ward","cityJa":"北区","n":1},
-  {"prefectureEn":"Tochigi","cityEn":"Otawara","cityJa":"大田原市","n":1},
-  {"prefectureEn":"Yamagata","cityEn":"Sakata","cityJa":"酒田市","n":1},
-  {"prefectureEn":"Akita","cityEn":"Daisen","cityJa":"秋田市","n":1},
-  {"prefectureEn":"Nagasaki","cityEn":"Nagasaki","cityJa":"長崎市","n":1},
-  {"prefectureEn":"Fukui","cityEn":"Awara","cityJa":"あわら市","n":1},
-  {"prefectureEn":"","cityEn":"Hakata Ward","cityJa":"博多区","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Tomakomai","cityJa":"苫小牧市","n":1},
-  {"prefectureEn":"Niigata","cityEn":"Konan Ward","cityJa":"港南区","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Izumiotsu","cityJa":"泉大津市","n":1},
-  {"prefectureEn":"Kagoshima","cityEn":"Satsuma","cityJa":"薩摩郡","n":1},
-  {"prefectureEn":"Tochigi","cityEn":"Sano","cityJa":"佐野市","n":1},
-  {"prefectureEn":"Mie","cityEn":"Mie","cityJa":"三重郡","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Chitose","cityJa":"千歳","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Abuta District","cityJa":"虻田郡","n":1},
-  {"prefectureEn":"Ishikawa","cityEn":"Nonoichi","cityJa":"野々市市","n":1},
-  {"prefectureEn":"Kochi","cityEn":"Shimanto","cityJa":"四万十市","n":1},
-  {"prefectureEn":"Mie","cityEn":"Owase","cityJa":"尾鷲市","n":1},
-  {"prefectureEn":"Yamaguchi","cityEn":"Hagi","cityJa":"萩市","n":1},
-  {"prefectureEn":"Nagano","cityEn":"Azumino","cityJa":"安曇野市","n":1},
-  {"prefectureEn":"Akita","cityEn":"Niida","cityJa":"秋田市","n":1},
-  {"prefectureEn":"Tokyo","cityEn":"Setagaya","cityJa":"世田谷","n":1},
-  {"prefectureEn":"Miyagi","cityEn":"Miyagi District, Rifu","cityJa":"宮城郡利府町","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Ebetsu","cityJa":"江別市","n":1},
-  {"prefectureEn":"Saitama","cityEn":"Urawa Ward","cityJa":"浦和区","n":1},
-  {"prefectureEn":"Tokyo","cityEn":"Shinagawa","cityJa":"品川区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Chikugo","cityJa":"筑後市","n":1},
-  {"prefectureEn":"Okinawa","cityEn":"Nakagami District","cityJa":"中頭郡","n":1},
-  {"prefectureEn":"Mie","cityEn":"Taki District","cityJa":"多気郡","n":1},
-  {"prefectureEn":"Toyama","cityEn":"Nanto","cityJa":"南砺市","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Sapporo, East Ward","cityJa":"札幌市東区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"South Ward","cityJa":"福岡市南区","n":1},
-  {"prefectureEn":"Akita","cityEn":"Kita Akita","cityJa":"北秋田市","n":1},
-  {"prefectureEn":"Oita","cityEn":"Beppu","cityJa":"別府市","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Minami Ward","cityJa":"南区","n":1},
-  {"prefectureEn":"Iwate","cityEn":"Kitakami","cityJa":"北上市","n":1},
-  {"prefectureEn":"Ishikawa","cityEn":"Nonoichi","cityJa":"野々市","n":1},
-  {"prefectureEn":"Ehime","cityEn":"Toon","cityJa":"東温市","n":1},
-  {"prefectureEn":"Yamagata","cityEn":"Higashine","cityJa":"東根市","n":1},
-  {"prefectureEn":"Yamanashi","cityEn":"Kai","cityJa":"甲斐市","n":1},
-  {"prefectureEn":"Hyogo","cityEn":"Sanda","cityJa":"三田市","n":1},
-  {"prefectureEn":"Ishikawa","cityEn":"Anamizu, Hosu District","cityJa":"穴水町字","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Kutchan, Abuta District North 4","cityJa":"虻田郡倶知安町北4","n":1},
-  {"prefectureEn":"Toyama","cityEn":"Kurobe","cityJa":"黒部市","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Chuo Ward","cityJa":"福岡市","n":1},
-  {"prefectureEn":"Tochigi","cityEn":"Takenezawa, Shioya District","cityJa":"塩谷郡高根沢町大字","n":1},
-  {"prefectureEn":"Yamagata","cityEn":"Murayama","cityJa":"村山市","n":1},
-  {"prefectureEn":"Oita","cityEn":"Oita","cityJa":"大分市","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Jonan Ward","cityJa":"城南区","n":1},
-  {"prefectureEn":"Okinawa","cityEn":"Urasoe","cityJa":"浦添市","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Yahatanishi Ward","cityJa":"北九州市八幡西区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Kasuga","cityJa":"春日市","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Sapporo, Nishi Ward","cityJa":"札幌市西区","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Otaru","cityJa":"小樽市","n":1},
-  {"prefectureEn":"Niigata","cityEn":"West Ward","cityJa":"西区","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Minoh","cityJa":"府箕面市","n":1},
-  {"prefectureEn":"Nagano","cityEn":"Ueda","cityJa":"上田市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Abeno Ward","cityJa":"阿倍野区","n":1},
-  {"prefectureEn":"Hyogo","cityEn":"Kawanishi","cityJa":"川西市","n":1},
-  {"prefectureEn":"Mie","cityEn":"Watarai","cityJa":"度会郡","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Higashiyodogawa Ward","cityJa":"東淀川区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Kitakyushu, Tobata Ward","cityJa":"北九州市戸畑区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Nishi Ward","cityJa":"福岡市西区","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Setana District","cityJa":"瀬棚郡","n":1},
-  {"prefectureEn":"Tokyo","cityEn":"Nerima","cityJa":"練馬区","n":1},
-  {"prefectureEn":"Iwate","cityEn":"Ichinoseki","cityJa":"一関市","n":1},
-  {"prefectureEn":"Nagano","cityEn":"Kitaazumi District","cityJa":"北安曇郡","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Hakata Ward","cityJa":"福岡市博多区 ","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Toyako, Abuta District","cityJa":"虻田郡洞爺湖町","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Shimizu, Kamikawa District","cityJa":"上川郡清水町","n":1},
-  {"prefectureEn":"Hyogo","cityEn":"Nishinomiya","cityJa":"西宮市","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Yahatanishi Ward","cityJa":"八幡西区","n":1},
-  {"prefectureEn":"Kumamoto","cityEn":"Uki","cityJa":"宇城市","n":1},
-  {"prefectureEn":"Niigata","cityEn":"Joetsu","cityJa":"上越市吉川区","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Minoh","cityJa":"箕面市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Hannan","cityJa":"阪南市","n":1},
-  {"prefectureEn":"Toyama","cityEn":"Himi","cityJa":"氷見市","n":1},
-  {"prefectureEn":"Fukushima","cityEn":"Iwaki","cityJa":"いわき市","n":1},
-  {"prefectureEn":"Kagoshima","cityEn":"Kirishima","cityJa":"霧島市","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Shinhidaka, Hidaka District","cityJa":"日高郡新ひだか町","n":1},
-  {"prefectureEn":"Nagano","cityEn":"Shimotakai District","cityJa":"下高井郡","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Sakai, South Ward","cityJa":"堺市南区","n":1},
-  {"prefectureEn":"Tochigi","cityEn":"Shimotsuke","cityJa":"下野市","n":1},
-  {"prefectureEn":"Iwate","cityEn":"Kamaishi","cityJa":"釜石市","n":1},
-  {"prefectureEn":"Tokyo","cityEn":"Chuo　City","cityJa":"中央区","n":1},
-  {"prefectureEn":"Yamaguchi","cityEn":"Hofu","cityJa":"防府市","n":1},
-  {"prefectureEn":"Aichi","cityEn":"Kitanagoya","cityJa":"北名古屋市","n":1},
-  {"prefectureEn":"Yamagata","cityEn":"Nanyo","cityJa":"南陽市","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Sapporo, Atsubetsu Ward","cityJa":"札幌市　厚別区","n":1},
-  {"prefectureEn":"Fukui","cityEn":"Tsurgua","cityJa":"敦賀市","n":1},
-  {"prefectureEn":"Miyagi","cityEn":"Osaki","cityJa":"大崎市","n":1},
-  {"prefectureEn":"Saga","cityEn":"Imari","cityJa":"伊万里市","n":1},
-  {"prefectureEn":"Tochigi","cityEn":"Yaita","cityJa":"矢板市","n":1},
-  {"prefectureEn":"Ehime","cityEn":"Imabari","cityJa":"今治市","n":1},
-  {"prefectureEn":"Tochigi","cityEn":"Utsunomiya","cityJa":"宇都宮市","n":1},
-  {"prefectureEn":"Nagano","cityEn":"Kiso District","cityJa":"木曽郡","n":1},
-  {"prefectureEn":"Kagoshima","cityEn":"Aira","cityJa":"姶良市","n":1},
-  {"prefectureEn":"Niigata","cityEn":"Nagaoka","cityJa":"長岡市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Kishiwada","cityJa":"岸和田市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Suminoe Ward","cityJa":"住之江区","n":1},
-  {"prefectureEn":"Miyagi","cityEn":"Sendai, Miyagino Ward","cityJa":"仙台市宮城野区","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Asakura","cityJa":"朝倉市","n":1},
-  {"prefectureEn":"Miyazaki","cityEn":"Miyakonojo","cityJa":"都城市","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Kitakyushu, Kokurakita Ward","cityJa":"北九州市小倉北区","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Wakkanai","cityJa":"稚内市","n":1},
-  {"prefectureEn":"Tokushima","cityEn":"Myozai District","cityJa":"名西郡","n":1},
-  {"prefectureEn":"Tokushima","cityEn":"Yoshinogawa","cityJa":"吉野川市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Toyonaka","cityJa":"豊中市","n":1},
-  {"prefectureEn":"Ishikawa","cityEn":"Kanazawa","cityJa":"⾦沢市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Sumiyoshi Ward","cityJa":"住吉区","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Nishiyodogawa Ward","cityJa":"西淀川区","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Sapporo, West Ward","cityJa":"札幌市西区","n":1},
-  {"prefectureEn":"Hyogo","cityEn":"Ashiya","cityJa":"兵庫県","n":1},
-  {"prefectureEn":"Tokushima","cityEn":"Kaifu District","cityJa":"海部郡","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Chikushino","cityJa":"筑紫野市","n":1},
-  {"prefectureEn":"Iwate","cityEn":"Ninohe","cityJa":"二戸市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Sennan","cityJa":"泉南市","n":1},
-  {"prefectureEn":"Tokyo","cityEn":"Shinjuku","cityJa":"新宿","n":1},
-  {"prefectureEn":"Fukushima","cityEn":"Aizuwakamatsu","cityJa":"会津若松市","n":1},
-  {"prefectureEn":"Ishikawa","cityEn":"Hakui","cityJa":"羽咋市","n":1},
-  {"prefectureEn":"Yamanashi","cityEn":"Minamikoma District","cityJa":"南巨摩郡","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Izumisano","cityJa":"泉佐野市","n":1},
-  {"prefectureEn":"Fukuoka","cityEn":"Nakama","cityJa":"中間市","n":1},
-  {"prefectureEn":"Yamanashi","cityEn":"Chuo","cityJa":"中央市","n":1},
-  {"prefectureEn":"Hokkaido","cityEn":"Kutchan, Abuta District","cityJa":"田郡俱知安虻町","n":1},
-  {"prefectureEn":"Okinawa","cityEn":"Shimajiri District","cityJa":"島尻郡","n":1},
-  {"prefectureEn":"Miyagi","cityEn":"Tomiya","cityJa":"県富谷市","n":1},
-  {"prefectureEn":"Fukui","cityEn":"Sabae","cityJa":"鯖江市","n":1},
-  {"prefectureEn":"Osaka","cityEn":"Takatsuki","cityJa":"高槻市","n":1},
-  {"prefectureEn":"Hyogo","cityEn":"Minamiawaji","cityJa":"南あわじ市","n":1},
-  {"prefectureEn":"Kagoshima","cityEn":"Nishinoomote","cityJa":"西之表市","n":1},
-  {"prefectureEn":"Mie","cityEn":"Iga","cityJa":"伊賀市","n":1}
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Minato City",
+    "cityJa": "港区",
+    "n": 20
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Shibuya",
+    "cityJa": "渋谷区",
+    "n": 14
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Meguro",
+    "cityJa": "目黒区",
+    "n": 11
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Chuo Ward",
+    "cityJa": "中央区",
+    "n": 11
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Chuo City",
+    "cityJa": "中央区",
+    "n": 9
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Shinjuku",
+    "cityJa": "新宿区",
+    "n": 9
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Setagaya",
+    "cityJa": "世田谷区",
+    "n": 9
+  },
+  {
+    "prefectureEn": "Kagoshima",
+    "cityEn": "Kagoshima",
+    "cityJa": "鹿児島市",
+    "n": 8
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Matsusaka",
+    "cityJa": "松阪市",
+    "n": 8
+  },
+  {
+    "prefectureEn": "Tokushima",
+    "cityEn": "Tokushima",
+    "cityJa": "徳島市",
+    "n": 8
+  },
+  {
+    "prefectureEn": "Akita",
+    "cityEn": "Akita",
+    "cityJa": "秋田市",
+    "n": 6
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kurume",
+    "cityJa": "久留米市",
+    "n": 6
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Tsu",
+    "cityJa": "津市",
+    "n": 6
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Nakano",
+    "cityJa": "中野区",
+    "n": 6
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Suginami",
+    "cityJa": "杉並区",
+    "n": 5
+  },
+  {
+    "prefectureEn": "Ishikawa",
+    "cityEn": "Kanazawa",
+    "cityJa": "金沢市",
+    "n": 5
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Sawara Ward",
+    "cityJa": "早良区",
+    "n": 5
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Yokkaichi",
+    "cityJa": "四日市市",
+    "n": 5
+  },
+  {
+    "prefectureEn": "Toyama",
+    "cityEn": "Toyama",
+    "cityJa": "富山市",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Chiyoda City",
+    "cityJa": "千代田区",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Hyogo",
+    "cityEn": "Kobe",
+    "cityJa": "神戸市",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Asahikawa",
+    "cityJa": "旭川市",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Yamagata",
+    "cityEn": "Yamagata",
+    "cityJa": "山形市",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Hakodate",
+    "cityJa": "函館市",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Chuo Ward",
+    "cityJa": "中央区",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Fukui",
+    "cityEn": "Fukui",
+    "cityJa": "福井市",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Hakata Ward",
+    "cityJa": "博多区",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Miyagi",
+    "cityEn": "Sendai, Aoba Ward",
+    "cityJa": "仙台市青葉区",
+    "n": 4
+  },
+  {
+    "prefectureEn": "Yamanashi",
+    "cityEn": "Fuefuki",
+    "cityJa": "笛吹市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Hyogo",
+    "cityEn": "Amagasaki",
+    "cityJa": "尼崎市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Yamaguchi",
+    "cityEn": "Shimonoseki",
+    "cityJa": "下関市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Yamanashi",
+    "cityEn": "Kofu",
+    "cityJa": "甲府市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Kanagawa",
+    "cityEn": "Yokohama",
+    "cityJa": "横浜市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "North Ward",
+    "cityJa": "北区",
+    "n": 1,
+    "addressLine1En": "Tenjinbashi 7-5-15",
+    "addressLine1Ja": "天神橋７－５－１５"
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "North Ward",
+    "cityJa": "北区",
+    "n": 1,
+    "addressLine1En": "Ogimachi 2-4-20",
+    "addressLine1Ja": "扇町　２－４－２０"
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "North Ward",
+    "cityJa": "北区",
+    "n": 1,
+    "addressLine1En": "Honjonishi 1-13-15",
+    "addressLine1Ja": "本庄西1-13-15"
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Higashi Ward",
+    "cityJa": "東区",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Okinawa",
+    "cityEn": "Naha",
+    "cityJa": "那覇市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Suita",
+    "cityJa": "吹田市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Taito City",
+    "cityJa": "台東区",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Tokushima",
+    "cityEn": "Naruto",
+    "cityJa": "鳴門市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Kuwana",
+    "cityJa": "桑名市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Yamaguchi",
+    "cityEn": "Iwakuni",
+    "cityJa": "岩国市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "East Ward",
+    "cityJa": "東区",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Fukui",
+    "cityEn": "Sakai",
+    "cityJa": "坂井市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Moka",
+    "cityJa": "真岡市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Fukushima",
+    "cityEn": "Koriyama",
+    "cityJa": "郡山市",
+    "n": 3
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kasuya District",
+    "cityJa": "糟屋郡",
+    "n": 1,
+    "addressLine1En": "Chojabaruhigashi 3-2-30",
+    "addressLine1Ja": "粕屋町長者原東３－２－３０"
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kasuya District",
+    "cityJa": "糟屋郡",
+    "n": 1,
+    "addressLine1En": "Sasaguri, 4-17-29 Central",
+    "addressLine1Ja": "篠栗町中央４－１７－２９"
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kasuya District",
+    "cityJa": "糟屋郡",
+    "n": 1,
+    "addressLine1En": "Shime, Tadomi 152-1",
+    "addressLine1Ja": "志免町大字田富字牛丸152-1"
+  },
+  {
+    "prefectureEn": "Fukui",
+    "cityEn": "Tsuruga",
+    "cityJa": "敦賀市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Ishikawa",
+    "cityEn": "Nanao",
+    "cityJa": "七尾市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Yamaguchi",
+    "cityEn": "Yamaguchi",
+    "cityJa": "山口市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Nabari",
+    "cityJa": "名張市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Okinawa",
+    "cityEn": "Okinawa",
+    "cityJa": "沖縄市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Yodogawa Ward",
+    "cityJa": "淀川区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "East Ward",
+    "cityJa": "福岡市東区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Iizuka",
+    "cityJa": "飯塚市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Niigata",
+    "cityEn": "Chuo Ward",
+    "cityJa": "中央区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Naniwa Ward",
+    "cityJa": "浪速区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Ise",
+    "cityJa": "伊勢市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Kochi",
+    "cityEn": "Kochi",
+    "cityJa": "高知市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "West Ward",
+    "cityJa": "西区",
+    "n": 1,
+    "addressLine1En": "Minamihorie 1-26-10",
+    "addressLine1Ja": "南堀江1-26-10"
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "West Ward",
+    "cityJa": "西区",
+    "n": 1,
+    "addressLine1En": "Enokojima 2-1-54",
+    "addressLine1Ja": "江之子島２－１－５４"
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Omuta",
+    "cityJa": "大牟田市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Kumamoto",
+    "cityEn": "Chuo Ward",
+    "cityJa": "中央区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Hirakata",
+    "cityJa": "枚方市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kokurakita Ward",
+    "cityJa": "北九州市小倉北区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Yamanashi",
+    "cityEn": "Hokuto",
+    "cityJa": "北杜市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Nikko",
+    "cityJa": "日光",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Toyama",
+    "cityEn": "Nakaniikawa District",
+    "cityJa": "中新川郡",
+    "n": 1,
+    "addressLine1En": "Kamiichi Hoonji",
+    "addressLine1Ja": "上市上法音寺12"
+  },
+  {
+    "prefectureEn": "Toyama",
+    "cityEn": "Nakaniikawa District",
+    "cityJa": "中新川郡",
+    "n": 1,
+    "addressLine1En": "Tateyama Gohyakukoku 184",
+    "addressLine1Ja": "立山町五百石184"
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Kushiro",
+    "cityJa": "釧路市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Toyama",
+    "cityEn": "Takaoka",
+    "cityJa": "高岡市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kitakyushu, Kokuraminami Ward",
+    "cityJa": "北九州市小倉南区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Nasushiobara",
+    "cityJa": "那須塩原市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "West Ward",
+    "cityJa": "西区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "South Ward",
+    "cityJa": "南区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Tennoji Ward",
+    "cityJa": "天王寺区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Suzuka",
+    "cityJa": "鈴鹿市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Sapporo, Chuo Ward",
+    "cityJa": "札幌市中央区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Sakai, West Ward",
+    "cityJa": "堺市西区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Neyagawa",
+    "cityJa": "寝屋川市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Ehime",
+    "cityEn": "Matsuyama",
+    "cityJa": "松山市",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Kumamoto",
+    "cityEn": "Minami Ward",
+    "cityJa": "南区",
+    "n": 2
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Sapporo, Toyohira Ward",
+    "cityJa": "札幌市豊平区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "West Ward",
+    "cityJa": "福岡市西区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Miyagi",
+    "cityEn": "Osaki, Matsuyamasengoku",
+    "cityJa": "大崎市松山千石字",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Saga",
+    "cityEn": "Kasemachi",
+    "cityJa": "嘉瀬町",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Ehime",
+    "cityEn": "Niihama",
+    "cityJa": "新居浜市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Inabe",
+    "cityJa": "いなべ市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Tsurumi Ward",
+    "cityJa": "鶴見区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Ikeda",
+    "cityJa": "池田",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Ishikawa",
+    "cityEn": "Suzu",
+    "cityJa": "珠洲市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Iwate",
+    "cityEn": "Morioka",
+    "cityJa": "盛岡市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Bunkyo City",
+    "cityJa": "文京区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Iwate",
+    "cityEn": "Miyako",
+    "cityJa": "宮古市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Aomori",
+    "cityEn": "Hirosaki",
+    "cityJa": "弘前市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Chuo Ward",
+    "cityJa": "福岡市中央区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kitakyushu, Wakamatsu Ward",
+    "cityJa": "北九州市若松区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Sakai North Ward",
+    "cityJa": "堺市北区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Esashi, Hiyama District",
+    "cityJa": "桧山郡江差町",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Osakasayama",
+    "cityJa": "大阪狭山市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukushima",
+    "cityEn": "Sukagawa",
+    "cityJa": "須賀川市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Obihiro",
+    "cityJa": "帯広市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Sapporo, North Ward",
+    "cityJa": "札幌市北区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Watanabedori 2-4-28",
+    "cityJa": "中央区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Kumamoto",
+    "cityEn": "Kita Ward",
+    "cityJa": "北区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Otawara",
+    "cityJa": "大田原市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamagata",
+    "cityEn": "Sakata",
+    "cityJa": "酒田市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Akita",
+    "cityEn": "Daisen",
+    "cityJa": "秋田市",
+    "n": 1,
+    "addressLine1En": "Ohanacho 14-3",
+    "addressLine1Ja": "大花町14-3"
+  },
+  {
+    "prefectureEn": "Nagasaki",
+    "cityEn": "Nagasaki",
+    "cityJa": "長崎市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukui",
+    "cityEn": "Awara",
+    "cityJa": "あわら市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "",
+    "cityEn": "Hakata Ward",
+    "cityJa": "博多区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Tomakomai",
+    "cityJa": "苫小牧市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Niigata",
+    "cityEn": "Konan Ward",
+    "cityJa": "港南区",
+    "n": 1,
+    "addressLine1En": "Inaba 1-4-3",
+    "addressLine1Ja": "稲葉１－４－３"
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Izumiotsu",
+    "cityJa": "泉大津市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Kagoshima",
+    "cityEn": "Satsuma",
+    "cityJa": "薩摩郡",
+    "n": 1,
+    "addressLine1En": "Torai 704-4",
+    "addressLine1Ja": "虎居704-4"
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Sano",
+    "cityJa": "佐野市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Mie",
+    "cityJa": "三重郡",
+    "n": 1,
+    "addressLine1En": "Komono 986-7",
+    "addressLine1Ja": "菰野町986-7"
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Chitose",
+    "cityJa": "千歳",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Abuta District",
+    "cityJa": "虻田郡",
+    "n": 1,
+    "addressLine1En": "Kutchan Nisekohirafu 5-3-7-1",
+    "addressLine1Ja": "倶知安町ニセコひらふ5-3-7-1"
+  },
+  {
+    "prefectureEn": "Ishikawa",
+    "cityEn": "Nonoichi",
+    "cityJa": "野々市市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Kochi",
+    "cityEn": "Shimanto",
+    "cityJa": "四万十市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Owase",
+    "cityJa": "尾鷲市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamaguchi",
+    "cityEn": "Hagi",
+    "cityJa": "萩市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Nagano",
+    "cityEn": "Azumino",
+    "cityJa": "安曇野市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Akita",
+    "cityEn": "Niida",
+    "cityJa": "秋田市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Setagaya",
+    "cityJa": "世田谷",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Miyagi",
+    "cityEn": "Miyagi District, Rifu",
+    "cityJa": "宮城郡利府町",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Ebetsu",
+    "cityJa": "江別市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Saitama",
+    "cityEn": "Urawa Ward",
+    "cityJa": "浦和区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Shinagawa",
+    "cityJa": "品川区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Chikugo",
+    "cityJa": "筑後市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Okinawa",
+    "cityEn": "Nakagami District",
+    "cityJa": "中頭郡",
+    "n": 1,
+    "addressLine1En": "Nishihara, Kochi 868",
+    "addressLine1Ja": "西原町字幸地868"
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Taki District",
+    "cityJa": "多気郡",
+    "n": 1,
+    "addressLine1En": "Meiwa Oyodo Juzhi 2227-1",
+    "addressLine1Ja": "明和町大字大淀2227-1"
+  },
+  {
+    "prefectureEn": "Toyama",
+    "cityEn": "Nanto",
+    "cityJa": "南砺市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Sapporo, East Ward",
+    "cityJa": "札幌市東区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "South Ward",
+    "cityJa": "福岡市南区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Akita",
+    "cityEn": "Kita Akita",
+    "cityJa": "北秋田市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Oita",
+    "cityEn": "Beppu",
+    "cityJa": "別府市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Minami Ward",
+    "cityJa": "南区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Iwate",
+    "cityEn": "Kitakami",
+    "cityJa": "北上市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Ishikawa",
+    "cityEn": "Nonoichi",
+    "cityJa": "野々市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Ehime",
+    "cityEn": "Toon",
+    "cityJa": "東温市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamagata",
+    "cityEn": "Higashine",
+    "cityJa": "東根市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamanashi",
+    "cityEn": "Kai",
+    "cityJa": "甲斐市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hyogo",
+    "cityEn": "Sanda",
+    "cityJa": "三田市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Ishikawa",
+    "cityEn": "Anamizu, Hosu District",
+    "cityJa": "穴水町字",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Kutchan, Abuta District North 4",
+    "cityJa": "虻田郡倶知安町北4",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Toyama",
+    "cityEn": "Kurobe",
+    "cityJa": "黒部市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Chuo Ward",
+    "cityJa": "福岡市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Takenezawa, Shioya District",
+    "cityJa": "塩谷郡高根沢町大字",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamagata",
+    "cityEn": "Murayama",
+    "cityJa": "村山市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Oita",
+    "cityEn": "Oita",
+    "cityJa": "大分市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Jonan Ward",
+    "cityJa": "城南区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Okinawa",
+    "cityEn": "Urasoe",
+    "cityJa": "浦添市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Yahatanishi Ward",
+    "cityJa": "北九州市八幡西区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kasuga",
+    "cityJa": "春日市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Sapporo, Nishi Ward",
+    "cityJa": "札幌市西区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Otaru",
+    "cityJa": "小樽市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Niigata",
+    "cityEn": "West Ward",
+    "cityJa": "西区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Minoh",
+    "cityJa": "府箕面市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Nagano",
+    "cityEn": "Ueda",
+    "cityJa": "上田市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Abeno Ward",
+    "cityJa": "阿倍野区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hyogo",
+    "cityEn": "Kawanishi",
+    "cityJa": "川西市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Watarai",
+    "cityJa": "度会郡",
+    "n": 1,
+    "addressLine1En": "Tamaki Sata 1750",
+    "addressLine1Ja": "玉城町佐田１７５０"
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Higashiyodogawa Ward",
+    "cityJa": "東淀川区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kitakyushu, Tobata Ward",
+    "cityJa": "北九州市戸畑区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Nishi Ward",
+    "cityJa": "福岡市西区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Setana District",
+    "cityJa": "瀬棚郡",
+    "n": 1,
+    "addressLine1En": "Imakane 17-2",
+    "addressLine1Ja": "今金町字今金１７－２"
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Nerima",
+    "cityJa": "練馬区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Iwate",
+    "cityEn": "Ichinoseki",
+    "cityJa": "一関市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Nagano",
+    "cityEn": "Kitaazumi District",
+    "cityJa": "北安曇郡",
+    "n": 1,
+    "addressLine1En": "Ikeda 3207-1",
+    "addressLine1Ja": "池田３２０７－１"
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Hakata Ward",
+    "cityJa": "福岡市博多区 ",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Toyako, Abuta District",
+    "cityJa": "虻田郡洞爺湖町",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Shimizu, Kamikawa District",
+    "cityJa": "上川郡清水町",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hyogo",
+    "cityEn": "Nishinomiya",
+    "cityJa": "西宮市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Yahatanishi Ward",
+    "cityJa": "八幡西区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Kumamoto",
+    "cityEn": "Uki",
+    "cityJa": "宇城市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Niigata",
+    "cityEn": "Joetsu",
+    "cityJa": "上越市吉川区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Minoh",
+    "cityJa": "箕面市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Hannan",
+    "cityJa": "阪南市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Toyama",
+    "cityEn": "Himi",
+    "cityJa": "氷見市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukushima",
+    "cityEn": "Iwaki",
+    "cityJa": "いわき市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Kagoshima",
+    "cityEn": "Kirishima",
+    "cityJa": "霧島市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Shinhidaka, Hidaka District",
+    "cityJa": "日高郡新ひだか町",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Nagano",
+    "cityEn": "Shimotakai District",
+    "cityJa": "下高井郡",
+    "n": 1,
+    "addressLine1En": "Nozawaonsen Toyosato Oyu 9323",
+    "addressLine1Ja": "豊郷９３２３"
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Sakai, South Ward",
+    "cityJa": "堺市南区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Shimotsuke",
+    "cityJa": "下野市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Iwate",
+    "cityEn": "Kamaishi",
+    "cityJa": "釜石市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Chuo　City",
+    "cityJa": "中央区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamaguchi",
+    "cityEn": "Hofu",
+    "cityJa": "防府市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Aichi",
+    "cityEn": "Kitanagoya",
+    "cityJa": "北名古屋市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamagata",
+    "cityEn": "Nanyo",
+    "cityJa": "南陽市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Sapporo, Atsubetsu Ward",
+    "cityJa": "札幌市　厚別区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukui",
+    "cityEn": "Tsurgua",
+    "cityJa": "敦賀市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Miyagi",
+    "cityEn": "Osaki",
+    "cityJa": "大崎市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Saga",
+    "cityEn": "Imari",
+    "cityJa": "伊万里市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Yaita",
+    "cityJa": "矢板市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Ehime",
+    "cityEn": "Imabari",
+    "cityJa": "今治市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tochigi",
+    "cityEn": "Utsunomiya",
+    "cityJa": "宇都宮市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Nagano",
+    "cityEn": "Kiso District",
+    "cityJa": "木曽郡",
+    "n": 1,
+    "addressLine1En": "Kiso Fukushima 6613-4",
+    "addressLine1Ja": "木曽町福島6613-4"
+  },
+  {
+    "prefectureEn": "Kagoshima",
+    "cityEn": "Aira",
+    "cityJa": "姶良市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Niigata",
+    "cityEn": "Nagaoka",
+    "cityJa": "長岡市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Kishiwada",
+    "cityJa": "岸和田市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Suminoe Ward",
+    "cityJa": "住之江区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Miyagi",
+    "cityEn": "Sendai, Miyagino Ward",
+    "cityJa": "仙台市宮城野区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Asakura",
+    "cityJa": "朝倉市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Miyazaki",
+    "cityEn": "Miyakonojo",
+    "cityJa": "都城市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Kitakyushu, Kokurakita Ward",
+    "cityJa": "北九州市小倉北区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Wakkanai",
+    "cityJa": "稚内市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tokushima",
+    "cityEn": "Myozai District",
+    "cityJa": "名西郡",
+    "n": 1,
+    "addressLine1En": "Kamiyama, Jinryo Nishiokubo 60",
+    "addressLine1Ja": "神山町神領字西大久保６０"
+  },
+  {
+    "prefectureEn": "Tokushima",
+    "cityEn": "Yoshinogawa",
+    "cityJa": "吉野川市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Toyonaka",
+    "cityJa": "豊中市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Ishikawa",
+    "cityEn": "Kanazawa",
+    "cityJa": "⾦沢市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Sumiyoshi Ward",
+    "cityJa": "住吉区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Nishiyodogawa Ward",
+    "cityJa": "西淀川区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Sapporo, West Ward",
+    "cityJa": "札幌市西区",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hyogo",
+    "cityEn": "Ashiya",
+    "cityJa": "兵庫県",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tokushima",
+    "cityEn": "Kaifu District",
+    "cityJa": "海部郡",
+    "n": 1,
+    "addressLine1En": "Mugi Nakamura Sugitani 266",
+    "addressLine1Ja": "牟岐町大字中村字杉谷266"
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Chikushino",
+    "cityJa": "筑紫野市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Iwate",
+    "cityEn": "Ninohe",
+    "cityJa": "二戸市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Sennan",
+    "cityJa": "泉南市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Tokyo",
+    "cityEn": "Shinjuku",
+    "cityJa": "新宿",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukushima",
+    "cityEn": "Aizuwakamatsu",
+    "cityJa": "会津若松市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Ishikawa",
+    "cityEn": "Hakui",
+    "cityJa": "羽咋市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamanashi",
+    "cityEn": "Minamikoma District",
+    "cityJa": "南巨摩郡",
+    "n": 1,
+    "addressLine1En": "Fujikawa Aoyagimachi 1136-1",
+    "addressLine1Ja": "富士川町青柳町1136-1"
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Izumisano",
+    "cityJa": "泉佐野市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukuoka",
+    "cityEn": "Nakama",
+    "cityJa": "中間市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Yamanashi",
+    "cityEn": "Chuo",
+    "cityJa": "中央市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hokkaido",
+    "cityEn": "Kutchan, Abuta District",
+    "cityJa": "田郡俱知安虻町",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Okinawa",
+    "cityEn": "Shimajiri District",
+    "cityJa": "島尻郡",
+    "n": 1,
+    "addressLine1En": "Yaese, Hokama 171-1",
+    "addressLine1Ja": "八重瀬町字外間171-1"
+  },
+  {
+    "prefectureEn": "Miyagi",
+    "cityEn": "Tomiya",
+    "cityJa": "県富谷市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Fukui",
+    "cityEn": "Sabae",
+    "cityJa": "鯖江市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Osaka",
+    "cityEn": "Takatsuki",
+    "cityJa": "高槻市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Hyogo",
+    "cityEn": "Minamiawaji",
+    "cityJa": "南あわじ市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Kagoshima",
+    "cityEn": "Nishinoomote",
+    "cityJa": "西之表市",
+    "n": 1
+  },
+  {
+    "prefectureEn": "Mie",
+    "cityEn": "Iga",
+    "cityJa": "伊賀市",
+    "n": 1
+  }
 ]

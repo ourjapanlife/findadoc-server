@@ -1,7 +1,12 @@
-import { citySlug, resolveSearchCity, vocabularyCities, type CanonicalCity } from './cityMap.js'
+import {
+    citySlug,
+    resolveFacilityLocation,
+    vocabularyCities,
+    type CanonicalCity
+} from './cityMap.js'
 
-/** A run below this share of facilities must not write. */
-export const PUBLISHED_CITY_RATE = 0.95
+/** Every published facility must already have a canonical city before a write. */
+export const PUBLISHED_CITY_RATE = 1
 
 /**
  * Decision for one stored facility (#1011).
@@ -22,6 +27,8 @@ export type FacilityCityInput = {
     prefectureEn: string
     cityEn: string
     cityJa: string
+    addressLine1En?: string
+    addressLine1Ja?: string
 }
 
 export type FacilityCityPlan =
@@ -79,10 +86,12 @@ export function planFacilityCity(input: FacilityCityInput, cities: CityRecord[])
         return { action: 'keep', reason: 'already_assigned' }
     }
 
-    const outcome = resolveSearchCity({
+    const outcome = resolveFacilityLocation({
         prefectureEn: input.prefectureEn,
         cityEn: input.cityEn,
-        cityJa: input.cityJa
+        cityJa: input.cityJa,
+        addressLine1En: input.addressLine1En,
+        addressLine1Ja: input.addressLine1Ja
     })
 
     if (outcome.status !== 'mapped') {
