@@ -256,7 +256,7 @@ function squash(value: string): string {
 }
 
 function cleanJa(value: string): string {
-    const squashed = squash(value)
+    const squashed = squash(value).normalize('NFKC')
 
     return squashed.replace(/^[府県](?=.*[市区町村])/, '')
 }
@@ -367,6 +367,61 @@ function townFromDistrict(prefectureEn: string, cityEn: string, cityJa: string):
     return officialMatch(prefectureEn, parts[0].replace(/\s+city$/i, ''), townJa)
 }
 
+function leadingPlaceName(cityEn: string): string {
+    const first = squash(cityEn).split(/[,，]/)[0]?.trim() ?? ''
+
+    return first.replace(/\s+(city|ward|ku)$/i, '')
+}
+
+/**
+ * The Japanese value names one official municipality, exactly or as a prefix
+ * (`上越市吉川区`, `大崎市松山千石字`, `穴水町字`). English has to name that
+ * same municipality. A missing 市, a different spelling, or a bare district stays unresolved.
+ */
+function municipalityNamedInJapanese(
+    prefectureEn: string,
+    cityEn: string,
+    cityJa: string
+): CanonicalCity | undefined {
+    if (!knownPrefecture(prefectureEn) || isStreet(cityEn)) {
+        return undefined
+    }
+
+    const nameEn = leadingPlaceName(cityEn)
+    const ja = cleanJa(cityJa).replace(/大?字$/, '')
+
+    if (!nameEn || !ja) {
+        return undefined
+    }
+
+    const exact = OFFICIAL_BY_JA.get(`${prefectureEn}|${ja}`)
+
+    if (exact && citySlug(nameEn) === citySlug(exact.nameEn)) {
+        return {
+            prefectureEn: exact.prefectureEn,
+            nameEn: exact.nameEn,
+            nameJa: exact.nameJa
+        }
+    }
+
+    const prefixed = OFFICIAL_MUNICIPALITIES
+        .filter(city =>
+            city.prefectureEn === prefectureEn
+            && ja.startsWith(city.nameJa)
+            && ja.length > city.nameJa.length)
+        .sort((left, right) => right.nameJa.length - left.nameJa.length)[0]
+
+    if (!prefixed || citySlug(nameEn) !== citySlug(prefixed.nameEn)) {
+        return undefined
+    }
+
+    return {
+        prefectureEn: prefixed.prefectureEn,
+        nameEn: prefixed.nameEn,
+        nameJa: prefixed.nameJa
+    }
+}
+
 function selfMap(prefectureEn: string, cityEn: string, cityJa: string): CanonicalCity | undefined {
     const name = squash(cityEn)
     const ja = cleanJa(cityJa)
@@ -473,6 +528,12 @@ export function resolveSearchCity(source: CitySource): MapOutcome<CanonicalCity>
         return mapped(rollup)
     }
 
+    const named = municipalityNamedInJapanese(prefectureEn, usableEn, cityJa)
+
+    if (named) {
+        return mapped(named)
+    }
+
     if (ward || /ward$/i.test(usableEn)) {
         return needsReview('unmapped')
     }
@@ -483,7 +544,9 @@ export function resolveSearchCity(source: CitySource): MapOutcome<CanonicalCity>
         return mapped(town)
     }
 
-    if (/郡/.test(cityJa) || /district$/i.test(usableEn)) {
+    const districtJa = cleanJa(cityJa).replace(/大?字$/, '')
+
+    if (/郡$/.test(districtJa) || /district$/i.test(usableEn)) {
         return needsReview('district_only')
     }
 
