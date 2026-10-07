@@ -45,7 +45,7 @@ When the Japanese value names the parent city (`堺市北区`, `札幌市東区`
 
 When the value is only a ward (`中央区`, `East Ward`) and exactly one municipality in that prefecture contains it, use that municipality. When two do, leave the row unresolved. Osaka city and Sakai both have Kita-ku and Nishi-ku, so a bare `North Ward` / 北区 or `West Ward` / 西区 in Osaka prefecture waits for a person. Do not guess Osaka.
 
-When English and Japanese name different places, leave the row unresolved. Do not pick a winner. Live cases: Daisen and Niida stored with 秋田市, Ashiya stored with 兵庫県, Niigata `Konan Ward` stored with 港南区 (Yokohama's Konan-ku, not Niigata's 江南区).
+When English and Japanese name different municipalities and the address does not say which one, leave the row unresolved. Do not pick a winner. Daisen stored with 秋田市 stays unresolved until the address says 大花町, which is Daisen. Niigata `Konan Ward` stored with 港南区 stays unresolved until the address says 稲葉, which is Niigata city. Niida is Akita, because 仁井田 is inside Akita city. Ashiya stored with 兵庫県 is Ashiya.
 
 ## Same reading inside one prefecture
 
@@ -123,4 +123,21 @@ Okinawa city is 沖縄市, a city inside the prefecture. The one row that does n
 | Esashi, Hiyama District | Esashi |
 | Kutchan, Abuta District, including the North 4 block | Kutchan |
 
-Bare districts with no town (Kasuya, Setana, Abuta, Satsuma, Watarai, Taki, Kiso, Kitaazumi, Shimotakai, Nakagami, Shimajiri, Nakaniikawa, Myozai, Kaifu, Minamikoma, and Mie / 三重郡) stay unresolved.
+A bare district stays unresolved until the town or village is named. When the Japanese address names exactly one official town, that town is the search city: Kasuya's three facilities are Kasuya, Sasaguri, and Shime. The same reading maps Abuta to Kutchan, Setana to Imakane, Mie / 三重郡 to Komono, and the other district rows whose address names one town.
+
+These stored pairs are one municipality:
+
+| Stored as | Search city | Why |
+| --- | --- | --- |
+| Nikko / 日光, Chitose / 千歳, Nonoichi / 野々市 | Nikko, Chitose, Nonoichi | The official name keeps 市, and the English name already matches |
+| Kita Akita / 北秋田市 | Kitaakita | The same name with a space |
+| Nishinoomote / 西之表市 | Nishinomote | Japanese is the official city |
+| Niida / 秋田市 | Akita | 仁井田 is inside Akita city |
+| Ashiya / 兵庫県 | Ashiya | Japanese repeats the prefecture |
+| Kasemachi / 嘉瀬町 | Saga | 嘉瀬町 is now part of Saga city |
+| Daisen / 秋田市 with address 大花町 | Daisen | 大花町 is in Daisen, not Akita |
+| Niigata Konan Ward / 港南区 with address 稲葉 | Niigata | 稲葉 is in Niigata city, not Yokohama |
+| Kagoshima Satsuma / 薩摩郡 with address 虎居 | Satsuma | 虎居 is in Satsuma town |
+| Osaka North Ward and West Ward whose address is 天神橋, 扇町, 本庄西, 南堀江, or 江之子島 | Osaka | Those neighborhoods are in Osaka city, not Sakai |
+
+A Daisen row whose address does not say 大花町, and a Niigata Konan row whose address does not say 稲葉, stay unresolved. Do not send them to Akita or Yokohama.

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { citySlug, resolveSearchCity, vocabularyCities } from '../src/vocabulary/cityMap.js'
+import { citySlug, resolveFacilityLocation, resolveSearchCity, vocabularyCities } from '../src/vocabulary/cityMap.js'
 import { mapLanguage, PUBLISHED_LOCALES } from '../src/vocabulary/languageMap.js'
 import { mapPaymentBrand } from '../src/vocabulary/paymentBrandMap.js'
 import { prefectureTranslations } from '../utils/japanesePrefectures.js'
@@ -89,12 +89,50 @@ describe('resolveSearchCity', () => {
 
     it('does not pick a winner when English and Japanese name different places', () => {
         expect(city('Akita', 'Daisen', '秋田市')).toEqual({ status: 'needs_review', reason: 'language_disagreement' })
-        expect(city('Akita', 'Niida', '秋田市')).toEqual({ status: 'needs_review', reason: 'language_disagreement' })
         expect(city('Niigata', 'Konan Ward', '港南区')).toEqual({
             status: 'needs_review',
             reason: 'language_disagreement'
         })
         expect(mappedCity('Akita', 'Akita', '秋田市')).toMatchObject({ nameEn: 'Akita', nameJa: '秋田市' })
+        expect(mappedCity('Akita', 'Niida', '秋田市')).toMatchObject({ nameEn: 'Akita', nameJa: '秋田市' })
+        expect(mappedCity('Hyogo', 'Ashiya', '兵庫県')).toMatchObject({ nameEn: 'Ashiya', nameJa: '芦屋市' })
+        expect(mappedCity('Akita', 'Kita Akita', '北秋田市')).toMatchObject({ nameEn: 'Kitaakita' })
+        expect(mappedCity('Kagoshima', 'Nishinoomote', '西之表市')).toMatchObject({ nameEn: 'Nishinomote' })
+        expect(mappedCity('Tochigi', 'Nikko', '日光')).toMatchObject({ nameEn: 'Nikko', nameJa: '日光市' })
+        expect(mappedCity('Saga', 'Kasemachi', '嘉瀬町')).toMatchObject({ nameEn: 'Saga', nameJa: '佐賀市' })
+    })
+
+    it('reads the town from the address when the city field is only a district', () => {
+        expect(resolveFacilityLocation({
+            prefectureEn: 'Fukuoka',
+            cityEn: 'Kasuya District',
+            cityJa: '糟屋郡',
+            addressLine1Ja: '粕屋町長者原東３－２－３０'
+        })).toMatchObject({ status: 'mapped', value: { nameEn: 'Kasuya', nameJa: '粕屋町' } })
+        expect(resolveFacilityLocation({
+            prefectureEn: 'Akita',
+            cityEn: 'Daisen',
+            cityJa: '秋田市',
+            addressLine1Ja: '大花町14-3'
+        })).toMatchObject({ status: 'mapped', value: { nameEn: 'Daisen', nameJa: '大仙市' } })
+        expect(resolveFacilityLocation({
+            prefectureEn: 'Osaka',
+            cityEn: 'North Ward',
+            cityJa: '北区',
+            addressLine1Ja: '天神橋７－５－１５'
+        })).toMatchObject({ status: 'mapped', value: { nameEn: 'Osaka', nameJa: '大阪市' } })
+        expect(resolveFacilityLocation({
+            prefectureEn: 'Niigata',
+            cityEn: 'Konan Ward',
+            cityJa: '港南区',
+            addressLine1Ja: '稲葉１－４－３'
+        })).toMatchObject({ status: 'mapped', value: { nameEn: 'Niigata', nameJa: '新潟市' } })
+        expect(resolveFacilityLocation({
+            prefectureEn: 'Nagano',
+            cityEn: 'Shimotakai District',
+            cityJa: '下高井郡',
+            addressLine1En: 'Nozawaonsen Toyosato Oyu 9323'
+        })).toMatchObject({ status: 'mapped', value: { nameEn: 'Nozawaonsen', nameJa: '野沢温泉村' } })
     })
 
     it('refuses a municipality that is not in the official list', () => {
@@ -133,12 +171,9 @@ describe('resolveSearchCity', () => {
             nameJa: '大崎市'
         })
         expect(mappedCity('Ishikawa', 'Kanazawa', '⾦沢市')).toMatchObject({ nameEn: 'Kanazawa', nameJa: '金沢市' })
-        expect(city('Tochigi', 'Nikko', '日光')).toEqual({ status: 'needs_review', reason: 'unmapped' })
-        expect(city('Akita', 'Kita Akita', '北秋田市')).toEqual({ status: 'needs_review', reason: 'unmapped' })
-        expect(city('Kagoshima', 'Nishinoomote', '西之表市')).toEqual({ status: 'needs_review', reason: 'unmapped' })
-        expect(city('Tochigi', 'Takenezawa, Shioya District', '塩谷郡高根沢町大字')).toEqual({
-            status: 'needs_review',
-            reason: 'district_only'
+        expect(mappedCity('Tochigi', 'Takenezawa, Shioya District', '塩谷郡高根沢町大字')).toMatchObject({
+            nameEn: 'Takanezawa',
+            nameJa: '高根沢町'
         })
     })
 })

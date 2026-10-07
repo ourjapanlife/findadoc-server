@@ -231,6 +231,12 @@ const EXPLICIT_ALIASES: ExplicitAlias[] = [
     { prefectureEn: 'Fukui', cityEn: 'Tsurgua', cityJa: '敦賀市', city: { prefectureEn: 'Fukui', nameEn: 'Tsuruga', nameJa: '敦賀市' } },
     { prefectureEn: 'Osaka', cityEn: 'Ikeda', cityJa: '池田', city: { prefectureEn: 'Osaka', nameEn: 'Ikeda', nameJa: '池田市' } },
     {
+        prefectureEn: 'Saga',
+        cityEn: 'Kasemachi',
+        cityJa: '嘉瀬町',
+        city: { prefectureEn: 'Saga', nameEn: 'Saga', nameJa: '佐賀市' }
+    },
+    {
         prefectureEn: 'Hokkaido',
         cityEn: 'Kutchan, Abuta District',
         cityJa: '田郡俱知安虻町',
@@ -246,9 +252,19 @@ const EXPLICIT_ALIASES: ExplicitAlias[] = [
 
 const DISAGREEMENTS: CitySource[] = [
     { prefectureEn: 'Akita', cityEn: 'Daisen', cityJa: '秋田市' },
-    { prefectureEn: 'Akita', cityEn: 'Niida', cityJa: '秋田市' },
-    { prefectureEn: 'Hyogo', cityEn: 'Ashiya', cityJa: '兵庫県' },
     { prefectureEn: 'Niigata', cityEn: 'Konan Ward', cityJa: '港南区' }
+]
+
+/** Address text that names one municipality when the city fields do not. */
+const ADDRESS_MARKERS: { prefectureEn: string, marker: string, city: CanonicalCity }[] = [
+    { prefectureEn: 'Akita', marker: '大花町', city: { prefectureEn: 'Akita', nameEn: 'Daisen', nameJa: '大仙市' } },
+    { prefectureEn: 'Niigata', marker: '稲葉', city: NIIGATA_CITY },
+    { prefectureEn: 'Kagoshima', marker: '虎居', city: { prefectureEn: 'Kagoshima', nameEn: 'Satsuma', nameJa: 'さつま町' } },
+    { prefectureEn: 'Osaka', marker: '天神橋', city: OSAKA_CITY },
+    { prefectureEn: 'Osaka', marker: '扇町', city: OSAKA_CITY },
+    { prefectureEn: 'Osaka', marker: '本庄西', city: OSAKA_CITY },
+    { prefectureEn: 'Osaka', marker: '南堀江', city: OSAKA_CITY },
+    { prefectureEn: 'Osaka', marker: '江之子島', city: OSAKA_CITY }
 ]
 
 function squash(value: string): string {
@@ -365,6 +381,80 @@ function townFromDistrict(prefectureEn: string, cityEn: string, cityJa: string):
     }
 
     return officialMatch(prefectureEn, parts[0].replace(/\s+city$/i, ''), townJa)
+}
+
+function compactSlug(value: string): string {
+    return citySlug(value).replace(/-/g, '')
+}
+
+function citiesMatchingEnglish(prefectureEn: string, cityEn: string): OfficialMunicipality[] {
+    const slug = citySlug(leadingPlaceName(cityEn))
+    const compact = compactSlug(leadingPlaceName(cityEn))
+
+    if (!slug) {
+        return []
+    }
+
+    return OFFICIAL_MUNICIPALITIES.filter(city =>
+        city.prefectureEn === prefectureEn
+        && (citySlug(city.nameEn) === slug || compactSlug(city.nameEn) === compact))
+}
+
+function toCanonical(city: OfficialMunicipality): CanonicalCity {
+    return { prefectureEn: city.prefectureEn, nameEn: city.nameEn, nameJa: city.nameJa }
+}
+
+/** Japanese already names one official municipality, including a missing 市 or a spaced English name. */
+function canonicalSpelling(prefectureEn: string, cityEn: string, cityJa: string): CanonicalCity | undefined {
+    if (!knownPrefecture(prefectureEn) || isStreet(cityEn)) {
+        return undefined
+    }
+
+    const ja = cleanJa(cityJa)
+    const exact = OFFICIAL_BY_JA.get(`${prefectureEn}|${ja}`)
+    const englishMatches = citiesMatchingEnglish(prefectureEn, cityEn)
+
+    if (exact) {
+        const namesAnotherCity = englishMatches.some(city => city.nameJa !== exact.nameJa)
+
+        if (namesAnotherCity) {
+            return undefined
+        }
+
+        return toCanonical(exact)
+    }
+
+    const withSuffix = (['市', '町', '村'] as const)
+        .map(suffix => OFFICIAL_BY_JA.get(`${prefectureEn}|${ja}${suffix}`))
+        .filter((city): city is OfficialMunicipality => city !== undefined)
+
+    if (withSuffix.length === 1 && englishMatches.some(city => city.nameJa === withSuffix[0].nameJa)) {
+        return toCanonical(withSuffix[0])
+    }
+
+    if (englishMatches.length === 1 && !/[市区町村郡]$/.test(ja)) {
+        return toCanonical(englishMatches[0])
+    }
+
+    return undefined
+}
+
+function townFromJapanese(prefectureEn: string, cityEn: string, cityJa: string): CanonicalCity | undefined {
+    const townJa = cleanJa(cityJa).match(/郡(.+?[町村])/)?.[1]
+    const official = townJa ? OFFICIAL_BY_JA.get(`${prefectureEn}|${townJa}`) : undefined
+
+    if (!official) {
+        return undefined
+    }
+
+    const namesAnotherCity = citiesMatchingEnglish(prefectureEn, cityEn)
+        .some(city => city.nameJa !== official.nameJa)
+
+    if (namesAnotherCity) {
+        return undefined
+    }
+
+    return toCanonical(official)
 }
 
 function leadingPlaceName(cityEn: string): string {
@@ -539,6 +629,7 @@ export function resolveSearchCity(source: CitySource): MapOutcome<CanonicalCity>
     }
 
     const town = townFromDistrict(prefectureEn, usableEn, cityJa)
+        ?? townFromJapanese(prefectureEn, usableEn, cityJa)
 
     if (town) {
         return mapped(town)
@@ -556,5 +647,125 @@ export function resolveSearchCity(source: CitySource): MapOutcome<CanonicalCity>
         return mapped(municipality)
     }
 
+    const spelled = canonicalSpelling(prefectureEn, usableEn, cityJa)
+
+    if (spelled) {
+        return mapped(spelled)
+    }
+
     return needsReview('unmapped')
+}
+
+export type FacilityLocation = CitySource & {
+    addressLine1En?: string
+    addressLine1Ja?: string
+}
+
+function longestNamedCity(prefectureEn: string, text: string): CanonicalCity | undefined {
+    const matches = OFFICIAL_MUNICIPALITIES
+        .filter(city => city.prefectureEn === prefectureEn && text.includes(city.nameJa))
+        .sort((left, right) => right.nameJa.length - left.nameJa.length)
+
+    const longest = matches[0]
+
+    if (!longest) {
+        return undefined
+    }
+
+    const tied = matches.filter(city => city.nameJa.length === longest.nameJa.length)
+
+    if (tied.length !== 1) {
+        return undefined
+    }
+
+    return toCanonical(longest)
+}
+
+function cityFromEnglishAddress(prefectureEn: string, addressEn: string): CanonicalCity | undefined {
+    const tokens = squash(addressEn)
+        .split(/[^A-Za-z0-9]+/)
+        .map(token => token.toLowerCase())
+        .filter(Boolean)
+    const matches = OFFICIAL_MUNICIPALITIES.filter(city =>
+        city.prefectureEn === prefectureEn && tokens.includes(city.nameEn.toLowerCase()))
+
+    if (matches.length !== 1) {
+        return undefined
+    }
+
+    return toCanonical(matches[0])
+}
+
+function cityFromStem(prefectureEn: string, addressJa: string): CanonicalCity | undefined {
+    const matches = OFFICIAL_MUNICIPALITIES.filter(city => {
+        if (city.prefectureEn !== prefectureEn || !/[市町村]$/.test(city.nameJa)) {
+            return false
+        }
+
+        const stem = city.nameJa.slice(0, -1)
+
+        return stem.length >= 2 && addressJa.startsWith(stem)
+    }).sort((left, right) => right.nameJa.length - left.nameJa.length)
+
+    const longest = matches[0]
+
+    if (!longest || matches.filter(city => city.nameJa.length === longest.nameJa.length).length !== 1) {
+        return undefined
+    }
+
+    return toCanonical(longest)
+}
+
+function sameCityOrEmpty(found: CanonicalCity | undefined, other: CanonicalCity | undefined): boolean {
+    if (!found || !other) {
+        return true
+    }
+
+    return found.prefectureEn === other.prefectureEn && found.nameJa === other.nameJa
+}
+
+function cityFromAddress(source: FacilityLocation): CanonicalCity | undefined {
+    const prefectureEn = squash(source.prefectureEn)
+    const addressJa = cleanJa(source.addressLine1Ja ?? '')
+    const addressEn = squash(source.addressLine1En ?? '')
+    const marker = ADDRESS_MARKERS.find(row =>
+        row.prefectureEn === prefectureEn && addressJa.includes(row.marker))
+
+    if (marker) {
+        return marker.city
+    }
+
+    const fromJa = longestNamedCity(prefectureEn, addressJa)
+    const fromEn = cityFromEnglishAddress(prefectureEn, addressEn)
+
+    if (fromJa && fromEn && !sameCityOrEmpty(fromJa, fromEn)) {
+        return undefined
+    }
+
+    if (fromJa) {
+        return fromJa
+    }
+
+    if (fromEn) {
+        return fromEn
+    }
+
+    return cityFromStem(prefectureEn, addressJa)
+}
+
+/** City fields first. The address line is used only when those fields do not name one municipality. */
+export function resolveFacilityLocation(source: FacilityLocation): MapOutcome<CanonicalCity> {
+    const base = resolveSearchCity(source)
+
+    if (base.status === 'mapped') {
+        return base
+    }
+
+    const fromAddress = cityFromAddress(source)
+
+    if (fromAddress) {
+        return mapped(fromAddress)
+    }
+
+    return base
 }

@@ -109,25 +109,31 @@ describe('published facility cities', () => {
     const groups = JSON.parse(readFileSync(
         path.join(import.meta.dirname, 'fixtures', 'facility-city-groups.json'),
         'utf8'
-    )) as Array<{ prefectureEn: string, cityEn: string, cityJa: string, n: number }>
+    )) as Array<{
+        prefectureEn: string
+        cityEn: string
+        cityJa: string
+        n: number
+        addressLine1En?: string
+        addressLine1Ja?: string
+    }>
 
     const report = reportFacilityCities(
-        groups.map(group => row(group.prefectureEn, group.cityEn, group.cityJa, { weight: group.n })),
+        groups.map(group => row(group.prefectureEn, group.cityEn, group.cityJa, {
+            weight: group.n,
+            addressLine1En: group.addressLine1En,
+            addressLine1Ja: group.addressLine1Ja
+        })),
         cities
     )
 
-    it('stays under the write bar and drops generic ward labels from rows it would publish', () => {
+    it('maps every facility onto a canonical city', () => {
         expect(report.total).toBe(465)
-        expect(report.mapped).toBe(429)
-        expect(report.unmatched).toBe(36)
+        expect(report.mapped).toBe(465)
+        expect(report.unmatched).toBe(0)
         expect(report.genericPublished).toBe(0)
-        expect(meetsPublishedCityBar(report)).toBe(false)
-        expect(report.reviewReasons).toEqual({
-            ambiguous_ward: 5,
-            district_only: 20,
-            language_disagreement: 4,
-            unmapped: 7
-        })
+        expect(meetsPublishedCityBar(report)).toBe(true)
+        expect(report.reviewReasons).toEqual({})
         expect(isGenericWardLabel('East Ward')).toBe(true)
         expect(isGenericWardLabel('Fukuoka')).toBe(false)
     })
@@ -148,8 +154,8 @@ describe('published facility cities', () => {
             to: 'kitakyushu'
         })
         expect(report.redirects).toContainEqual({ prefecture: 'tokyo', from: 'minato-city', to: 'minato' })
+        expect(report.redirects).toContainEqual({ prefecture: 'osaka', from: 'north-ward', to: 'osaka' })
+        expect(report.redirects).toContainEqual({ prefecture: 'osaka', from: 'west-ward', to: 'osaka' })
         expect(report.redirects.some(redirect => redirect.prefecture === '')).toBe(false)
-        expect(report.redirects.some(redirect => redirect.from === 'north-ward' && redirect.prefecture === 'osaka'))
-            .toBe(false)
     })
 })
