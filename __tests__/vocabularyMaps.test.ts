@@ -122,6 +122,24 @@ describe('resolveSearchCity', () => {
             status: 'needs_review',
             reason: 'district_only'
         })
+        expect(mappedCity('Fukushima', 'Koriyama', '郡山市')).toMatchObject({ nameEn: 'Koriyama', nameJa: '郡山市' })
+        expect(mappedCity('Ishikawa', 'Anamizu, Hosu District', '穴水町字')).toMatchObject({
+            nameEn: 'Anamizu',
+            nameJa: '穴水町'
+        })
+        expect(mappedCity('Niigata', 'Joetsu', '上越市吉川区')).toMatchObject({ nameEn: 'Joetsu', nameJa: '上越市' })
+        expect(mappedCity('Miyagi', 'Osaki, Matsuyamasengoku', '大崎市松山千石字')).toMatchObject({
+            nameEn: 'Osaki',
+            nameJa: '大崎市'
+        })
+        expect(mappedCity('Ishikawa', 'Kanazawa', '⾦沢市')).toMatchObject({ nameEn: 'Kanazawa', nameJa: '金沢市' })
+        expect(city('Tochigi', 'Nikko', '日光')).toEqual({ status: 'needs_review', reason: 'unmapped' })
+        expect(city('Akita', 'Kita Akita', '北秋田市')).toEqual({ status: 'needs_review', reason: 'unmapped' })
+        expect(city('Kagoshima', 'Nishinoomote', '西之表市')).toEqual({ status: 'needs_review', reason: 'unmapped' })
+        expect(city('Tochigi', 'Takenezawa, Shioya District', '塩谷郡高根沢町大字')).toEqual({
+            status: 'needs_review',
+            reason: 'district_only'
+        })
     })
 })
 
