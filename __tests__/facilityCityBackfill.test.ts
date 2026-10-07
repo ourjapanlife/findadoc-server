@@ -79,6 +79,18 @@ describe('planFacilityCity', () => {
         })
     })
 
+    it('counts an already chosen city as mapped', () => {
+        const report = reportFacilityCities([
+            row('Tokyo', 'Minato City', '港区', { cityId: 'already' }),
+            row('Osaka', 'North Ward', '北区')
+        ], cities)
+
+        expect(report.total).toBe(2)
+        expect(report.mapped).toBe(1)
+        expect(report.unmatched).toBe(1)
+        expect(report.reviewReasons).toEqual({ ambiguous_ward: 1 })
+    })
+
     it('assigns a confirmed facility without rewriting its stored name', () => {
         const plan = planFacilityCity(row('Fukuoka', 'East Ward', '東区', {
             verificationStatus: 'CONFIRMED'

@@ -148,7 +148,10 @@ async function main() {
 
             await client.query('commit')
         } catch (error) {
-            await client.query('rollback')
+            await client.query('rollback').catch(rollbackError => {
+                const message = rollbackError instanceof Error ? rollbackError.message : 'Rollback failed'
+                console.error(message)
+            })
             throw error
         }
     } finally {

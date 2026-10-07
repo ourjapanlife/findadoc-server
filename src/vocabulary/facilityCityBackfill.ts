@@ -138,6 +138,11 @@ export function reportFacilityCities(
         total += weight
         const plan = planFacilityCity(row, cities)
 
+        if (plan.action === 'keep' && plan.reason === 'already_assigned') {
+            mapped += weight
+            continue
+        }
+
         if (plan.action === 'assign') {
             mapped += weight
             const publishedName = plan.rewriteCityNames ? plan.nameEn : row.cityEn
