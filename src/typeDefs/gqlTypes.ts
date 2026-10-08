@@ -561,6 +561,18 @@ export type LocalizedName = {
   middleName?: Maybe<Scalars['String']['output']>;
 };
 
+/**
+ * Live place details for the submit form. Do not store the name, address, or category.
+ */
+export type MapsPlacePreview = {
+  __typename?: 'MapsPlacePreview';
+  address?: Maybe<Scalars['String']['output']>;
+  /** Short place type, such as Medical clinic. */
+  category?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  placeId?: Maybe<Scalars['String']['output']>;
+};
+
 /** Input for providing a localized name. */
 export type LocalizedNameInput = {
   /** First (given) name. */
@@ -815,6 +827,11 @@ export type Query = {
   healthcareProfessionals: Array<HealthcareProfessional>;
   /** Get the total count of healthcare professionals matching the given filters. Useful for pagination. */
   healthcareProfessionalsTotalCount: Scalars['Int']['output'];
+  /**
+   * Live name, address, and category for a Maps link on the submit form.
+   * Nothing in this response is saved.
+   */
+  mapsPlacePreview?: Maybe<MapsPlacePreview>;
   /** Prefectures this server owns. One row per prefecture in the frozen key list. */
   prefectures: Array<Prefecture>;
   /** Look up a single reservation by its unique ID. Returns null if not found. */
@@ -878,6 +895,15 @@ export type QueryHealthcareProfessionalArgs = {
 
 export type QueryHealthcareProfessionalsArgs = {
   filters: HealthcareProfessionalSearchFilters;
+};
+
+
+export type QueryMapsPlacePreviewArgs = {
+  languageCode?: InputMaybe<Scalars['String']['input']>;
+  latitude?: InputMaybe<Scalars['Float']['input']>;
+  longitude?: InputMaybe<Scalars['Float']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  placeId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1321,6 +1347,7 @@ export type ResolversTypes = {
   Locale: Locale;
   LocalizedName: ResolverTypeWrapper<LocalizedName>;
   LocalizedNameInput: LocalizedNameInput;
+  MapsPlacePreview: ResolverTypeWrapper<MapsPlacePreview>;
   Mutation: ResolverTypeWrapper<{}>;
   ObjectType: ObjectType;
   OrderBy: OrderBy;
@@ -1376,6 +1403,7 @@ export type ResolversParentTypes = {
   Int: Scalars['Int']['output'];
   LocalizedName: LocalizedName;
   LocalizedNameInput: LocalizedNameInput;
+  MapsPlacePreview: MapsPlacePreview;
   Mutation: {};
   OrderBy: OrderBy;
   PaymentOption: PaymentOption;
@@ -1568,6 +1596,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
   healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
   healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;
+  mapsPlacePreview?: Resolver<Maybe<ResolversTypes['MapsPlacePreview']>, ParentType, ContextType, Partial<QueryMapsPlacePreviewArgs>>;
   prefectures?: Resolver<Array<ResolversTypes['Prefecture']>, ParentType, ContextType>;
   reservation?: Resolver<Maybe<ResolversTypes['Reservation']>, ParentType, ContextType, RequireFields<QueryReservationArgs, 'id'>>;
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;

@@ -8,6 +8,7 @@ import * as userService from './services/userService.js'
 import * as reservationService from './services/reservationService.js'
 import * as cityService from './services/cityService.js'
 import * as citySuggestionService from './services/citySuggestionService.js'
+import * as mapsPlacePreviewService from './services/mapsPlacePreviewService.js'
 import { Result } from './result.js'
 import { logger } from './logger.js'
 import {
@@ -77,6 +78,29 @@ const resolvers = {
                 needsHpIds
             )
 
+            convertErrorsToGqlErrors(queryResults)
+            return queryResults.data
+        },
+        mapsPlacePreview: async (
+            _parent: unknown,
+            args: {
+                name?: string | null
+                latitude?: number | null
+                longitude?: number | null
+                placeId?: string | null
+                languageCode?: string | null
+            },
+            context: UserContext
+        ): Promise<gqlType.MapsPlacePreview | null> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const queryResults = await mapsPlacePreviewService.previewMapsPlace(args)
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },

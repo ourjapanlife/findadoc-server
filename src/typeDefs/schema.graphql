@@ -879,6 +879,17 @@ type CurrentUserAccess {
   effectiveScopes: [String!]!
 }
 
+"""
+Live place details for the submit form. Do not store the name, address, or category.
+"""
+type MapsPlacePreview {
+  placeId: String
+  name: String
+  address: String
+  """Short place type, such as Medical clinic."""
+  category: String
+}
+
 type Query {
   """Roles and effective API scopes for the authenticated user (always allowed when a user context exists)."""
   currentUserAccess: CurrentUserAccess!
@@ -897,6 +908,18 @@ type Query {
 
   """Get the total count of facilities matching the given filters. Useful for pagination."""
   facilitiesTotalCount(filters: FacilitySearchFilters!): Int!
+
+  """
+  Live name, address, and category for a Maps link on the submit form.
+  Nothing in this response is saved.
+  """
+  mapsPlacePreview(
+    name: String
+    latitude: Float
+    longitude: Float
+    placeId: String
+    languageCode: String
+  ): MapsPlacePreview
 
   """Look up a single healthcare professional by their unique ID. Returns null if not found."""
   healthcareProfessional(id: ID!): HealthcareProfessional
