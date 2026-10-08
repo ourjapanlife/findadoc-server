@@ -804,6 +804,11 @@ export type Query = {
   facilitiesTotalCount: Scalars['Int']['output'];
   /** Look up a single facility by its unique ID. Returns null if not found. */
   facility?: Maybe<Facility>;
+  /**
+   * The facility that already stores this Google place id.
+   * Null when the id is unknown or we have no matching row.
+   */
+  facilityByGooglePlaceId?: Maybe<Facility>;
   /** Look up a single healthcare professional by their unique ID. Returns null if not found. */
   healthcareProfessional?: Maybe<HealthcareProfessional>;
   /** Search for healthcare professionals matching the given filters. Returns an empty list if no matches. */
@@ -858,6 +863,11 @@ export type QueryFacilitiesTotalCountArgs = {
 
 export type QueryFacilityArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryFacilityByGooglePlaceIdArgs = {
+  placeId: Scalars['String']['input'];
 };
 
 
@@ -1554,6 +1564,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   facilities?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
   facilitiesTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryFacilitiesTotalCountArgs, 'filters'>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
+  facilityByGooglePlaceId?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityByGooglePlaceIdArgs, 'placeId'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
   healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
   healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;

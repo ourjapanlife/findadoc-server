@@ -886,6 +886,12 @@ type Query {
   """Look up a single facility by its unique ID. Returns null if not found."""
   facility(id: ID!): Facility
 
+  """
+  The facility that already stores this Google place id.
+  Null when the id is unknown or we have no matching row.
+  """
+  facilityByGooglePlaceId(placeId: String!): Facility
+
   """Search for facilities matching the given filters. Returns an empty list if no matches."""
   facilities(filters: FacilitySearchFilters!): [Facility!]!
 
