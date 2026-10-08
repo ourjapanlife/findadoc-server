@@ -182,31 +182,45 @@ export async function listCityPlaceRecords(): Promise<CityPlaceRecord[]> {
     }))
 }
 
-/** Writes the place id only. Pass a timestamp after a successful id check. */
+/**
+ * Writes the place id only. Pass a timestamp after a successful id check.
+ * `expectedPlaceId` makes the write a compare-and-set for a refresh that
+ * started from an older snapshot.
+ */
 export async function setCityPlaceId(
     cityId: string,
     placeId: string,
-    checkedAt: string | null
+    checkedAt: string | null,
+    expectedPlaceId?: string
 ): Promise<City | null> {
-    const updated = await db.updateTable('cities')
+    let query = db.updateTable('cities')
         .set({
             google_place_id: placeId,
             google_place_id_checked_at: checkedAt
         })
         .where('id', '=', cityId)
-        .returning('id')
-        .executeTakeFirst()
+
+    if (expectedPlaceId !== undefined) {
+        query = query.where('google_place_id', '=', expectedPlaceId)
+    }
+
+    const updated = await query.returning('id').executeTakeFirst()
 
     if (!updated) { return null }
     return getCityById(cityId)
 }
 
-export async function clearCityPlaceId(cityId: string): Promise<void> {
-    await db.updateTable('cities')
+export async function clearCityPlaceId(cityId: string, expectedPlaceId?: string): Promise<void> {
+    let query = db.updateTable('cities')
         .set({
             google_place_id: null,
             google_place_id_checked_at: null
         })
         .where('id', '=', cityId)
-        .execute()
+
+    if (expectedPlaceId !== undefined) {
+        query = query.where('google_place_id', '=', expectedPlaceId)
+    }
+
+    await query.execute()
 }

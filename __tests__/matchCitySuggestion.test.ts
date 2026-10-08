@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { matchCitySuggestion, type MatchableCity } from '../src/places/matchCitySuggestion.js'
-import { parseAutocomplete, parsePlaceDetailsId, placeIdIsStale } from '../src/places/placesClient.js'
+import { parseAutocomplete, parsePlaceDetailsId, parsePlaceMatchText, placeIdIsStale } from '../src/places/placesClient.js'
 
 const cities: MatchableCity[] = [
     { id: 'shibuya', prefectureEn: 'Tokyo', nameEn: 'Shibuya', nameJa: '渋谷区' },
@@ -73,6 +73,34 @@ describe('places client parsing', () => {
     it('reads a place details id and nothing else', () => {
         expect(parsePlaceDetailsId({ id: 'places/ChIJshibuya', formattedAddress: 'nope' })).toBe('ChIJshibuya')
         expect(parsePlaceDetailsId({})).toBeNull()
+    })
+
+    it('reads a ward and the address around it without keeping other fields', () => {
+        const parsed = parsePlaceMatchText({
+            types: ['sublocality_level_1', 'political'],
+            formattedAddress: '日本、〒530-0001 大阪府大阪市北区',
+            addressComponents: [
+                { longText: '北区', types: ['sublocality_level_1', 'political'] },
+                { longText: '大阪市', types: ['locality', 'political'] },
+                { longText: '大阪府', types: ['administrative_area_level_1', 'political'] },
+                { longText: '日本', types: ['country', 'political'] }
+            ],
+            location: { latitude: 34.7, longitude: 135.5 }
+        })
+
+        expect(parsed).toEqual({
+            mainText: '北区',
+            secondaryText: '日本、〒530-0001 大阪府大阪市北区'
+        })
+        expect(parsed && matchCitySuggestion(cities, parsed.mainText, parsed.secondaryText)?.id).toBe('osaka')
+    })
+
+    it('rejects a place body that has no city component', () => {
+        expect(parsePlaceMatchText({
+            types: ['country'],
+            formattedAddress: '日本',
+            addressComponents: [{ longText: '日本', types: ['country', 'political'] }]
+        })).toBeNull()
     })
 
     it('treats a missing or year-old check as stale', () => {

@@ -6,6 +6,7 @@ import { matchCitySuggestion } from '../places/matchCitySuggestion.js'
 import {
     autocompleteCities,
     confirmPlaceId,
+    loadPlaceMatch,
     normalizePlaceId,
     placeIdIsStale
 } from '../places/placesClient.js'
@@ -69,7 +70,7 @@ export async function suggestCities(input: string): Promise<Result<CitySuggestio
     }
 }
 
-/** Persist the city place id after an id-only confirmation. A missing id is cleared, not replaced. */
+/** Persist a place id only when it matches this city. A missing id is rejected, not replaced. */
 export async function recordCityPlaceId(cityId: string, placeId: string): Promise<Result<City | null>> {
     const normalized = normalizePlaceId(placeId)
     if (!normalized) {
@@ -95,7 +96,7 @@ export async function recordCityPlaceId(cityId: string, placeId: string): Promis
             }
         }
 
-        const check = await confirmPlaceId(normalized, apiKey)
+        const check = await loadPlaceMatch(normalized, apiKey)
         if (check === 'missing') {
             return {
                 data: null,
@@ -104,7 +105,20 @@ export async function recordCityPlaceId(cityId: string, placeId: string): Promis
             }
         }
 
-        const checkedAt = check === 'confirmed' ? new Date().toISOString() : null
+        let checkedAt: string | null = null
+        if (check !== 'unavailable') {
+            const records = await listCityPlaceRecords()
+            const match = matchCitySuggestion(records, check.mainText, check.secondaryText)
+            if (match?.id !== cityId) {
+                return {
+                    data: null,
+                    hasErrors: true,
+                    errors: [{ field: 'placeId', errorCode: ErrorCode.INVALID_INPUT, httpStatus: 400 }]
+                }
+            }
+            checkedAt = new Date().toISOString()
+        }
+
         const city = await setCityPlaceId(cityId, normalized, checkedAt)
         return { data: city, hasErrors: false }
     } catch (error) {
@@ -119,11 +133,16 @@ async function refreshStoredPlaceId(record: CityPlaceRecord, apiKey: string): Pr
     try {
         const check = await confirmPlaceId(record.googlePlaceId, apiKey)
         if (check === 'missing') {
-            await clearCityPlaceId(record.id)
+            await clearCityPlaceId(record.id, record.googlePlaceId)
             return
         }
         if (check === 'confirmed') {
-            await setCityPlaceId(record.id, record.googlePlaceId, new Date().toISOString())
+            await setCityPlaceId(
+                record.id,
+                record.googlePlaceId,
+                new Date().toISOString(),
+                record.googlePlaceId
+            )
         }
     } catch (error) {
         logger.error(`ERROR: refreshStoredPlaceId ${error}`)
