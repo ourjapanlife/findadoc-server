@@ -64,6 +64,17 @@ export type City = {
   slug: Scalars['String']['output'];
 };
 
+/** A live Places city suggestion. Only placeId may be stored, and only on the matched city. */
+export type CitySuggestion = {
+  __typename?: 'CitySuggestion';
+  /** Our city when the suggestion maps onto exactly one municipality. */
+  city?: Maybe<City>;
+  /** Live suggestion text. Not a stored field. */
+  label: Scalars['String']['output'];
+  /** Google place id for the suggested city. */
+  placeId: Scalars['String']['output'];
+};
+
 /** Contact information for a facility. */
 export type Contact = {
   __typename?: 'Contact';
@@ -580,6 +591,8 @@ export type Mutation = {
   deleteHealthcareProfessional: DeleteResult;
   /** Delete a submission by ID. */
   deleteSubmission: DeleteResult;
+  /** Store a city place id. Does not store a Places name, address, or coordinate. */
+  recordCityPlaceId: City;
   /** Update an existing facility by ID. */
   updateFacility: Facility;
   /** Update an existing healthcare professional by ID. */
@@ -630,6 +643,12 @@ export type MutationDeleteHealthcareProfessionalArgs = {
 
 export type MutationDeleteSubmissionArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationRecordCityPlaceIdArgs = {
+  cityId: Scalars['ID']['input'];
+  placeId: Scalars['String']['input'];
 };
 
 
@@ -801,6 +820,11 @@ export type Query = {
   submissions: Array<Submission>;
   /** Get the total count of submissions matching the given filters. Useful for pagination. */
   submissionsTotalCount: Scalars['Int']['output'];
+  /**
+   * Japan-only city suggestions from Places. The label is live Google text for this screen.
+   * Do not store it. A suggestion with no city is not in our vocabulary.
+   */
+  suggestCities: Array<CitySuggestion>;
   /** Look up a single user by their unique ID. Returns null if not found. */
   user?: Maybe<User>;
 };
@@ -869,6 +893,11 @@ export type QuerySubmissionsArgs = {
 
 export type QuerySubmissionsTotalCountArgs = {
   filters: SubmissionSearchFilters;
+};
+
+
+export type QuerySuggestCitiesArgs = {
+  input: Scalars['String']['input'];
 };
 
 
@@ -1256,6 +1285,7 @@ export type ResolversTypes = {
   AuditLog: ResolverTypeWrapper<AuditLog>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   City: ResolverTypeWrapper<City>;
+  CitySuggestion: ResolverTypeWrapper<CitySuggestion>;
   Contact: ResolverTypeWrapper<Contact>;
   ContactInput: ContactInput;
   CreateFacilityInput: CreateFacilityInput;
@@ -1315,6 +1345,7 @@ export type ResolversParentTypes = {
   AuditLog: AuditLog;
   Boolean: Scalars['Boolean']['output'];
   City: City;
+  CitySuggestion: CitySuggestion;
   Contact: Contact;
   ContactInput: ContactInput;
   CreateFacilityInput: CreateFacilityInput;
@@ -1376,6 +1407,13 @@ export type CityResolvers<ContextType = any, ParentType extends ResolversParentT
   nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   prefecture?: Resolver<ResolversTypes['Prefecture'], ParentType, ContextType>;
   slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CitySuggestionResolvers<ContextType = any, ParentType extends ResolversParentTypes['CitySuggestion'] = ResolversParentTypes['CitySuggestion']> = {
+  city?: Resolver<Maybe<ResolversTypes['City']>, ParentType, ContextType>;
+  label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  placeId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1473,6 +1511,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteFacility?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteFacilityArgs, 'id'>>;
   deleteHealthcareProfessional?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteHealthcareProfessionalArgs, 'id'>>;
   deleteSubmission?: Resolver<ResolversTypes['DeleteResult'], ParentType, ContextType, RequireFields<MutationDeleteSubmissionArgs, 'id'>>;
+  recordCityPlaceId?: Resolver<ResolversTypes['City'], ParentType, ContextType, RequireFields<MutationRecordCityPlaceIdArgs, 'cityId' | 'placeId'>>;
   updateFacility?: Resolver<ResolversTypes['Facility'], ParentType, ContextType, RequireFields<MutationUpdateFacilityArgs, 'id' | 'input'>>;
   updateHealthcareProfessional?: Resolver<ResolversTypes['HealthcareProfessional'], ParentType, ContextType, RequireFields<MutationUpdateHealthcareProfessionalArgs, 'id' | 'input'>>;
   updateReservation?: Resolver<ResolversTypes['Reservation'], ParentType, ContextType, RequireFields<MutationUpdateReservationArgs, 'input'>>;
@@ -1523,6 +1562,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;
   submissions?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
   submissionsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QuerySubmissionsTotalCountArgs, 'filters'>>;
+  suggestCities?: Resolver<Array<ResolversTypes['CitySuggestion']>, ParentType, ContextType, RequireFields<QuerySuggestCitiesArgs, 'input'>>;
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<QueryUserArgs, 'id'>>;
 };
 
@@ -1563,6 +1603,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
 export type Resolvers<ContextType = any> = {
   AuditLog?: AuditLogResolvers<ContextType>;
   City?: CityResolvers<ContextType>;
+  CitySuggestion?: CitySuggestionResolvers<ContextType>;
   Contact?: ContactResolvers<ContextType>;
   CurrentUserAccess?: CurrentUserAccessResolvers<ContextType>;
   DeleteResult?: DeleteResultResolvers<ContextType>;
