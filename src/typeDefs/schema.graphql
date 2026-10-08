@@ -929,8 +929,24 @@ type Query {
   """Every current municipality. Pass a prefecture key or Japanese name to filter."""
   cities(prefecture: String): [City!]!
 
+  """
+  Japan-only city suggestions from Places. The label is live Google text for this screen.
+  Do not store it. A suggestion with no city is not in our vocabulary.
+  """
+  suggestCities(input: String!): [CitySuggestion!]!
+
   """Facilities published under one city. Unresolved locations are excluded."""
   cityFacilities(prefecture: String!, citySlug: String!): [Facility!]!
+}
+
+"""A live Places city suggestion. Only placeId may be stored, and only on the matched city."""
+type CitySuggestion {
+  """Google place id for the suggested city."""
+  placeId: String!
+  """Live suggestion text. Not a stored field."""
+  label: String!
+  """Our city when the suggestion maps onto exactly one municipality."""
+  city: City
 }
 
 """A prefecture from the frozen key list."""
@@ -1042,6 +1058,9 @@ type Mutation {
 
   """Update an existing user by ID."""
   updateUser(id: ID!, input: UpdateUserInput!): User!
+
+  """Store a city place id. Does not store a Places name, address, or coordinate."""
+  recordCityPlaceId(cityId: ID!, placeId: String!): City!
 
   """Create a new reservation."""
   createReservation(input: CreateReservationInput!): Reservation!

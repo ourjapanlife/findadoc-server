@@ -59,6 +59,7 @@ export interface CitiesTable {
     name_ja: string
     lg_code: string
     google_place_id: string | null
+    google_place_id_checked_at: string | null
 }
 
 /**

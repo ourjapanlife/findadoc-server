@@ -7,6 +7,7 @@ import * as submissionService from './services/submissionService.js'
 import * as userService from './services/userService.js'
 import * as reservationService from './services/reservationService.js'
 import * as cityService from './services/cityService.js'
+import * as citySuggestionService from './services/citySuggestionService.js'
 import { Result } from './result.js'
 import { logger } from './logger.js'
 import {
@@ -297,6 +298,21 @@ const resolvers = {
             convertErrorsToGqlErrors(result)
             return result.data
         },
+        suggestCities: async (_parent: unknown, args: { input: string }, context: UserContext)
+        : Promise<gqlType.CitySuggestion[]> => {
+            const isAuthorized = authorize(context.user, [Scope['write:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const result = await citySuggestionService.suggestCities(args.input)
+
+            convertErrorsToGqlErrors(result)
+            return result.data
+        },
         cityFacilities: async (
             _parent: unknown,
             args: { prefecture: string, citySlug: string },
@@ -550,6 +566,29 @@ const resolvers = {
             const updateUserResult = await userService.updateUser(args.id, args.input)
 
             return updateUserResult.data
+        },
+        recordCityPlaceId: async (
+            _parent: unknown,
+            args: { cityId: string, placeId: string },
+            context: UserContext
+        ): Promise<gqlType.City> => {
+            const isAuthorized = authorize(context.user, [Scope['write:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const result = await citySuggestionService.recordCityPlaceId(args.cityId, args.placeId)
+
+            convertErrorsToGqlErrors(result)
+            if (!result.data) {
+                throw new GraphQLError('City was not found', {
+                    extensions: { code: 'NOT_FOUND', http: { status: 404 } }
+                })
+            }
+            return result.data
         },
         createReservation: async (_parent: unknown, args: { input: gqlType.CreateReservationInput }, 
             context: UserContext)
