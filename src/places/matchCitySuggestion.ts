@@ -22,28 +22,28 @@ export function matchCitySuggestion<T extends MatchableCity>(
 ): T | null {
     const blob = `${mainText} ${secondaryText}`
     const prefectureEn = prefectureIn(blob)
-    if (!prefectureEn) return null
+    if (!prefectureEn) { return null }
 
     const inPrefecture = cities.filter(city => city.prefectureEn === prefectureEn)
-    if (inPrefecture.length === 0) return null
+    if (inPrefecture.length === 0) { return null }
 
     const main = stripPrefecture(mainText, prefectureEn)
     const exactJapanese = unique(inPrefecture.filter(city => city.nameJa === main))
-    if (exactJapanese.length === 1) return exactJapanese[0] ?? null
-    if (exactJapanese.length > 1) return null
+    if (exactJapanese.length === 1) { return exactJapanese[0] ?? null }
+    if (exactJapanese.length > 1) { return null }
 
     const englishKey = englishCityKey(main)
     if (englishKey) {
         const exactEnglish = unique(inPrefecture.filter(city => englishCityKey(city.nameEn) === englishKey))
-        if (exactEnglish.length === 1) return exactEnglish[0] ?? null
-        if (exactEnglish.length > 1) return null
+        if (exactEnglish.length === 1) { return exactEnglish[0] ?? null }
+        if (exactEnglish.length > 1) { return null }
     }
 
     const stem = main.replace(/[市区町村]$/u, '')
     if (stem && stem !== main) {
         const byStem = unique(inPrefecture.filter(city =>
             city.nameJa.replace(/[市区町村]$/u, '') === stem))
-        if (byStem.length === 1) return byStem[0] ?? null
+        if (byStem.length === 1) { return byStem[0] ?? null }
     }
 
     const namedParents = unique(inPrefecture.filter(city =>
@@ -58,7 +58,7 @@ export function matchCitySuggestion<T extends MatchableCity>(
 function unique<T extends MatchableCity>(cities: T[]): T[] {
     const seen = new Set<string>()
     return cities.filter(city => {
-        if (seen.has(city.id)) return false
+        if (seen.has(city.id)) { return false }
         seen.add(city.id)
         return true
     })
@@ -78,7 +78,7 @@ function englishCityKey(value: string): string {
 
 function prefectureIn(text: string): string | undefined {
     const direct = resolvePrefectureKey(text)
-    if (direct) return direct
+    if (direct) { return direct }
 
     for (const [key, japanese] of Object.entries(prefectureTranslations)) {
         if (text.includes(japanese) || new RegExp(`\\b${key}\\b`, 'i').test(text)) {

@@ -197,7 +197,7 @@ export async function setCityPlaceId(
         .returning('id')
         .executeTakeFirst()
 
-    if (!updated) return null
+    if (!updated) { return null }
     return getCityById(cityId)
 }
 

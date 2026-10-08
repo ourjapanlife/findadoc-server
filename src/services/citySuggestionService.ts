@@ -114,7 +114,7 @@ export async function recordCityPlaceId(cityId: string, placeId: string): Promis
 }
 
 async function refreshStoredPlaceId(record: CityPlaceRecord, apiKey: string): Promise<void> {
-    if (!record.googlePlaceId || !placeIdIsStale(record.googlePlaceIdCheckedAt)) return
+    if (!record.googlePlaceId || !placeIdIsStale(record.googlePlaceIdCheckedAt)) { return }
 
     try {
         const check = await confirmPlaceId(record.googlePlaceId, apiKey)
