@@ -83,13 +83,7 @@ const resolvers = {
         },
         mapsPlacePreview: async (
             _parent: unknown,
-            args: {
-                name?: string | null
-                latitude?: number | null
-                longitude?: number | null
-                placeId?: string | null
-                languageCode?: string | null
-            },
+            args: { url: string, languageCode?: string | null },
             context: UserContext
         ): Promise<gqlType.MapsPlacePreview | null> => {
             const isAuthorized = authorize(context.user, [Scope['read:facilities']])
@@ -100,7 +94,11 @@ const resolvers = {
                 })
             }
 
-            const queryResults = await mapsPlacePreviewService.previewMapsPlace(args)
+            const queryResults = await mapsPlacePreviewService.previewMapsPlace(
+                args.url,
+                args.languageCode,
+                context.clientIp
+            )
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },

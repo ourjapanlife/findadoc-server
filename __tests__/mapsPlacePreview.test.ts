@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { readPlacePreview, searchPlacePreview } from '../src/places/placesClient.js'
+import { allowPreviewCall, previewTargetFromMapsUrl } from '../src/places/mapsLink.js'
+
+const TOKYO_STATION = 'https://www.google.com/maps/place/Tokyo+Station+International+Clinic/@35.6791006,139.767714,17z/data=!3m1!4b1!4m6!3m5!1s0x60188bf5d2aa2fe7:0xe80be270a19ad1f8!8m2!3d35.6791006!4d139.767714!16s%2Fg%2F11l6yc1_d0?entry=ttu'
 
 describe('readPlacePreview', () => {
     it('reads the name, address, and category and ignores everything else', () => {
@@ -21,6 +24,37 @@ describe('readPlacePreview', () => {
     it('returns null when the place has no name or address', () => {
         expect(readPlacePreview({ id: 'ChIJonlyAnId123' })).toBeNull()
         expect(readPlacePreview(null)).toBeNull()
+    })
+})
+
+describe('previewTargetFromMapsUrl', () => {
+    it('reads the clinic name and pin and ignores a hex feature id', () => {
+        expect(previewTargetFromMapsUrl(TOKYO_STATION)).toEqual({
+            name: 'Tokyo Station International Clinic',
+            latitude: 35.6791006,
+            longitude: 139.767714,
+            placeId: null
+        })
+    })
+
+    it('does not look up a name that is not a Maps URL', () => {
+        expect(previewTargetFromMapsUrl('Tokyo Station International Clinic')).toBeNull()
+        expect(previewTargetFromMapsUrl('https://maps.app.goo.gl/abc123XYZ')).toBeNull()
+        expect(previewTargetFromMapsUrl('https://www.google.com/maps')).toBeNull()
+    })
+})
+
+describe('allowPreviewCall', () => {
+    it('allows eight lookups for one address and stops the ninth', () => {
+        const ipHits = new Map<string, number[]>()
+        const globalHits: number[] = []
+        const now = Date.parse('2026-10-08T08:00:00.000Z')
+
+        for (let attempt = 0; attempt < 8; attempt++) {
+            expect(allowPreviewCall(ipHits, globalHits, '203.0.113.4', now + attempt)).toBe(true)
+        }
+        expect(allowPreviewCall(ipHits, globalHits, '203.0.113.4', now + 8)).toBe(false)
+        expect(allowPreviewCall(ipHits, globalHits, '203.0.113.5', now + 9)).toBe(true)
     })
 })
 

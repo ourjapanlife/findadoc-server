@@ -913,13 +913,7 @@ type Query {
   Live name, address, and category for a Maps link on the submit form.
   Nothing in this response is saved.
   """
-  mapsPlacePreview(
-    name: String
-    latitude: Float
-    longitude: Float
-    placeId: String
-    languageCode: String
-  ): MapsPlacePreview
+  mapsPlacePreview(url: String!, languageCode: String): MapsPlacePreview
 
   """Look up a single healthcare professional by their unique ID. Returns null if not found."""
   healthcareProfessional(id: ID!): HealthcareProfessional

@@ -900,10 +900,7 @@ export type QueryHealthcareProfessionalsArgs = {
 
 export type QueryMapsPlacePreviewArgs = {
   languageCode?: InputMaybe<Scalars['String']['input']>;
-  latitude?: InputMaybe<Scalars['Float']['input']>;
-  longitude?: InputMaybe<Scalars['Float']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  placeId?: InputMaybe<Scalars['String']['input']>;
+  url: Scalars['String']['input'];
 };
 
 

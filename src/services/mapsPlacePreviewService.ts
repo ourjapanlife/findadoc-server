@@ -1,31 +1,47 @@
 import { envVariables } from '../../utils/environmentVariables.js'
 import { logger } from '../logger.js'
 import { Result } from '../result.js'
+import { allowPreviewCall, previewTargetFromMapsUrl } from '../places/mapsLink.js'
 import {
     loadPlacePreview,
-    normalizePlaceId,
     searchPlacePreview,
     type PlacePreview
 } from '../places/placesClient.js'
 
-export type MapsPlacePreviewInput = {
-    name?: string | null
-    latitude?: number | null
-    longitude?: number | null
-    placeId?: string | null
-    languageCode?: string | null
-}
+const ipHits = new Map<string, number[]>()
+const globalHits: number[] = []
+const inflight = new Map<string, Promise<Result<PlacePreview | null>>>()
 
 /**
- * Live details for a Maps link the visitor pasted.
- * A missing key or a Google failure returns null so the form can still be sent.
- * The name and address are not written anywhere.
+ * One Places call for a real Maps URL.
+ * The name and address are for the open form and are not stored.
+ * A shared in-flight request is joined so two identical calls do not bill twice.
  */
-export async function previewMapsPlace(input: MapsPlacePreviewInput): Promise<Result<PlacePreview | null>> {
-    const placeId = input.placeId ? normalizePlaceId(input.placeId) : null
-    const name = cleanName(input.name)
-    const languageCode = input.languageCode === 'ja' ? 'ja' : 'en'
-    if (!placeId && !name) {
+export function previewMapsPlace(
+    url: string,
+    languageCode: string | null | undefined,
+    clientIp: string | null | undefined
+): Promise<Result<PlacePreview | null>> {
+    const language = languageCode === 'ja' ? 'ja' : 'en'
+    const key = `${language}\n${url.trim()}`
+    const pending = inflight.get(key)
+    if (pending) { return pending }
+
+    const promise = lookupMapsPlace(url, language, clientIp || 'unknown')
+    inflight.set(key, promise)
+    promise.finally(() => {
+        inflight.delete(key)
+    })
+    return promise
+}
+
+async function lookupMapsPlace(
+    url: string,
+    languageCode: 'ja' | 'en',
+    clientIp: string
+): Promise<Result<PlacePreview | null>> {
+    const target = previewTargetFromMapsUrl(url)
+    if (!target) {
         return { data: null, hasErrors: false }
     }
 
@@ -35,33 +51,27 @@ export async function previewMapsPlace(input: MapsPlacePreviewInput): Promise<Re
         return { data: null, hasErrors: false }
     }
 
+    if (!allowPreviewCall(ipHits, globalHits, clientIp, Date.now())) {
+        logger.warn(`mapsPlacePreview skipped because the lookup limit was reached for ${clientIp}`)
+        return { data: null, hasErrors: false }
+    }
+
     try {
-        const fromId = placeId
-            ? await loadPlacePreview(placeId, apiKey, languageCode)
-            : null
-        const preview = fromId ?? (name
-            ? await searchPlacePreview(
-                name,
-                coordinate(input.latitude, 90),
-                coordinate(input.longitude, 180),
+        let preview: PlacePreview | null = null
+        if (target.placeId) {
+            preview = await loadPlacePreview(target.placeId, apiKey, languageCode)
+        } else if (target.name) {
+            preview = await searchPlacePreview(
+                target.name,
+                target.latitude,
+                target.longitude,
                 apiKey,
                 languageCode
             )
-            : null)
+        }
         return { data: preview, hasErrors: false }
     } catch (error) {
         logger.error(`ERROR: mapsPlacePreview ${error}`)
         return { data: null, hasErrors: false }
     }
-}
-
-function cleanName(value: string | null | undefined): string | null {
-    const name = value?.trim().replace(/\s+/g, ' ') ?? ''
-    if (name.length < 2 || name.length > 200) { return null }
-    return name
-}
-
-function coordinate(value: number | null | undefined, limit: number): number | null {
-    if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > limit) { return null }
-    return value
 }
