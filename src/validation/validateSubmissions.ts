@@ -102,7 +102,7 @@ function validateSubmissionSpokenLanguage(
         return
     }
 
-    if (filters.spokenLanguages.length == 0) {
+    if (filters.spokenLanguages.length === 0) {
         validateSearchResults.hasErrors = true
         validateSearchResults.errors?.push({
             field: 'spokenLanguages',

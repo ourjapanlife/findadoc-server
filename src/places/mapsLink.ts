@@ -34,7 +34,7 @@ export function previewTargetFromMapsUrl(url: string): MapsPreviewTarget | null 
     }
 
     if (target.placeId) { return target }
-    if (target.name && target.latitude != null && target.longitude != null) { return target }
+    if (target.name && target.latitude !== null && target.longitude !== null) { return target }
     return null
 }
 
@@ -107,11 +107,20 @@ const GLOBAL_LIMIT = 30
 const GLOBAL_WINDOW_MS = 60 * 1000
 
 /** Eight lookups per address each 10 minutes, and thirty for the whole process each minute. */
+const sharedIpHits = new Map<string, number[]>()
+const sharedGlobalHits: number[] = []
+
+/** One budget for public previews and moderator lookups. */
+export function allowSharedPreviewCall(ip: string, now = Date.now(), ipLimit = IP_LIMIT): boolean {
+    return allowPreviewCall(sharedIpHits, sharedGlobalHits, ip, now, ipLimit)
+}
+
 export function allowPreviewCall(
     ipHits: Map<string, number[]>,
     globalHits: number[],
     ip: string,
-    now: number
+    now: number,
+    ipLimit = IP_LIMIT
 ): boolean {
     const recentGlobal = globalHits.filter(at => now - at < GLOBAL_WINDOW_MS)
     globalHits.length = 0
@@ -119,7 +128,7 @@ export function allowPreviewCall(
     if (globalHits.length >= GLOBAL_LIMIT) { return false }
 
     const recentIp = (ipHits.get(ip) ?? []).filter(at => now - at < IP_WINDOW_MS)
-    if (recentIp.length >= IP_LIMIT) {
+    if (recentIp.length >= ipLimit) {
         ipHits.set(ip, recentIp)
         return false
     }
