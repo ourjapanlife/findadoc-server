@@ -1,4 +1,5 @@
 import pg from 'pg'
+import { pathToFileURL } from 'node:url'
 import { envVariables } from './environmentVariables.js'
 import { namesAgree } from '../src/places/facilityPlaceMatch.js'
 import { previewTargetFromMapsUrl } from '../src/places/mapsLink.js'
@@ -18,7 +19,6 @@ type FacilityRow = {
     google_maps_url: string | null
 }
 
-const write = process.argv.includes('--write')
 const SEARCH_GAP_MS = 2100
 
 function clientConfig() {
@@ -39,7 +39,7 @@ function clientConfig() {
     }
 }
 
-async function main() {
+export async function main(write = process.argv.includes('--write')) {
     const apiKey = envVariables.googleAPIKey()
     if (!apiKey) {
         throw new Error('GOOGLE_API_KEY is unset')
@@ -102,29 +102,38 @@ async function main() {
                 continue
             }
 
-            counts.written += 1
-            console.log(`${write ? 'write' : 'would write'} ${facility.id} ${placeId}`)
-            if (!write) { continue }
+            if (!write) {
+                counts.written += 1
+                console.log(`would write ${facility.id} ${placeId}`)
+                continue
+            }
 
-            await client.query(
+            const result = await client.query(
                 `update facilities
                  set google_place_id = $1, updated_date = now()
                  where id = $2 and google_place_id is null`,
                 [placeId, facility.id]
             )
+            if ((result.rowCount ?? 0) > 0) {
+                counts.written += 1
+                console.log(`write ${facility.id} ${placeId}`)
+            }
         }
     } finally {
         await client.end()
     }
 
     console.log(counts)
+    return counts
 }
 
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-main().catch(error => {
-    console.error(error)
-    process.exitCode = 1
-})
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    main().catch(error => {
+        console.error(error)
+        process.exitCode = 1
+    })
+}
