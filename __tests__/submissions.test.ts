@@ -610,9 +610,15 @@ describe('submission status filters and counts', () => {
             acceptedInsurance: []
         }
 
-        const updateResult = await updateSubmissionForTest(createdSubmission.id, {
-            isUnderReview: true,
-            healthcareProfessionals: [draftProfessional]
+        const updateResult = await request(gqlApiUrl).post('').send({
+            query: updateSubmissionWithProfessionalListsMutation,
+            variables: {
+                id: createdSubmission.id,
+                input: {
+                    isUnderReview: true,
+                    healthcareProfessionals: [draftProfessional]
+                }
+            }
         })
 
         expect(updateResult.body.errors).toBeUndefined()
@@ -893,6 +899,20 @@ const createSubmissionMutation = `mutation test_createSubmission($input: CreateS
     }
 }`
 
+const updateSubmissionWithProfessionalListsMutation = `mutation test_updateSubmissionLists(
+    $id: ID!,
+    $input: UpdateSubmissionInput!
+) {
+    updateSubmission(id: $id, input: $input) {
+        healthcareProfessionals {
+            degrees
+            specialties
+            acceptedInsurance
+        }
+        isApproved
+    }
+}`
+
 const updateSubmissionMutation = `mutation test_updateSubmission($id: ID!, $input: UpdateSubmissionInput!) {
     updateSubmission(id: $id, input: $input) {
         id
@@ -904,9 +924,6 @@ const updateSubmissionMutation = `mutation test_updateSubmission($id: ID!, $inpu
         }
         healthcareProfessionals {
             id
-            degrees
-            specialties
-            acceptedInsurance
         }
         isUnderReview
         isApproved
