@@ -422,7 +422,7 @@ export function validateUpdateSubmissionInput(
                 }
             }
 
-            if (hp.degrees !== undefined) {
+            if (hp.degrees?.length) {
                 const degreesValidation: Result<unknown> = {
                     data: undefined,
                     hasErrors: false,
@@ -441,7 +441,7 @@ export function validateUpdateSubmissionInput(
                 }
             }
 
-            if (hp.specialties !== undefined) {
+            if (hp.specialties?.length) {
                 const specialtiesValidation: Result<unknown> = {
                     data: undefined,
                     hasErrors: false,
@@ -460,7 +460,7 @@ export function validateUpdateSubmissionInput(
                 }
             }
 
-            if (hp.acceptedInsurance !== undefined) {
+            if (hp.acceptedInsurance?.length) {
                 const insuranceValidation: Result<unknown> = {
                     data: undefined,
                     hasErrors: false,
@@ -519,6 +519,62 @@ export function validateUpdateSubmissionInput(
             httpStatus: 400
         })
     }
+
+    return validationResults
+}
+
+const APPROVAL_PROFESSIONAL_FIELDS = ['degrees', 'specialties', 'acceptedInsurance'] as const
+
+type ApprovalProfessionalFields = {
+    id?: string | null
+    degrees?: readonly unknown[] | null
+    specialties?: readonly unknown[] | null
+    acceptedInsurance?: readonly unknown[] | null
+}
+
+/**
+ * Degrees, specialties, and insurance can be saved empty while a submission is still a draft.
+ * Approving a new professional requires each list. An existing professional already has them.
+ */
+export function validateApprovalProfessionalFields(input: {
+    hpsId?: string | null
+    facilityHealthcareProfessionalIds?: readonly string[] | null
+    healthcareProfessionals?: readonly ApprovalProfessionalFields[] | null
+}): Result<unknown> {
+    const validationResults: Result<unknown> = {
+        data: undefined,
+        hasErrors: false,
+        errors: []
+    }
+
+    const linksExistingProfessional = Boolean(input.hpsId)
+        || (input.facilityHealthcareProfessionalIds?.length ?? 0) > 0
+
+    if (linksExistingProfessional) {
+        return validationResults
+    }
+
+    const professionals = input.healthcareProfessionals ?? []
+    const professionalsToCheck = professionals.length > 0 ? professionals : [{}]
+
+    professionalsToCheck.forEach((professional, index) => {
+        if (professional.id) {
+            return
+        }
+
+        APPROVAL_PROFESSIONAL_FIELDS.forEach(field => {
+            if ((professional[field]?.length ?? 0) > 0) {
+                return
+            }
+
+            validationResults.hasErrors = true
+            validationResults.errors?.push({
+                field: `healthcareProfessionals[${index}].${field}`,
+                errorCode: ErrorCode.REQUIRED,
+                httpStatus: 400
+            })
+        })
+    })
 
     return validationResults
 }

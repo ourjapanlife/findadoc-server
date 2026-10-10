@@ -1,7 +1,14 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
-import { ErrorCode, Result } from '../result.js'
-import { validateSubmissionSearchFilters, validateCreateSubmissionInputs, validateIdInput, isValidHpInput, validateUpdateSubmissionInput } from '../validation/validateSubmissions.js'
+import { ErrorCode, Result, type Error as ValidationError } from '../result.js'
+import {
+    isValidHpInput,
+    validateApprovalProfessionalFields,
+    validateCreateSubmissionInputs,
+    validateIdInput,
+    validateSubmissionSearchFilters,
+    validateUpdateSubmissionInput
+} from '../validation/validateSubmissions.js'
 import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
@@ -21,6 +28,15 @@ type SubmissionStatusFlag = keyof Pick<
 >
 
 type SubmissionStatusFlags = Partial<Pick<gqlTypes.SubmissionSearchFilters, SubmissionStatusFlag>>
+
+class SubmissionApprovalValidationError extends Error {
+    readonly validationErrors: ValidationError[]
+
+    constructor(validationErrors: ValidationError[]) {
+        super('APPROVAL_VALIDATION')
+        this.validationErrors = validationErrors
+    }
+}
 
 /**
  * Maps GraphQL status flags to DB status values.
@@ -710,6 +726,16 @@ export const approveSubmission = async (
                 throw new Error('SUBMISSION_ALREADY_APPROVED')
             }
 
+            const approvalValidation = validateApprovalProfessionalFields({
+                hpsId: currentSubmission.hps_id,
+                facilityHealthcareProfessionalIds: currentSubmission.facility_partial?.healthcareProfessionalIds,
+                healthcareProfessionals: currentSubmission.healthcare_professionals_partial
+            })
+
+            if (approvalValidation.hasErrors) {
+                throw new SubmissionApprovalValidationError(approvalValidation.errors ?? [])
+            }
+
             let finalFacilityId = currentSubmission.facilities_id
 
             // Create facility if needed
@@ -796,6 +822,14 @@ export const approveSubmission = async (
 
         return { data: gqlSubmission, hasErrors: false }
     } catch (error) {
+        if (error instanceof SubmissionApprovalValidationError) {
+            return {
+                data: {} as gqlTypes.Submission,
+                hasErrors: true,
+                errors: error.validationErrors
+            }
+        }
+
         const errorMessage = (error as Error).message
 
         if (errorMessage === 'SUBMISSION_ALREADY_APPROVED') {
