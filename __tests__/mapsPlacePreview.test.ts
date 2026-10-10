@@ -66,6 +66,21 @@ describe('previewTargetFromMapsUrl', () => {
         expect(target?.name).toBe('Tokyo Station International Clinic')
     })
 
+    it('does not follow a redirect away from Maps', async () => {
+        let calls = 0
+        const fetchImpl = (async () => {
+            calls += 1
+            return new Response(null, {
+                status: 302,
+                headers: { location: 'https://example.com/track' }
+            })
+        }) as typeof fetch
+
+        const target = await resolveMapsPlace('https://maps.app.goo.gl/abc123XYZ', fetchImpl)
+        expect(target).toBeNull()
+        expect(calls).toBe(1)
+    })
+
     it('does not look up a name that is not a Maps URL', () => {
         expect(previewTargetFromMapsUrl('Tokyo Station International Clinic')).toBeNull()
         expect(previewTargetFromMapsUrl('https://maps.app.goo.gl/abc123XYZ')).toBeNull()

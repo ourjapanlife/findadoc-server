@@ -110,6 +110,7 @@ export function canonicalMapsLink(target: MapsPreviewTarget): string | null {
 }
 
 const MAPS_REDIRECT_LIMIT = 5
+const MAPS_RESOLVE_MS = 8000
 
 /**
  * Open a short Maps link and read the place id from where it lands.
@@ -122,24 +123,27 @@ export async function resolveMapsPlace(
     const direct = previewTargetFromMapsUrl(url)
     if (direct?.placeId || !canOpenMapsUrl(url)) { return direct }
 
+    const deadline = AbortSignal.timeout(MAPS_RESOLVE_MS)
     let current = url.trim()
     try {
         for (let hop = 0; hop < MAPS_REDIRECT_LIMIT; hop++) {
             const response = await fetchImpl(current, {
                 redirect: 'manual',
+                signal: deadline,
                 headers: { 'user-agent': 'Mozilla/5.0' }
             })
             if (response.status >= 300 && response.status < 400) {
                 const location = response.headers.get('location')
                 if (!location) { return null }
                 current = new URL(location, current).toString()
+                if (!canOpenMapsUrl(current)) { return null }
                 const opened = previewTargetFromMapsUrl(current)
                 if (opened?.placeId) { return opened }
                 continue
             }
             if (!response.ok) { return null }
 
-            const body = (await response.text()).slice(0, 500000)
+            const body = (await textWithin(response, deadline)).slice(0, 500000)
             const fromPage = placeFromMapsPage(body)
             if (fromPage?.placeId) { return fromPage }
             return previewTargetFromMapsUrl(current)
@@ -159,10 +163,28 @@ function canOpenMapsUrl(url: string): boolean {
         return false
     }
 
+    if (parsed.protocol !== 'https:') { return false }
+
     const host = parsed.hostname
     if (host === 'maps.app.goo.gl') { return true }
     if (host === 'goo.gl' && parsed.pathname.startsWith('/maps')) { return true }
     return isGoogleMapsUrl(url.trim())
+}
+
+function textWithin(response: Response, signal: AbortSignal): Promise<string> {
+    if (signal.aborted) { return Promise.reject(signal.reason) }
+
+    return new Promise((resolve, reject) => {
+        const onAbort = () => reject(signal.reason)
+        signal.addEventListener('abort', onAbort, { once: true })
+        response.text().then(text => {
+            signal.removeEventListener('abort', onAbort)
+            resolve(text)
+        }, error => {
+            signal.removeEventListener('abort', onAbort)
+            reject(error)
+        })
+    })
 }
 
 function placeFromMapsPage(body: string): MapsPreviewTarget | null {
