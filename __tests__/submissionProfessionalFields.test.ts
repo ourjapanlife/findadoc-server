@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { Degree, Insurance, Specialty } from '../src/typeDefs/gqlTypes.js'
+import { Degree, Insurance, Locale, Specialty } from '../src/typeDefs/gqlTypes.js'
 import { ErrorCode } from '../src/result.js'
 import {
     validateApprovalProfessionalFields,
@@ -7,8 +7,8 @@ import {
 } from '../src/validation/validateSubmissions.js'
 
 const draftProfessional = {
-    names: [{ locale: 'en_US' as const, firstName: 'Ada', lastName: 'Lovelace' }],
-    spokenLanguages: ['en_US' as const],
+    names: [{ locale: Locale.EnUs, firstName: 'Ada', lastName: 'Lovelace' }],
+    spokenLanguages: [Locale.EnUs],
     degrees: [],
     specialties: [],
     acceptedInsurance: [],
