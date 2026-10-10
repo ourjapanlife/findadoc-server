@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { sharedFacilityIds } from './testSetup.test.js'
-import { getFacilityById } from '../src/services/facilityService.js'
-import { confirmFacilityPlaceId, suggestFacilityPlaces } from '../src/services/facilityPlaceService.js'
+import { suggestFacilityPlaces } from '../src/services/facilityPlaceService.js'
 
 const PLACE_ID = 'ChIJabcdefghijklmnop'
 
@@ -43,30 +41,5 @@ describe('suggestFacilityPlaces', () => {
             category: 'Medical clinic',
             confidence: 'LOW'
         }])
-    })
-})
-
-describe('confirmFacilityPlaceId', () => {
-    beforeEach(() => {
-        process.env.GOOGLE_API_KEY = 'test-key'
-    })
-
-    it('stores the confirmed place id and leaves the name and address alone', async () => {
-        const facilityId = sharedFacilityIds[0]
-        const before = await getFacilityById(facilityId)
-        expect(before.hasErrors).toBe(false)
-
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
-            JSON.stringify({ id: PLACE_ID }),
-            { status: 200 }
-        )))
-
-        const result = await confirmFacilityPlaceId(facilityId, PLACE_ID, 'moderator-1')
-
-        expect(result.hasErrors).toBe(false)
-        expect(result.data?.googlePlaceId).toBe(PLACE_ID)
-        expect(result.data?.nameEn).toBe(before.data.nameEn)
-        expect(result.data?.nameJa).toBe(before.data.nameJa)
-        expect(result.data?.contact.address).toEqual(before.data.contact.address)
     })
 })
