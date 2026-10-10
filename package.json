@@ -16,6 +16,8 @@
         "db:push": "cross-env NODE_ENV=production node --loader ts-node/esm utils/pushMigrations.ts",
         "backfill:cities": "node --loader ts-node/esm utils/backfillFacilityCities.ts",
         "backfill:cities:write": "node --loader ts-node/esm utils/backfillFacilityCities.ts --write",
+        "backfill:place-ids": "node --loader ts-node/esm utils/backfillFacilityPlaceIds.ts",
+        "backfill:place-ids:write": "node --loader ts-node/esm utils/backfillFacilityPlaceIds.ts --write",
         "prod": "yarn db:push && yarn prod:dockerstop && yarn prod:dockerstart",
         "prod:build": "echo '🧶 Installing yarn dependencies...🧶' && cross-env NODE_ENV=production && yarn --immutable-cache --check-cache && echo '🧹 cleaning dist folder...' && yarn dlx rimraf dist/ && echo '➡ ➡ copying files...' && yarn dlx copyfiles -a -V src/typeDefs/schema.graphql src/vocabulary/municipalities.json .env.prod dist && echo '💻✨ compiling code..' && tsc && echo '💻✨ successfully built!'",
         "prod:startserver": "echo '💻 💻 💻✨ Starting prod server...' && cross-env NODE_ENV=production PIDUSAGE_USE_PS=true pm2 start dist/src/index.js --no-daemon && pm2 logs --lines 100",

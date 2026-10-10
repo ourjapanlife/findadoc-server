@@ -18,6 +18,10 @@ A society or collaboration is a row in `affiliations`, not a Postgres enum (#102
 
 `affiliation_memberships` attaches that row to one facility or one healthcare professional. Do not attach the existing directory in this change. Bulk CSV import and the profile-card mark are later tickets.
 
+## Equality
+
+Compare values with `===` and `!==`. Do not use `==` or `!=`. That includes `== null` and `!= null`. A missing value is `=== null` or `=== undefined`.
+
 ## Places
 
 `docs/places-storage.md` is the storage rule. Follow it. Do not open a Places write path that contradicts it.

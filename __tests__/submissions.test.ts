@@ -600,6 +600,57 @@ describe('submission status filters and counts', () => {
         expect(await countSubmissionsWithFilters(filters)).toBe(1)
     })
 
+    test('saves empty professional lists and requires them only when approving', async () => {
+        const createdSubmission = await createSubmissionForTest()
+        const professional = generateRandomCreateHealthcareProfessionalInput()
+        const draftProfessional = {
+            ...professional,
+            degrees: [],
+            specialties: [],
+            acceptedInsurance: []
+        }
+
+        const updateResult = await request(gqlApiUrl).post('').send({
+            query: updateSubmissionWithProfessionalListsMutation,
+            variables: {
+                id: createdSubmission.id,
+                input: {
+                    isUnderReview: true,
+                    healthcareProfessionals: [draftProfessional]
+                }
+            }
+        })
+
+        expect(updateResult.body.errors).toBeUndefined()
+
+        const savedProfessional = updateResult.body.data.updateSubmission.healthcareProfessionals[0]
+
+        expect(savedProfessional.degrees).toEqual([])
+        expect(savedProfessional.specialties).toEqual([])
+        expect(savedProfessional.acceptedInsurance).toEqual([])
+
+        const blockedApproval = await updateSubmissionForTest(createdSubmission.id, { isApproved: true })
+        const approvalErrors = blockedApproval.body.errors[0].extensions.errors as Error[]
+
+        expect(approvalErrors.map(error => error.field)).toEqual([
+            'healthcareProfessionals[0].degrees',
+            'healthcareProfessionals[0].specialties',
+            'healthcareProfessionals[0].acceptedInsurance'
+        ])
+        expect(approvalErrors.every(error => error.errorCode === ErrorCode.REQUIRED)).toBe(true)
+
+        const completedUpdate = await updateSubmissionForTest(createdSubmission.id, {
+            healthcareProfessionals: [professional]
+        })
+
+        expect(completedUpdate.body.errors).toBeUndefined()
+
+        const approveResult = await updateSubmissionForTest(createdSubmission.id, { isApproved: true })
+
+        expect(approveResult.body.errors).toBeUndefined()
+        expect(approveResult.body.data.updateSubmission.isApproved).toBe(true)
+    })
+
     test('excludes pending submissions from isUnderReview filter', async () => {
         const input = generateRandomCreateSubmissionInput()
         const createdSubmission = await createSubmissionForTest(input)
@@ -845,6 +896,20 @@ const createSubmissionMutation = `mutation test_createSubmission($input: CreateS
         isUnderReview
         createdDate
         updatedDate
+    }
+}`
+
+const updateSubmissionWithProfessionalListsMutation = `mutation test_updateSubmissionLists(
+    $id: ID!,
+    $input: UpdateSubmissionInput!
+) {
+    updateSubmission(id: $id, input: $input) {
+        healthcareProfessionals {
+            degrees
+            specialties
+            acceptedInsurance
+        }
+        isApproved
     }
 }`
 

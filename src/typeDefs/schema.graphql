@@ -879,6 +879,22 @@ type CurrentUserAccess {
   effectiveScopes: [String!]!
 }
 
+enum PlaceMatchConfidence {
+  HIGH
+  LOW
+}
+
+"""
+A live Google place a moderator can confirm. Do not store the name or address from this type.
+"""
+type FacilityPlaceCandidate {
+  placeId: String!
+  name: String
+  address: String
+  category: String
+  confidence: PlaceMatchConfidence!
+}
+
 """
 Live place details for the submit form. Do not store the name, address, or category.
 """
@@ -914,6 +930,20 @@ type Query {
   Nothing in this response is saved.
   """
   mapsPlacePreview(url: String!, languageCode: String): MapsPlacePreview
+
+  """
+  Live place candidates for a moderator. Nothing in this list is saved.
+  A coordinate by itself is not a match.
+  """
+  suggestFacilityPlaces(
+    url: String
+    nameEn: String
+    nameJa: String
+    address: String
+    latitude: Float
+    longitude: Float
+    languageCode: String
+  ): [FacilityPlaceCandidate!]!
 
   """Look up a single healthcare professional by their unique ID. Returns null if not found."""
   healthcareProfessional(id: ID!): HealthcareProfessional
@@ -1063,6 +1093,12 @@ type Mutation {
 
   """Update an existing facility by ID."""
   updateFacility(id: ID!, input: UpdateFacilityInput!): Facility!
+
+  """
+  Store a Google place id a moderator confirmed.
+  The facility name and address are not changed.
+  """
+  confirmFacilityPlaceId(facilityId: ID!, placeId: String!): Facility!
 
   """Delete a facility by ID."""
   deleteFacility(id: ID!): DeleteResult!

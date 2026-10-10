@@ -1,15 +1,13 @@
 import { envVariables } from '../../utils/environmentVariables.js'
 import { logger } from '../logger.js'
 import { Result } from '../result.js'
-import { allowPreviewCall, previewTargetFromMapsUrl } from '../places/mapsLink.js'
+import { allowSharedPreviewCall, previewTargetFromMapsUrl } from '../places/mapsLink.js'
 import {
     loadPlacePreview,
     searchPlacePreview,
     type PlacePreview
 } from '../places/placesClient.js'
 
-const ipHits = new Map<string, number[]>()
-const globalHits: number[] = []
 const inflight = new Map<string, Promise<Result<PlacePreview | null>>>()
 
 /**
@@ -51,7 +49,7 @@ async function lookupMapsPlace(
         return { data: null, hasErrors: false }
     }
 
-    if (!allowPreviewCall(ipHits, globalHits, clientIp, Date.now())) {
+    if (!allowSharedPreviewCall(clientIp)) {
         logger.warn(`mapsPlacePreview skipped because the lookup limit was reached for ${clientIp}`)
         return { data: null, hasErrors: false }
     }

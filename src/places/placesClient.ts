@@ -251,7 +251,7 @@ export async function searchPlacePreview(
         regionCode: 'JP',
         maxResultCount: 1
     }
-    if (latitude != null && longitude != null) {
+    if (latitude !== null && longitude !== null) {
         body.locationBias = {
             circle: {
                 center: { latitude, longitude },
@@ -277,6 +277,52 @@ export async function searchPlacePreview(
     const payload = await response.json() as { places?: unknown }
     const first = Array.isArray(payload.places) ? payload.places[0] : null
     return readPlacePreview(first)
+}
+
+/** Up to five live matches. The caller discards the text after the screen closes. */
+export async function searchPlaceCandidates(
+    name: string,
+    latitude: number | null,
+    longitude: number | null,
+    apiKey: string,
+    languageCode: string,
+    fetchImpl: typeof fetch = fetch
+): Promise<PlacePreview[]> {
+    const body: Record<string, unknown> = {
+        textQuery: name,
+        languageCode,
+        regionCode: 'JP',
+        maxResultCount: 5
+    }
+    if (latitude !== null && longitude !== null) {
+        body.locationBias = {
+            circle: {
+                center: { latitude, longitude },
+                radius: 500
+            }
+        }
+    }
+
+    const response = await fetchImpl(PLACE_SEARCH_URL, {
+        method: 'POST',
+        headers: {
+            'content-type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': PLACE_SEARCH_FIELD_MASK
+        },
+        body: JSON.stringify(body)
+    })
+
+    if (!response.ok) {
+        throw new Error(`Places search failed (${response.status})`)
+    }
+
+    const payload = await response.json() as { places?: unknown }
+    if (!Array.isArray(payload.places)) { return [] }
+    return payload.places.flatMap(place => {
+        const preview = readPlacePreview(place)
+        return preview?.placeId ? [preview] : []
+    })
 }
 
 export function readPlacePreview(body: unknown): PlacePreview | null {
