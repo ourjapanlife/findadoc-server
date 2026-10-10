@@ -110,9 +110,17 @@ const GLOBAL_WINDOW_MS = 60 * 1000
 const sharedIpHits = new Map<string, number[]>()
 const sharedGlobalHits: number[] = []
 
-/** One budget for public previews and moderator lookups. */
+const moderatorIpHits = new Map<string, number[]>()
+const moderatorGlobalHits: number[] = []
+
+/** Public-preview budget. */
 export function allowSharedPreviewCall(ip: string, now = Date.now(), ipLimit = IP_LIMIT): boolean {
     return allowPreviewCall(sharedIpHits, sharedGlobalHits, ip, now, ipLimit)
+}
+
+/** Twenty moderator lookups per address each ten minutes, and thirty globally each minute. */
+export function allowModeratorPreviewCall(ip: string, now = Date.now()): boolean {
+    return allowPreviewCall(moderatorIpHits, moderatorGlobalHits, ip, now, 20)
 }
 
 export function allowPreviewCall(

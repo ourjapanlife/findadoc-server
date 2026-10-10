@@ -3,7 +3,7 @@ import { logger } from '../logger.js'
 import { ErrorCode, Result } from '../result.js'
 import type { Facility } from '../typeDefs/gqlTypes.js'
 import { namesAgree } from '../places/facilityPlaceMatch.js'
-import { allowSharedPreviewCall, previewTargetFromMapsUrl } from '../places/mapsLink.js'
+import { allowModeratorPreviewCall, previewTargetFromMapsUrl } from '../places/mapsLink.js'
 import {
     confirmPlaceId,
     loadPlacePreview,
@@ -56,7 +56,7 @@ export async function suggestFacilityPlaces(
         return { data: [], hasErrors: false }
     }
 
-    if (!allowSharedPreviewCall(clientIp, Date.now(), 20)) {
+    if (!allowModeratorPreviewCall(clientIp)) {
         logger.warn(`suggestFacilityPlaces skipped because the lookup limit was reached for ${clientIp}`)
         return { data: [], hasErrors: false }
     }
@@ -111,7 +111,17 @@ export async function confirmFacilityPlaceId(
         }
     }
 
-    const check = await confirmPlaceId(normalized, apiKey)
+    let check: Awaited<ReturnType<typeof confirmPlaceId>>
+    try {
+        check = await confirmPlaceId(normalized, apiKey)
+    } catch (error) {
+        logger.error(`ERROR: confirmFacilityPlaceId ${error}`)
+        return {
+            data: null,
+            hasErrors: true,
+            errors: [{ field: 'placeId', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
+        }
+    }
     if (check === 'missing') {
         return {
             data: null,
