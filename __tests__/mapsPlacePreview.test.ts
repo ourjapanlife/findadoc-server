@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { readPlacePreview, searchPlacePreview } from '../src/places/placesClient.js'
-import { allowPreviewCall, canonicalMapsLink, featureIdToPlaceId, previewTargetFromMapsUrl } from '../src/places/mapsLink.js'
+import {
+    allowPreviewCall,
+    canonicalMapsLink,
+    featureIdToPlaceId,
+    previewTargetFromMapsUrl,
+    resolveMapsPlace
+} from '../src/places/mapsLink.js'
 
 const TOKYO_STATION = 'https://www.google.com/maps/place/Tokyo+Station+International+Clinic/@35.6791006,139.767714,17z/data=!3m1!4b1!4m6!3m5!1s0x60188bf5d2aa2fe7:0xe80be270a19ad1f8!8m2!3d35.6791006!4d139.767714!16s%2Fg%2F11l6yc1_d0?entry=ttu'
 
@@ -47,6 +53,17 @@ describe('previewTargetFromMapsUrl', () => {
         expect(link?.startsWith('https://www.google.com/maps/search/?api=1&')).toBe(true)
         expect(link).toContain('query=Tokyo+Station+International+Clinic')
         expect(link).toContain(`query_place_id=${target!.placeId}`)
+    })
+
+    it('reads the place id after a short link redirects', async () => {
+        const fetchImpl = (async () => new Response(null, {
+            status: 302,
+            headers: { location: TOKYO_STATION }
+        })) as typeof fetch
+
+        const target = await resolveMapsPlace('https://maps.app.goo.gl/abc123XYZ', fetchImpl)
+        expect(target?.placeId).toBe(featureIdToPlaceId('0x60188bf5d2aa2fe7', '0xe80be270a19ad1f8'))
+        expect(target?.name).toBe('Tokyo Station International Clinic')
     })
 
     it('does not look up a name that is not a Maps URL', () => {

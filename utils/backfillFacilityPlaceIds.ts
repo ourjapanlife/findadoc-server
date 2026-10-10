@@ -1,12 +1,12 @@
 import pg from 'pg'
 import { pathToFileURL } from 'node:url'
 import { envVariables } from './environmentVariables.js'
-import { canonicalMapsLink, previewTargetFromMapsUrl } from '../src/places/mapsLink.js'
+import { canonicalMapsLink, resolveMapsPlace } from '../src/places/mapsLink.js'
 
 /**
  * Fill google_place_id from the Maps link already stored on a facility.
  * Dry-run unless `--write` is passed.
- * The link is canonicalized locally. Places Text Search is not called.
+ * A short link is opened once so its redirect can be read. Places Text Search is not called.
  * The stored Maps URL is rewritten to the normalized form that carries the place id.
  * Name and address are never changed.
  */
@@ -51,11 +51,12 @@ export async function main(write = process.argv.includes('--write')) {
         `)
 
         for (const facility of facilities.rows) {
-            const target = previewTargetFromMapsUrl(facility.google_maps_url ?? '')
+            const storedUrl = facility.google_maps_url ?? ''
+            const target = await resolveMapsPlace(storedUrl)
             const canonical = target ? canonicalMapsLink(target) : null
             if (!target?.placeId || !canonical) {
                 counts.unmatched += 1
-                console.log(`unmatched ${facility.id} ${facility.name_en}`)
+                console.log(`unmatched ${facility.id} ${facility.name_en} ${storedUrl}`)
                 continue
             }
 

@@ -109,6 +109,82 @@ export function canonicalMapsLink(target: MapsPreviewTarget): string | null {
     return `https://www.google.com/maps/search/?${params.toString()}`
 }
 
+const MAPS_REDIRECT_LIMIT = 5
+
+/**
+ * Open a short Maps link and read the place id from where it lands.
+ * A link that already contains the id is returned without a request.
+ */
+export async function resolveMapsPlace(
+    url: string,
+    fetchImpl: typeof fetch = fetch
+): Promise<MapsPreviewTarget | null> {
+    const direct = previewTargetFromMapsUrl(url)
+    if (direct?.placeId || !canOpenMapsUrl(url)) { return direct }
+
+    let current = url.trim()
+    try {
+        for (let hop = 0; hop < MAPS_REDIRECT_LIMIT; hop++) {
+            const response = await fetchImpl(current, {
+                redirect: 'manual',
+                headers: { 'user-agent': 'Mozilla/5.0' }
+            })
+            if (response.status >= 300 && response.status < 400) {
+                const location = response.headers.get('location')
+                if (!location) { return null }
+                current = new URL(location, current).toString()
+                const opened = previewTargetFromMapsUrl(current)
+                if (opened?.placeId) { return opened }
+                continue
+            }
+            if (!response.ok) { return null }
+
+            const body = (await response.text()).slice(0, 500000)
+            const fromPage = placeFromMapsPage(body)
+            if (fromPage?.placeId) { return fromPage }
+            return previewTargetFromMapsUrl(current)
+        }
+    } catch {
+        return null
+    }
+
+    return previewTargetFromMapsUrl(current)
+}
+
+function canOpenMapsUrl(url: string): boolean {
+    let parsed: URL
+    try {
+        parsed = new URL(url.trim())
+    } catch {
+        return false
+    }
+
+    const host = parsed.hostname
+    if (host === 'maps.app.goo.gl') { return true }
+    if (host === 'goo.gl' && parsed.pathname.startsWith('/maps')) { return true }
+    return isGoogleMapsUrl(url.trim())
+}
+
+function placeFromMapsPage(body: string): MapsPreviewTarget | null {
+    const decoded = body.replace(/\\u003d/g, '=').replace(/&amp;/g, '&')
+    const place = decoded.match(
+        /https:\/\/(?:www\.google\.(?:com|co\.jp)|maps\.google\.(?:com|co\.jp))\/maps\/[^"'\\\s<]+/
+    )
+    if (place?.[0]) {
+        const target = previewTargetFromMapsUrl(place[0])
+        if (target?.placeId) { return target }
+    }
+
+    const feature = decoded.match(/!1s(0x[0-9a-f]{1,16}):(0x[0-9a-f]{1,16})/i)
+    if (!feature?.[1] || !feature[2]) { return null }
+    return {
+        name: null,
+        latitude: null,
+        longitude: null,
+        placeId: featureIdToPlaceId(feature[1], feature[2])
+    }
+}
+
 function decodedMapsPath(parsed: URL): string {
     const raw = `${parsed.pathname}${parsed.search}`
     try {
