@@ -561,6 +561,18 @@ export type LocalizedName = {
   middleName?: Maybe<Scalars['String']['output']>;
 };
 
+/**
+ * Live place details for the submit form. Do not store the name, address, or category.
+ */
+export type MapsPlacePreview = {
+  __typename?: 'MapsPlacePreview';
+  address?: Maybe<Scalars['String']['output']>;
+  /** Short place type, such as Medical clinic. */
+  category?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  placeId?: Maybe<Scalars['String']['output']>;
+};
+
 /** Input for providing a localized name. */
 export type LocalizedNameInput = {
   /** First (given) name. */
@@ -804,12 +816,22 @@ export type Query = {
   facilitiesTotalCount: Scalars['Int']['output'];
   /** Look up a single facility by its unique ID. Returns null if not found. */
   facility?: Maybe<Facility>;
+  /**
+   * The facility that already stores this Google place id.
+   * Null when the id is unknown or we have no matching row.
+   */
+  facilityByGooglePlaceId?: Maybe<Facility>;
   /** Look up a single healthcare professional by their unique ID. Returns null if not found. */
   healthcareProfessional?: Maybe<HealthcareProfessional>;
   /** Search for healthcare professionals matching the given filters. Returns an empty list if no matches. */
   healthcareProfessionals: Array<HealthcareProfessional>;
   /** Get the total count of healthcare professionals matching the given filters. Useful for pagination. */
   healthcareProfessionalsTotalCount: Scalars['Int']['output'];
+  /**
+   * Live name, address, and category for a Maps link on the submit form.
+   * Nothing in this response is saved.
+   */
+  mapsPlacePreview?: Maybe<MapsPlacePreview>;
   /** Prefectures this server owns. One row per prefecture in the frozen key list. */
   prefectures: Array<Prefecture>;
   /** Look up a single reservation by its unique ID. Returns null if not found. */
@@ -861,6 +883,11 @@ export type QueryFacilityArgs = {
 };
 
 
+export type QueryFacilityByGooglePlaceIdArgs = {
+  placeId: Scalars['String']['input'];
+};
+
+
 export type QueryHealthcareProfessionalArgs = {
   id: Scalars['ID']['input'];
 };
@@ -868,6 +895,12 @@ export type QueryHealthcareProfessionalArgs = {
 
 export type QueryHealthcareProfessionalsArgs = {
   filters: HealthcareProfessionalSearchFilters;
+};
+
+
+export type QueryMapsPlacePreviewArgs = {
+  languageCode?: InputMaybe<Scalars['String']['input']>;
+  url: Scalars['String']['input'];
 };
 
 
@@ -1311,6 +1344,7 @@ export type ResolversTypes = {
   Locale: Locale;
   LocalizedName: ResolverTypeWrapper<LocalizedName>;
   LocalizedNameInput: LocalizedNameInput;
+  MapsPlacePreview: ResolverTypeWrapper<MapsPlacePreview>;
   Mutation: ResolverTypeWrapper<{}>;
   ObjectType: ObjectType;
   OrderBy: OrderBy;
@@ -1366,6 +1400,7 @@ export type ResolversParentTypes = {
   Int: Scalars['Int']['output'];
   LocalizedName: LocalizedName;
   LocalizedNameInput: LocalizedNameInput;
+  MapsPlacePreview: MapsPlacePreview;
   Mutation: {};
   OrderBy: OrderBy;
   PaymentOption: PaymentOption;
@@ -1554,9 +1589,11 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   facilities?: Resolver<Array<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilitiesArgs, 'filters'>>;
   facilitiesTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryFacilitiesTotalCountArgs, 'filters'>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
+  facilityByGooglePlaceId?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityByGooglePlaceIdArgs, 'placeId'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
   healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
   healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;
+  mapsPlacePreview?: Resolver<Maybe<ResolversTypes['MapsPlacePreview']>, ParentType, ContextType, Partial<QueryMapsPlacePreviewArgs>>;
   prefectures?: Resolver<Array<ResolversTypes['Prefecture']>, ParentType, ContextType>;
   reservation?: Resolver<Maybe<ResolversTypes['Reservation']>, ParentType, ContextType, RequireFields<QueryReservationArgs, 'id'>>;
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;

@@ -116,6 +116,7 @@ export function getEffectiveScopes(user: User | null | undefined): Scope[] {
 
 export interface UserContext {
     user: User
+    clientIp?: string
 }
 
 /**
@@ -169,7 +170,8 @@ export async function buildUserContext(req: FastifyRequest): Promise<UserContext
             // These are custom roles defined in the Auth0 dashboard
             // They are JWT recommended prefixes with https://findadoc.jp/roles to avoid conflicts with standard JWT claims
             roles: userFromRequest['https://findadoc.jp/roles'] as Role[] || userFromRequest?.roles as Role[] || []
-        } satisfies User
+        } satisfies User,
+        clientIp: req.ip || 'unknown'
     } satisfies UserContext
 }
 

@@ -8,6 +8,7 @@ import * as userService from './services/userService.js'
 import * as reservationService from './services/reservationService.js'
 import * as cityService from './services/cityService.js'
 import * as citySuggestionService from './services/citySuggestionService.js'
+import * as mapsPlacePreviewService from './services/mapsPlacePreviewService.js'
 import { Result } from './result.js'
 import { logger } from './logger.js'
 import {
@@ -51,6 +52,53 @@ const resolvers = {
             const needsHpIds = facilityNeedsHpIds(requestedFields)
             const queryResults = await facilityService.getFacilityById(args.id, selectColumns, needsHpIds)
 
+            convertErrorsToGqlErrors(queryResults)
+            return queryResults.data
+        },
+        facilityByGooglePlaceId: async (
+            _parent: unknown,
+            args: { placeId: string },
+            context: UserContext,
+            info: GraphQLResolveInfo
+        ): Promise<gqlType.Facility | null> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const requestedFields = getRequestedFields(info)
+            const selectColumns = buildFacilitySelectString(requestedFields)
+            const needsHpIds = facilityNeedsHpIds(requestedFields)
+            const queryResults = await facilityService.getFacilityByGooglePlaceId(
+                args.placeId.trim(),
+                selectColumns,
+                needsHpIds
+            )
+
+            convertErrorsToGqlErrors(queryResults)
+            return queryResults.data
+        },
+        mapsPlacePreview: async (
+            _parent: unknown,
+            args: { url: string, languageCode?: string | null },
+            context: UserContext
+        ): Promise<gqlType.MapsPlacePreview | null> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const queryResults = await mapsPlacePreviewService.previewMapsPlace(
+                args.url,
+                args.languageCode,
+                context.clientIp
+            )
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },

@@ -7,6 +7,14 @@ const AUTOCOMPLETE_FIELD_MASK = [
 ].join(',')
 const PLACE_ID_FIELD_MASK = 'id'
 const PLACE_MATCH_FIELD_MASK = 'addressComponents,formattedAddress,types'
+const PLACE_PREVIEW_FIELD_MASK = 'id,displayName,formattedAddress,primaryTypeDisplayName'
+const PLACE_SEARCH_FIELD_MASK = [
+    'places.id',
+    'places.displayName',
+    'places.formattedAddress',
+    'places.primaryTypeDisplayName'
+].join(',')
+const PLACE_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText'
 const CITY_COMPONENT_TYPES = ['sublocality_level_1', 'administrative_area_level_3', 'locality'] as const
 const TWELVE_MONTHS_MS = 365 * 24 * 60 * 60 * 1000
 
@@ -18,6 +26,14 @@ export type PlacesPrediction = {
 }
 
 export type PlaceIdCheck = 'confirmed' | 'missing' | 'unavailable'
+
+/** Live name and address for the submit form. Do not store this. */
+export type PlacePreview = {
+    placeId: string | null
+    name: string | null
+    address: string | null
+    category: string | null
+}
 
 /** Text used to match a place onto a city. It is not stored. */
 export type PlaceMatchText = {
@@ -190,6 +206,100 @@ export async function loadPlaceMatch(
     if (!response.ok) { return 'unavailable' }
 
     return parsePlaceMatchText(await response.json()) ?? 'unavailable'
+}
+
+/** Place Details for a known id. The result is for the open form and is not stored. */
+export async function loadPlacePreview(
+    placeId: string,
+    apiKey: string,
+    languageCode: string,
+    fetchImpl: typeof fetch = fetch
+): Promise<PlacePreview | null> {
+    const url = new URL(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`)
+    url.searchParams.set('languageCode', languageCode)
+
+    const response = await fetchImpl(url, {
+        headers: {
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': PLACE_PREVIEW_FIELD_MASK
+        }
+    })
+
+    if (response.status === 404) { return null }
+    if (!response.ok) {
+        throw new Error(`Places details failed (${response.status})`)
+    }
+
+    return readPlacePreview(await response.json())
+}
+
+/**
+ * Find the place named in a Maps URL, biased to its pin.
+ * The result is for the open form and is not stored.
+ */
+export async function searchPlacePreview(
+    name: string,
+    latitude: number | null,
+    longitude: number | null,
+    apiKey: string,
+    languageCode: string,
+    fetchImpl: typeof fetch = fetch
+): Promise<PlacePreview | null> {
+    const body: Record<string, unknown> = {
+        textQuery: name,
+        languageCode,
+        regionCode: 'JP',
+        maxResultCount: 1
+    }
+    if (latitude != null && longitude != null) {
+        body.locationBias = {
+            circle: {
+                center: { latitude, longitude },
+                radius: 500
+            }
+        }
+    }
+
+    const response = await fetchImpl(PLACE_SEARCH_URL, {
+        method: 'POST',
+        headers: {
+            'content-type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': PLACE_SEARCH_FIELD_MASK
+        },
+        body: JSON.stringify(body)
+    })
+
+    if (!response.ok) {
+        throw new Error(`Places search failed (${response.status})`)
+    }
+
+    const payload = await response.json() as { places?: unknown }
+    const first = Array.isArray(payload.places) ? payload.places[0] : null
+    return readPlacePreview(first)
+}
+
+export function readPlacePreview(body: unknown): PlacePreview | null {
+    if (!body || typeof body !== 'object') { return null }
+
+    const place = body as {
+        id?: unknown
+        displayName?: { text?: unknown }
+        formattedAddress?: unknown
+        primaryTypeDisplayName?: { text?: unknown }
+    }
+    const name = textOf(place.displayName?.text)
+    const address = textOf(place.formattedAddress)
+    const category = textOf(place.primaryTypeDisplayName?.text)
+    const placeId = typeof place.id === 'string' ? normalizePlaceId(place.id) : null
+    if (!name && !address) { return null }
+
+    return {
+        placeId,
+        name: name || null,
+        address: address || null,
+        category: category || null
+    }
 }
 
 function textOf(value: unknown): string {

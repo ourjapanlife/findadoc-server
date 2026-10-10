@@ -150,6 +150,57 @@ export function buildFacilitySelect(selectColumns: string, filters: gqlTypes.Fac
  * @param needsHpIds Whether to query the junction table for related HP IDs (defaults to true).
  * @returns A Facility object.
  */
+/**
+ * The facility that already stores this Google place id, or null when none does.
+ * An invalid id is not a match.
+ */
+export async function getFacilityByGooglePlaceId(
+    placeId: string,
+    selectColumns = '*',
+    needsHpIds = true
+): Promise<Result<gqlTypes.Facility | null>> {
+    if (!/^[A-Za-z0-9_-]{8,}$/.test(placeId)) {
+        return { data: null, hasErrors: false }
+    }
+
+    try {
+        const supabase = getSupabaseClient()
+        const { data, error } = await supabase
+            .from('facilities')
+            .select('id')
+            .eq('google_place_id', placeId)
+            .order('updated_date', { ascending: false })
+            .limit(1)
+
+        if (error) {
+            throw error
+        }
+
+        const id = data?.[0]?.id
+        if (!id) {
+            return { data: null, hasErrors: false }
+        }
+
+        const facility = await getFacilityById(id, selectColumns, needsHpIds)
+        if (facility.hasErrors) {
+            return { data: null, hasErrors: true, errors: facility.errors }
+        }
+
+        return { data: facility.data, hasErrors: false }
+    } catch (error) {
+        logger.error(`ERROR: Error retrieving facility by place id: ${error}`)
+        return {
+            data: null,
+            hasErrors: true,
+            errors: [{
+                field: 'facilityByGooglePlaceId',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
 export const getFacilityById = async (
     id: string,
     selectColumns = '*',
