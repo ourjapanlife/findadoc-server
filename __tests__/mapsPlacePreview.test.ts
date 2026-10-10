@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readPlacePreview, searchPlacePreview } from '../src/places/placesClient.js'
-import { allowPreviewCall, previewTargetFromMapsUrl } from '../src/places/mapsLink.js'
+import { allowPreviewCall, canonicalMapsLink, featureIdToPlaceId, previewTargetFromMapsUrl } from '../src/places/mapsLink.js'
 
 const TOKYO_STATION = 'https://www.google.com/maps/place/Tokyo+Station+International+Clinic/@35.6791006,139.767714,17z/data=!3m1!4b1!4m6!3m5!1s0x60188bf5d2aa2fe7:0xe80be270a19ad1f8!8m2!3d35.6791006!4d139.767714!16s%2Fg%2F11l6yc1_d0?entry=ttu'
 
@@ -27,14 +27,26 @@ describe('readPlacePreview', () => {
     })
 })
 
+describe('featureIdToPlaceId', () => {
+    it('rewrites the hex pair in a Maps link as the canonical place id', () => {
+        expect(featureIdToPlaceId('0x6b12ae37b47f5b37', '0x8eaddfcd1b32ca52'))
+            .toBe('ChIJN1t_tDeuEmsRUsoyG83frY4')
+    })
+})
+
 describe('previewTargetFromMapsUrl', () => {
-    it('reads the clinic name and pin and ignores a hex feature id', () => {
-        expect(previewTargetFromMapsUrl(TOKYO_STATION)).toEqual({
+    it('reads the clinic name, pin, and place id from the stored link', () => {
+        const target = previewTargetFromMapsUrl(TOKYO_STATION)
+        expect(target).toEqual({
             name: 'Tokyo Station International Clinic',
             latitude: 35.6791006,
             longitude: 139.767714,
-            placeId: null
+            placeId: featureIdToPlaceId('0x60188bf5d2aa2fe7', '0xe80be270a19ad1f8')
         })
+        const link = canonicalMapsLink(target!)
+        expect(link?.startsWith('https://www.google.com/maps/search/?api=1&')).toBe(true)
+        expect(link).toContain('query=Tokyo+Station+International+Clinic')
+        expect(link).toContain(`query_place_id=${target!.placeId}`)
     })
 
     it('does not look up a name that is not a Maps URL', () => {
