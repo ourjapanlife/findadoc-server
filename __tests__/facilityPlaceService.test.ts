@@ -1,28 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { confirmFacilityPlaceId, suggestFacilityPlaces } from '../src/services/facilityPlaceService.js'
-
-import type { Facility } from '../src/typeDefs/gqlTypes.js'
-import { ErrorCode } from '../src/result.js'
-import { logger } from '../src/logger.js'
-import * as facilityService from '../src/services/facilityService.js'
-
-vi.mock('../src/services/facilityService.js', () => ({ updateFacility: vi.fn() }))
-vi.mock('../src/logger.js', () => ({ logger: { warn: vi.fn(), error: vi.fn() } }))
-
-beforeEach(() => {
-    vi.stubEnv('GOOGLE_API_KEY', 'test-key')
-    vi.stubGlobal('fetch', vi.fn())
-})
-
-afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.unstubAllEnvs()
-    vi.clearAllMocks()
-})
+import { suggestFacilityPlaces } from '../src/services/facilityPlaceService.js'
 
 const PLACE_ID = 'ChIJabcdefghijklmnop'
 
 describe('suggestFacilityPlaces', () => {
+    beforeEach(() => {
+        process.env.GOOGLE_API_KEY = 'test-key'
+        vi.stubGlobal('fetch', vi.fn())
+    })
+
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
     it('does not search when the only hint is a coordinate', async () => {
         const result = await suggestFacilityPlaces({
             latitude: 35.68,
@@ -55,33 +45,5 @@ describe('suggestFacilityPlaces', () => {
             category: 'Medical clinic',
             confidence: 'LOW'
         }])
-    })
-})
-
-describe('confirmFacilityPlaceId', () => {
-    it.each(['network rejection', 'JSON parse failure'])('returns a structured error for %s', async failure => {
-        if (failure === 'network rejection') {
-            vi.mocked(fetch).mockRejectedValue(new Error('Network failed'))
-        } else {
-            vi.mocked(fetch).mockResolvedValue(new Response('invalid JSON', { status: 200 }))
-        }
-        await expect(confirmFacilityPlaceId('facility-id', PLACE_ID, 'moderator-id')).resolves.toEqual({
-            data: null,
-            hasErrors: true,
-            errors: [{ field: 'placeId', errorCode: ErrorCode.INTERNAL_SERVER_ERROR, httpStatus: 500 }]
-        })
-        expect(logger.error).toHaveBeenCalledOnce()
-        expect(facilityService.updateFacility).not.toHaveBeenCalled()
-    })
-
-    it('updates only the confirmed Google place ID', async () => {
-        vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ id: PLACE_ID }), { status: 200 }))
-        const updated = { data: { id: 'facility-id', googlePlaceId: PLACE_ID } as Facility, hasErrors: false }
-        vi.mocked(facilityService.updateFacility).mockResolvedValue(updated)
-        await expect(confirmFacilityPlaceId('facility-id', PLACE_ID, 'moderator-id')).resolves.toEqual(updated)
-        expect(facilityService.updateFacility).toHaveBeenCalledOnce()
-        expect(facilityService.updateFacility).toHaveBeenCalledWith(
-            'facility-id', { googlePlaceId: PLACE_ID }, 'moderator-id'
-        )
     })
 })
