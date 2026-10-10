@@ -67,10 +67,64 @@ function googlePlaceIdFromUrl(parsed: URL): string | null {
     const queryToken = placeIdToken(fromQuery?.[1])
     if (queryToken) { return queryToken }
 
-    const embedded = `${parsed.pathname}${parsed.search}`.match(/!1s([A-Za-z0-9_-]{8,})/)
+    const haystack = decodedMapsPath(parsed)
+    const embedded = haystack.match(/!1s([A-Za-z0-9_-]{8,})/)
     const embeddedToken = placeIdToken(embedded?.[1])
     if (embeddedToken && !embeddedToken.startsWith('0x')) { return embeddedToken }
+
+    const feature = haystack.match(/(?:!1s|[?&]ftid=)(0x[0-9a-f]{1,16}):(0x[0-9a-f]{1,16})/i)
+    if (feature?.[1] && feature[2]) { return featureIdToPlaceId(feature[1], feature[2]) }
     return null
+}
+
+/**
+ * The 0x:0x pair in a Maps link is the same place as a ChIJ place id.
+ * It is a 20-byte id written as two little-endian numbers.
+ */
+export function featureIdToPlaceId(highHex: string, lowHex: string): string {
+    const bytes = [
+        0x0a,
+        0x12,
+        0x09,
+        ...hexToLittleEndianBytes(highHex),
+        0x11,
+        ...hexToLittleEndianBytes(lowHex)
+    ]
+    return Buffer.from(bytes).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+/** Stable Maps URL whose query carries the place id explicitly. */
+export function canonicalMapsLink(target: MapsPreviewTarget): string | null {
+    if (!target.placeId) { return null }
+
+    const query = target.name
+        ?? (target.latitude !== null && target.longitude !== null
+            ? `${target.latitude},${target.longitude}`
+            : target.placeId)
+    const params = new URLSearchParams({
+        api: '1',
+        query,
+        query_place_id: target.placeId
+    })
+    return `https://www.google.com/maps/search/?${params.toString()}`
+}
+
+function decodedMapsPath(parsed: URL): string {
+    const raw = `${parsed.pathname}${parsed.search}`
+    try {
+        return decodeURIComponent(raw)
+    } catch {
+        return raw
+    }
+}
+
+function hexToLittleEndianBytes(hex: string): number[] {
+    const normalized = hex.replace(/^0x/i, '').padStart(16, '0')
+    const bytes: number[] = []
+    for (let index = 14; index >= 0; index -= 2) {
+        bytes.push(Number.parseInt(normalized.slice(index, index + 2), 16))
+    }
+    return bytes
 }
 
 function placeIdToken(value: string | null | undefined): string | null {
