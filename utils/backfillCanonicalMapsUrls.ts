@@ -7,14 +7,12 @@ import { canonicalMapsFields } from '../src/places/mapsLink.js'
  * Rewrite stored Maps links to one canonical URL.
  * Dry-run unless `--write` is passed.
  * A short link is opened once. A link that does not identify one place is left unchanged.
- * Facility name, address, and other contact fields are not changed.
- * google_place_id is filled only when it is still empty.
+ * Facility name, address, place id, and other contact fields are not changed.
  */
 
 type FacilityRow = {
     id: string
     google_maps_url: string | null
-    google_place_id: string | null
 }
 
 type SubmissionRow = {
@@ -48,8 +46,7 @@ export async function main(write = process.argv.includes('--write')) {
     try {
         const facilities = await client.query<FacilityRow>(`
             select id,
-                   contact #>> '{googleMapsUrl}' as google_maps_url,
-                   google_place_id
+                   contact #>> '{googleMapsUrl}' as google_maps_url
             from facilities
             where coalesce(contact #>> '{googleMapsUrl}', '') <> ''
             order by updated_date desc
@@ -58,29 +55,24 @@ export async function main(write = process.argv.includes('--write')) {
         for (const facility of facilities.rows) {
             const storedUrl = facility.google_maps_url ?? ''
             const maps = await canonicalMapsFields(storedUrl)
-            const urlChanges = maps.url !== storedUrl
-            const placeIdChanges = !facility.google_place_id && Boolean(maps.placeId)
-            if (!urlChanges && !placeIdChanges) {
+            if (maps.url === storedUrl) {
                 counts.unchanged += 1
                 continue
             }
 
             if (!write) {
                 counts.facilities += 1
-                console.log(`would write facility ${facility.id} ${maps.placeId ?? facility.google_place_id ?? ''} ${maps.url}`)
+                console.log(`would write facility ${facility.id} ${maps.placeId ?? ''} ${maps.url}`)
                 continue
             }
 
             const result = await client.query(
                 `update facilities
-                 set google_place_id = coalesce(google_place_id, $1),
-                     contact = jsonb_set(contact, '{googleMapsUrl}', to_jsonb($2::text), true)
+                 set contact = jsonb_set(contact, '{googleMapsUrl}', to_jsonb($2::text), true)
                  where id = $3
-                   and (
-                     contact #>> '{googleMapsUrl}' is distinct from $2
-                     or (google_place_id is null and $1::text is not null)
-                   )`,
-                [maps.placeId, maps.url, facility.id]
+                   and contact #>> '{googleMapsUrl}' is not distinct from $1
+                   and contact #>> '{googleMapsUrl}' is distinct from $2`,
+                [storedUrl, maps.url, facility.id]
             )
             if ((result.rowCount ?? 0) > 0) {
                 counts.facilities += 1

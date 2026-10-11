@@ -189,6 +189,16 @@ async function canonicalizeSubmissionMapsUrls(
     return next
 }
 
+function mapsUrlForApprovalFacility(submission: {
+    google_maps_url: string | null
+    facility_partial: gqlTypes.FacilitySubmission | null
+}): string {
+    if (submission.facility_partial) {
+        return (submission.facility_partial as gqlTypes.CreateFacilityInput).contact?.googleMapsUrl ?? ''
+    }
+    return submission.google_maps_url ?? ''
+}
+
 function createBlankContact(googleMapsUrl?: string): gqlTypes.ContactInput {
     return {
         address: createBlankAddress(),
@@ -744,12 +754,27 @@ export const approveSubmission = async (
     updatedBy: string
 ): Promise<Result<gqlTypes.Submission>> => {
     try {
+        const preview = await db
+            .selectFrom('submissions')
+            .select(['facilities_id', 'google_maps_url', 'facility_partial'])
+            .where('id', '=', submissionId)
+            .executeTakeFirst()
+
+        // Open a short link before the transaction so the row lock is not held during the request.
+        const resolvedFrom = preview && !preview.facilities_id
+            ? mapsUrlForApprovalFacility(preview).trim()
+            : ''
+        const resolvedMaps = preview && !preview.facilities_id
+            ? await canonicalMapsFields(resolvedFrom)
+            : null
+
         const gqlSubmission = await db.transaction().execute(async transaction => {
             // Fetch current submission
             const currentSubmission = await transaction
                 .selectFrom('submissions')
                 .selectAll()
                 .where('id', '=', submissionId)
+                .forUpdate()
                 .executeTakeFirst()
 
             if (!currentSubmission) {
@@ -789,12 +814,15 @@ export const approveSubmission = async (
                     }
                 }
 
-                const maps = await canonicalMapsFields(facilityInput.contact?.googleMapsUrl)
-                facilityInput = {
-                    ...facilityInput,
-                    contact: {
-                        ...facilityInput.contact,
-                        googleMapsUrl: maps.url
+                const currentUrl = (facilityInput.contact?.googleMapsUrl ?? '').trim()
+                const useResolvedMaps = Boolean(resolvedMaps) && currentUrl === resolvedFrom
+                if (useResolvedMaps && resolvedMaps) {
+                    facilityInput = {
+                        ...facilityInput,
+                        contact: {
+                            ...facilityInput.contact,
+                            googleMapsUrl: resolvedMaps.url
+                        }
                     }
                 }
 
@@ -812,7 +840,7 @@ export const approveSubmission = async (
                         updated_date: new Date().toISOString(),
                         payment_options: JSON.stringify(facilityInput.paymentOptions ?? []),
                         city_id: null,
-                        google_place_id: maps.placeId,
+                        google_place_id: useResolvedMaps && resolvedMaps ? resolvedMaps.placeId : null,
                         source: null,
                         verification_status: 'UNVERIFIED_LOCATION'
                     })

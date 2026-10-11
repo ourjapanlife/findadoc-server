@@ -149,7 +149,10 @@ export async function canonicalMapsFields(
     if (!trimmed) { return { url: '', placeId: null } }
 
     try {
-        const target = await resolveMapsPlace(trimmed, fetchImpl)
+        // Only a short share link needs to be opened. A long link is canonicalized from the place id it already carries.
+        const target = isShortMapsUrl(trimmed)
+            ? await resolveMapsPlace(trimmed, fetchImpl)
+            : previewTargetFromMapsUrl(trimmed)
         const canonical = target ? canonicalMapsLink(target) : null
         if (!canonical || !target?.placeId) { return { url: trimmed, placeId: null } }
         return { url: canonical, placeId: target.placeId }
