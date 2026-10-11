@@ -82,6 +82,32 @@ const resolvers = {
             convertErrorsToGqlErrors(queryResults)
             return queryResults.data
         },
+        facilityMatchingMapsUrl: async (
+            _parent: unknown,
+            args: { url: string },
+            context: UserContext,
+            info: GraphQLResolveInfo
+        ): Promise<gqlType.Facility | null> => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            const requestedFields = getRequestedFields(info)
+            const selectColumns = buildFacilitySelectString(requestedFields)
+            const needsHpIds = facilityNeedsHpIds(requestedFields)
+            const queryResults = await facilityService.getFacilityMatchingMapsUrl(
+                args.url.trim(),
+                selectColumns,
+                needsHpIds
+            )
+
+            convertErrorsToGqlErrors(queryResults)
+            return queryResults.data
+        },
         mapsPlacePreview: async (
             _parent: unknown,
             args: { url: string, languageCode?: string | null },

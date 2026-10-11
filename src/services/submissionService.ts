@@ -19,6 +19,7 @@ import type { Selectable } from 'kysely'
 import { db } from '../kyselyClient.js'
 import { mapKyselySubmissionToGraphQL, mapDbEntityTogqlEntity } from '../services/mappersEntityService.js'
 import { asJsonb } from '../../utils/dbUtils.js'
+import { canonicalMapsFields } from '../places/mapsLink.js'
 /** Row type used as Supabase select generic — matches SubmissionRow from dbSchema */
 type SubmissionRow = dbSchema.SubmissionRow
 
@@ -158,6 +159,35 @@ function createBlankAddress(): gqlTypes.PhysicalAddressInput {
  * Ensures all required fields are defined, even if empty.
  * @param googleMapsUrl Optional pre-filled Google Maps URL.
  */
+
+async function canonicalizeSubmissionMapsUrls(
+    fields: Partial<gqlTypes.UpdateSubmissionInput>
+): Promise<Partial<gqlTypes.UpdateSubmissionInput>> {
+    const resolved = new Map<string, string>()
+    const storedUrl = async (url: string) => {
+        const key = url.trim()
+        const cached = resolved.get(key)
+        if (cached !== undefined) { return cached }
+        const maps = await canonicalMapsFields(key)
+        resolved.set(key, maps.url)
+        return maps.url
+    }
+
+    const next: Partial<gqlTypes.UpdateSubmissionInput> = { ...fields }
+    if (typeof next.googleMapsUrl === 'string') {
+        next.googleMapsUrl = await storedUrl(next.googleMapsUrl)
+    }
+    if (next.facility?.contact) {
+        next.facility = {
+            ...next.facility,
+            contact: {
+                ...next.facility.contact,
+                googleMapsUrl: await storedUrl(next.facility.contact.googleMapsUrl)
+            }
+        }
+    }
+    return next
+}
 
 function createBlankContact(googleMapsUrl?: string): gqlTypes.ContactInput {
     return {
@@ -419,13 +449,15 @@ export const createSubmission = async (
             }
         }
 
+        const mapsUrl = await canonicalMapsFields(submissionInput.googleMapsUrl)
+
         const gqlSubmission = await db.transaction().execute(async transaction => {
             // Insert submission
             const insertedSubmission = await transaction
                 .insertInto('submissions')
                 .values({
                     status: dbSchema.SUBMISSION_STATUS.PENDING,
-                    google_maps_url: submissionInput.googleMapsUrl ?? '',
+                    google_maps_url: mapsUrl.url,
                     healthcare_professional_name: submissionInput.healthcareProfessionalName ?? '',
                     spoken_languages: asJsonb<gqlTypes.Locale[]>(submissionInput.spokenLanguages ?? []),
                     facility_partial: null,
@@ -495,8 +527,10 @@ export const updateSubmission = async (
             }
         }
 
+        const fields = await canonicalizeSubmissionMapsUrls(fieldsToUpdate)
+
         // Redirect to approveSubmission if isApproved flag is set
-        if (fieldsToUpdate.isApproved === true) {
+        if (fields.isApproved === true) {
             return await approveSubmission(submissionId, updatedBy)
         }
 
@@ -513,7 +547,7 @@ export const updateSubmission = async (
             }
 
             // Map boolean flags to status via SUBMISSION_STATUS_FILTERS
-            const patch = buildSubmissionUpdatePatch(currentSubmission.status, fieldsToUpdate)
+            const patch = buildSubmissionUpdatePatch(currentSubmission.status, fields)
 
             const updatedSubmission = await transaction
                 .updateTable('submissions')
@@ -755,6 +789,15 @@ export const approveSubmission = async (
                     }
                 }
 
+                const maps = await canonicalMapsFields(facilityInput.contact?.googleMapsUrl)
+                facilityInput = {
+                    ...facilityInput,
+                    contact: {
+                        ...facilityInput.contact,
+                        googleMapsUrl: maps.url
+                    }
+                }
+
                 // CRITICAL NESTED TRANSACTION
                 // I'm tryin inline inside transaction
                 const insertedFacility = await transaction
@@ -769,7 +812,7 @@ export const approveSubmission = async (
                         updated_date: new Date().toISOString(),
                         payment_options: JSON.stringify(facilityInput.paymentOptions ?? []),
                         city_id: null,
-                        google_place_id: null,
+                        google_place_id: maps.placeId,
                         source: null,
                         verification_status: 'UNVERIFIED_LOCATION'
                     })
