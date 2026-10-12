@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readPlacePreview, searchPlacePreview } from '../src/places/placesClient.js'
 import {
     allowPreviewCall,
+    canonicalMapsFields,
     canonicalMapsLink,
     featureIdToPlaceId,
     previewTargetFromMapsUrl,
@@ -85,6 +86,79 @@ describe('previewTargetFromMapsUrl', () => {
         expect(previewTargetFromMapsUrl('Tokyo Station International Clinic')).toBeNull()
         expect(previewTargetFromMapsUrl('https://maps.app.goo.gl/abc123XYZ')).toBeNull()
         expect(previewTargetFromMapsUrl('https://www.google.com/maps')).toBeNull()
+    })
+
+    it('reads the place id from an iPhone share redirect that has no slash', () => {
+        const url = 'https://maps.google.com?q=A-ONE%20Dental&ftid=0x6b12ae37b47f5b37:0x8eaddfcd1b32ca52&g_st=ic'
+        const target = previewTargetFromMapsUrl(url)
+        expect(target?.name).toBe('A-ONE Dental')
+        expect(target?.placeId).toBe('ChIJN1t_tDeuEmsRUsoyG83frY4')
+        expect(canonicalMapsLink(target!)).toBe(
+            'https://www.google.com/maps/search/?api=1&query=A-ONE+Dental&query_place_id=ChIJN1t_tDeuEmsRUsoyG83frY4'
+        )
+    })
+
+    it('follows an iPhone share link to the feature id', async () => {
+        const destination = 'https://maps.google.com?q=A-ONE+Dental&ftid=0x6b12ae37b47f5b37:0x8eaddfcd1b32ca52&g_st=ic'
+        const fetchImpl = (async () => new Response(null, {
+            status: 302,
+            headers: { location: destination }
+        })) as typeof fetch
+
+        const target = await resolveMapsPlace('https://maps.app.goo.gl/RvxrTbJibf9CqX917?g_st=ic', fetchImpl)
+        expect(target?.placeId).toBe('ChIJN1t_tDeuEmsRUsoyG83frY4')
+        expect(target?.name).toBe('A-ONE Dental')
+    })
+})
+
+describe('canonicalMapsFields', () => {
+    it('rewrites a place id already in the link and does not open it', async () => {
+        let calls = 0
+        const fetchImpl = (async () => {
+            calls += 1
+            return new Response(null, { status: 500 })
+        }) as typeof fetch
+
+        const maps = await canonicalMapsFields(
+            'https://maps.google.com?q=A-ONE+Dental&ftid=0x6b12ae37b47f5b37:0x8eaddfcd1b32ca52',
+            fetchImpl
+        )
+
+        expect(calls).toBe(0)
+        expect(maps.placeId).toBe('ChIJN1t_tDeuEmsRUsoyG83frY4')
+        expect(maps.url).toBe(
+            'https://www.google.com/maps/search/?api=1&query=A-ONE+Dental&query_place_id=ChIJN1t_tDeuEmsRUsoyG83frY4'
+        )
+    })
+
+    it('leaves a long Maps link unchanged when it has no place id', async () => {
+        let calls = 0
+        const fetchImpl = (async () => {
+            calls += 1
+            return new Response(null, { status: 500 })
+        }) as typeof fetch
+        const stored = 'https://www.google.com/maps/search/A-ONE+Dental+Clinic/@35.7140477,139.6668954,17z'
+
+        const maps = await canonicalMapsFields(stored, fetchImpl)
+
+        expect(calls).toBe(0)
+        expect(maps).toEqual({ url: stored, placeId: null })
+    })
+
+    it('opens a short share link once', async () => {
+        let calls = 0
+        const fetchImpl = (async () => {
+            calls += 1
+            return new Response(null, {
+                status: 302,
+                headers: { location: 'https://maps.google.com?q=A-ONE+Dental&ftid=0x6b12ae37b47f5b37:0x8eaddfcd1b32ca52' }
+            })
+        }) as typeof fetch
+
+        const maps = await canonicalMapsFields('https://maps.app.goo.gl/RvxrTbJibf9CqX917?g_st=ic', fetchImpl)
+
+        expect(calls).toBe(1)
+        expect(maps.placeId).toBe('ChIJN1t_tDeuEmsRUsoyG83frY4')
     })
 })
 

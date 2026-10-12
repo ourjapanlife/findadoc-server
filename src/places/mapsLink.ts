@@ -39,10 +39,38 @@ export function previewTargetFromMapsUrl(url: string): MapsPreviewTarget | null 
 }
 
 function isGoogleMapsUrl(url: string): boolean {
-    return url.startsWith('https://www.google.com/maps')
-        || url.startsWith('https://www.google.co.jp/maps')
-        || url.startsWith('https://maps.google.com/')
-        || url.startsWith('https://maps.google.co.jp/')
+    let parsed: URL
+    try {
+        parsed = new URL(url)
+    } catch {
+        return false
+    }
+
+    if (parsed.protocol !== 'https:') { return false }
+
+    const host = parsed.hostname
+    // An iPhone share link redirects to maps.google.com?q=… with no slash before the query.
+    if (host === 'maps.google.com' || host === 'maps.google.co.jp') { return true }
+
+    const googleHost = host === 'www.google.com'
+        || host === 'google.com'
+        || host === 'www.google.co.jp'
+        || host === 'google.co.jp'
+    return googleHost && (parsed.pathname === '/maps' || parsed.pathname.startsWith('/maps/'))
+}
+
+/** A maps.app.goo.gl or goo.gl/maps link. The place id is on the page it opens. */
+export function isShortMapsUrl(url: string): boolean {
+    let parsed: URL
+    try {
+        parsed = new URL(url.trim())
+    } catch {
+        return false
+    }
+
+    if (parsed.protocol !== 'https:') { return false }
+    if (parsed.hostname === 'maps.app.goo.gl') { return true }
+    return parsed.hostname === 'goo.gl' && parsed.pathname.startsWith('/maps')
 }
 
 function placeName(value: string | null | undefined, rejectCoordinates = false): string | null {
@@ -107,6 +135,30 @@ export function canonicalMapsLink(target: MapsPreviewTarget): string | null {
         query_place_id: target.placeId
     })
     return `https://www.google.com/maps/search/?${params.toString()}`
+}
+
+/**
+ * The Maps URL to store.
+ * A short link is opened once. A link that does not identify one place is returned unchanged.
+ */
+export async function canonicalMapsFields(
+    url: string | null | undefined,
+    fetchImpl: typeof fetch = fetch
+): Promise<{ url: string, placeId: string | null }> {
+    const trimmed = (url ?? '').trim()
+    if (!trimmed) { return { url: '', placeId: null } }
+
+    try {
+        // Only a short share link needs to be opened. A long link is canonicalized from the place id it already carries.
+        const target = isShortMapsUrl(trimmed)
+            ? await resolveMapsPlace(trimmed, fetchImpl)
+            : previewTargetFromMapsUrl(trimmed)
+        const canonical = target ? canonicalMapsLink(target) : null
+        if (!canonical || !target?.placeId) { return { url: trimmed, placeId: null } }
+        return { url: canonical, placeId: target.placeId }
+    } catch {
+        return { url: trimmed, placeId: null }
+    }
 }
 
 const MAPS_REDIRECT_LIMIT = 5

@@ -11,6 +11,8 @@ import { prefectureTranslations, resolvePrefectureKey } from '../../utils/japane
 import { isCityRecordId, resolveFacilityPublication, verificationStatusForUpdate } from './facilityPublication.js'
 import { cityExists, findCityBySlug } from './cityService.js'
 import { FacilitySource } from '../typeDefs/gqlTypes.js'
+import { matchingFacilityId } from '../places/facilityMapsMatch.js'
+import { canonicalMapsFields, isShortMapsUrl, previewTargetFromMapsUrl, resolveMapsPlace } from '../places/mapsLink.js'
 import type { Transaction } from 'kysely'
 import type { Database } from '../typeDefs/kyselyTypes.js'
 import type { Database as SupabaseDb } from '../typeDefs/supabase-generated.js'
@@ -201,6 +203,80 @@ export async function getFacilityByGooglePlaceId(
     }
 }
 
+/**
+ * The clinic a Maps link already is.
+ * A short iPhone link is opened once and read as a place id. When that id is not stored yet,
+ * the clinic name inside the link, or a pin within 80 meters, is the same check.
+ */
+export async function getFacilityMatchingMapsUrl(
+    url: string,
+    selectColumns = '*',
+    needsHpIds = true
+): Promise<Result<gqlTypes.Facility | null>> {
+    const trimmed = url.trim()
+    if (!trimmed || trimmed.length > 2000) {
+        return { data: null, hasErrors: false }
+    }
+
+    try {
+        const target = isShortMapsUrl(trimmed)
+            ? await resolveMapsPlace(trimmed)
+            : previewTargetFromMapsUrl(trimmed)
+        if (!target) {
+            return { data: null, hasErrors: false }
+        }
+
+        if (target.placeId) {
+            const byPlace = await getFacilityByGooglePlaceId(target.placeId, selectColumns, needsHpIds)
+            if (byPlace.hasErrors || byPlace.data) {
+                return byPlace
+            }
+        }
+
+        const rows = await db
+            .selectFrom('facilities')
+            .select(['id', 'name_en', 'name_ja', 'map_latitude', 'map_longitude'])
+            .execute()
+        const matchId = matchingFacilityId(target, rows.map(row => ({
+            id: row.id,
+            nameEn: row.name_en,
+            nameJa: row.name_ja,
+            latitude: row.map_latitude,
+            longitude: row.map_longitude
+        })))
+        if (!matchId) {
+            return { data: null, hasErrors: false }
+        }
+
+        const facility = await getFacilityById(matchId, selectColumns, needsHpIds)
+        if (facility.hasErrors) {
+            return { data: null, hasErrors: true, errors: facility.errors }
+        }
+        return { data: facility.data, hasErrors: false }
+    } catch (error) {
+        logger.error(`ERROR: Error matching facility from maps url: ${error}`)
+        return {
+            data: null,
+            hasErrors: true,
+            errors: [{
+                field: 'facilityMatchingMapsUrl',
+                errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
+                httpStatus: 500
+            }]
+        }
+    }
+}
+
+export async function contactWithCanonicalMapsUrl<T extends { googleMapsUrl: string }>(
+    contact: T
+): Promise<{ contact: T, placeId: string | null }> {
+    const maps = await canonicalMapsFields(contact.googleMapsUrl)
+    return {
+        contact: { ...contact, googleMapsUrl: maps.url },
+        placeId: maps.placeId
+    }
+}
+
 export const getFacilityById = async (
     id: string,
     selectColumns = '*',
@@ -374,6 +450,10 @@ export async function createFacility(
 
         // Extract HP IDs for convenience
         const hpIds = (facilityInput.healthcareProfessionalIds ?? []) as string[]
+        const canonicalContact = await contactWithCanonicalMapsUrl(facilityInput.contact)
+        const googlePlaceId = facilityInput.googlePlaceId?.trim()
+            ? facilityInput.googlePlaceId.trim()
+            : canonicalContact.placeId
 
         // Execute all database operations in a single atomic transaction.
         // The transaction returns the final plain GraphQL object (not the Kysely result).
@@ -386,12 +466,12 @@ export async function createFacility(
                 .values({
                     name_en: facilityInput.nameEn,
                     name_ja: facilityInput.nameJa,
-                    contact: facilityInput.contact,
+                    contact: canonicalContact.contact,
                     map_latitude: facilityInput.mapLatitude ?? 0,
                     map_longitude: facilityInput.mapLongitude ?? 0,
                     payment_options: JSON.stringify(facilityInput.paymentOptions ?? []),
                     city_id: publication.data.cityId,
-                    google_place_id: facilityInput.googlePlaceId?.trim() ? facilityInput.googlePlaceId.trim() : null,
+                    google_place_id: googlePlaceId,
                     source: facilityInput.source ?? FacilitySource.Manual,
                     verification_status: publication.data.verificationStatus,
                     created_date: new Date().toISOString(),
@@ -678,6 +758,17 @@ export const updateFacility = async (
             return validationResult as Result<gqlTypes.Facility>
         }
 
+        let fields = fieldsToUpdate
+        let resolvedPlaceId: string | null = null
+        if (fields.contact) {
+            const canonicalContact = await contactWithCanonicalMapsUrl(fields.contact)
+            resolvedPlaceId = canonicalContact.placeId
+            fields = {
+                ...fields,
+                contact: canonicalContact.contact
+            }
+        }
+
         // Execute all database operations in a single atomic transaction
         const result = await db.transaction().execute(async transaction => {
             // Lock the row first. The city decision has to use this state, not an earlier read.
@@ -738,9 +829,16 @@ export const updateFacility = async (
             const originalHpIds = originalRelations.map(r => r.hps_id)
 
             // Update scalar fields on facilities table (if any provided)
-            const updatePayload = {
-                ...buildFacilityUpdatePatch(fieldsToUpdate),
+            const updatePayload: Record<string, unknown> = {
+                ...buildFacilityUpdatePatch(fields),
                 ...publicationPatch
+            }
+            if (
+                resolvedPlaceId
+                && !originalFacility.google_place_id
+                && fields.googlePlaceId === undefined
+            ) {
+                updatePayload.google_place_id = resolvedPlaceId
             }
             
             let updatedFacility = originalFacility

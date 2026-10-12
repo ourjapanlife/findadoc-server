@@ -1,7 +1,7 @@
 import { envVariables } from '../../utils/environmentVariables.js'
 import { logger } from '../logger.js'
 import { Result } from '../result.js'
-import { allowSharedPreviewCall, previewTargetFromMapsUrl } from '../places/mapsLink.js'
+import { allowSharedPreviewCall, resolveMapsPlace, type MapsPreviewTarget } from '../places/mapsLink.js'
 import {
     loadPlacePreview,
     searchPlacePreview,
@@ -33,25 +33,40 @@ export function previewMapsPlace(
     return promise
 }
 
+function previewFromMapsTarget(target: MapsPreviewTarget): PlacePreview | null {
+    if (!target.placeId && !target.name) { return null }
+    return {
+        placeId: target.placeId,
+        name: target.name,
+        address: null,
+        category: null
+    }
+}
+
 async function lookupMapsPlace(
     url: string,
     languageCode: 'ja' | 'en',
     clientIp: string
 ): Promise<Result<PlacePreview | null>> {
-    const target = previewTargetFromMapsUrl(url)
+    const target = await resolveMapsPlace(url)
     if (!target) {
         return { data: null, hasErrors: false }
     }
 
+    const fromUrl = previewFromMapsTarget(target)
     const apiKey = envVariables.googleAPIKey()
     if (!apiKey) {
         logger.warn('mapsPlacePreview skipped because GOOGLE_API_KEY is unset')
+        return { data: fromUrl, hasErrors: false }
+    }
+
+    if (!target.placeId && !target.name) {
         return { data: null, hasErrors: false }
     }
 
     if (!allowSharedPreviewCall(clientIp)) {
         logger.warn(`mapsPlacePreview skipped because the lookup limit was reached for ${clientIp}`)
-        return { data: null, hasErrors: false }
+        return { data: fromUrl, hasErrors: false }
     }
 
     try {
@@ -67,9 +82,9 @@ async function lookupMapsPlace(
                 languageCode
             )
         }
-        return { data: preview, hasErrors: false }
+        return { data: preview ?? fromUrl, hasErrors: false }
     } catch (error) {
         logger.error(`ERROR: mapsPlacePreview ${error}`)
-        return { data: null, hasErrors: false }
+        return { data: fromUrl, hasErrors: false }
     }
 }

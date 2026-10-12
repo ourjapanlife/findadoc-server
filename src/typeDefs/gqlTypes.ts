@@ -847,6 +847,12 @@ export type Query = {
    * Null when the id is unknown or we have no matching row.
    */
   facilityByGooglePlaceId?: Maybe<Facility>;
+  /**
+   * The clinic this Maps link already is.
+   * A short iPhone link, a place id, and a feature id are the same check.
+   * Null when the link does not match one clinic.
+   */
+  facilityMatchingMapsUrl?: Maybe<Facility>;
   /** Look up a single healthcare professional by their unique ID. Returns null if not found. */
   healthcareProfessional?: Maybe<HealthcareProfessional>;
   /** Search for healthcare professionals matching the given filters. Returns an empty list if no matches. */
@@ -916,6 +922,10 @@ export type QueryFacilityArgs = {
 
 export type QueryFacilityByGooglePlaceIdArgs = {
   placeId: Scalars['String']['input'];
+};
+
+export type QueryFacilityMatchingMapsUrlArgs = {
+  url: Scalars['String']['input'];
 };
 
 
@@ -1636,6 +1646,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   facilitiesTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryFacilitiesTotalCountArgs, 'filters'>>;
   facility?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityArgs, 'id'>>;
   facilityByGooglePlaceId?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityByGooglePlaceIdArgs, 'placeId'>>;
+  facilityMatchingMapsUrl?: Resolver<Maybe<ResolversTypes['Facility']>, ParentType, ContextType, RequireFields<QueryFacilityMatchingMapsUrlArgs, 'url'>>;
   healthcareProfessional?: Resolver<Maybe<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalArgs, 'id'>>;
   healthcareProfessionals?: Resolver<Array<ResolversTypes['HealthcareProfessional']>, ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsArgs, 'filters'>>;
   healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;

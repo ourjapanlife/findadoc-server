@@ -919,6 +919,13 @@ type Query {
   """
   facilityByGooglePlaceId(placeId: String!): Facility
 
+  """
+  The clinic this Maps link already is.
+  A short iPhone link, a place id, and a feature id are the same check.
+  Null when the link does not match one clinic.
+  """
+  facilityMatchingMapsUrl(url: String!): Facility
+
   """Search for facilities matching the given filters. Returns an empty list if no matches."""
   facilities(filters: FacilitySearchFilters!): [Facility!]!
 
