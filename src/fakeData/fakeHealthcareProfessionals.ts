@@ -118,23 +118,23 @@ export function generateSpecialties({ count = 2 } = {}): gqlTypes.Specialty[] {
 }
 
 /**
- * This generates an array languages. Note that the langauges are not guaranteed to be unique. You may want to call .removeDuplicates() on the result. 
+ * Generates unique spoken languages. Submission updates reject a repeated locale.
  * @param count the number of languages to generate. If 0, a random number between 1 and 2 will be generated.
  * @param onlyEnglish if true, only English will be generated
  * @returns the generated languages
  */
 export function generateSpokenLanguages({ count = 0, onlyEnglish = false } = {}): gqlTypes.Locale[] {
-    return onlyEnglish
-        ? [gqlTypes.Locale.EnUs]
-        : faker.helpers.multiple(
-            () => faker.helpers.enumValue(gqlTypes.Locale),
-            {
-                count: count
-                    ? count
-                    : faker.number.int({ min: 1, max: 2 })
-            }
+    if (onlyEnglish) {
+        return [gqlTypes.Locale.EnUs]
+    }
 
-        )
+    const locales = Object.values(gqlTypes.Locale)
+    const localeCount = Math.min(
+        count || faker.number.int({ min: 1, max: 2 }),
+        locales.length
+    )
+
+    return faker.helpers.arrayElements(locales, localeCount)
 }
 
 export function generateAcceptedInsurance() {
