@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { Degree, Insurance, Locale, Specialty } from '../src/typeDefs/gqlTypes.js'
 import { ErrorCode } from '../src/result.js'
+import { generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
 import {
     validateApprovalProfessionalFields,
     validateUpdateSubmissionInput
@@ -22,6 +23,26 @@ describe('submission professional fields', () => {
         })
 
         expect(result.hasErrors).toBe(false)
+    })
+
+    test('rejects a repeated spoken language', () => {
+        const result = validateUpdateSubmissionInput({
+            spokenLanguages: [Locale.NlBe, Locale.NlBe]
+        })
+
+        expect(result.hasErrors).toBe(true)
+        expect(result.errors?.[0].field).toBe('spokenLanguages')
+        expect(result.errors?.[0].errorCode).toBe(ErrorCode.INVALID_LANGUAGE_INPUT)
+    })
+
+    test('update fixtures keep spoken languages unique', () => {
+        const samples = Array.from({ length: 100 }, () =>
+            generateRandomUpdateSubmissionInput().spokenLanguages ?? [])
+
+        for (const languages of samples) {
+            expect(languages).toHaveLength(2)
+            expect(new Set(languages).size).toBe(languages.length)
+        }
     })
 
     test('still rejects a degree list that is too long', () => {
