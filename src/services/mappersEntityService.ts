@@ -3,6 +3,22 @@ import * as dbSchema from '../typeDefs/dbSchema.js'
 import type { HpsTable, FacilitiesTable, SubmissionsTable } from '../typeDefs/kyselyTypes.js'
 import type { Selectable } from 'kysely'
 
+function toLicenseReview(value: string | null | undefined): gqlTypes.LicenseReviewStatus | null {
+    if (value === gqlTypes.LicenseReviewStatus.NeedsReview || value === gqlTypes.LicenseReviewStatus.Confirmed) {
+        return value
+    }
+
+    return null
+}
+
+function toPrimaryLicense(value: string | null | undefined): gqlTypes.Degree | null {
+    if (value && (Object.values(gqlTypes.Degree) as string[]).includes(value)) {
+        return value as gqlTypes.Degree
+    }
+
+    return null
+}
+
 // ==== HEALTHCARE PROFESSIONAL MAPPERS ====
 
 export function mapDbHpToGql(
@@ -13,6 +29,10 @@ export function mapDbHpToGql(
         id: hp.id,
         names: hp.names ?? [],
         degrees: hp.degrees ?? [],
+        primaryLicense: toPrimaryLicense(hp.primary_license),
+        additionalCredentials: hp.additional_credentials ?? [],
+        licenseReview: toLicenseReview(hp.license_review),
+        licenseRecommendation: hp.license_recommendation ?? null,
         spokenLanguages: hp.spoken_languages ?? [],
         specialties: hp.specialties ?? [],
         acceptedInsurance: hp.accepted_insurance ?? [],
@@ -50,6 +70,10 @@ export function mapKyselyHpToGraphQL(
         id: cleanHpRow.id,
         names: cleanHpRow.names ?? [],
         degrees: cleanHpRow.degrees ?? [],
+        primaryLicense: toPrimaryLicense(cleanHpRow.primary_license),
+        additionalCredentials: cleanHpRow.additional_credentials ?? [],
+        licenseReview: toLicenseReview(cleanHpRow.license_review),
+        licenseRecommendation: cleanHpRow.license_recommendation ?? null,
         spokenLanguages: cleanHpRow.spoken_languages ?? [],
         specialties: cleanHpRow.specialties ?? [],
         acceptedInsurance: cleanHpRow.accepted_insurance ?? [],

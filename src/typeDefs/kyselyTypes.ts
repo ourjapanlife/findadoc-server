@@ -42,6 +42,7 @@ export interface FacilitiesTable {
     google_place_id: string | null
     source: string | null
     verification_status: string
+    search_text: Generated<string>
 }
 
 export interface PrefecturesTable {
@@ -91,6 +92,10 @@ export interface HpsTable {
     names: ColumnType<gqlTypes.LocalizedName[], gqlTypes.LocalizedName[], gqlTypes.LocalizedName[]>
     additional_info_for_patients: string | null
     degrees: ColumnType<gqlTypes.Degree[], gqlTypes.Degree[], gqlTypes.Degree[]>
+    primary_license: string | null
+    additional_credentials: ColumnType<gqlTypes.Degree[], gqlTypes.Degree[], gqlTypes.Degree[]>
+    license_review: string | null
+    license_recommendation: string | null
     specialties: ColumnType<gqlTypes.Specialty[], gqlTypes.Specialty[], gqlTypes.Specialty[]>
     spoken_languages: ColumnType<gqlTypes.Locale[], gqlTypes.Locale[], gqlTypes.Locale[]>
     accepted_insurance: ColumnType<gqlTypes.Insurance[], gqlTypes.Insurance[], gqlTypes.Insurance[]>
@@ -98,6 +103,7 @@ export interface HpsTable {
     created_date: string
     updated_date: string
     firestore_id: string | null
+    search_text: Generated<string>
 }
 
 /**

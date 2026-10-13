@@ -19,6 +19,7 @@ import type { Selectable } from 'kysely'
 import { db } from '../kyselyClient.js'
 import { mapKyselySubmissionToGraphQL, mapDbEntityTogqlEntity } from '../services/mappersEntityService.js'
 import { asJsonb } from '../../utils/dbUtils.js'
+import { licenseColumnsForDegrees } from '../vocabulary/professionalLicense.js'
 import { canonicalMapsFields } from '../places/mapsLink.js'
 /** Row type used as Supabase select generic — matches SubmissionRow from dbSchema */
 type SubmissionRow = dbSchema.SubmissionRow
@@ -708,12 +709,17 @@ async function tryCreateHealthcareProfessionalForSubmissionInTransaction(
         return undefined
     }
 
+    const licensed = licenseColumnsForDegrees(hpInput!.degrees)
     // Create HP inline in transaction (NO Supabase calls!)
     const insertedHp = await transaction
         .insertInto('hps')
         .values({
             names: asJsonb<gqlTypes.LocalizedName[]>(hpInput!.names),
-            degrees: asJsonb<gqlTypes.Degree[]>(hpInput!.degrees ?? []),
+            degrees: asJsonb<gqlTypes.Degree[]>(licensed.degrees),
+            primary_license: licensed.primaryLicense,
+            additional_credentials: asJsonb(licensed.additionalCredentials),
+            license_review: licensed.licenseReview,
+            license_recommendation: licensed.licenseRecommendation,
             specialties: asJsonb<gqlTypes.Specialty[]>(hpInput!.specialties ?? []),
             spoken_languages: asJsonb<gqlTypes.Locale[]>(hpInput!.spokenLanguages ?? []),
             accepted_insurance: asJsonb<gqlTypes.Insurance[]>(hpInput!.acceptedInsurance ?? []),

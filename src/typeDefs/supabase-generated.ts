@@ -81,6 +81,7 @@ export type Database = {
           name_en: string
           name_ja: string
           payment_options: Json | null
+          search_text: string
           source: string | null
           updated_date: string
           verification_status: string
@@ -124,39 +125,52 @@ export type Database = {
       hps: {
         Row: {
           accepted_insurance: Json
+          additional_credentials: Json
           additional_info_for_patients: string | null
           created_date: string
           degrees: Json
           email: string | null
           firestore_id: string | null
           id: string
+          license_recommendation: string | null
+          license_review: string | null
           names: Json
+          primary_license: string | null
+          search_text: string
           specialties: Json
           spoken_languages: Json
           updated_date: string
         }
         Insert: {
           accepted_insurance: Json
+          additional_credentials?: Json
           additional_info_for_patients?: string | null
           created_date: string
           degrees: Json
           email?: string | null
           firestore_id?: string | null
           id?: string
+          license_recommendation?: string | null
+          license_review?: string | null
           names: Json
+          primary_license?: string | null
           specialties: Json
           spoken_languages: Json
           updated_date: string
         }
         Update: {
           accepted_insurance?: Json
+          additional_credentials?: Json
           additional_info_for_patients?: string | null
           created_date?: string
           degrees?: Json
           email?: string | null
           firestore_id?: string | null
           id?: string
+          license_recommendation?: string | null
+          license_review?: string | null
           names?: Json
+          primary_license?: string | null
           specialties?: Json
           spoken_languages?: Json
           updated_date?: string

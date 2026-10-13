@@ -2,6 +2,7 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { isInvalidName, hasJapaneseCharacters, hasLatinCharacters } from '../../utils/stringUtils.js'
 import { ErrorCode, Result } from '../result.js'
 import { UUID_REGEX } from './validateFacility.js'
+import { LIST_QUERY_MAX } from '../search/listQuery.js'
 
 export function validateNames(
     names: gqlTypes.LocalizedNameInput[] | undefined | null,
@@ -247,6 +248,15 @@ export function validateProfessionalsSearchInput(
 
     if (!searchInput) {
         return validationResults
+    }
+
+    if (searchInput.query && searchInput.query.length > LIST_QUERY_MAX) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'query',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
     }
 
     if (searchInput.specialties && searchInput.specialties.length > 48) {

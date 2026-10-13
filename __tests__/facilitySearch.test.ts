@@ -135,6 +135,120 @@ describe('searchFacilities', () => {
     })
 })
 
+describe('moderation list query', () => {
+    const listQuery = `query test_listQuery(
+        $filters: FacilitySearchFilters!
+        $professionalFilters: HealthcareProfessionalSearchFilters!
+    ) {
+        facilities(filters: $filters) { id nameEn nameJa }
+        facilitiesTotalCount(filters: $filters)
+        healthcareProfessionals(filters: $professionalFilters) { id }
+        healthcareProfessionalsTotalCount(filters: $professionalFilters)
+    }`
+
+    const search = async (
+        filters: gqlType.FacilitySearchFilters,
+        professionalFilters: gqlType.HealthcareProfessionalSearchFilters = {}
+    ) => {
+        const result = await request(gqlApiUrl).post('').send({
+            query: listQuery,
+            variables: { filters, professionalFilters }
+        } as gqlRequest)
+
+        return result.body
+    }
+
+    test('matches a facility or professional from the whole list, and pages those matches', async () => {
+        const tag = `Lq${randomUUID().replace(/[^a-f]/g, '').slice(0, 10)}`
+        const facilityInput = generateRandomCreateFacilityInput()
+
+        facilityInput.nameEn = `${tag}%_Clinic`
+        facilityInput.nameJa = `${tag}東京`
+
+        const facilityResult = await request(gqlApiUrl).post('').send({
+            query: createFacilityMutation,
+            variables: { input: facilityInput }
+        } as gqlMutation<gqlType.CreateFacilityInput>)
+
+        expect(facilityResult.body.errors).toBeUndefined()
+        const facility = facilityResult.body.data.createFacility as gqlType.Facility
+
+        const professionalResult = await request(gqlApiUrl).post('').send({
+            query: createHealthcareProfessionalMutation,
+            variables: {
+                input: {
+                    ...generateRandomCreateHealthcareProfessionalInput(),
+                    facilityIds: [facility.id],
+                    names: [
+                        { firstName: 'Ada', middleName: tag, lastName: 'Lovelace', locale: gqlType.Locale.EnUs },
+                        { firstName: 'エイダ', middleName: null, lastName: 'ラブレス', locale: gqlType.Locale.JaJp }
+                    ]
+                } satisfies gqlType.CreateHealthcareProfessionalInput
+            }
+        } as gqlMutation<gqlType.CreateHealthcareProfessionalInput>)
+
+        expect(professionalResult.body.errors).toBeUndefined()
+        const professional = professionalResult.body.data.createHealthcareProfessional as gqlType.HealthcareProfessional
+
+        const byEnglishName = await search({ query: `${tag}%_`, limit: 5, offset: 0 })
+
+        expect(byEnglishName.errors).toBeUndefined()
+        expect(byEnglishName.data.facilities.map((row: gqlType.Facility) => row.id)).toEqual([facility.id])
+        expect(byEnglishName.data.facilitiesTotalCount).toBe(1)
+
+        const byJapaneseName = await search({ query: `${tag}東京`, limit: 5, offset: 0 })
+
+        expect(byJapaneseName.data.facilities.map((row: gqlType.Facility) => row.id)).toEqual([facility.id])
+
+        const byFacilityId = await search({ query: facility.id, limit: 5, offset: 0 })
+
+        expect(byFacilityId.data.facilities.map((row: gqlType.Facility) => row.id)).toEqual([facility.id])
+
+        const pastTheFacilityMatch = await search({ query: `${tag}%_`, limit: 5, offset: 5 })
+
+        expect(pastTheFacilityMatch.data.facilities).toEqual([])
+        expect(pastTheFacilityMatch.data.facilitiesTotalCount).toBe(1)
+
+        const byMiddleName = await search({}, { query: tag, limit: 5, offset: 0 })
+
+        expect(byMiddleName.errors).toBeUndefined()
+        expect(byMiddleName.data.healthcareProfessionals.map((row: gqlType.HealthcareProfessional) => row.id))
+            .toEqual([professional.id])
+        expect(byMiddleName.data.healthcareProfessionalsTotalCount).toBe(1)
+
+        const byGivenName = await search({}, { query: 'エイダ', limit: 25, offset: 0 })
+
+        expect(byGivenName.data.healthcareProfessionals.map((row: gqlType.HealthcareProfessional) => row.id))
+            .toContain(professional.id)
+
+        const byProfessionalId = await search({}, { query: professional.id, limit: 5, offset: 0 })
+
+        expect(byProfessionalId.data.healthcareProfessionals.map((row: gqlType.HealthcareProfessional) => row.id))
+            .toEqual([professional.id])
+
+        const pastTheProfessionalMatch = await search({}, { query: tag, limit: 5, offset: 5 })
+
+        expect(pastTheProfessionalMatch.data.healthcareProfessionals).toEqual([])
+        expect(pastTheProfessionalMatch.data.healthcareProfessionalsTotalCount).toBe(1)
+
+        const blank = await search({ query: '   ', limit: 1, offset: 0 }, { query: '   ', limit: 1, offset: 0 })
+        const unfiltered = await search({ limit: 1, offset: 0 }, { limit: 1, offset: 0 })
+
+        expect(blank.errors).toBeUndefined()
+        expect(blank.data.facilitiesTotalCount).toBe(unfiltered.data.facilitiesTotalCount)
+        expect(blank.data.healthcareProfessionalsTotalCount).toBe(unfiltered.data.healthcareProfessionalsTotalCount)
+        expect(blank.data.facilitiesTotalCount).toBeGreaterThan(1)
+    })
+
+    test('rejects a list query that is too long', async () => {
+        const body = await search({ query: 'x'.repeat(129) })
+        const errors = body.errors[0].extensions.errors as Error[]
+
+        expect(errors[0].field).toBe('query')
+        expect(errors[0].errorCode).toBe(ErrorCode.INVALID_LENGTH_TOO_LONG)
+    })
+})
+
 const searchFacilitiesQuery = `query test_searchFacilities($filters: FacilitySearchFilters!) {
     facilities(filters: $filters) {
         id
