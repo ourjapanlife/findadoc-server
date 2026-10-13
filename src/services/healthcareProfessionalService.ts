@@ -10,13 +10,21 @@ import { db } from '../kyselyClient.js'
 import { asJsonb } from '../../utils/dbUtils.js'
 import type { HasContains, HasEq, HasIlike, HasIn } from '../../utils/dbUtils.js'
 import { likeContainsPattern, listQueryValue } from '../search/listQuery.js'
-import { licenseColumnsForDegrees } from '../vocabulary/professionalLicense.js'
+import { licenseColumnsForDegrees } from '../licenses/professionalLicense.js'
 import { mapDbHpToGql, mapKyselyHpToGraphQL} from '../services/mappersEntityService.js'
 /** Row type used as Supabase select generic — matches DbHealthcareProfessionalRow from dbSchema */
 type HpRow = dbSchema.DbHealthcareProfessionalRow
 
+type StoredLicenseContext = {
+    primaryLicense: string | null
+    licenseReview: string | null
+}
+
 // Builds a partial update patch for Healthcare Professional rows.
-export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>) {
+export function buildHpUpdatePatch(
+    fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>,
+    stored?: StoredLicenseContext
+) {
     const updatePatch: Record<string, unknown> = {}
 
     // JSONB columns must be wrapped with asJsonb(): the pg driver serializes raw JS
@@ -26,18 +34,28 @@ export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProf
         updatePatch.license_review = gqlTypes.LicenseReviewStatus.Confirmed
         updatePatch.license_recommendation = null
         if (fields.degrees !== undefined) {
-            const confirmed = licenseColumnsForDegrees(fields.degrees, { confirmed: true })
+            const confirmed = licenseColumnsForDegrees(fields.degrees, {
+                confirmed: true,
+                primaryLicense: stored?.primaryLicense,
+                licenseReview: stored?.licenseReview
+            })
             updatePatch.degrees = asJsonb(confirmed.degrees)
             updatePatch.primary_license = confirmed.primaryLicense
             updatePatch.additional_credentials = asJsonb(confirmed.additionalCredentials)
         }
     } else if (fields.degrees !== undefined) {
-        const classified = licenseColumnsForDegrees(fields.degrees)
+        const classified = licenseColumnsForDegrees(fields.degrees, {
+            primaryLicense: stored?.primaryLicense,
+            licenseReview: stored?.licenseReview
+        })
         updatePatch.degrees = asJsonb(classified.degrees)
         updatePatch.primary_license = classified.primaryLicense
         updatePatch.additional_credentials = asJsonb(classified.additionalCredentials)
-        updatePatch.license_review = classified.licenseReview
-        updatePatch.license_recommendation = classified.licenseRecommendation
+        const retainedPrimary = Boolean(stored?.primaryLicense && classified.primaryLicense === stored.primaryLicense)
+        if (!retainedPrimary) {
+            updatePatch.license_review = classified.licenseReview
+            updatePatch.license_recommendation = classified.licenseRecommendation
+        }
     }
     if (fields.spokenLanguages !== undefined) { updatePatch.spoken_languages = asJsonb(fields.spokenLanguages) }
     if (fields.specialties !== undefined) { updatePatch.specialties = asJsonb(fields.specialties) }
@@ -579,7 +597,10 @@ export const updateHealthcareProfessional = async (
             const currentFacilityIds = currentRelations.map(r => r.facilities_id)
 
             // Build update patch for scalar fields
-            const updatePatch = buildHpUpdatePatch(fieldsToUpdate)
+            const updatePatch = buildHpUpdatePatch(fieldsToUpdate, {
+                primaryLicense: currentHp.primary_license,
+                licenseReview: currentHp.license_review
+            })
 
             // Update scalar fields (always touch updatedDate)
             const hasChanges = Object.keys(updatePatch).length > 1 // More than just updatedDate

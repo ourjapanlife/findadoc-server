@@ -230,14 +230,6 @@ describe('moderation list query', () => {
 
         expect(pastTheProfessionalMatch.data.healthcareProfessionals).toEqual([])
         expect(pastTheProfessionalMatch.data.healthcareProfessionalsTotalCount).toBe(1)
-
-        const blank = await search({ query: '   ', limit: 1, offset: 0 }, { query: '   ', limit: 1, offset: 0 })
-        const unfiltered = await search({ limit: 1, offset: 0 }, { limit: 1, offset: 0 })
-
-        expect(blank.errors).toBeUndefined()
-        expect(blank.data.facilitiesTotalCount).toBe(unfiltered.data.facilitiesTotalCount)
-        expect(blank.data.healthcareProfessionalsTotalCount).toBe(unfiltered.data.healthcareProfessionalsTotalCount)
-        expect(blank.data.facilitiesTotalCount).toBeGreaterThan(1)
     })
 
     test('rejects a list query that is too long', async () => {

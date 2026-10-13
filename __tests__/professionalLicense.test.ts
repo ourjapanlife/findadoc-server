@@ -8,7 +8,7 @@ import {
     planStoredLicense,
     reportStoredLicenses,
     type StoredLicenseRow
-} from '../src/vocabulary/professionalLicense.js'
+} from '../src/licenses/professionalLicense.js'
 
 function row(degrees: string[], extras: Partial<StoredLicenseRow> = {}): StoredLicenseRow {
     return {
@@ -88,6 +88,32 @@ describe('planStoredLicense', () => {
 })
 
 describe('licenseColumnsForDegrees', () => {
+    it('keeps a repeated degree in the stored list', () => {
+        expect(licenseColumnsForDegrees([Degree.PhD, Degree.PhD]).degrees).toEqual([Degree.PhD, Degree.PhD])
+    })
+
+    it('keeps a stored primary that is still in the submitted degrees', () => {
+        expect(licenseColumnsForDegrees([Degree.Md, Degree.Do], {
+            primaryLicense: Degree.Md,
+            licenseReview: null
+        })).toMatchObject({
+            primaryLicense: Degree.Md,
+            licenseReview: null,
+            licenseRecommendation: null
+        })
+    })
+
+    it('keeps that primary when the moderator confirms the row', () => {
+        expect(licenseColumnsForDegrees([Degree.Md, Degree.Do], {
+            confirmed: true,
+            primaryLicense: Degree.Md,
+            licenseReview: LicenseReview.Confirmed
+        })).toMatchObject({
+            primaryLicense: Degree.Md,
+            licenseReview: LicenseReview.Confirmed
+        })
+    })
+
     it('does not invent MD when the moderator has not chosen a license', () => {
         expect(licenseColumnsForDegrees([])).toMatchObject({
             degrees: [],

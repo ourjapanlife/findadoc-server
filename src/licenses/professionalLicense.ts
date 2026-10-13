@@ -78,16 +78,21 @@ function asList(value: readonly string[] | null | undefined): string[] {
     return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : []
 }
 
+/** Known degrees in the submitted order, including repeats. The public list stores this array. */
+export function listedDegrees(degrees: readonly string[] | null | undefined): Degree[] {
+    return asList(degrees).filter((degree): degree is Degree => DEGREE_VALUES.has(degree))
+}
+
 export function knownDegrees(degrees: readonly string[] | null | undefined): Degree[] {
     const seen = new Set<string>()
     const unique: Degree[] = []
 
-    for (const degree of asList(degrees)) {
-        if (!DEGREE_VALUES.has(degree) || seen.has(degree)) {
+    for (const degree of listedDegrees(degrees)) {
+        if (seen.has(degree)) {
             continue
         }
         seen.add(degree)
-        unique.push(degree as Degree)
+        unique.push(degree)
     }
 
     return unique
@@ -119,18 +124,44 @@ export function recommendationFor(clinical: readonly Degree[]): LicenseRecommend
     return null
 }
 
+function storedReview(value: string | null | undefined): LicenseReviewValue | null {
+    if (value === LicenseReview.NeedsReview || value === LicenseReview.Confirmed) {
+        return value
+    }
+
+    return null
+}
+
 export function licenseColumnsForDegrees(
     degrees: readonly string[] | null | undefined,
-    options?: { confirmed?: boolean }
+    options?: {
+        confirmed?: boolean
+        primaryLicense?: string | null
+        licenseReview?: string | null
+    }
 ): LicenseColumns {
+    const listed = listedDegrees(degrees)
     const unique = knownDegrees(degrees)
     const clinical = clinicalLicensesIn(unique)
     const additionalCredentials = credentialsIn(unique)
     const recommendation = recommendationFor(clinical)
+    const keptPrimary = options?.primaryLicense && clinical.includes(options.primaryLicense as Degree)
+        ? options.primaryLicense as Degree
+        : null
+
+    if (keptPrimary) {
+        return {
+            degrees: listed,
+            primaryLicense: keptPrimary,
+            additionalCredentials,
+            licenseReview: options?.confirmed ? LicenseReview.Confirmed : storedReview(options?.licenseReview),
+            licenseRecommendation: null
+        }
+    }
 
     if (options?.confirmed && recommendation) {
         return {
-            degrees: unique,
+            degrees: listed,
             primaryLicense: null,
             additionalCredentials,
             licenseReview: LicenseReview.Confirmed,
@@ -140,7 +171,7 @@ export function licenseColumnsForDegrees(
 
     if (recommendation) {
         return {
-            degrees: unique,
+            degrees: listed,
             primaryLicense: null,
             additionalCredentials,
             licenseReview: LicenseReview.NeedsReview,
@@ -149,7 +180,7 @@ export function licenseColumnsForDegrees(
     }
 
     return {
-        degrees: unique,
+        degrees: listed,
         primaryLicense: clinical[0] ?? null,
         additionalCredentials,
         licenseReview: null,

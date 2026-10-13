@@ -5,7 +5,7 @@ import {
     planStoredLicense,
     reportStoredLicenses,
     type StoredLicenseRow
-} from '../src/vocabulary/professionalLicense.js'
+} from '../src/licenses/professionalLicense.js'
 
 /**
  * Split a stored degree list into one primary license and extra credentials (#1014).

@@ -19,7 +19,7 @@ import type { Selectable } from 'kysely'
 import { db } from '../kyselyClient.js'
 import { mapKyselySubmissionToGraphQL, mapDbEntityTogqlEntity } from '../services/mappersEntityService.js'
 import { asJsonb } from '../../utils/dbUtils.js'
-import { licenseColumnsForDegrees } from '../vocabulary/professionalLicense.js'
+import { licenseColumnsForDegrees } from '../licenses/professionalLicense.js'
 import { canonicalMapsFields } from '../places/mapsLink.js'
 /** Row type used as Supabase select generic — matches SubmissionRow from dbSchema */
 type SubmissionRow = dbSchema.SubmissionRow
