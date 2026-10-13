@@ -8,19 +8,55 @@ import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { db } from '../kyselyClient.js'
 import { asJsonb } from '../../utils/dbUtils.js'
-import type { HasContains, HasIn } from '../../utils/dbUtils.js'
+import type { HasContains, HasEq, HasIlike, HasIn } from '../../utils/dbUtils.js'
+import { likeContainsPattern, listQueryValue } from '../search/listQuery.js'
+import { licenseColumnsForDegrees } from '../licenses/professionalLicense.js'
 import { mapDbHpToGql, mapKyselyHpToGraphQL} from '../services/mappersEntityService.js'
 /** Row type used as Supabase select generic — matches DbHealthcareProfessionalRow from dbSchema */
 type HpRow = dbSchema.DbHealthcareProfessionalRow
 
+type StoredLicenseContext = {
+    primaryLicense: string | null
+    licenseReview: string | null
+}
+
 // Builds a partial update patch for Healthcare Professional rows.
-export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>) {
+export function buildHpUpdatePatch(
+    fields: Partial<gqlTypes.UpdateHealthcareProfessionalInput>,
+    stored?: StoredLicenseContext
+) {
     const updatePatch: Record<string, unknown> = {}
 
     // JSONB columns must be wrapped with asJsonb(): the pg driver serializes raw JS
     // arrays as PostgreSQL array literals ({...}) which jsonb columns reject.
     if (fields.names !== undefined) { updatePatch.names = asJsonb(fields.names) }
-    if (fields.degrees !== undefined) { updatePatch.degrees = asJsonb(fields.degrees) }
+    if (fields.licenseReview === gqlTypes.LicenseReviewStatus.Confirmed) {
+        updatePatch.license_review = gqlTypes.LicenseReviewStatus.Confirmed
+        updatePatch.license_recommendation = null
+        if (fields.degrees !== undefined) {
+            const confirmed = licenseColumnsForDegrees(fields.degrees, {
+                confirmed: true,
+                primaryLicense: stored?.primaryLicense,
+                licenseReview: stored?.licenseReview
+            })
+            updatePatch.degrees = asJsonb(confirmed.degrees)
+            updatePatch.primary_license = confirmed.primaryLicense
+            updatePatch.additional_credentials = asJsonb(confirmed.additionalCredentials)
+        }
+    } else if (fields.degrees !== undefined) {
+        const classified = licenseColumnsForDegrees(fields.degrees, {
+            primaryLicense: stored?.primaryLicense,
+            licenseReview: stored?.licenseReview
+        })
+        updatePatch.degrees = asJsonb(classified.degrees)
+        updatePatch.primary_license = classified.primaryLicense
+        updatePatch.additional_credentials = asJsonb(classified.additionalCredentials)
+        const retainedPrimary = Boolean(stored?.primaryLicense && classified.primaryLicense === stored.primaryLicense)
+        if (!retainedPrimary) {
+            updatePatch.license_review = classified.licenseReview
+            updatePatch.license_recommendation = classified.licenseRecommendation
+        }
+    }
     if (fields.spokenLanguages !== undefined) { updatePatch.spoken_languages = asJsonb(fields.spokenLanguages) }
     if (fields.specialties !== undefined) { updatePatch.specialties = asJsonb(fields.specialties) }
     if (fields.acceptedInsurance !== undefined) { updatePatch.accepted_insurance = asJsonb(fields.acceptedInsurance) }
@@ -32,13 +68,16 @@ export function buildHpUpdatePatch(fields: Partial<gqlTypes.UpdateHealthcareProf
 }
 
 // Applies JSONB array filters (degrees, specialties, languages, insurance) and the facility filter to an HP query builder.
-export function applyHpFilters<T extends HasContains & HasIn>(
+export function applyHpFilters<T extends HasContains & HasIn & HasEq & HasIlike>(
   builder: T,
   filters: gqlTypes.HealthcareProfessionalSearchFilters
 ): T {
     let query = builder
 
+    const queryText = listQueryValue(filters.query)
+    if (queryText) { query = query.ilike('search_text', likeContainsPattern(queryText)) as T }
     if (filters.degrees?.length) { query = query.contains('degrees', JSON.stringify(filters.degrees)) as T }
+    if (filters.licenseReview) { query = query.eq('license_review', filters.licenseReview) as T }
     if (filters.specialties?.length) { query = query.contains('specialties', JSON.stringify(filters.specialties)) as T }
     if (filters.spokenLanguages?.length) { query = query.contains('spoken_languages', JSON.stringify(filters.spokenLanguages)) as T }
     if (filters.acceptedInsurance?.length) { query = query.contains('accepted_insurance', JSON.stringify(filters.acceptedInsurance)) as T }
@@ -392,8 +431,10 @@ export async function createHealthcareProfessional(
     updatedBy: string
 ): Promise<Result<gqlTypes.HealthcareProfessional>> {
     try {
+        const licensed = licenseColumnsForDegrees(input.degrees)
+        const createInput = { ...input, degrees: licensed.degrees }
         // Validate input before starting transaction
-        const validationResult = validateCreateProfessionalInput(input)
+        const validationResult = validateCreateProfessionalInput(createInput)
 
         if (validationResult.hasErrors) {
             return validationResult as Result<gqlTypes.HealthcareProfessional>
@@ -436,9 +477,13 @@ export async function createHealthcareProfessional(
             const insertedHp = await transaction
                 .insertInto('hps')
                 .values({
-                    names: asJsonb(input.names),
-                    degrees: asJsonb(input.degrees ?? []),
-                    specialties: asJsonb(input.specialties ?? []),
+                    names: asJsonb(createInput.names),
+                    degrees: asJsonb(licensed.degrees),
+                    primary_license: licensed.primaryLicense,
+                    additional_credentials: asJsonb(licensed.additionalCredentials),
+                    license_review: licensed.licenseReview,
+                    license_recommendation: licensed.licenseRecommendation,
+                    specialties: asJsonb(createInput.specialties ?? []),
                     spoken_languages: asJsonb(input.spokenLanguages ?? []),
                     accepted_insurance: asJsonb(input.acceptedInsurance ?? []),
                     additional_info_for_patients: input.additionalInfoForPatients ?? null,
@@ -552,7 +597,10 @@ export const updateHealthcareProfessional = async (
             const currentFacilityIds = currentRelations.map(r => r.facilities_id)
 
             // Build update patch for scalar fields
-            const updatePatch = buildHpUpdatePatch(fieldsToUpdate)
+            const updatePatch = buildHpUpdatePatch(fieldsToUpdate, {
+                primaryLicense: currentHp.primary_license,
+                licenseReview: currentHp.license_review
+            })
 
             // Update scalar fields (always touch updatedDate)
             const hasChanges = Object.keys(updatePatch).length > 1 // More than just updatedDate

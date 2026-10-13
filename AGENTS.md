@@ -22,6 +22,12 @@ A society or collaboration is a row in `affiliations`, not a Postgres enum (#102
 
 Compare values with `===` and `!==`. Do not use `==` or `!=`. That includes `== null` and `!= null`. A missing value is `=== null` or `=== undefined`.
 
+## Licenses
+
+A professional has one primary clinical license. PhD, MPH, and DSc are additional credentials. DVM, EdD, and DSW stay in the enum and stay hidden from the moderation picker.
+
+`utils/backfillProfessionalLicenses.ts` is the #1014 run. Dry-run is the default. It does not rewrite `degrees`. MD+DO is queued as `NEEDS_REVIEW` with recommendation `MD`. DDS+DMD is queued with recommendation `one_dental_license`. The 18 Sep notes disagree about that dental count, so the run counts the rows it reads and does not collapse them. A row with `license_review = CONFIRMED`, or a row that already has `primary_license`, is left alone. A new professional is not given a license. The moderator chooses one.
+
 ## Places
 
 `docs/places-storage.md` is the storage rule. Follow it. Do not open a Places write path that contradicts it.

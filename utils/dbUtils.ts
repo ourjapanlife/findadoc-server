@@ -48,3 +48,7 @@ export type HasOr = {
 export type HasIn = {
     in: (column: string, values: readonly unknown[]) => unknown
 }
+
+export type HasEq = {
+    eq: (column: string, value: unknown) => unknown
+}

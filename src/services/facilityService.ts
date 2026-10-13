@@ -8,6 +8,7 @@ import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchI
 import { mapKyselyFacilityToGraphQL, facilityLocationFields } from '../services/mappersEntityService.js'
 import type { HasContains, HasIlike, HasOr } from '../../utils/dbUtils.js'
 import { prefectureTranslations, resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
+import { likeContainsPattern, listQueryValue } from '../search/listQuery.js'
 import { isCityRecordId, resolveFacilityPublication, verificationStatusForUpdate } from './facilityPublication.js'
 import { cityExists, findCityBySlug } from './cityService.js'
 import { FacilitySource } from '../typeDefs/gqlTypes.js'
@@ -98,6 +99,10 @@ export function applyFacilityFilters<T extends HasIlike & HasOr & HasContains>(
     }
     if (filters.nameJa) {
         query = query.ilike('name_ja', `%${filters.nameJa}%`) as T
+    }
+    const queryText = listQueryValue(filters.query)
+    if (queryText) {
+        query = query.ilike('search_text', likeContainsPattern(queryText)) as T
     }
 
     // Prefecture: match the canonical key on the English side (any casing) or the Japanese name.

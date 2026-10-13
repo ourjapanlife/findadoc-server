@@ -92,6 +92,11 @@ input FacilitySearchFilters {
   nameEn: String
   """Filter by facility name in Japanese (partial match)."""
   nameJa: String
+  """
+  One text query matched against the English name, Japanese name, or id.
+  Applied before pagination. Blank leaves the list unfiltered.
+  """
+  query: String
   """Filter by contact information."""
   contact: ContactInput
   """Filter by associated healthcare professional name."""
@@ -135,6 +140,14 @@ type HealthcareProfessional {
   spokenLanguages: [Locale!]!
   """Academic or professional degrees held."""
   degrees: [Degree!]!
+  """One clinical license. Empty while a dual license is unresolved or confirmed as dual."""
+  primaryLicense: Degree
+  """Credentials other than the clinical license, such as PhD or MPH."""
+  additionalCredentials: [Degree!]!
+  """NEEDS_REVIEW is the moderator queue. CONFIRMED keeps a dual license."""
+  licenseReview: LicenseReviewStatus
+  """Suggestion for a dual license. A moderator decides whether to apply it."""
+  licenseRecommendation: String
   """Medical specialties practiced."""
   specialties: [Specialty!]!
   """Insurance types accepted by this professional."""
@@ -175,6 +188,8 @@ input UpdateHealthcareProfessionalInput {
   spokenLanguages: [Locale!]
   """Updated degrees."""
   degrees: [Degree!]
+  """CONFIRMED keeps a dual license. Omit this to classify the degrees you send."""
+  licenseReview: LicenseReviewStatus
   """Updated specialties."""
   specialties: [Specialty!]
   """Updated accepted insurance types."""
@@ -191,10 +206,17 @@ input HealthcareProfessionalSearchFilters {
   ids: [ID!]
   """Filter by localized names."""
   names: [LocalizedNameInput!]
+  """
+  One text query matched against any localized given name, middle name, family name, or id.
+  Applied before pagination. Blank leaves the list unfiltered.
+  """
+  query: String
   """Filter by spoken languages."""
   spokenLanguages: [Locale!]
   """Filter by degrees."""
   degrees: [Degree!]
+  """Only professionals in this license queue. NEEDS_REVIEW is the dual-license queue."""
+  licenseReview: LicenseReviewStatus
   """Filter by specialties."""
   specialties: [Specialty!]
   """Filter by accepted insurance types."""
@@ -831,6 +853,14 @@ enum Degree {
   PharmD
   """Doctor of Psychology"""
   PsyD
+}
+
+"""Moderator queue for a professional license. CONFIRMED keeps a dual license."""
+enum LicenseReviewStatus {
+  """A moderator still needs to choose the primary license."""
+  NEEDS_REVIEW
+  """A moderator confirmed that more than one clinical license should stay."""
+  CONFIRMED
 }
 
 """Insurance types that healthcare professionals may accept."""

@@ -13,6 +13,10 @@ export interface DbHealthcareProfessionalRow {
     id: string
     names: LocalizedName[]
     degrees: Degree[]
+    primary_license: Degree | null
+    additional_credentials: Degree[]
+    license_review: string | null
+    license_recommendation: string | null
     specialties: Specialty[]
     spoken_languages: gqlType.Locale[]
     accepted_insurance: Insurance[]

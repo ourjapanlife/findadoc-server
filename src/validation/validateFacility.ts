@@ -2,6 +2,7 @@ import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import { ErrorCode, Result } from '../result.js'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
 import { resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
+import { LIST_QUERY_MAX } from '../search/listQuery.js'
 
 // Used for v4 uuid
 export const UUID_REGEX =
@@ -56,6 +57,15 @@ export function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySear
         validationResults.hasErrors = true
         validationResults.errors?.push({
             field: 'nameJa',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+    }
+
+    if (searchInput.query && searchInput.query.length > LIST_QUERY_MAX) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'query',
             errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
             httpStatus: 400
         })
