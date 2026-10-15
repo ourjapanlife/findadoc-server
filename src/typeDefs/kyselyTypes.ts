@@ -42,6 +42,7 @@ export interface FacilitiesTable {
     google_place_id: string | null
     source: string | null
     verification_status: string
+    supported_languages: ColumnType<gqlTypes.Locale[], string, string>
     search_text: Generated<string>
 }
 

@@ -3,6 +3,7 @@ import { ErrorCode, Result } from '../result.js'
 import { hasSpecialCharacters, isValidEmail, isValidPhoneNumber, isValidWebsite } from '../../utils/stringUtils.js'
 import { resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
 import { LIST_QUERY_MAX } from '../search/listQuery.js'
+import { isPublishedLocale } from '../languages/publishedLocales.js'
 
 // Used for v4 uuid
 export const UUID_REGEX =
@@ -101,6 +102,40 @@ export function validateFacilitiesSearchInput(searchInput: gqlTypes.FacilitySear
     return validationResults
 }
 
+const SUPPORTED_LANGUAGE_MAX = 16
+
+/**
+ * Facility languages are optional. A value must be on the published allowlist.
+ * An empty list is a facility that does not advertise a language of its own.
+ */
+export function validateSupportedLanguages(
+    languages: gqlTypes.Locale[] | null | undefined,
+    validationResults: Result<unknown>
+): void {
+    if (!languages) {
+        return
+    }
+
+    if (languages.length > SUPPORTED_LANGUAGE_MAX) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'supportedLanguages',
+            errorCode: ErrorCode.INVALID_LENGTH_TOO_LONG,
+            httpStatus: 400
+        })
+        return
+    }
+
+    if (languages.some(language => !isPublishedLocale(language))) {
+        validationResults.hasErrors = true
+        validationResults.errors?.push({
+            field: 'supportedLanguages',
+            errorCode: ErrorCode.INVALID_INPUT,
+            httpStatus: 400
+        })
+    }
+}
+
 /**
  * Validates the input for updating a facility.
  */
@@ -137,6 +172,8 @@ export function validateUpdateFacilityInput(input: Partial<gqlTypes.UpdateFacili
             validationResults.errors?.push(...contactValidationResults.errors as [])
         }
     }
+
+    validateSupportedLanguages(input.supportedLanguages, validationResults)
 
     return validationResults
 }
@@ -195,6 +232,8 @@ export function validateCreateFacilityInput(input: gqlTypes.CreateFacilityInput)
             validationResults.errors?.push(...contactValidationResults.errors as [])
         }
     }
+
+    validateSupportedLanguages(input.supportedLanguages, validationResults)
 
     return validationResults
 }

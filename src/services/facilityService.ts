@@ -5,7 +5,8 @@ import { logger } from '../logger.js'
 import { getSupabaseClient } from '../supabaseClient.js'
 import { createAuditLog } from './auditLogServiceSupabase.js'
 import { validateIdInput, validateCreateFacilityInput, validateFacilitiesSearchInput, validateUpdateFacilityInput } from '../validation/validateFacility.js'
-import { mapKyselyFacilityToGraphQL, facilityLocationFields } from '../services/mappersEntityService.js'
+import { mapKyselyFacilityToGraphQL, facilityLocationFields, supportedLanguageFields } from '../services/mappersEntityService.js'
+import { uniqueLocales } from '../languages/publishedLocales.js'
 import type { HasContains, HasIlike, HasOr } from '../../utils/dbUtils.js'
 import { prefectureTranslations, resolvePrefectureKey } from '../../utils/japanesePrefectures.js'
 import { likeContainsPattern, listQueryValue } from '../search/listQuery.js'
@@ -73,6 +74,9 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
     if (fields.verificationStatus !== undefined) {
         updatePatch.verification_status = fields.verificationStatus
     }
+    if (fields.supportedLanguages !== undefined) {
+        updatePatch.supported_languages = JSON.stringify(uniqueLocales(fields.supportedLanguages))
+    }
     // Business rule: always timestamp when the entity is updated
     updatePatch.updated_date = new Date().toISOString()
 
@@ -116,9 +120,10 @@ export function applyFacilityFilters<T extends HasIlike & HasOr & HasContains>(
         ].join(',')) as T
     }
 
-    // HP filters run against the inner-joined hps embed added by buildFacilitySelect,
-    // so a single professional has to satisfy every language and specialty requested.
-    if (filters.spokenLanguages?.length) {
+    // A specialty filter joins professionals, and the same professional must also
+    // speak every requested language. Language-only search is an id subset instead,
+    // so a facility language can match when there is no professional.
+    if (filters.spokenLanguages?.length && matchesThroughProfessional(filters)) {
         query = query.contains('hps_facilities.hps.spoken_languages', JSON.stringify(filters.spokenLanguages)) as T
     }
     if (filters.specialties?.length) {
@@ -131,8 +136,13 @@ export function applyFacilityFilters<T extends HasIlike & HasOr & HasContains>(
 /**
  * Whether the filters need facilities joined to their healthcare professionals.
  */
+/** Specialty search stays on one professional. Language-only search does not. */
+export function matchesThroughProfessional(filters: gqlTypes.FacilitySearchFilters): boolean {
+    return !!filters.specialties?.length
+}
+
 function hasHpAttributeFilters(filters: gqlTypes.FacilitySearchFilters): boolean {
-    return !!(filters.spokenLanguages?.length || filters.specialties?.length)
+    return matchesThroughProfessional(filters)
 }
 
 /**
@@ -358,6 +368,7 @@ export const getFacilityById = async (
             createdDate: facilityRow.created_date as string,
             updatedDate: facilityRow.updated_date as string,
             paymentOptions: (facilityRow.payment_options ?? []) as gqlTypes.PaymentOption[],
+            ...supportedLanguageFields(facilityRow),
             ...facilityLocationFields(facilityRow)
         }
 
@@ -411,6 +422,90 @@ async function getFacilityIdsByHpIds(hpIds: string[]): Promise<Set<string>> {
         }
     }
     return idsList
+}
+
+/**
+ * Facilities that advertise every requested language, either on the facility
+ * or on one linked professional. Does not create a professional.
+ */
+async function facilityIdsAdvertisingLanguages(languages: gqlTypes.Locale[]): Promise<Set<string>> {
+    const supabase = getSupabaseClient()
+    const payload = JSON.stringify(languages)
+    const ids = new Set<string>()
+
+    const { data: facilities, error: facilityError } = await supabase
+        .from('facilities')
+        .select('id')
+        .contains('supported_languages', payload)
+        .limit(5000)
+
+    if (facilityError) {
+        throw facilityError
+    }
+
+    for (const row of facilities ?? []) {
+        ids.add(row.id as string)
+    }
+
+    const { data: professionals, error: professionalError } = await supabase
+        .from('hps')
+        .select('id')
+        .contains('spoken_languages', payload)
+        .limit(5000)
+
+    if (professionalError) {
+        throw professionalError
+    }
+
+    const hpIds = (professionals ?? []).map(row => row.id as string)
+
+    if (hpIds.length) {
+        const fromProfessionals = await getFacilityIdsByHpIds(hpIds)
+
+        for (const id of fromProfessionals) {
+            ids.add(id)
+        }
+    }
+
+    return ids
+}
+
+/**
+ * null means the caller should not add an id filter.
+ * An empty array means nothing matches.
+ */
+async function facilityIdSubsetForFilters(
+    filters: gqlTypes.FacilitySearchFilters
+): Promise<string[] | null> {
+    let subset: Set<string> | null = null
+
+    if (filters.healthcareProfessionalIds?.length) {
+        subset = await getFacilityIdsByHpIds(filters.healthcareProfessionalIds as string[])
+
+        if (!subset.size) {
+            return []
+        }
+    }
+
+    if (filters.spokenLanguages?.length && !matchesThroughProfessional(filters)) {
+        const languageIds = await facilityIdsAdvertisingLanguages(filters.spokenLanguages)
+
+        if (!languageIds.size) {
+            return []
+        }
+
+        if (subset) {
+            subset = new Set([...subset].filter(id => languageIds.has(id)))
+
+            if (!subset.size) {
+                return []
+            }
+        } else {
+            subset = languageIds
+        }
+    }
+
+    return subset ? Array.from(subset) : null
 }
 
 /**
@@ -479,6 +574,7 @@ export async function createFacility(
                     google_place_id: googlePlaceId,
                     source: facilityInput.source ?? FacilitySource.Manual,
                     verification_status: publication.data.verificationStatus,
+                    supported_languages: JSON.stringify(uniqueLocales(facilityInput.supportedLanguages ?? [])),
                     created_date: new Date().toISOString(),
                     updated_date: new Date().toISOString()
                 })
@@ -585,18 +681,10 @@ export async function searchFacilities(
 
         const offset = filters.offset ?? 0
 
-        // If there is a filter on HPs, first get the facility IDs from the join table.
-        let facilityIdSubset: string[] | null = null
+        const facilityIdSubset = await facilityIdSubsetForFilters(filters)
 
-        if (filters.healthcareProfessionalIds?.length) {
-            // Fetch all Facility IDs associated with the given HP IDs from the join table.
-            const idSet = await getFacilityIdsByHpIds(filters.healthcareProfessionalIds as string[])
-
-            if (!idSet.size) {
-                return { data: [], hasErrors: false }
-            }
-            // Convert the Set to an Array for use in the main query `IN` later
-            facilityIdSubset = Array.from(idSet)
+        if (facilityIdSubset && !facilityIdSubset.length) {
+            return { data: [], hasErrors: false }
         }
 
         const supabase = getSupabaseClient()
@@ -671,6 +759,7 @@ export async function searchFacilities(
             paymentOptions: (row.payment_options ?? []) as gqlTypes.PaymentOption[],
             createdDate: row.created_date as string,
             updatedDate: row.updated_date as string,
+            ...supportedLanguageFields(row),
             ...facilityLocationFields(row)
         }))
 
@@ -715,14 +804,14 @@ export async function countFacilities(
             filters
         )
 
-        // filter on HPs (as in searchFacilities)
-        if (filters.healthcareProfessionalIds?.length) {
-            const idSet = await getFacilityIdsByHpIds(filters.healthcareProfessionalIds as string[])
+        const facilityIdSubset = await facilityIdSubsetForFilters(filters)
 
-            if (!idSet.size) {
-                return { data: 0, hasErrors: false }
-            }
-            baseQuery = baseQuery.in('id', Array.from(idSet))
+        if (facilityIdSubset && !facilityIdSubset.length) {
+            return { data: 0, hasErrors: false }
+        }
+
+        if (facilityIdSubset) {
+            baseQuery = baseQuery.in('id', facilityIdSubset)
         }
 
         const { count: facilyCount, error: facilityCountError } = await baseQuery
@@ -1170,6 +1259,7 @@ export async function listPublishedCityFacilities(
                 paymentOptions: (row.payment_options ?? []) as gqlTypes.PaymentOption[],
                 createdDate: row.created_date,
                 updatedDate: row.updated_date,
+                ...supportedLanguageFields(row),
                 ...facilityLocationFields(row)
             })),
             hasErrors: false

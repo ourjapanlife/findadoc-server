@@ -83,6 +83,7 @@ export type Database = {
           payment_options: Json | null
           search_text: string
           source: string | null
+          supported_languages: Json
           updated_date: string
           verification_status: string
         }
@@ -100,6 +101,7 @@ export type Database = {
           name_ja: string
           payment_options?: Json | null
           source?: string | null
+          supported_languages?: Json
           updated_date: string
           verification_status?: string
         }
@@ -117,6 +119,7 @@ export type Database = {
           name_ja?: string
           payment_options?: Json | null
           source?: string | null
+          supported_languages?: Json
           updated_date?: string
           verification_status?: string
         }

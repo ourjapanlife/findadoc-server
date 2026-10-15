@@ -16,6 +16,11 @@ type Facility {
   mapLongitude: Float!
   """IDs of healthcare professionals associated with this facility."""
   healthcareProfessionalIds: [ID!]!
+  """
+  Languages this facility advertises without a named professional.
+  Only values from the published language list. Storing these does not create a healthcare professional.
+  """
+  supportedLanguages: [Locale!]!
   """ISO 8601 timestamp of when this facility was created."""
   createdDate: String!
   """ISO 8601 timestamp of the last update to this facility."""
@@ -48,6 +53,8 @@ input CreateFacilityInput {
   mapLongitude: Float!
   """IDs of healthcare professionals to associate with this facility."""
   healthcareProfessionalIds: [ID!]
+  """Published languages this facility advertises. Does not create a professional."""
+  supportedLanguages: [Locale!]
   """Payment options for the facility, Type and Brand"""
   paymentOptions: [PaymentOptionsInput!]
   """Id of a city in the vocabulary. Publishing under a city requires this."""
@@ -74,6 +81,8 @@ input UpdateFacilityInput {
   mapLongitude: Float
   """Healthcare professional relationships to add, update, or remove."""
   healthcareProfessionalIds: [Relationship!]
+  """Replacement published language list. An empty list clears it. Does not create a professional."""
+  supportedLanguages: [Locale!]
   """Payment options for the facility, Type and Brand"""
   paymentOptions: [PaymentOptionsInput!]
   """Id of a city in the vocabulary. Null clears the city and marks the row unresolved."""
@@ -109,8 +118,9 @@ input FacilitySearchFilters {
   """
   prefecture: String
   """
-  Only return facilities with at least one healthcare professional who speaks all of these languages.
-  Combined with specialties, the same professional must match both.
+  Only return facilities that advertise every one of these languages.
+  A facility matches when supportedLanguages includes them all, or when one professional speaks them all.
+  Combined with specialties, the same professional must match both. Facility-level languages do not.
   """
   spokenLanguages: [Locale!]
   """
@@ -1012,6 +1022,11 @@ type Query {
 
   """Look up a single reservation by its unique ID. Returns null if not found."""
   reservation(id: ID!): Reservation
+
+  """
+  Languages a search facet may offer. This is the published allowlist, not every Locale value.
+  """
+  publishedLanguages: [Locale!]!
 
   """Prefectures this server owns. One row per prefecture in the frozen key list."""
   prefectures: [Prefecture!]!

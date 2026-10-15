@@ -133,6 +133,56 @@ describe('searchFacilities', () => {
         expect((body.data.facilities as gqlType.Facility[]).map(facility => facility.id))
             .toEqual([englishPediatricsFacility.id])
     })
+
+    test('matches a facility language list without creating a professional', async () => {
+        const input = generateRandomCreateFacilityInput()
+
+        input.nameEn = `${searchTag} HospitalLanguages`
+        input.supportedLanguages = [gqlType.Locale.EnUs, gqlType.Locale.JaJp]
+
+        const created = await request(gqlApiUrl).post('').send({
+            query: createFacilityMutation,
+            variables: { input }
+        } as gqlMutation<gqlType.CreateFacilityInput>)
+
+        expect(created.body.errors).toBeUndefined()
+        const facility = created.body.data.createFacility as gqlType.Facility
+
+        expect(facility.healthcareProfessionalIds).toEqual([])
+        expect(facility.supportedLanguages).toEqual([gqlType.Locale.EnUs, gqlType.Locale.JaJp])
+
+        const byLanguage = await search({
+            spokenLanguages: [gqlType.Locale.EnUs, gqlType.Locale.JaJp]
+        })
+        const languageIds = (byLanguage.data.facilities as gqlType.Facility[]).map(row => row.id)
+
+        expect(languageIds.sort()).toEqual([englishPediatricsFacility.id, facility.id].sort())
+
+        const bySpecialty = await search({
+            spokenLanguages: [gqlType.Locale.EnUs],
+            specialties: [gqlType.Specialty.Pediatrics]
+        })
+        const specialtyIds = (bySpecialty.data.facilities as gqlType.Facility[]).map(row => row.id)
+
+        expect(specialtyIds).not.toContain(facility.id)
+        expect(specialtyIds).toContain(englishPediatricsFacility.id)
+    })
+
+    test('rejects a facility language that is not on the published list', async () => {
+        const input = generateRandomCreateFacilityInput()
+
+        input.nameEn = `${searchTag} UnpublishedLanguage`
+        input.supportedLanguages = [gqlType.Locale.AkGh]
+
+        const created = await request(gqlApiUrl).post('').send({
+            query: createFacilityMutation,
+            variables: { input }
+        } as gqlMutation<gqlType.CreateFacilityInput>)
+        const errors = created.body.errors[0].extensions.errors as Error[]
+
+        expect(errors[0].field).toBe('supportedLanguages')
+        expect(errors[0].errorCode).toBe(ErrorCode.INVALID_INPUT)
+    })
 })
 
 describe('moderation list query', () => {

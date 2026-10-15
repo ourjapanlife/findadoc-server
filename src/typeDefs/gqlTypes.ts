@@ -126,6 +126,8 @@ export type CreateFacilityInput = {
   paymentOptions?: InputMaybe<Array<PaymentOptionsInput>>;
   /** Where this facility record came from. */
   source?: InputMaybe<FacilitySource>;
+  /** Published languages this facility advertises. Does not create a professional. */
+  supportedLanguages?: InputMaybe<Array<Locale>>;
   /** CONFIRMED requires cityId. Omit this to leave an unresolved facility as UNVERIFIED_LOCATION. */
   verificationStatus?: InputMaybe<FacilityVerificationStatus>;
 };
@@ -265,6 +267,11 @@ export type Facility = {
   paymentOptions?: Maybe<Array<PaymentOption>>;
   /** Where the facility record came from. Null on rows that have not been classified. */
   source?: Maybe<FacilitySource>;
+  /**
+   * Languages this facility advertises without a named professional.
+   * Only values from the published language list. Storing these does not create a healthcare professional.
+   */
+  supportedLanguages: Array<Locale>;
   /** ISO 8601 timestamp of the last update to this facility. */
   updatedDate: Scalars['String']['output'];
   /** Whether the location is confirmed. Unresolved rows are UNVERIFIED_LOCATION. */
@@ -297,11 +304,6 @@ export type FacilitySearchFilters = {
   nameEn?: InputMaybe<Scalars['String']['input']>;
   /** Filter by facility name in Japanese (partial match). */
   nameJa?: InputMaybe<Scalars['String']['input']>;
-  /**
-   * One text query matched against the English name, Japanese name, or id.
-   * Applied before pagination. Blank leaves the list unfiltered.
-   */
-  query?: InputMaybe<Scalars['String']['input']>;
   /** Number of results to skip for pagination. */
   offset?: InputMaybe<Scalars['Int']['input']>;
   /** Ordering rules for the results. */
@@ -312,13 +314,19 @@ export type FacilitySearchFilters = {
    */
   prefecture?: InputMaybe<Scalars['String']['input']>;
   /**
+   * One text query matched against the English name, Japanese name, or id.
+   * Applied before pagination. Blank leaves the list unfiltered.
+   */
+  query?: InputMaybe<Scalars['String']['input']>;
+  /**
    * Only return facilities with at least one healthcare professional who practices all of these specialties.
    * Combined with spokenLanguages, the same professional must match both.
    */
   specialties?: InputMaybe<Array<Specialty>>;
   /**
-   * Only return facilities with at least one healthcare professional who speaks all of these languages.
-   * Combined with specialties, the same professional must match both.
+   * Only return facilities that advertise every one of these languages.
+   * A facility matches when supportedLanguages includes them all, or when one professional speaks them all.
+   * Combined with specialties, the same professional must match both. Facility-level languages do not.
    */
   spokenLanguages?: InputMaybe<Array<Locale>>;
   /** Filter by last updated date (ISO 8601). */
@@ -408,15 +416,15 @@ export type HealthcareProfessionalSearchFilters = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   /** Filter by localized names. */
   names?: InputMaybe<Array<LocalizedNameInput>>;
+  /** Number of results to skip for pagination. */
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  /** Ordering rules for the results. */
+  orderBy?: InputMaybe<Array<OrderBy>>;
   /**
    * One text query matched against any localized given name, middle name, family name, or id.
    * Applied before pagination. Blank leaves the list unfiltered.
    */
   query?: InputMaybe<Scalars['String']['input']>;
-  /** Number of results to skip for pagination. */
-  offset?: InputMaybe<Scalars['Int']['input']>;
-  /** Ordering rules for the results. */
-  orderBy?: InputMaybe<Array<OrderBy>>;
   /** Filter by specialties. */
   specialties?: InputMaybe<Array<Specialty>>;
   /** Filter by spoken languages. */
@@ -892,6 +900,8 @@ export type Query = {
   mapsPlacePreview?: Maybe<MapsPlacePreview>;
   /** Prefectures this server owns. One row per prefecture in the frozen key list. */
   prefectures: Array<Prefecture>;
+  /** Languages a search facet may offer. This is the published allowlist, not every Locale value. */
+  publishedLanguages: Array<Locale>;
   /** Look up a single reservation by its unique ID. Returns null if not found. */
   reservation?: Maybe<Reservation>;
   /** Look up a single submission by its unique ID. Returns null if not found. */
@@ -1247,6 +1257,8 @@ export type UpdateFacilityInput = {
   paymentOptions?: InputMaybe<Array<PaymentOptionsInput>>;
   /** Where this facility record came from. */
   source?: InputMaybe<FacilitySource>;
+  /** Replacement published language list. An empty list clears it. Does not create a professional. */
+  supportedLanguages?: InputMaybe<Array<Locale>>;
   /** CONFIRMED requires a cityId on the facility. */
   verificationStatus?: InputMaybe<FacilityVerificationStatus>;
 };
@@ -1572,6 +1584,7 @@ export type FacilityResolvers<ContextType = any, ParentType extends ResolversPar
   nameJa?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   paymentOptions?: Resolver<Maybe<Array<ResolversTypes['PaymentOption']>>, ParentType, ContextType>;
   source?: Resolver<Maybe<ResolversTypes['FacilitySource']>, ParentType, ContextType>;
+  supportedLanguages?: Resolver<Array<ResolversTypes['Locale']>, ParentType, ContextType>;
   updatedDate?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   verificationStatus?: Resolver<ResolversTypes['FacilityVerificationStatus'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1703,6 +1716,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   healthcareProfessionalsTotalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType, RequireFields<QueryHealthcareProfessionalsTotalCountArgs, 'filters'>>;
   mapsPlacePreview?: Resolver<Maybe<ResolversTypes['MapsPlacePreview']>, ParentType, ContextType, RequireFields<QueryMapsPlacePreviewArgs, 'url'>>;
   prefectures?: Resolver<Array<ResolversTypes['Prefecture']>, ParentType, ContextType>;
+  publishedLanguages?: Resolver<Array<ResolversTypes['Locale']>, ParentType, ContextType>;
   reservation?: Resolver<Maybe<ResolversTypes['Reservation']>, ParentType, ContextType, RequireFields<QueryReservationArgs, 'id'>>;
   submission?: Resolver<Maybe<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionArgs, 'id'>>;
   submissions?: Resolver<Array<ResolversTypes['Submission']>, ParentType, ContextType, RequireFields<QuerySubmissionsArgs, 'filters'>>;
