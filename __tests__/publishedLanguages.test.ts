@@ -76,6 +76,9 @@ describe('published language allowlist', () => {
             specialties: [],
             accepted_insurance: [],
             additional_info_for_patients: null,
+            email: null,
+            firestore_id: null,
+            search_text: '',
             created_date: '2023-08-28T00:00:00.000Z',
             updated_date: '2023-08-28T00:00:00.000Z'
         } as Selectable<HpsTable>, [])
@@ -96,6 +99,10 @@ describe('published language allowlist', () => {
 
         expect(patch.supported_languages).toBe(JSON.stringify([Locale.EnUs, Locale.JaJp]))
         expect(patch).not.toHaveProperty('healthcareProfessionalIds')
+
+        const cleared = buildFacilityUpdatePatch({ supportedLanguages: null })
+
+        expect(cleared.supported_languages).toBe('[]')
     })
 
     it('joins professionals only when a specialty is part of the filter', () => {

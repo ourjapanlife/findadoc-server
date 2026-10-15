@@ -304,6 +304,11 @@ export type FacilitySearchFilters = {
   nameEn?: InputMaybe<Scalars['String']['input']>;
   /** Filter by facility name in Japanese (partial match). */
   nameJa?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * One text query matched against the English name, Japanese name, or id.
+   * Applied before pagination. Blank leaves the list unfiltered.
+   */
+  query?: InputMaybe<Scalars['String']['input']>;
   /** Number of results to skip for pagination. */
   offset?: InputMaybe<Scalars['Int']['input']>;
   /** Ordering rules for the results. */
@@ -313,11 +318,6 @@ export type FacilitySearchFilters = {
    * or the Japanese name (e.g. "沖縄県"). Unknown prefectures are rejected.
    */
   prefecture?: InputMaybe<Scalars['String']['input']>;
-  /**
-   * One text query matched against the English name, Japanese name, or id.
-   * Applied before pagination. Blank leaves the list unfiltered.
-   */
-  query?: InputMaybe<Scalars['String']['input']>;
   /**
    * Only return facilities with at least one healthcare professional who practices all of these specialties.
    * Combined with spokenLanguages, the same professional must match both.
@@ -416,15 +416,15 @@ export type HealthcareProfessionalSearchFilters = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   /** Filter by localized names. */
   names?: InputMaybe<Array<LocalizedNameInput>>;
-  /** Number of results to skip for pagination. */
-  offset?: InputMaybe<Scalars['Int']['input']>;
-  /** Ordering rules for the results. */
-  orderBy?: InputMaybe<Array<OrderBy>>;
   /**
    * One text query matched against any localized given name, middle name, family name, or id.
    * Applied before pagination. Blank leaves the list unfiltered.
    */
   query?: InputMaybe<Scalars['String']['input']>;
+  /** Number of results to skip for pagination. */
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  /** Ordering rules for the results. */
+  orderBy?: InputMaybe<Array<OrderBy>>;
   /** Filter by specialties. */
   specialties?: InputMaybe<Array<Specialty>>;
   /** Filter by spoken languages. */

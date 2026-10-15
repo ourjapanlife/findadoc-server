@@ -15,7 +15,7 @@ import { cityExists, findCityBySlug } from './cityService.js'
 import { FacilitySource } from '../typeDefs/gqlTypes.js'
 import { matchingFacilityId } from '../places/facilityMapsMatch.js'
 import { canonicalMapsFields, isShortMapsUrl, previewTargetFromMapsUrl, resolveMapsPlace } from '../places/mapsLink.js'
-import type { Transaction } from 'kysely'
+import { sql, type Transaction } from 'kysely'
 import type { Database } from '../typeDefs/kyselyTypes.js'
 import type { Database as SupabaseDb } from '../typeDefs/supabase-generated.js'
 
@@ -75,7 +75,7 @@ export function buildFacilityUpdatePatch(fields: Partial<gqlTypes.UpdateFacility
         updatePatch.verification_status = fields.verificationStatus
     }
     if (fields.supportedLanguages !== undefined) {
-        updatePatch.supported_languages = JSON.stringify(uniqueLocales(fields.supportedLanguages))
+        updatePatch.supported_languages = JSON.stringify(uniqueLocales(fields.supportedLanguages ?? []))
     }
     // Business rule: always timestamp when the entity is updated
     updatePatch.updated_date = new Date().toISOString()
@@ -426,48 +426,23 @@ async function getFacilityIdsByHpIds(hpIds: string[]): Promise<Set<string>> {
 
 /**
  * Facilities that advertise every requested language, either on the facility
- * or on one linked professional. Does not create a professional.
+ * or on one linked professional. One query, so a long match list is not truncated.
+ * Does not create a professional.
  */
 async function facilityIdsAdvertisingLanguages(languages: gqlTypes.Locale[]): Promise<Set<string>> {
-    const supabase = getSupabaseClient()
-    const payload = JSON.stringify(languages)
-    const ids = new Set<string>()
+    const requested = JSON.stringify(languages)
+    const result = await sql<{ id: string }>`
+        SELECT id FROM facilities
+        WHERE supported_languages @> ${requested}::jsonb
+        UNION
+        SELECT hps_facilities.facilities_id AS id
+        FROM hps_facilities
+        JOIN hps ON hps.id = hps_facilities.hps_id
+        WHERE hps.spoken_languages @> ${requested}::jsonb
+          AND hps_facilities.facilities_id IS NOT NULL
+    `.execute(db)
 
-    const { data: facilities, error: facilityError } = await supabase
-        .from('facilities')
-        .select('id')
-        .contains('supported_languages', payload)
-        .limit(5000)
-
-    if (facilityError) {
-        throw facilityError
-    }
-
-    for (const row of facilities ?? []) {
-        ids.add(row.id as string)
-    }
-
-    const { data: professionals, error: professionalError } = await supabase
-        .from('hps')
-        .select('id')
-        .contains('spoken_languages', payload)
-        .limit(5000)
-
-    if (professionalError) {
-        throw professionalError
-    }
-
-    const hpIds = (professionals ?? []).map(row => row.id as string)
-
-    if (hpIds.length) {
-        const fromProfessionals = await getFacilityIdsByHpIds(hpIds)
-
-        for (const id of fromProfessionals) {
-            ids.add(id)
-        }
-    }
-
-    return ids
+    return new Set(result.rows.map(row => row.id))
 }
 
 /**
