@@ -1,6 +1,7 @@
 import { generateRandomCreateHealthcareProfessionalInputArray } from '../src/fakeData/fakeHealthcareProfessionals.js'
 import { generateRandomCreateFacilityInputArray } from '../src/fakeData/fakeFacilities.js'
 import { generateRandomUpdateSubmissionInput } from '../src/fakeData/fakeSubmissions.js'
+import * as gqlTypes from '../src/typeDefs/gqlTypes.js'
 import * as fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import * as path from 'path'
@@ -45,6 +46,39 @@ function toSqlValue(value: any): string {
  * @param isUnderReview Whether the submission is under review
  * @returns Status string: 'approved', 'rejected', 'under_review', or 'pending'
  */
+const INDEXABLE_FACET_SEED_COUNT = 3
+
+/**
+ * Facet HTML is emitted only when one prefecture has at least three professionals
+ * in the same specialty. Random rows almost never cluster, so CI generated no
+ * facet pages and the Playwright spec skipped.
+ */
+function pinIndexableTokyoDentistry(
+    facilities: ReturnType<typeof generateRandomCreateFacilityInputArray>,
+    professionals: ReturnType<typeof generateRandomCreateHealthcareProfessionalInputArray>,
+    facilityIds: string[]
+) {
+    for (let index = 0; index < INDEXABLE_FACET_SEED_COUNT; index++) {
+        const address = facilities[index]?.contact?.address
+        if (address) {
+            address.prefectureEn = 'Tokyo'
+            address.prefectureJa = '東京都'
+            address.cityEn = 'Tokyo'
+            address.cityJa = '東京'
+        }
+
+        const professional = professionals[index]
+        const facilityId = facilityIds[index]
+        if (!professional || !facilityId) {
+            continue
+        }
+
+        professional.coreData.specialties = [gqlTypes.Specialty.Dentistry]
+        professional.coreData.spokenLanguages = [gqlTypes.Locale.EnUs]
+        professional.selectedFacilityIds = [facilityId]
+    }
+}
+
 function getStatusFromBooleans(
     isApproved?: boolean | null,
     isRejected?: boolean | null,
@@ -84,6 +118,7 @@ export const generateSqlSeed = async () => {
         // --- 1. FACILITIES (Table 'facilities') ---
         // Generate random facility data for testing
         const facilitiesData = generateRandomCreateFacilityInputArray({ count: NUM_FACILITIES })
+        pinIndexableTokyoDentistry(facilitiesData, [], [])
         const facilityIds: string[] = [] // Store IDs for linking HPs later
 
         for (const facility of facilitiesData) {
@@ -120,6 +155,7 @@ export const generateSqlSeed = async () => {
             count: NUM_HPS,
             facilityIdOptions: facilityIds // Pass facility IDs to allow realistic associations
         })
+        pinIndexableTokyoDentistry(facilitiesData, healthcareProfessionalsData, facilityIds)
 
         // Map to store HP -> Facility relationships for junction table
         const hpIdToFacilityIdsMap = new Map<string, string[]>()
