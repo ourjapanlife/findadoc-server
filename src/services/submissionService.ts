@@ -21,6 +21,7 @@ import { mapKyselySubmissionToGraphQL, mapDbEntityTogqlEntity } from '../service
 import { asJsonb } from '../../utils/dbUtils.js'
 import { licenseColumnsForDegrees } from '../licenses/professionalLicense.js'
 import { canonicalMapsFields } from '../places/mapsLink.js'
+import { isPublishedLocale, uniqueLocales } from '../languages/publishedLocales.js'
 /** Row type used as Supabase select generic — matches SubmissionRow from dbSchema */
 type SubmissionRow = dbSchema.SubmissionRow
 
@@ -848,7 +849,10 @@ export const approveSubmission = async (
                         city_id: null,
                         google_place_id: useResolvedMaps && resolvedMaps ? resolvedMaps.placeId : null,
                         source: null,
-                        verification_status: 'UNVERIFIED_LOCATION'
+                        verification_status: 'UNVERIFIED_LOCATION',
+                        supported_languages: JSON.stringify(
+                            uniqueLocales(facilityInput.supportedLanguages ?? []).filter(isPublishedLocale)
+                        )
                     })
                     .returningAll()
                     .executeTakeFirstOrThrow()

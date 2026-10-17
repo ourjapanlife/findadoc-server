@@ -12,6 +12,7 @@ import * as mapsPlacePreviewService from './services/mapsPlacePreviewService.js'
 import * as facilityPlaceService from './services/facilityPlaceService.js'
 import { Result } from './result.js'
 import { logger } from './logger.js'
+import { PUBLISHED_LOCALES } from './languages/publishedLocales.js'
 import {
     getRequestedFields,
     facilityNeedsHpIds,
@@ -362,6 +363,17 @@ const resolvers = {
             const matchingReservationResult = await reservationService.getReservationById(args.id)
 
             return matchingReservationResult.data
+        },
+        publishedLanguages: (_parent: unknown, _args: unknown, context: UserContext): gqlType.Locale[] => {
+            const isAuthorized = authorize(context.user, [Scope['read:facilities']])
+
+            if (!isAuthorized) {
+                throw new GraphQLError('User is not authorized', {
+                    extensions: { code: 'UNAUTHORIZED', http: { status: 403 } }
+                })
+            }
+
+            return PUBLISHED_LOCALES.map(locale => locale as gqlType.Locale)
         },
         prefectures: async (_parent: unknown, _args: unknown, context: UserContext)
         : Promise<gqlType.Prefecture[]> => {

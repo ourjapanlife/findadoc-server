@@ -1,32 +1,10 @@
 import { mapped, needsReview, type MapOutcome } from './types.js'
+import {
+    isPublishedLocale,
+    type PublishedLocale
+} from '../languages/publishedLocales.js'
 
-/**
- * Locales the product already publishes as search facets, plus `ru_RU`.
- * The facet list matches `SEARCHABLE_LANGUAGES` in findadoc-web `utils/homeDirectory.ts`.
- * `ru_RU` is here because spreadsheet code RU is an accepted import value.
- * It is not a web facet until #1015. This module does not change that list.
- */
-export const PUBLISHED_LOCALES = [
-    'en_US',
-    'ja_JP',
-    'zh_CN',
-    'ko_KR',
-    'tl_PH',
-    'ne_NP',
-    'id_ID',
-    'zh_HK',
-    'es_ES',
-    'fr_FR',
-    'ar_AE',
-    'de_DE',
-    'nl_BE',
-    'sw_KE',
-    'ru_RU'
-] as const
-
-export type PublishedLocale = typeof PUBLISHED_LOCALES[number]
-
-const PUBLISHED = new Set<string>(PUBLISHED_LOCALES)
+export { PUBLISHED_LOCALES, type PublishedLocale } from '../languages/publishedLocales.js'
 
 /** Spreadsheet and short codes. Plain ZH is Simplified Chinese. */
 const LANGUAGE_CODES: Record<string, PublishedLocale> = {
@@ -73,8 +51,8 @@ export function mapLanguage(source: string): MapOutcome<PublishedLocale> {
     if (localeMatch) {
         const locale = `${localeMatch[1].toLowerCase()}_${localeMatch[2].toUpperCase()}`
 
-        if (PUBLISHED.has(locale)) {
-            return mapped(locale as PublishedLocale)
+        if (isPublishedLocale(locale)) {
+            return mapped(locale)
         }
     }
 

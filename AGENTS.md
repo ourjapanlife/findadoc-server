@@ -22,6 +22,12 @@ A society or collaboration is a row in `affiliations`, not a Postgres enum (#102
 
 Compare values with `===` and `!==`. Do not use `==` or `!=`. That includes `== null` and `!= null`. A missing value is `=== null` or `=== undefined`.
 
+## Languages
+
+`src/languages/publishedLocales.ts` is the search-facet allowlist (#1015). Spreadsheet codes map through `src/vocabulary/languageMap.ts`. Services do not import that map.
+
+`facilities.supported_languages` is language support with no named professional. Do not create a healthcare professional to hold a hospital-level language. A language-only search matches that list or one professional who speaks every requested language. A specialty filter still requires the same professional to match both. Existing `spoken_languages` stay on the professional, including `en_US` and `ja_JP`. A Locale that is not on the allowlist is not a facet.
+
 ## Licenses
 
 A professional has one primary clinical license. PhD, MPH, and DSc are additional credentials. DVM, EdD, and DSW stay in the enum and stay hidden from the moderation picker.

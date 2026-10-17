@@ -1,6 +1,7 @@
 import * as gqlTypes from '../typeDefs/gqlTypes.js'
 import * as dbSchema from '../typeDefs/dbSchema.js'
 import type { HpsTable, FacilitiesTable, SubmissionsTable } from '../typeDefs/kyselyTypes.js'
+import { isPublishedLocale, uniqueLocales } from '../languages/publishedLocales.js'
 import type { Selectable } from 'kysely'
 
 function toLicenseReview(value: string | null | undefined): gqlTypes.LicenseReviewStatus | null {
@@ -111,7 +112,20 @@ export function mapKyselyFacilityToGraphQL(
         healthcareProfessionalIds,
         createdDate: cleanRow.created_date,
         updatedDate: cleanRow.updated_date,
+        ...supportedLanguageFields(cleanRow),
         ...facilityLocationFields(cleanRow)
+    }
+}
+
+export function supportedLanguageFields(row: {
+    supported_languages?: unknown
+}): Pick<gqlTypes.Facility, 'supportedLanguages'> {
+    const stored = Array.isArray(row.supported_languages)
+        ? row.supported_languages.filter((language): language is gqlTypes.Locale => typeof language === 'string')
+        : []
+
+    return {
+        supportedLanguages: uniqueLocales(stored).filter(isPublishedLocale) as gqlTypes.Locale[]
     }
 }
 

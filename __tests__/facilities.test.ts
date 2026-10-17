@@ -356,6 +356,7 @@ export const createFacilityMutation = `mutation test_createFacility($input: Crea
             website
         }
         healthcareProfessionalIds
+        supportedLanguages
         mapLatitude
         mapLongitude
         nameEn
