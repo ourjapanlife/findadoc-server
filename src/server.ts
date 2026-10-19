@@ -31,11 +31,13 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
                 'http://localhost:3000',
                 'http://localhost:4242',
                 'http://127.0.0.1:4242',
-                'https://www.findadoc.jp'
+                'https://www.findadoc.jp',
+                'https://findadoc-monorepo-web.netlify.app'
             ].filter((o): o is string => Boolean(o))
 
+            // Netlify deploy previews: https://deploy-preview-<pr>--<site>.netlify.app
             const deployPreview = origin !== undefined
-                && /^https:\/\/deploy-preview-\d+--findadoc\.netlify\.app$/.test(origin)
+                && /^https:\/\/deploy-preview-\d+--(?:findadoc|findadoc-monorepo-web)\.netlify\.app$/.test(origin)
 
             const localDevBrowser =
                 envVariables.isLocal()
