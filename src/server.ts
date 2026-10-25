@@ -31,6 +31,7 @@ export const createApolloFastifyServer = async (customPort?: number): Promise<st
                 'http://localhost:3000',
                 'http://localhost:4242',
                 'http://127.0.0.1:4242',
+                'https://findadoc.jp',
                 'https://www.findadoc.jp',
                 'https://findadoc-monorepo-web.netlify.app'
             ].filter((o): o is string => Boolean(o))
